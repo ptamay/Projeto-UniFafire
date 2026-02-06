@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from './Navbar';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string };
 
@@ -13,6 +14,14 @@ export default function KeysClient({
     isAdmin: boolean
 }) {
     const [keys, setKeys] = useState<Key[]>(initialKeys);
+    const router = useRouter();
+
+    // Redirect if not admin
+    useEffect(() => {
+        if (!isAdmin) {
+            router.push('/');
+        }
+    }, [isAdmin, router]);
 
     // Add Modal States
     const [showAddKeyModal, setShowAddKeyModal] = useState(false);
@@ -24,8 +33,6 @@ export default function KeysClient({
     const [editingKeyId, setEditingKeyId] = useState<number | null>(null);
     const [editKeyName, setEditKeyName] = useState('');
     const [editKeyRoom, setEditKeyRoom] = useState('');
-
-    const router = useRouter();
 
     const refreshData = async () => {
         const kRes = await fetch('/api/keys');
@@ -108,59 +115,43 @@ export default function KeysClient({
         }
     };
 
-    const logout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/login');
-    };
+    if (!isAdmin) return null; // Avoid flicker
 
     return (
-        <div className="container">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1>Gestão de Chaves</h1>
-                    <p style={{ color: '#666' }}>Administração de Chaves</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn btn-outline" onClick={() => router.push('/')}>Dashboard</button>
-                    <button className="btn btn-outline" onClick={() => router.push('/employees')}>Funcionários</button>
-                    {isAdmin && <button className="btn btn-outline" onClick={() => router.push('/users')}>Usuários</button>}
-                    <button className="btn btn-outline" onClick={() => router.push('/history')}>Histórico</button>
-                    <button className="btn btn-outline" onClick={logout} style={{ borderColor: '#fab1a0', color: '#d63031' }}>Sair</button>
-                </div>
-            </header>
+        <div className="flex flex-col min-h-screen">
+            <Navbar isAdmin={isAdmin} />
 
-            <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h2>Lista de Chaves</h2>
-                    {isAdmin && (
-                        <button className="btn btn-primary" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
-                    )}
-                </div>
+            {/* Main Content */}
+            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
+                <div className="card w-full">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h2 className="text-navy text-xl font-bold m-0">Gerenciar Chaves</h2>
+                        <button className="btn btn-gold shadow-md" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
+                    </div>
 
-                <div className="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Sala/Local</th>
-                                <th>Status</th>
-                                {isAdmin && <th style={{ textAlign: 'right' }}>Ações</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {keys.map(key => (
-                                <tr key={key.id}>
-                                    <td><strong>{key.name}</strong></td>
-                                    <td>{key.room}</td>
-                                    <td>
-                                        <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
-                                            {key.status === 'available' ? 'Disponível' : 'Em Uso'}
-                                        </span>
-                                    </td>
-                                    {isAdmin && (
+                    <div className="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th className="text-navy">Nome</th>
+                                    <th className="text-navy">Sala/Local</th>
+                                    <th className="text-navy">Status</th>
+                                    <th className="text-navy" style={{ textAlign: 'right' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {keys.map(key => (
+                                    <tr key={key.id}>
+                                        <td style={{ fontWeight: 600, color: '#334155' }}>{key.name}</td>
+                                        <td style={{ color: '#64748b' }}>{key.room}</td>
+                                        <td>
+                                            <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
+                                                {key.status === 'available' ? 'Disponível' : 'Em Uso'}
+                                            </span>
+                                        </td>
                                         <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                             <button
-                                                className="btn btn-outline"
+                                                className="btn btn-outline-navy"
                                                 onClick={() => handleEditKey(key)}
                                                 style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
                                             >
@@ -174,20 +165,20 @@ export default function KeysClient({
                                                 Remover
                                             </button>
                                         </td>
-                                    )}
-                                </tr>
-                            ))}
-                            {keys.length === 0 && <tr><td colSpan={isAdmin ? 4 : 3} style={{ textAlign: 'center', color: '#999' }}>Nenhuma chave cadastrada.</td></tr>}
-                        </tbody>
-                    </table>
+                                    </tr>
+                                ))}
+                                {keys.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999' }}>Nenhuma chave cadastrada.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </main>
 
             {/* Add Key Modal */}
             {showAddKeyModal && (
                 <div className="modal-overlay" onClick={() => setShowAddKeyModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Nova Chave</h3>
+                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Nova Chave</h3>
                         <form onSubmit={handleAddKey}>
                             <div className="form-group">
                                 <label>Nome da Chave</label>
@@ -198,7 +189,7 @@ export default function KeysClient({
                                 <input value={newKeyRoom} onChange={e => setNewKeyRoom(e.target.value)} placeholder="Ex: Laboratório Informática" />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowAddKeyModal(false)}>Cancelar</button>
+                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowAddKeyModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Salvar</button>
                             </div>
                         </form>
@@ -210,7 +201,7 @@ export default function KeysClient({
             {showEditKeyModal && (
                 <div className="modal-overlay" onClick={() => setShowEditKeyModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Editar Chave</h3>
+                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Editar Chave</h3>
                         <form onSubmit={handleSaveEdit}>
                             <div className="form-group">
                                 <label>Nome da Chave</label>
@@ -227,7 +218,7 @@ export default function KeysClient({
                                 <input value={editKeyRoom} onChange={e => setEditKeyRoom(e.target.value)} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowEditKeyModal(false)}>Cancelar</button>
+                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowEditKeyModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Salvar Alterações</button>
                             </div>
                         </form>

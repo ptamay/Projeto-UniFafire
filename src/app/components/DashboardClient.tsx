@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from './Navbar';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string; employee_role?: string };
 type Employee = { id: number; name: string; role: string };
-type HistoryItem = { id: number; employee_id: number; key_id: number; action: string; timestamp: string };
 
 export default function DashboardClient({
     initialKeys = [],
@@ -25,28 +25,17 @@ export default function DashboardClient({
 
     // Modal States
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
     // Selection States
     const [selectedKeyId, setSelectedKeyId] = useState<number | null>(null);
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
 
-    // Form States
-
-
-    // Password Form States
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-
     const refreshData = async () => {
-        // For MVP, router.refresh() re-runs the server component, but state might stick.
-        // Better to fetch fresh data or just invalidate.
         const kRes = await fetch('/api/keys');
         const eRes = await fetch('/api/employees');
         if (kRes.ok) setKeys(await kRes.json());
         if (eRes.ok) setEmployees(await eRes.json());
-        router.refresh(); // To update history if it's passed from server
+        router.refresh();
     };
 
     const handleWithdraw = async () => {
@@ -84,38 +73,6 @@ export default function DashboardClient({
         }
     };
 
-
-
-    const handleChangePassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newPassword !== confirmPassword) {
-            alert('A nova senha e a confirmação não coincidem.');
-            return;
-        }
-
-        const res = await fetch('/api/users/change-password', {
-            method: 'POST',
-            body: JSON.stringify({ userId, currentPassword, newPassword }),
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (res.ok) {
-            alert('Senha alterada com sucesso!');
-            setShowChangePasswordModal(false);
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } else {
-            const data = await res.json();
-            alert(data.error || 'Erro ao alterar senha.');
-        }
-    };
-
-    const logout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/login');
-    };
-
     const [searchTerm, setSearchTerm] = useState('');
 
     // Filter and Sort Keys
@@ -135,125 +92,201 @@ export default function DashboardClient({
         });
 
     return (
-        <div className="container">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1>Gestão de Chaves</h1>
-                    <p style={{ color: '#666' }}>{isAdmin ? 'Painel Administrativo' : 'Painel do Usuário'}</p>
-                </div>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn btn-outline" onClick={() => router.push('/keys')}>Chaves</button>
-                    <button className="btn btn-outline" onClick={() => router.push('/employees')}>Funcionários</button>
-                    {isAdmin && <button className="btn btn-outline" onClick={() => router.push('/users')}>Usuários</button>}
-                    {isAdmin && <button className="btn btn-outline" onClick={() => router.push('/logs')}>Log de Ações</button>}
-                    <button className="btn btn-outline" onClick={() => router.push('/history')}>Histórico</button>
+        <div className="flex flex-col min-h-screen">
+            <Navbar isAdmin={isAdmin} />
 
-                    <button className="btn btn-outline" onClick={() => setShowChangePasswordModal(true)}>Alterar Senha</button>
-                    <button className="btn btn-outline" onClick={logout} style={{ borderColor: '#fab1a0', color: '#d63031' }}>Sair</button>
-                </div>
-            </header>
+            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
 
-            <div className="card">
-                <div style={{ marginBottom: '1rem' }}>
-                    <h2>Chaves</h2>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome, sala ou funcionário..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            padding: '0.6rem 1rem',
-                            borderRadius: '8px',
-                            border: '1px solid #ddd',
-                            width: '100%',
-                            maxWidth: '400px',
-                            outline: 'none',
-                            marginTop: '0.5rem',
-                            fontSize: '0.95rem'
-                        }}
-                    />
+                {/* Mobile Heading & Search (Hidden on Desktop) */}
+                <div className="md:hidden flex flex-col gap-4 mb-4">
+                    <h2 className="text-navy text-xl font-bold">Status das Chaves</h2>
+                    <div className="search-wrapper w-full relative">
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full"
+                            style={{
+                                padding: '0.75rem 1rem',
+                                paddingLeft: '2.5rem',
+                                borderRadius: '9999px',
+                                border: '1px solid #e2e8f0',
+                                outline: 'none',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                            }}
+                        />
+                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                    </div>
                 </div>
-                <div className="table-wrapper" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                    <style jsx>{`
-                        .table-wrapper::-webkit-scrollbar {
-                            width: 8px;
-                        }
-                        .table-wrapper::-webkit-scrollbar-track {
-                            background: #f1f1f1;
-                            border-radius: 4px;
-                        }
-                        .table-wrapper::-webkit-scrollbar-thumb {
-                            background: #ccc;
-                            border-radius: 4px;
-                        }
-                        .table-wrapper::-webkit-scrollbar-thumb:hover {
-                            background: #aaa;
-                        }
-                    `}</style>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Sala/Local</th>
-                                <th>Funcionário</th>
-                                <th>Cargo</th>
-                                <th>Status</th>
-                                <th style={{ textAlign: 'right' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredKeys.map(key => (
-                                <tr key={key.id}>
-                                    <td><strong>{key.name}</strong></td>
-                                    <td>{key.room}</td>
-                                    <td>
-                                        {key.status === 'in_use' ? (
-                                            <span style={{ fontWeight: 500 }}>{key.employee_name || 'Desconhecido'}</span>
-                                        ) : (
-                                            <span style={{ color: '#999' }}>—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {key.status === 'in_use' && key.employee_role ? (
-                                            <span style={{ fontSize: '0.85rem', color: '#666' }}>{key.employee_role}</span>
-                                        ) : (
-                                            <span style={{ color: '#999' }}>—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
-                                            {key.status === 'available' ? 'Disponível' : 'Em Uso'}
-                                        </span>
-                                    </td>
-                                    <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                        {key.status === 'available' ? (
-                                            <button className="btn btn-success" onClick={() => { setSelectedKeyId(key.id); setShowWithdrawModal(true); }}>
-                                                Retirar
-                                            </button>
-                                        ) : (
-                                            <button className="btn btn-warning" onClick={() => handleReturn(key.id)}>
-                                                Devolver
-                                            </button>
-                                        )}
-                                    </td>
+
+                {/* Desktop Table View (Hidden on Mobile) */}
+                <div className="card w-full hidden md:block">
+                    {/* Desktop Header inside Card */}
+                    <div className="flex justify-between items-center mb-6 pl-2 pr-2">
+                        <h2 className="text-navy text-xl font-bold m-0">Status das Chaves</h2>
+                        <div className="search-wrapper max-w-md relative w-auto">
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome, sala ou funcionário..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '300px',
+                                    padding: '0.6rem 1rem',
+                                    paddingLeft: '2.5rem',
+                                    borderRadius: '9999px',
+                                    border: '1px solid #e2e8f0',
+                                    outline: 'none',
+                                    transition: 'all 0.2s',
+                                    backgroundColor: '#f8fafc'
+                                }}
+                            />
+                            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        </div>
+                    </div>
+
+                    <div className="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th className="text-navy">Nome</th>
+                                    <th className="text-navy">Sala/Local</th>
+                                    <th className="text-navy">Funcionário</th>
+                                    <th className="text-navy">Cargo</th>
+                                    <th className="text-navy">Status</th>
+                                    <th className="text-navy" style={{ textAlign: 'right' }}>Ações</th>
                                 </tr>
-                            ))}
-                            {filteredKeys.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#999' }}>Nenhuma chave encontrada.</td></tr>}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredKeys.map(key => (
+                                    <tr key={key.id}>
+                                        <td style={{ fontWeight: 600, color: '#334155' }}>{key.name}</td>
+                                        <td style={{ color: '#64748b' }}>{key.room}</td>
+                                        <td>
+                                            {key.status === 'in_use' ? (
+                                                <span style={{ fontWeight: 500, color: '#1e293b' }}>{key.employee_name || 'Desconhecido'}</span>
+                                            ) : (
+                                                <span style={{ color: '#cbd5e1' }}>—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {key.status === 'in_use' && key.employee_role ? (
+                                                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{key.employee_role}</span>
+                                            ) : (
+                                                <span style={{ color: '#cbd5e1' }}>—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
+                                                {key.status === 'available' ? 'Disponível' : 'Em Uso'}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            {key.status === 'available' ? (
+                                                <button
+                                                    className="btn btn-gold shadow-md"
+                                                    onClick={() => { setSelectedKeyId(key.id); setShowWithdrawModal(true); }}
+                                                >
+                                                    Retirar
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="btn btn-outline-navy"
+                                                    onClick={() => handleReturn(key.id)}
+                                                >
+                                                    Devolver
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredKeys.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                                            Nenhuma chave encontrada com esses termos.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+
+                {/* Mobile Cards View (Visible on Mobile Only) */}
+                <div className="md:hidden">
+                    {filteredKeys.map(key => (
+                        <div key={key.id} className="mobile-card">
+                            <div className="mobile-card-row">
+                                <span className="mobile-card-label">Chave</span>
+                                <span className="mobile-card-value text-lg text-navy">{key.name}</span>
+                            </div>
+                            <div className="mobile-card-row">
+                                <span className="mobile-card-label">Local</span>
+                                <span className="mobile-card-value">{key.room}</span>
+                            </div>
+                            <div className="mobile-card-row">
+                                <span className="mobile-card-label">Status</span>
+                                <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
+                                    {key.status === 'available' ? 'Disponível' : 'Em Uso'}
+                                </span>
+                            </div>
+
+                            {key.status === 'in_use' && (
+                                <>
+                                    <div className="mobile-card-row">
+                                        <span className="mobile-card-label">Funcionário</span>
+                                        <span className="mobile-card-value">{key.employee_name || 'Desconhecido'}</span>
+                                    </div>
+                                    <div className="mobile-card-row">
+                                        <span className="mobile-card-label">Cargo</span>
+                                        <span className="mobile-card-value text-sm">{key.employee_role || '-'}</span>
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="mobile-actions">
+                                {key.status === 'available' ? (
+                                    <button
+                                        className="btn btn-gold w-full justify-center shadow-md"
+                                        onClick={() => { setSelectedKeyId(key.id); setShowWithdrawModal(true); }}
+                                    >
+                                        Retirar Chave
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn btn-outline-navy w-full justify-center"
+                                        onClick={() => handleReturn(key.id)}
+                                    >
+                                        Devolver Chave
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {filteredKeys.length === 0 && (
+                        <div className="text-center p-8 text-gray-400">
+                            Nenhuma chave encontrada.
+                        </div>
+                    )}
+                </div>
+
+            </main>
 
             {/* Withdraw Modal */}
             {showWithdrawModal && (
                 <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Retirar Chave</h3>
+                        <h3 style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', color: 'var(--color-navy)' }}>
+                            Retirar Chave
+                        </h3>
                         <div className="form-group">
                             <label>Selecione o Funcionário</label>
                             <select
                                 value={selectedEmployeeId || ''}
                                 onChange={e => setSelectedEmployeeId(Number(e.target.value))}
+                                autoFocus
                             >
                                 <option value="">-- Selecione --</option>
                                 {employees.map(emp => (
@@ -261,39 +294,19 @@ export default function DashboardClient({
                                 ))}
                             </select>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                            <button className="btn btn-outline" onClick={() => setShowWithdrawModal(false)}>Cancelar</button>
-                            <button className="btn btn-primary" onClick={handleWithdraw} disabled={!selectedEmployeeId}>Confirmar Retirada</button>
+                        <div className="flex justify-end gap-4 mt-8 flex-col-reverse md:flex-row">
+                            <button className="btn btn-outline-navy justify-center" onClick={() => setShowWithdrawModal(false)}>
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-gold shadow-md justify-center"
+                                onClick={handleWithdraw}
+                                disabled={!selectedEmployeeId}
+                                style={{ opacity: selectedEmployeeId ? 1 : 0.5 }}
+                            >
+                                Confirmar Retirada
+                            </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-
-
-            {/* Change Password Modal */}
-            {showChangePasswordModal && (
-                <div className="modal-overlay" onClick={() => setShowChangePasswordModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Alterar Senha</h3>
-                        <form onSubmit={handleChangePassword}>
-                            <div className="form-group">
-                                <label>Senha Atual</label>
-                                <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Nova Senha</label>
-                                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Confirmar Nova Senha</label>
-                                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowChangePasswordModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Alterar</button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             )}

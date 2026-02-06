@@ -7,11 +7,13 @@ export default function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         try {
             const res = await fetch('/api/auth/login', {
@@ -25,46 +27,91 @@ export default function LoginPage() {
                 router.refresh();
             } else {
                 const data = await res.json();
-                setError(data.error === 'Invalid credentials' ? 'Credenciais inválidas' : 'Falha no login');
+                setIsLoading(false);
+                setError('Usuário ou senha incorretos');
             }
         } catch (err) {
-            setError('Ocorreu um erro');
+            setIsLoading(false);
+            setError('Falha na conexão. Tente novamente.');
         }
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f5f5f5', fontFamily: 'sans-serif' }}>
-            <form onSubmit={handleLogin} style={{ padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '300px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#333' }}>Entrar no Sistema</h2>
+        <div className="min-h-screen flex items-center justify-center bg-navy-900 px-4">
 
-                {error && <div style={{ color: 'red', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'center' }}>{error}</div>}
+            <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl mx-auto">
 
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#666' }}>Usuário</label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-                        required
-                    />
+                <div className="text-center mb-8">
+                    <h1 className="text-2xl font-bold text-navy-900 mb-2">Acesso ao Sistema</h1>
+                    <p className="text-gray-500 font-medium text-sm">Insira suas credenciais para continuar</p>
                 </div>
 
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#666' }}>Senha</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-                        required
-                    />
-                </div>
+                <form onSubmit={handleLogin} className="space-y-6">
 
-                <button type="submit" style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                    Entrar
-                </button>
-            </form>
+                    {/* Error Message */}
+                    {error && (
+                        <div className="text-center p-3 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Username Input */}
+                    <div className="space-y-2">
+                        <label className="block text-navy-900 font-medium text-sm">
+                            Usuário
+                        </label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus-ring-navy transition-all"
+                            placeholder="Digite seu usuário"
+                            required
+                            disabled={isLoading}
+                        />
+                    </div>
+
+                    {/* Password Input */}
+                    <div className="space-y-2">
+                        <label className="block text-navy-900 font-medium text-sm">
+                            Senha
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus-ring-navy transition-all"
+                            placeholder="••••••••"
+                            required
+                            disabled={isLoading}
+                        />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-4 bg-gold text-navy-900 font-bold rounded-xl hover-bg-gold-hover hover-shadow-lg transform transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                        {isLoading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-5 w-5 text-navy-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Entrando...
+                            </span>
+                        ) : (
+                            "Entrar"
+                        )}
+                    </button>
+
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-500">© {new Date().getFullYear()} Colégio São José</p>
+                    </div>
+
+                </form>
+            </div>
         </div>
     );
 }

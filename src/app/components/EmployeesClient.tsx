@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from './Navbar';
 
 type Employee = { id: number; name: string; role: string };
 
@@ -106,87 +107,85 @@ export default function EmployeesClient({
         .sort((a, b) => a.role.localeCompare(b.role));
 
     return (
-        <div className="container">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1>Funcionários</h1>
-                    <p style={{ color: '#666' }}>Gestão de equipe</p>
-                </div>
-                <button className="btn btn-outline" onClick={() => router.push('/')}>Voltar ao Dashboard</button>
-            </header>
+        <div className="flex flex-col min-h-screen">
+            <Navbar isAdmin={isAdmin} />
 
-            <div className="card">
-                <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3>Lista de Funcionários</h3>
-                        {isAdmin && (
-                            <button className="btn btn-primary" onClick={() => setShowAddEmployeeModal(true)}>+ Funcionário</button>
-                        )}
+            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
+                <div className="card w-full">
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h2 className="text-navy text-xl font-bold m-0">Lista de Funcionários</h2>
+                            {isAdmin && (
+                                <button className="btn btn-gold shadow-md" onClick={() => setShowAddEmployeeModal(true)}>+ Funcionário</button>
+                            )}
+                        </div>
+
+                        <div className="search-wrapper max-w-md relative w-full">
+                            <input
+                                type="text"
+                                placeholder="Filtrar por nome ou cargo..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    padding: '0.6rem 1rem',
+                                    paddingLeft: '2.5rem',
+                                    borderRadius: '9999px',
+                                    border: '1px solid #e2e8f0',
+                                    width: '100%',
+                                    outline: 'none',
+                                    backgroundColor: '#f8fafc'
+                                }}
+                            />
+                            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                        </div>
                     </div>
 
-                    <input
-                        type="text"
-                        placeholder="Filtrar por nome ou cargo..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            padding: '0.6rem 1rem',
-                            borderRadius: '8px',
-                            border: '1px solid #ddd',
-                            width: '100%',
-                            maxWidth: '400px',
-                            outline: 'none',
-                            marginTop: '0.5rem',
-                            fontSize: '0.95rem'
-                        }}
-                    />
-                </div>
-
-                <div className="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Cargo</th>
-                                {isAdmin && <th style={{ textAlign: 'right' }}>Ações</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredEmployees.map(emp => (
-                                <tr key={emp.id}>
-                                    <td><strong>{emp.name}</strong></td>
-                                    <td>{emp.role}</td>
-                                    {isAdmin && (
-                                        <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button
-                                                className="btn btn-outline"
-                                                onClick={() => handleEditEmployee(emp)}
-                                                style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
-                                            >
-                                                Editar
-                                            </button>
-                                            <button
-                                                className="btn btn-outline"
-                                                onClick={() => handleDelete(emp.id)}
-                                                style={{ borderColor: '#d63031', color: '#d63031', fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
-                                            >
-                                                Remover
-                                            </button>
-                                        </td>
-                                    )}
+                    <div className="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th className="text-navy">Nome</th>
+                                    <th className="text-navy">Cargo</th>
+                                    {isAdmin && <th className="text-navy" style={{ textAlign: 'right' }}>Ações</th>}
                                 </tr>
-                            ))}
-                            {filteredEmployees.length === 0 && <tr><td colSpan={isAdmin ? 3 : 2} style={{ textAlign: 'center' }}>Nenhum funcionário encontrado.</td></tr>}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredEmployees.map(emp => (
+                                    <tr key={emp.id}>
+                                        <td style={{ fontWeight: 600, color: '#334155' }}>{emp.name}</td>
+                                        <td style={{ color: '#64748b' }}>{emp.role}</td>
+                                        {isAdmin && (
+                                            <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    className="btn btn-outline-navy"
+                                                    onClick={() => handleEditEmployee(emp)}
+                                                    style={{ fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline"
+                                                    onClick={() => handleDelete(emp.id)}
+                                                    style={{ borderColor: '#ef4444', color: '#ef4444', fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}
+                                                >
+                                                    Remover
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                                {filteredEmployees.length === 0 && <tr><td colSpan={isAdmin ? 3 : 2} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum funcionário encontrado.</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </main>
 
             {/* Add Employee Modal */}
             {showAddEmployeeModal && (
                 <div className="modal-overlay" onClick={() => setShowAddEmployeeModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Novo Funcionário</h3>
+                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Novo Funcionário</h3>
                         <form onSubmit={handleAddEmployee}>
                             <div className="form-group">
                                 <label>Nome Completo</label>
@@ -197,7 +196,7 @@ export default function EmployeesClient({
                                 <input value={newEmpRole} onChange={e => setNewEmpRole(e.target.value)} placeholder="Ex: Professor" />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowAddEmployeeModal(false)}>Cancelar</button>
+                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowAddEmployeeModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Salvar</button>
                             </div>
                         </form>
@@ -208,7 +207,7 @@ export default function EmployeesClient({
             {showEditEmployeeModal && (
                 <div className="modal-overlay" onClick={() => setShowEditEmployeeModal(false)}>
                     <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3>Editar Funcionário</h3>
+                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Editar Funcionário</h3>
                         <form onSubmit={handleSaveEdit}>
                             <div className="form-group">
                                 <label>Nome Completo</label>
@@ -219,7 +218,7 @@ export default function EmployeesClient({
                                 <input value={editEmpRole} onChange={e => setEditEmpRole(e.target.value)} />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline" onClick={() => setShowEditEmployeeModal(false)}>Cancelar</button>
+                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowEditEmployeeModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Salvar Alterações</button>
                             </div>
                         </form>
