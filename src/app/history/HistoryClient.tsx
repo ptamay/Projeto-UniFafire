@@ -1,0 +1,153 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import PrintButton from '../components/PrintButton';
+
+interface HistoryItem {
+    id: number;
+    action: string;
+    timestamp: string;
+    key_name: string;
+    room: string;
+    employee_name: string;
+}
+
+interface HistoryClientProps {
+    history: HistoryItem[];
+    isAdmin: boolean;
+}
+
+export default function HistoryClient({ history, isAdmin }: HistoryClientProps) {
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const router = useRouter();
+
+    const handleClearHistory = async () => {
+        try {
+            const res = await fetch('/api/history/clear', { method: 'POST' });
+            if (res.ok) {
+                setShowClearConfirm(false);
+                router.refresh();
+                alert('Histórico limpo com sucesso.');
+            } else {
+                alert('Erro ao limpar histórico.');
+            }
+        } catch (error) {
+            console.error('Failed to clear history', error);
+            alert('Erro ao limpar histórico.');
+        }
+    };
+
+    return (
+        <div className="container">
+            <header className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div>
+                    <h1>Histórico de Movimentações</h1>
+                    <Link href="/" style={{ color: '#0070f3', textDecoration: 'none' }}>&larr; Voltar para Dashboard</Link>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {isAdmin && (
+                        <button
+                            className="btn btn-danger"
+                            onClick={() => setShowClearConfirm(true)}
+                            style={{ backgroundColor: '#ff4757', color: 'white', border: 'none' }}
+                        >
+                            Limpar Histórico
+                        </button>
+                    )}
+                    <PrintButton />
+                </div>
+            </header>
+
+            <div className="print-header" style={{ display: 'none', marginBottom: '2rem', textAlign: 'center' }}>
+                <h2>Relatório de Movimentações de Chaves</h2>
+                <p>Gerado em: {new Date().toLocaleString('pt-BR')}</p>
+            </div>
+
+            <div className="card full-width-print">
+                <style jsx global>{`
+                    @media print {
+                        .no-print, .btn, header, nav { 
+                            display: none !important; 
+                        }
+                        .print-header {
+                            display: block !important;
+                        }
+                        .card {
+                            box-shadow: none !important;
+                            border: none !important;
+                            padding: 0 !important;
+                        }
+                        .container {
+                            max-width: 100% !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
+                        body {
+                            background: white !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        table {
+                            font-size: 12px;
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                        }
+                    }
+                `}</style>
+                <div className="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Ação</th>
+                                <th>Chave</th>
+                                <th>Funcionário</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {history.map((item) => (
+                                <tr key={item.id}>
+                                    <td>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
+                                    <td>
+                                        <span className={`status-badge ${item.action === 'withdraw' ? 'status-in-use' : 'status-available'}`}>
+                                            {item.action === 'withdraw' ? 'Retirada' : 'Devolução'}
+                                        </span>
+                                    </td>
+                                    <td>{item.key_name} <small style={{ color: '#888' }}>({item.room})</small></td>
+                                    <td>{item.employee_name || '-'}</td>
+                                </tr>
+                            ))}
+                            {history.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999' }}>Nenhum histórico registrado.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Clear History Confirmation Modal */}
+            {showClearConfirm && (
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <h3>Atenção</h3>
+                        <p>Esta ação apagará todos os registros de movimentação. Deseja realmente limpar o histórico?</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button className="btn btn-outline" onClick={() => setShowClearConfirm(false)}>Cancelar</button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleClearHistory}
+                                style={{ backgroundColor: '#ff4757', color: 'white', border: 'none' }}
+                            >
+                                Confirmar Limpeza
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
