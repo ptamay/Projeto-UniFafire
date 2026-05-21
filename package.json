@@ -24,6 +24,16 @@
     "server-only": "^0.0.1",
     "zod": "^4.3.6"
   },
+  "overrides": {
+    "@babel/plugin-transform-modules-systemjs": "^7.29.4",
+    "brace-expansion": "^2.0.3",
+    "fast-uri": "^3.1.2",
+    "flatted": "^3.4.2",
+    "lodash": "^4.18.1",
+    "picomatch": "^4.0.4",
+    "postcss": "^8.5.15",
+    "serialize-javascript": "^7.0.5"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
