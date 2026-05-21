@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PrintButton from '../components/PrintButton';
-import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 
 interface HistoryItem {
     id: number;
@@ -13,16 +13,30 @@ interface HistoryItem {
     key_name: string;
     room: string;
     employee_name: string;
+    confirmed_by?: string;
 }
 
 interface HistoryClientProps {
     history: HistoryItem[];
-    isAdmin: boolean;
+    userRole: string;
+    username: string;
+    currentPage?: number;
+    totalPages?: number;
+    initialFilters?: {
+        date?: string;
+        month?: string;
+        hour?: string;
+    };
 }
 
-export default function HistoryClient({ history, isAdmin }: HistoryClientProps) {
+export default function HistoryClient({ history, userRole, username, currentPage, totalPages, initialFilters }: HistoryClientProps) {
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const router = useRouter();
+    
+    // Initialize filters from props
+    const [dateFilter, setDateFilter] = useState(initialFilters?.date || '');
+    const [monthFilter, setMonthFilter] = useState(initialFilters?.month || '');
+    const [hourFilter, setHourFilter] = useState(initialFilters?.hour || '');
 
     const handleClearHistory = async () => {
         try {
@@ -40,13 +54,35 @@ export default function HistoryClient({ history, isAdmin }: HistoryClientProps) 
         }
     };
 
+    const updateFilters = (newFilters: { date?: string, month?: string, hour?: string }) => {
+        const params = new URLSearchParams(window.location.search);
+        if (newFilters.date !== undefined) {
+            if (newFilters.date) params.set('date', newFilters.date); else params.delete('date');
+            params.delete('month'); // Mutual exclusivity for clarity
+            setMonthFilter('');
+            setDateFilter(newFilters.date);
+        }
+        if (newFilters.month !== undefined) {
+            if (newFilters.month) params.set('month', newFilters.month); else params.delete('month');
+            params.delete('date');
+            setDateFilter('');
+            setMonthFilter(newFilters.month);
+        }
+        if (newFilters.hour !== undefined) {
+            if (newFilters.hour) params.set('hour', newFilters.hour); else params.delete('hour');
+            setHourFilter(newFilters.hour);
+        }
+        params.set('page', '1');
+        router.push(`/history?${params.toString()}`);
+    };
+
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="page-wrapper">
             <div className="no-print">
-                <Navbar isAdmin={isAdmin} />
+                <Sidebar userRole={userRole} username={username} />
             </div>
 
-            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
+            <main className="main-content animate-fade">
 
                 {/* Print Header (Only visible when printing) */}
                 <div className="print-header" style={{ display: 'none', marginBottom: '2rem', textAlign: 'center' }}>
@@ -90,46 +126,119 @@ export default function HistoryClient({ history, isAdmin }: HistoryClientProps) 
                         }
                     `}</style>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }} className="no-print">
-                        <h2 className="text-navy text-xl font-bold m-0">Histórico de Movimentações</h2>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            {isAdmin && (
-                                <button
-                                    className="btn btn-danger"
-                                    onClick={() => setShowClearConfirm(true)}
-                                    style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', fontSize: '0.9rem' }}
+                    <div className="page-header mb-6 no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <h2 className="page-title m-0">Histórico de Movimentações</h2>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
+                                    <button
+                                        className="btn btn-danger"
+                                        onClick={() => setShowClearConfirm(true)}
+                                        style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', fontSize: '0.9rem' }}
+                                    >
+                                        Limpar Histórico
+                                    </button>
+                                )}
+                                <PrintButton />
+                            </div>
+                        </div>
+
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+                            gap: '0.75rem', 
+                            width: '100%',
+                            background: 'rgba(255,255,255,0.02)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--border)'
+                        }}>
+                            <div className="input-group">
+                                <label className="input-label">Filtrar Mês</label>
+                                <input 
+                                    type="month" 
+                                    className="input" 
+                                    value={monthFilter}
+                                    onChange={(e) => updateFilters({ month: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Data Específica</label>
+                                <input 
+                                    type="date" 
+                                    className="input" 
+                                    value={dateFilter}
+                                    onChange={(e) => updateFilters({ date: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Hora (0-23)</label>
+                                <select 
+                                    className="input" 
+                                    value={hourFilter}
+                                    onChange={(e) => updateFilters({ hour: e.target.value })}
                                 >
-                                    Limpar Histórico
+                                    <option value="">Todas</option>
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                        <option key={i} value={i.toString().padStart(2, '0')}>
+                                            {i.toString().padStart(2, '0')}:00
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                <button 
+                                    className="btn btn-ghost btn-sm w-full" 
+                                    onClick={() => {
+                                        setDateFilter('');
+                                        setMonthFilter('');
+                                        setHourFilter('');
+                                        router.push('/history');
+                                    }}
+                                >
+                                    Limpar Filtros
                                 </button>
-                            )}
-                            <PrintButton />
+                            </div>
                         </div>
                     </div>
 
                     <div className="table-wrapper">
-                        <table>
+                        <table className="table">
                             <thead>
                                 <tr>
-                                    <th className="text-navy">Data/Hora</th>
-                                    <th className="text-navy">Ação</th>
-                                    <th className="text-navy">Chave</th>
-                                    <th className="text-navy">Funcionário</th>
+                                    <th>Data/Hora</th>
+                                    <th>Ação</th>
+                                    <th>Chave</th>
+                                    <th>Funcionário</th>
+                                    <th>Confirmado por</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {history.map((item) => (
                                     <tr key={item.id}>
-                                        <td style={{ color: '#334155' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
+                                        <td style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
                                         <td>
-                                            <span className={`status-badge ${item.action === 'withdraw' ? 'status-in-use' : 'status-available'}`}>
+                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : 'status-available'}`}>
                                                 {item.action === 'withdraw' ? 'Retirada' : 'Devolução'}
                                             </span>
                                         </td>
-                                        <td><strong>{item.key_name}</strong> <small style={{ color: '#64748b' }}>({item.room})</small></td>
+                                        <td><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>
                                         <td>{item.employee_name || '-'}</td>
+                                        <td>
+                                            {item.confirmed_by ? (
+                                                <span className="badge badge-porteiro" style={{ fontSize: '0.7rem' }}>
+                                                    {item.confirmed_by}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted" style={{ fontSize: '0.75rem', fontStyle: 'italic' }}>Sistêmico</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
-                                {history.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum histórico registrado.</td></tr>}
+                                {history.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum histórico registrado.</td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -138,17 +247,15 @@ export default function HistoryClient({ history, isAdmin }: HistoryClientProps) 
 
             {/* Clear History Confirmation Modal */}
             {showClearConfirm && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <h3 className="text-navy" style={{ marginBottom: '1rem' }}>Atenção</h3>
-                        <p>Esta ação apagará todos os registros de movimentação. Deseja realmente limpar o histórico?</p>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                            <button className="btn btn-outline-navy" onClick={() => setShowClearConfirm(false)}>Cancelar</button>
-                            <button
-                                className="btn btn-danger"
-                                onClick={handleClearHistory}
-                                style={{ backgroundColor: '#ef4444', color: 'white', border: 'none' }}
-                            >
+                <div className="modal-overlay" onClick={() => setShowClearConfirm(false)}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Atenção</h3>
+                        </div>
+                        <p style={{ color: 'var(--text-secondary)' }}>Esta ação apagará todos os registros de movimentação. Deseja realmente limpar o histórico?</p>
+                        <div className="action-row mt-6">
+                            <button className="btn btn-ghost" onClick={() => setShowClearConfirm(false)}>Cancelar</button>
+                            <button className="btn btn-danger" onClick={handleClearHistory}>
                                 Confirmar Limpeza
                             </button>
                         </div>

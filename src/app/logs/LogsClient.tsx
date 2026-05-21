@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 
 // Note: Logs are usually Admin only. The page loader should handle access control or redirect.
 // We'll pass isAdmin as a prop if possible or assume LogsClient is protected.
@@ -19,10 +19,13 @@ interface LogItem {
     // We should probably know if the viewer is admin to show this page properly, but let's assume valid access for now and pass isAdmin=true since only admins see the link.
 }
 
-export default function LogsClient() {
+export default function LogsClient({ userRole, username }: { userRole: string, username: string }) {
     const [logs, setLogs] = useState<LogItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
+    const [monthFilter, setMonthFilter] = useState('');
+    const [hourFilter, setHourFilter] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const router = useRouter();
@@ -33,7 +36,10 @@ export default function LogsClient() {
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: '50',
-                search: searchTerm
+                search: searchTerm,
+                date: dateFilter,
+                month: monthFilter,
+                hour: hourFilter
             });
             const res = await fetch(`/api/logs?${params.toString()}`);
             if (res.ok) {
@@ -57,73 +63,130 @@ export default function LogsClient() {
             fetchLogs();
         }, 300); // Debounce search
         return () => clearTimeout(timer);
-    }, [page, searchTerm]);
+    }, [page, searchTerm, dateFilter, monthFilter, hourFilter]);
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Navbar isAdmin={true} /> {/* Logs are generally Admin only */}
+        <div className="page-wrapper">
+            <Sidebar userRole={userRole} username={username} /> {/* Logs are generally Admin/Gestor only */}
 
-            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
+            <main className="main-content animate-fade">
                 <div className="card w-full">
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h2 className="text-navy text-xl font-bold m-0">Log de Ações</h2>
+                    <div className="page-header mb-6" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <h2 className="page-title m-0">Log de Ações</h2>
                         </div>
+                        
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                            gap: '0.75rem', 
+                            width: '100%',
+                            background: 'rgba(255,255,255,0.02)',
+                            padding: '1rem',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--border)'
+                        }}>
+                            <div className="input-group">
+                                <label className="input-label">Buscar</label>
+                                <div className="search-bar" style={{ maxWidth: '100%' }}>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Usuário, ação..."
+                                        value={searchTerm}
+                                        onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                    />
+                                    <span className="search-icon">🔍</span>
+                                </div>
+                            </div>
 
-                        <div className="search-wrapper max-w-md relative w-full">
-                            <input
-                                type="text"
-                                placeholder="Buscar por usuário, ação ou alvo..."
-                                value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                style={{
-                                    padding: '0.6rem 1rem',
-                                    paddingLeft: '2.5rem',
-                                    borderRadius: '9999px',
-                                    border: '1px solid #e2e8f0',
-                                    width: '100%',
-                                    outline: 'none',
-                                    backgroundColor: '#f8fafc'
-                                }}
-                            />
-                            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>🔍</span>
+                            <div className="input-group">
+                                <label className="input-label">Mês</label>
+                                <input 
+                                    type="month" 
+                                    className="input" 
+                                    value={monthFilter}
+                                    onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); setPage(1); }}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Data Específica</label>
+                                <input 
+                                    type="date" 
+                                    className="input" 
+                                    value={dateFilter}
+                                    onChange={(e) => { setDateFilter(e.target.value); setMonthFilter(''); setPage(1); }}
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Hora (0-23)</label>
+                                <select 
+                                    className="input" 
+                                    value={hourFilter}
+                                    onChange={(e) => { setHourFilter(e.target.value); setPage(1); }}
+                                >
+                                    <option value="">Todas</option>
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                        <option key={i} value={i.toString().padStart(2, '0')}>
+                                            {i.toString().padStart(2, '0')}:00
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                <button 
+                                    className="btn btn-ghost btn-sm w-full" 
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setDateFilter('');
+                                        setMonthFilter('');
+                                        setHourFilter('');
+                                        setPage(1);
+                                    }}
+                                >
+                                    Limpar Filtros
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <div className="table-wrapper">
-                        <table>
+                        <table className="table">
                             <thead>
                                 <tr>
-                                    <th className="text-navy">Data/Hora</th>
-                                    <th className="text-navy">Usuário Responsável</th>
-                                    <th className="text-navy">Ação Realizada</th>
-                                    <th className="text-navy">Alvo da Ação</th>
-                                    <th className="text-navy">Detalhes</th>
+                                    <th>Data/Hora</th>
+                                    <th>Usuário Responsável</th>
+                                    <th>Ação Realizada</th>
+                                    <th>Alvo da Ação</th>
+                                    <th>Detalhes</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Carregando...</td></tr>
+                                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Carregando...</td></tr>
                                 ) : logs.length > 0 ? (
                                     logs.map(log => (
                                         <tr key={log.id}>
-                                            <td style={{ color: '#334155' }}>{new Date(log.timestamp).toLocaleString('pt-BR')}</td>
+                                            <td style={{ color: 'var(--text-primary)' }}>{new Date(log.timestamp).toLocaleString('pt-BR')}</td>
                                             <td><strong>{log.username}</strong></td>
                                             <td>
                                                 <span style={{
                                                     fontSize: '0.85rem',
                                                     padding: '2px 8px',
                                                     borderRadius: '12px',
-                                                    background: '#f1f5f9',
-                                                    color: '#475569',
+                                                    background: 'var(--bg-elevated)',
+                                                    color: 'var(--text-secondary)',
                                                     fontWeight: 500,
-                                                    border: '1px solid #e2e8f0'
+                                                    border: '1px solid var(--border)'
                                                 }}>
                                                     {log.action}
                                                 </span>
                                             </td>
                                             <td>{log.target || '-'}</td>
-                                            <td style={{ color: '#64748b', fontSize: '0.9rem' }}>{log.details || '-'}</td>
+                                            <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{log.details || '-'}</td>
                                         </tr>
                                     ))
                                 ) : (
@@ -133,18 +196,18 @@ export default function LogsClient() {
                         </table>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
                         <button
-                            className="btn btn-outline-navy"
+                            className="btn btn-ghost"
                             disabled={page === 1}
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             style={{ opacity: page === 1 ? 0.5 : 1 }}
                         >
                             Anterior
                         </button>
-                        <span style={{ color: '#64748b' }}>Página {page} de {totalPages}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Página {page} de {totalPages}</span>
                         <button
-                            className="btn btn-outline-navy"
+                            className="btn btn-ghost"
                             disabled={page >= totalPages}
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             style={{ opacity: page >= totalPages ? 0.5 : 1 }}

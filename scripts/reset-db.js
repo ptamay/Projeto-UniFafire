@@ -45,6 +45,7 @@ db.exec(`
     room TEXT,
     status TEXT DEFAULT 'available', -- 'available', 'in_use'
     employee_id INTEGER,
+    active INTEGER DEFAULT 1,
     FOREIGN KEY(employee_id) REFERENCES employees(id)
   );
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { verifySession } from '@/lib/session';
 
 export async function GET() {
     try {
@@ -10,7 +11,10 @@ export async function GET() {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
-        const session = JSON.parse(sessionCookie.value);
+        const session = await verifySession(sessionCookie.value);
+        if (!session) {
+            return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+        }
 
         // Return safe user info
         return NextResponse.json({

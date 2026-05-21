@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { verifySession } from '@/lib/session';
 
 export async function POST(request: Request) {
     try {
@@ -10,8 +11,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const session = JSON.parse(sessionCookie.value);
-        if (session.role !== 'ADMIN') {
+        const session = await verifySession(sessionCookie.value);
+        if (!session || session.role !== 'ADMIN') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
         }
 
         // Integrity Check: Do not allow demotion if user is the last ADMIN
-        if (targetUser.role === 'ADMIN' && newRole === 'USER') {
+        if (targetUser.role === 'ADMIN' && newRole === 'PORTEIRO') {
             const adminCountStmt = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'");
             const result = adminCountStmt.get() as any;
             if (result.count <= 1) {

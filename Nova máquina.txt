@@ -1,0 +1,36 @@
+Preparação (Nesta Máquina)
+Você deve copiar a pasta E:\Projeto Sao Jose inteira para um Pen Drive.
+
+IMPORTANT
+
+Certifique-se de que a pasta node_modules e a pasta .next (que eu acabei de gerar) sejam copiadas. Elas contêm todas as bibliotecas e o sistema pronto, o que evita a necessidade de internet na outra máquina.
+
+2. Instalação do Node.js na Máquina Offline
+A máquina de destino precisa ter o Node.js instalado.
+
+Baixe o instalador oficial (.msi) do Node.js (recomendo a versão 20 LTS ou 22 LTS) em uma máquina com internet.
+Leve o instalador via Pen Drive e instale na máquina offline.
+3. Instalação do PM2 Offline (Usando o seu instalador)
+Notei que você tem o arquivo pm2-installer-main.zip. Ele é um pacote especial para instalar o PM2 como um serviço do Windows sem internet.
+
+Extraia o conteúdo do pm2-installer-main.zip na máquina de destino.
+Abra o PowerShell como Administrador.
+Entre na pasta extraída e execute os comandos conforme o seu guia pm2.txt:
+powershell
+npm run configure
+npm run configure-policy
+npm run setup
+Isso instalará o PM2 e o configurará para iniciar junto com o Windows.
+
+4. Iniciando o Sistema na Máquina Offline
+Após copiar a pasta do projeto para a nova máquina:
+
+Abra a pasta do projeto no terminal (como Administrador).
+Verifique se o banco de dados está ok: node scripts/init-db.js.
+Inicie o sistema com: pm2 start ecosystem.config.js.
+Salve a configuração para que ele inicie sozinho ao ligar o PC: pm2 save.
+Dicas Importantes para o modo Offline:
+Não use npm install: Na máquina offline, esse comando falhará. Como você já está levando a pasta node_modules, as bibliotecas já estarão lá.
+Navegador: O sistema continuará acessível em http://localhost:3000.
+Arquivos .bat: Seus arquivos Ligar_Sistema.bat e Desligar_Sistema.bat continuarão funcionando perfeitamente, desde que o caminho da pasta (E:\Projeto Sao Jose) seja o mesmo ou você atualize os caminhos dentro dos arquivos .bat.
+Se o caminho da pasta mudar (por exemplo, de E: para D:), abra o arquivo ecosystem.config.js e os .bat e altere os caminhos para o novo local

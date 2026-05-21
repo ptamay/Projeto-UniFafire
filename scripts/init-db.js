@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 const path = require('path');
 
-const dbPath = path.join(process.cwd(), 'keys.db');
+const dbPath = path.resolve(process.cwd(), 'keys.db');
 const db = new Database(dbPath);
 
 console.log('Initializing database at:', dbPath);
@@ -12,13 +12,15 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password_hash TEXT,
-    role TEXT DEFAULT 'USER'
+    role TEXT DEFAULT 'USER',
+    active INTEGER DEFAULT 1
   );
   
   CREATE TABLE IF NOT EXISTS employees (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    role TEXT
+    role TEXT,
+    active INTEGER DEFAULT 1
   );
 
   CREATE TABLE IF NOT EXISTS keys (
@@ -27,6 +29,7 @@ db.exec(`
     room TEXT,
     status TEXT DEFAULT 'available', -- 'available', 'in_use'
     employee_id INTEGER,
+    active INTEGER DEFAULT 1,
     FOREIGN KEY(employee_id) REFERENCES employees(id)
   );
 

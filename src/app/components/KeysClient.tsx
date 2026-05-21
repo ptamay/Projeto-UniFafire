@@ -2,26 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from './Navbar';
+import Sidebar from './Sidebar';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string };
 
 export default function KeysClient({
     initialKeys = [],
-    isAdmin
+    userRole,
+    username
 }: {
     initialKeys: Key[],
-    isAdmin: boolean
+    userRole: string,
+    username: string
 }) {
     const [keys, setKeys] = useState<Key[]>(initialKeys);
     const router = useRouter();
 
-    // Redirect if not admin
+    // Redirect if not admin or gestor or porteiro
     useEffect(() => {
-        if (!isAdmin) {
+        if (userRole !== 'ADMIN' && userRole !== 'GESTOR' && userRole !== 'PORTEIRO') {
             router.push('/');
         }
-    }, [isAdmin, router]);
+    }, [userRole, router]);
 
     // Add Modal States
     const [showAddKeyModal, setShowAddKeyModal] = useState(false);
@@ -115,52 +117,50 @@ export default function KeysClient({
         }
     };
 
-    if (!isAdmin) return null; // Avoid flicker
+    if (userRole !== 'ADMIN' && userRole !== 'GESTOR' && userRole !== 'PORTEIRO') return null; // Avoid flicker
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Navbar isAdmin={isAdmin} />
+        <div className="page-wrapper">
+            <Sidebar userRole={userRole} username={username} />
 
             {/* Main Content */}
-            <main className="container w-full max-w-7xl mx-auto min-h-content flex-1 mt-4 md:mt-8">
+            <main className="main-content animate-fade">
                 <div className="card w-full">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h2 className="text-navy text-xl font-bold m-0">Gerenciar Chaves</h2>
-                        <button className="btn btn-gold shadow-md" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
+                    <div className="page-header mb-6">
+                        <h2 className="page-title m-0">Gerenciar Chaves</h2>
+                        <button className="btn btn-green" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
                     </div>
 
                     <div className="table-wrapper">
-                        <table>
+                        <table className="table">
                             <thead>
                                 <tr>
-                                    <th className="text-navy">Nome</th>
-                                    <th className="text-navy">Sala/Local</th>
-                                    <th className="text-navy">Status</th>
-                                    <th className="text-navy" style={{ textAlign: 'right' }}>Ações</th>
+                                    <th>Nome</th>
+                                    <th>Sala/Local</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {keys.map(key => (
                                     <tr key={key.id}>
-                                        <td style={{ fontWeight: 600, color: '#334155' }}>{key.name}</td>
-                                        <td style={{ color: '#64748b' }}>{key.room}</td>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{key.name}</td>
+                                        <td style={{ color: 'var(--text-secondary)' }}>{key.room}</td>
                                         <td>
-                                            <span className={`status-badge ${key.status === 'available' ? 'status-available' : 'status-in-use'}`}>
+                                            <span className={`status-tag ${key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
                                                 {key.status === 'available' ? 'Disponível' : 'Em Uso'}
                                             </span>
                                         </td>
                                         <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                             <button
-                                                className="btn btn-outline-navy"
+                                                className="btn btn-ghost btn-sm"
                                                 onClick={() => handleEditKey(key)}
-                                                style={{ fontSize: '0.9rem', padding: '0.4rem 0.8rem' }}
                                             >
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-outline"
+                                                className="btn btn-danger btn-sm"
                                                 onClick={() => handleDeleteKey(key)}
-                                                style={{ borderColor: '#d63031', color: '#d63031', padding: '0.4rem 0.8rem' }}
                                             >
                                                 Remover
                                             </button>
@@ -177,20 +177,22 @@ export default function KeysClient({
             {/* Add Key Modal */}
             {showAddKeyModal && (
                 <div className="modal-overlay" onClick={() => setShowAddKeyModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Nova Chave</h3>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Nova Chave</h3>
+                        </div>
                         <form onSubmit={handleAddKey}>
-                            <div className="form-group">
-                                <label>Nome da Chave</label>
-                                <input value={newKeyName} onChange={e => setNewKeyName(e.target.value)} required placeholder="Ex: Chave 101" />
+                            <div className="input-group mb-4">
+                                <label className="input-label">Nome da Chave</label>
+                                <input className="input" value={newKeyName} onChange={e => setNewKeyName(e.target.value)} required placeholder="Ex: Chave 101" />
                             </div>
-                            <div className="form-group">
-                                <label>Sala/Local</label>
-                                <input value={newKeyRoom} onChange={e => setNewKeyRoom(e.target.value)} placeholder="Ex: Laboratório Informática" />
+                            <div className="input-group mb-4">
+                                <label className="input-label">Sala/Local</label>
+                                <input className="input" value={newKeyRoom} onChange={e => setNewKeyRoom(e.target.value)} placeholder="Ex: Laboratório Informática" />
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowAddKeyModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar</button>
+                            <div className="action-row mt-6">
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowAddKeyModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-green">Salvar</button>
                             </div>
                         </form>
                     </div>
@@ -200,12 +202,15 @@ export default function KeysClient({
             {/* Edit Key Modal */}
             {showEditKeyModal && (
                 <div className="modal-overlay" onClick={() => setShowEditKeyModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-navy" style={{ marginBottom: '1.5rem' }}>Editar Chave</h3>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Editar Chave</h3>
+                        </div>
                         <form onSubmit={handleSaveEdit}>
-                            <div className="form-group">
-                                <label>Nome da Chave</label>
+                            <div className="input-group mb-4">
+                                <label className="input-label">Nome da Chave</label>
                                 <input
+                                    className="input"
                                     value={editKeyName}
                                     onChange={e => setEditKeyName(e.target.value)}
                                     required
@@ -213,13 +218,13 @@ export default function KeysClient({
                                     title={keys.find(k => k.id === editingKeyId)?.status === 'in_use' ? "Não é possível editar nome de chave em uso" : ""}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Sala/Local</label>
-                                <input value={editKeyRoom} onChange={e => setEditKeyRoom(e.target.value)} />
+                            <div className="input-group mb-4">
+                                <label className="input-label">Sala/Local</label>
+                                <input className="input" value={editKeyRoom} onChange={e => setEditKeyRoom(e.target.value)} />
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="button" className="btn btn-outline-navy" onClick={() => setShowEditKeyModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Salvar Alterações</button>
+                            <div className="action-row mt-6">
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowEditKeyModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-green">Salvar Alterações</button>
                             </div>
                         </form>
                     </div>

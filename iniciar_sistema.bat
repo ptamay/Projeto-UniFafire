@@ -1,41 +1,41 @@
 @echo off
+title Servidor de Desenvolvimento UniFAFIRE
 echo ===================================================
-echo   INICIANDO SISTEMA PROJETO SAO JOSE
+echo   INICIANDO SISTEMA UNIFAFIRE (MODO DEV)
 echo ===================================================
 
 cd /d "%~dp0"
 
+:: Tentar pegar o IP local usando PowerShell
+for /f "tokens=*" %%a in ('powershell -Command "Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike '*Loopback*' -and $_.IPv4Address -notlike '169.254.*' } | Select-Object -ExpandProperty IPv4Address -First 1"') do set LOCAL_IP=%%a
+
+if "%LOCAL_IP%"=="" set LOCAL_IP=localhost
+
 echo.
-echo [1/3] Verificando dependencias...
+echo [1/4] Verificando dependencias...
 if not exist "node_modules" (
     echo     Dependencias nao encontradas. Instalando...
     call npm install
-    if %errorlevel% neq 0 (
-        echo     ERRO: Falha ao instalar dependencias.
-        pause
-        exit /b %errorlevel%
-    )
-    echo     Dependencias instaladas com sucesso.
 ) else (
-    echo     Dependencias ja instaladas.
+    echo     Dependencias prontas.
 )
 
 echo.
-echo [2/3] Limpando cache do Turbopack (.next)...
-if exist ".next" (
-    rmdir /s /q ".next"
-    echo     Cache limpo.
-) else (
-    echo     Cache ja estava limpo.
-)
+echo [2/4] Limpando cache...
+if exist ".next" rmdir /s /q ".next"
 
 echo.
-echo [3/4] Verificando banco de dados...
+echo [3/4] Inicializando Banco de Dados...
 call node scripts/init-db.js
 
 echo.
-echo [4/4] Iniciando servidor...
-echo     O navegador sera aberto em alguns instantes...
+echo [4/4] Iniciando Servidor...
+echo.
+echo ---------------------------------------------------
+echo ACESSO LOCAL:   http://localhost:3000
+echo ACESSO NA REDE:  http://%LOCAL_IP%:3000
+echo ---------------------------------------------------
+echo.
 
 start "" "http://localhost:3000"
-call npm run dev -- --turbo
+call npm run dev

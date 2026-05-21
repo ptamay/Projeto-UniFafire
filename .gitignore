@@ -43,3 +43,12 @@ next-env.d.ts
 # database
 keys.db
 keys.db-journal
+database.sqlite
+
+# backups, logs, temp and zip files
+/backups/
+/logs/
+/tmp/
+/scratch/
+*.zip
+tmp-test.txt

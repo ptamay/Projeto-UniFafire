@@ -2,15 +2,17 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { verifySession } from '@/lib/session';
 
-export async function POST(request: Request) {
+export async function DELETE(request: Request) {
     try {
         const sessionCookie = (await cookies()).get('session');
         if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         let session;
         try {
-            session = JSON.parse(sessionCookie.value);
+            session = await verifySession(sessionCookie.value);
+            if (!session) throw new Error();
         } catch {
             return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
         }

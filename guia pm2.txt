@@ -1,0 +1,27 @@
+Copy the entire pm2-installer directory onto the target machine, then run:
+
+npm run setup
+
+
+On Windows, the setup script assumes you have already configured npm to use prefix and cache directories in a location accessible to the Local Service user. If not, it will issue a warning and ask if you're sure you'd like to proceed. To set up npm automatically, run configure first:
+
+npm run configure
+npm run setup
+
+
+
+Instalar o Windows
+Existem alguns desafios adicionais ao instalar em uma máquina Windows nova. O npm o diretório global não é acessível a outros usuários por padrão, o que significa que o Local Service o usuário não conseguirá localizar o pm2 executável. Além disso, se a política de execução do PowerShell da máquina for Undefined ou Restricted, invocando pm2 no PowerShell falhará - mesmo que o script de configuração seja desbloqueado pm2.ps1.
+
+pm2-installer inclui dois scripts adicionais para corrigir automaticamente os problemas acima. Invocando npm run configure criará o C:\ProgramData\npm\, e definir npm usar prefix e cache locais nesse diretório. Correndo npm run configure-policy verifica a política de execução do PowerShell da máquina e se é qualquer uma delas undefined ou Restricted, atualiza-o para RemoteSigned.
+
+Abra um terminal elevado (por exemplo, clique com o botão direito e selecione "Executar como administrador") e execute os seguintes comandos primeiro:
+
+npm run configure
+npm run configure-policy
+Então, corra npm run setup para instalar o serviço pm2.
+
+Contexto adicional para instalações do Windows
+O pm2 o serviço é executado como o Local Service usuário. Para interagir com pm2, você precisa usar um terminal elevado (por exemplo, clique com o botão direito e selecione "Executar como administrador") antes de executar qualquer comando que faça interface com o serviço, por exemplo pm2 list.
+Se você atualizar o node e o npm, certifique-se de reconfigurar manualmente suas instalações do npm e do node ou executar npm run configure de novo.
+Atualmente, este projeto não oferece suporte a nvm para Windows. Requer uma instalação de nó padrão.

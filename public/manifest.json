@@ -1,0 +1,9 @@
+{
+  "name": "UniFAFIRE — Gestão de Chaves",
+  "short_name": "UniFAFIRE",
+  "description": "Sistema Institucional de Gestão de Chaves — Centro Universitário Frassinetti do Recife",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#060e2a",
+  "theme_color": "#1d8046"
+}

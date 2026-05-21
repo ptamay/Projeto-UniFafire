@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    // Silencing Turbopack/Webpack conflict warning
+  },
+  // As per suggestion: setting empty turbopack config
+  // Note: Depending on exact Next 16 schema, it might be in experimental or top level.
+  // The error said "setting an empty turbopack config in your Next config file (e.g. `turbopack: {}`)"
+  turbopack: {}
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

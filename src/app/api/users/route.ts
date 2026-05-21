@@ -3,11 +3,18 @@ import db from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { verifySession } from '@/lib/session';
+import { UserSchema } from '@/lib/schemas';
 
 // Get all users
 export async function GET() {
     try {
-        const users = db.prepare('SELECT id, username, role FROM users').all();
+        const sessionCookie = (await cookies()).get('session');
+        if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await verifySession(sessionCookie.value);
+        if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR' && session.role !== 'PORTEIRO')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+        const users = db.prepare('SELECT id, username, full_name, matricula, phone, role FROM users WHERE active = 1').all();
         return NextResponse.json(users);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -18,39 +25,60 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const sessionCookie = (await cookies()).get('session');
-        let currentUser = null;
-        if (sessionCookie) {
-            try { currentUser = JSON.parse(sessionCookie.value); } catch { }
+        if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const currentUser = await verifySession(sessionCookie.value);
+        if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'GESTOR')) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await request.json();
-        const { username, password } = body;
+        const parseResult = UserSchema.safeParse(body);
+        if (!parseResult.success) {
+            return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Dados inválidos' }, { status: 400 });
+        }
+        
+        const { username, password, role, full_name, matricula, phone } = parseResult.data;
 
-        if (!username || !password) {
-            return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+        let finalPassword = password;
+        if (!finalPassword) {
+            const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'default_reset_password'").get() as { value: string } | undefined;
+            finalPassword = settingsRow ? settingsRow.value : 'unifafire123';
         }
 
-        const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(username) as any;
         if (existing) {
-            return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
+            if (existing.active === 1) {
+                return NextResponse.json({ error: 'Este usuário já está cadastrado e ativo' }, { status: 400 });
+            } else {
+                // Reactivate inactive user
+                const hash = await bcrypt.hash(finalPassword, 10);
+                db.prepare('UPDATE users SET active = 1, password_hash = ?, role = ?, full_name = ?, matricula = ?, phone = ?, requires_password_change = 1 WHERE id = ?')
+                    .run(hash, role, full_name || null, matricula || null, phone || null, existing.id);
+
+                logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', username, 'User reactivated with new data');
+
+                return NextResponse.json({
+                    id: existing.id, username, role,
+                    message: 'Usuário reativado com sucesso',
+                    reactivated: true
+                });
+            }
         }
 
-        const hash = await bcrypt.hash(password, 10);
-        const stmt = db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)');
-        const info = stmt.run(username, hash, 'USER');
+        const hash = await bcrypt.hash(finalPassword, 10);
+        const info = db.prepare('INSERT INTO users (username, password_hash, role, full_name, matricula, phone, requires_password_change) VALUES (?, ?, ?, ?, ?, ?, 1)')
+            .run(username, hash, role, full_name || null, matricula || null, phone || null);
 
-        if (currentUser) {
-            logAction(currentUser.id, currentUser.username, 'CREATE_USER', username, `New user created`);
-        }
+        logAction(currentUser.id, currentUser.username, 'CREATE_USER', username, `New user created with role: ${role}`);
 
-        return NextResponse.json({ id: info.lastInsertRowid, username, role: 'USER' });
+        return NextResponse.json({ id: info.lastInsertRowid, username, role, full_name, matricula });
     } catch (error) {
         console.error('Create user error:', error);
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 }
 
-// Delete user
+// Delete user (soft delete)
 export async function DELETE(request: Request) {
     try {
         const body = await request.json();
@@ -58,50 +86,64 @@ export async function DELETE(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-        // Check current session
         const sessionCookie = (await cookies()).get('session');
         if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        let currentUserId;
-        let currentUsername;
-        try {
-            const session = JSON.parse(sessionCookie.value);
-            currentUserId = session.id;
-            currentUsername = session.username;
-        } catch (e) {
-            return NextResponse.json({ error: 'Invalid session format' }, { status: 401 });
-        }
+        const session = await verifySession(sessionCookie.value);
+        if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        if (id === currentUserId) {
+        if (id === session.id) {
             return NextResponse.json({ error: 'Você não pode excluir a si mesmo.' }, { status: 403 });
         }
 
-        const targetUserStmt = db.prepare('SELECT * FROM users WHERE id = ?');
-        const targetUser = targetUserStmt.get(id) as any;
-
+        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
         if (targetUser.role === 'ADMIN') {
-            const adminCountStmt = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'");
-            const result = adminCountStmt.get() as any;
+            const result = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'").get() as any;
             if (result.count <= 1) {
                 return NextResponse.json({ error: 'Não é possível excluir o único administrador.' }, { status: 403 });
             }
         }
 
-        const stmt = db.prepare('DELETE FROM users WHERE id = ?');
-        const info = stmt.run(id);
-
+        const info = db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(id);
         if (info.changes === 0) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Action Log
-        logAction(currentUserId, currentUsername, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
+        logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Delete user error:', error);
         return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
+    }
+}
+
+// Update user info (PUT)
+export async function PUT(request: Request) {
+    try {
+        const sessionCookie = (await cookies()).get('session');
+        if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await verifySession(sessionCookie.value);
+        if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+        const body = await request.json();
+        const { id, full_name, matricula, phone, role } = body;
+
+        if (!id) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+
+        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
+        if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+
+        db.prepare('UPDATE users SET full_name = ?, matricula = ?, phone = ?, role = ? WHERE id = ?')
+            .run(full_name || null, matricula || null, phone || null, role || targetUser.role, id);
+
+        logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error('Update user error:', error);
+        return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 }
