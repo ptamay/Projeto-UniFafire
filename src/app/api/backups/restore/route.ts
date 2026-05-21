@@ -14,13 +14,24 @@ export async function POST(request: Request) {
 
         const body = await request.json();
         const filename = body.filename;
-        if (!filename || !filename.startsWith('keys_backup_') || !filename.endsWith('.db')) {
+        if (!filename || typeof filename !== 'string') {
+            return NextResponse.json({ error: 'Nome de arquivo inválido' }, { status: 400 });
+        }
+
+        const validBackupName = /^keys_backup_[A-Za-z0-9._-]+\.db$/.test(filename);
+        if (!validBackupName || path.basename(filename) !== filename) {
             return NextResponse.json({ error: 'Nome de arquivo inválido' }, { status: 400 });
         }
 
         const backupsDir = path.resolve(process.cwd(), 'backups');
         const backupPath = path.resolve(backupsDir, filename);
         const dbPath = path.resolve(process.cwd(), 'keys.db');
+
+        // Impedir Path Traversal
+        const relativeBackupPath = path.relative(backupsDir, backupPath);
+        if (relativeBackupPath.startsWith('..') || path.isAbsolute(relativeBackupPath)) {
+            return NextResponse.json({ error: 'Nome de arquivo inválido' }, { status: 400 });
+        }
 
         if (!fs.existsSync(backupPath)) {
             return NextResponse.json({ error: 'Arquivo de backup não encontrado' }, { status: 404 });
