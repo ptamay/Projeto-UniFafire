@@ -35,6 +35,13 @@
 > Formato: TASK-NNN → REQ vinculado. Critérios BDD detalhados serão gerados no
 > `tasks-[sprint].md` (Fase 9). Fluxo TDD: red → green → refactor.
 
+> ⚠️ **Reconciliação 2026-07-02 (ADR-002):** as Sprints 4–6 abaixo **não foram executadas
+> conforme planejado**. O agente de sprint entregou escopo diferente, sem Change Request
+> (registrado retroativamente como REQ-017–020 no spec.md v1.2), reutilizando os números
+> TASK-013–021 com outro significado nos `tasks-sprint-4/5/6.md`. As tasks planejadas e
+> não entregues foram reagrupadas na **Sprint 7 — Dívida de Estabilização** (§4).
+> A numeração canônica de tasks é a deste arquivo; trabalho novo começa em TASK-029.
+
 ### Sprint 1 — Segurança de Sessão e Credenciais (crítica)
 - TASK-001 → REQ-011: `JWT_SECRET` persistente via `.env` + `.env.example`; falha explícita no boot se ausente em produção.
 - TASK-002 → REQ-011: expiração de sessão (7d absoluta, 24h idle) + cookie `httpOnly`/`sameSite`.
@@ -69,12 +76,23 @@
 - TASK-021 → REQ-006: alerta visual de chaves em atraso (> 12h) no dashboard.
 - TASK-022: runbook de operação (`docs/runbook.md`): iniciar/parar PM2, restaurar backup, RPO/RTO, responsável.
 
-## 4. Backlog — Próximas Sprints (pós-estabilização)
-- E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — recomendado em MODO EXPRESSO, não bloqueante; promover a sprint quando a rede de testes (Sprint 3) estiver estável.
+## 4. Backlog — Próximas Sprints
 
-### Sprint 7 — Responsividade Mobile (CR 2026-07-02, Tipo C — REQ-016, ADR-001)
+### Sprint 7 — Dívida de Estabilização (reconciliação ADR-002 — EXECUTAR ANTES do mobile)
+> Tasks planejadas nas Sprints 4–6 originais e não entregues. Prioridade máxima: contém
+> violações ativas de constitution. Detalhamento BDD em `docs/tasks-sprint-7.md`.
+- TASK-029 → REQ-009 (ex-TASK-016): estrutura `db/migrations/` UP/DOWN pareados + script de aplicação com teste em cópia do banco; migrações legadas de `scripts/` documentadas como baseline.
+- TASK-030 → REQ-005 (ex-TASK-018): imutabilidade do histórico no nível do banco (triggers), com bypass explícito e documentado apenas para o fluxo ADMIN do REQ-014.
+- TASK-031 → REQ-014 (ex-TASK-013 parcial): registro prévio e persistente da operação `clear-database` (hoje apaga a trilha de auditoria sem logar nada) + criar `docs/threat_model_stride.md`.
+- TASK-032 → REQ-009 (ex-TASK-017): verificação automática do backup diário — métrica "confiabilidade do backup" logada e consultável.
+- TASK-033 → §7 constitution (ex-TASK-019): logger estruturado com severidades + máscara de dados sensíveis + tempo de resposta das rotas críticas.
+- TASK-034 → REQ-006 / spec §5 (ex-TASK-020/021): métricas de negócio no dashboard (taxa de dupla confirmação, tempo de balcão) + alinhar threshold de atraso ao spec (12h; hoje 4h hardcoded).
+- TASK-035 → REQ-015: reativar os 4 testes desativados (`src/lib/*.test.old`) adaptando à arquitetura atual.
+- TASK-036 → DR / constitution §4 (ex-TASK-022): `docs/runbook.md` — PM2, restauração de backup testada e documentada, RPO 24h/RTO 4h, responsável.
+
+### Sprint 8 — Responsividade Mobile (CR 2026-07-02, Tipo C — REQ-016, ADR-001; ex-Sprint 7)
 > Tasks tipo Refactor. Implementação dentro do CSS nativo (D-03 mantida), tokens do
-> `ui-context.md`. Critérios BDD detalhados na Fase 9. Alvo: funcional a partir de 360px.
+> `ui-context.md`. Detalhamento BDD em `docs/tasks-sprint-8.md`. Alvo: funcional a partir de 360px.
 - TASK-023 → REQ-016: layout base responsivo — breakpoints documentados em `globals.css`, shell/navegação mobile (menu do usuário e navegação colapsáveis em telas pequenas).
 - TASK-024 → REQ-016: `/login` e `/confirm` mobile-first — fluxo do portador (funcionário/aluno) no celular; alvos de toque ≥ 44px.
 - TASK-025 → REQ-016: dashboard (`/`) — cards de chaves emprestadas/disponíveis, pendências e alertas adaptados a telas pequenas.
@@ -82,9 +100,12 @@
 - TASK-027 → REQ-016: formulários e modais (`/settings`, `/account/profile`, `/account/security`, modais de confirmação destrutiva) adaptados a touch.
 - TASK-028 → REQ-015/016: E2E smoke Playwright dos 4 fluxos críticos (spec §4) com viewport mobile 375×812, somado ao viewport desktop.
 
+### Itens não bloqueantes
+- E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
+
 ### Débitos técnicos registrados
 - **Lint:** `npx eslint src` acusa 46 erros (majoritariamente `no-explicit-any` e `no-unused-vars`) + scripts utilitários (`scripts/`, `scratch/`, `tmp/`) com `no-require-imports`. Detectado no gate de merge da Sprint 6 (2026-07-02). Ação: sprint de higiene ou ajuste de escopo do ESLint (ignorar `scripts/`/`scratch/`/`tmp/`, corrigir `src/`). Regra vigente: nenhuma sprint pode introduzir erro novo.
-- **Testes desativados na Sprint 6:** 4 arquivos renomeados para `.test.old` em `src/lib/` (`schemas`, `security-profile`, `session-expiration`, `session`) — cobertura do REQ-011/012 (Sprint 1) fora da suíte. Detectado no merge de 2026-07-02. Ação: reativar/adaptar antes ou durante a Sprint 7 — violação do REQ-015 se permanecer.
+- **Testes desativados na Sprint 6:** 4 arquivos renomeados para `.test.old` em `src/lib/` (`schemas`, `security-profile`, `session-expiration`, `session`) — cobertura do REQ-011/012 (Sprint 1) fora da suíte. Detectado no merge de 2026-07-02. **→ promovido a TASK-035 (Sprint 7).**
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 

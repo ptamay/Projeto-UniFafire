@@ -1,7 +1,10 @@
-# Sprint 7 — Responsividade Mobile (REQ-016 · ADR-001)
+# Sprint 8 — Responsividade Mobile (REQ-016 · ADR-001)
+
+> ⚠️ Renumerada de Sprint 7 para Sprint 8 na reconciliação de 2026-07-02 (ADR-002).
+> Executar APÓS a Sprint 7 — Dívida de Estabilização.
 
 > Origem: Change Request Tipo C de 2026-07-02 (spec.md v1.1). Fontes consolidadas na Fase 9:
-> backlog do `plan.md` (§4 — Sprint 7) + ADR-001. Implementação dentro do CSS nativo
+> backlog do `plan.md` (§4 — Sprint 8) + ADR-001. Implementação dentro do CSS nativo
 > estruturado (decisão D-03 mantida), tokens do `ui-context.md`. Fluxo TDD: red → green → refactor.
 >
 > **Regra de negócio central:** funcionários e alunos solicitam, confirmam e devolvem
@@ -25,7 +28,7 @@
   - [ ] **Given** o usuário logado no mobile, **When** abre o menu do usuário no shell (identidade de sessão, REQ-013), **Then** nome, papel e ações ficam acessíveis e tocáveis (≥ 44px).
 - **Isolamento de Tenant:** N/A — sistema single-tenant, task não acessa dados.
 - **Referência spec.md:** §3 REQ-016, §6
-- **Referência plan.md:** Sprint 7 (backlog §4), D-03
+- **Referência plan.md:** Sprint 8 (backlog §4), D-03
 - **Estimativa:** M
 - **Dependências:** nenhuma
 
@@ -38,7 +41,7 @@
   - [ ] **Given** teclado virtual aberto no mobile, **When** o usuário digita nos campos, **Then** o campo em foco permanece visível (sem ficar sob o teclado ou topbar).
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016 (fluxo prioritário), REQ-003/004, §4 fluxos 2–3
-- **Referência plan.md:** Sprint 7 (backlog §4)
+- **Referência plan.md:** Sprint 8 (backlog §4)
 - **Estimativa:** M
 - **Dependências:** TASK-023
 
@@ -50,7 +53,7 @@
   - [ ] **Given** as métricas de negócio no dashboard (Sprint 6), **When** visualizadas no mobile, **Then** os valores são legíveis em coluna única, sem sobreposição.
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016, REQ-006, §5
-- **Referência plan.md:** Sprint 7 (backlog §4)
+- **Referência plan.md:** Sprint 8 (backlog §4)
 - **Estimativa:** M
 - **Dependências:** TASK-023
 
@@ -63,7 +66,7 @@
   - [ ] **Given** ações por item (editar/resetar senha em `/users`, editar chave em `/keys`, exportar PDF em `/history`), **When** acionadas no card mobile, **Then** funcionam idênticas ao desktop, respeitando RBAC (matriz da Sprint 3 sem regressão).
 - **Isolamento de Tenant:** N/A — sistema single-tenant; RBAC por papel coberto pelos testes existentes.
 - **Referência spec.md:** §3 REQ-016, REQ-002/005/007/010
-- **Referência plan.md:** Sprint 7 (backlog §4); ADR-001 §Decisão 3
+- **Referência plan.md:** Sprint 8 (backlog §4); ADR-001 §Decisão 3
 - **Estimativa:** L
 - **Dependências:** TASK-023
 
@@ -75,7 +78,7 @@
   - [ ] **Given** modais de criação/edição (usuário, chave) no mobile, **When** abertos com teclado virtual ativo, **Then** o conteúdo do modal permanece rolável e o botão de submit acessível.
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016, REQ-008, REQ-013, REQ-014
-- **Referência plan.md:** Sprint 7 (backlog §4)
+- **Referência plan.md:** Sprint 8 (backlog §4)
 - **Estimativa:** M
 - **Dependências:** TASK-023
 
@@ -87,7 +90,7 @@
   - [ ] **Given** qualquer smoke mobile, **When** um elemento essencial do fluxo estiver fora do viewport ou inacessível por toque, **Then** o teste falha (asserções de visibilidade real, não apenas presença no DOM).
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-015/016, §4
-- **Referência plan.md:** Sprint 7 (backlog §4); backlog E2E smoke (§4)
+- **Referência plan.md:** Sprint 8 (backlog §4); backlog E2E smoke (§4)
 - **Estimativa:** M
 - **Dependências:** TASK-024, TASK-025, TASK-026, TASK-027
 

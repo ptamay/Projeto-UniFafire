@@ -43,7 +43,8 @@ cabem em telas pequenas.
 ## Consequências
 
 - Novas tasks tipo Refactor no backlog do `plan.md` (TASK-023 a TASK-028), previstas
-  para a Sprint 7 — após as 6 sprints de estabilização (D-06 preservada).
+  para a Sprint 8 (renumerada de 7 para 8 na reconciliação ADR-002) — após a
+  Sprint 7 — Dívida de Estabilização (D-06 preservada).
 - Nenhuma mudança de schema — sem migrations envolvidas.
 - Nenhuma mudança na `constitution.md` — não é Tipo D.
 - Toda tela nova criada a partir deste ADR já nasce responsiva (critério de aceite
