@@ -42,6 +42,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
         case 'check-circle': return <svg {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
         case 'key': return <svg {...props}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>;
         case 'users': return <svg {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        case 'user': return <svg {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
         case 'clock': return <svg {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
         case 'shield': return <svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
         case 'file-text': return <svg {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
@@ -61,6 +62,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
@@ -260,22 +262,69 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                         )}
                     </button>
 
-                    <div className="user-profile-compact" style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 0.875rem', marginBottom: '0.625rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--green-600), var(--green-300))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
-                            {username?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                        {!isCollapsed && (
-                            <div style={{ flex: 1, minWidth: 0 }} className="user-info-text">
-                                <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
-                                <span className={`badge ${roleBadge}`} style={{ marginTop: '2px', display: 'inline-flex' }}>{roleLabel}</span>
+                    {/* Seção de Perfil e Menu do Usuário */}
+                    <div style={{ position: 'relative' }}>
+                        <button 
+                            className="user-profile-compact" 
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            style={{ 
+                                width: '100%', display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 0.875rem', 
+                                marginBottom: '0.625rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', 
+                                justifyContent: isCollapsed ? 'center' : 'flex-start', cursor: 'pointer', border: 'none', textAlign: 'left'
+                            }}
+                        >
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--green-600), var(--green-300))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
+                                {username?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                            {!isCollapsed && (
+                                <div style={{ flex: 1, minWidth: 0 }} className="user-info-text">
+                                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
+                                    <span className={`badge ${roleBadge}`} style={{ marginTop: '2px', display: 'inline-flex' }}>{roleLabel}</span>
+                                </div>
+                            )}
+                            {!isCollapsed && (
+                                <div style={{ color: 'var(--text-muted)' }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: isUserMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                        <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                </div>
+                            )}
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isUserMenuOpen && (
+                            <div style={{ 
+                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', 
+                                padding: '0.5rem', marginBottom: '0.5rem',
+                                position: isCollapsed ? 'absolute' : 'static',
+                                bottom: isCollapsed ? '100%' : 'auto',
+                                left: isCollapsed ? 0 : 'auto',
+                                width: isCollapsed ? '200px' : '100%',
+                                zIndex: 50
+                            }}>
+                                <button className="nav-item" onClick={() => navigate('/account/profile')} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
+                                    <span className="nav-icon"><Icon name="user" size={16} /></span>
+                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Meu Perfil</span>
+                                </button>
+                                <button className="nav-item" onClick={() => navigate('/account/security')} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
+                                    <span className="nav-icon"><Icon name="shield" size={16} /></span>
+                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
+                                </button>
+                                <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                                <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
+                                    <span className="nav-icon"><Icon name="log-out" size={16} /></span>
+                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Sair</span>
+                                </button>
                             </div>
                         )}
                     </div>
-
-                    <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
-                        <span className="nav-icon"><Icon name="log-out" size={18} /></span>
-                        <span className="nav-item-text">Sair</span>
-                    </button>
+                    
+                    {!isUserMenuOpen && (
+                        <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
+                            <span className="nav-icon"><Icon name="log-out" size={18} /></span>
+                            <span className="nav-item-text">Sair</span>
+                        </button>
+                    )}
                 </div>
             </aside>
 
