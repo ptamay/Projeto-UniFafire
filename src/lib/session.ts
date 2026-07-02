@@ -19,6 +19,7 @@ export async function signSession(payload: SessionPayload): Promise<string> {
     return new SignJWT({ ...payload })
         .setProtectedHeader({ alg })
         .setIssuedAt()
+        .setExpirationTime('7d')
         .sign(RUNTIME_SECRET);
 }
 

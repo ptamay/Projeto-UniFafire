@@ -52,7 +52,7 @@ export async function POST(request: Request) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            // No maxAge or expires provided = pure Session Cookie (volatile)
+            maxAge: 60 * 60 * 24 // 24 hours idle expiration
         });
 
         logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
