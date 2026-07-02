@@ -975,6 +975,25 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   .table-cards .table tbody td[data-label=''],
   .table-cards .table tbody td:not([data-label])::before { content: none; }
   .table-cards .table tbody td.td-actions { justify-content: flex-end; }
+
+  /* ── TASK-025: dashboard ──
+     Componentes usam estilo inline; !important é necessário para o override
+     mobile (exceção documentada — não usar !important fora deste bloco). */
+  .dashboard-stats {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 0.5rem !important;
+  }
+  .dashboard-list-header { display: none !important; }
+  .dashboard-list-row {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  .dashboard-list-row > div { text-align: left !important; }
 }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 0.75rem; }

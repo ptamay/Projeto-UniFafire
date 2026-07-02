@@ -395,7 +395,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Monitoramento de Chaves</h1>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sistema Administrativo</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div className="dashboard-stats" style={{ display: 'flex', gap: '0.75rem' }}>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-available-text)' }}>{stats.available}</span>
@@ -876,12 +876,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     /* Modo Lista */
                     viewMode === 'list' && (
                         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px', 
-                                padding: '1rem 1rem 1rem 2.5rem', 
+                            <div className="dashboard-list-header" style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px',
+                                padding: '1rem 1rem 1rem 2.5rem',
                                 gap: '1rem',
-                                background: 'var(--bg-elevated)', 
+                                background: 'var(--bg-elevated)',
                                 borderBottom: '1px solid var(--border)',
                                 fontSize: '0.65rem',
                                 fontWeight: 800,
@@ -910,7 +910,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         borderBottom: '1px solid var(--border)',
                                         alignItems: 'center',
                                         transition: 'background 0.2s ease'
-                                    }} className="list-row-hover">
+                                    }} className="list-row-hover dashboard-list-row">
                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', textAlign: 'left' }}>
                                             {key.name}
                                         </div>
