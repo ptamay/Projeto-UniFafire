@@ -34,7 +34,8 @@ export async function POST(request: Request) {
 
         if (!user) {
             recordLoginAttempt(body.username, ip, false);
-            return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+            // Prevenindo enumeração
+            return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
         const match = await bcrypt.compare(body.password, user.password_hash);
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
         if (!match) {
             recordLoginAttempt(user.username, ip, false);
             logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
-            return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
+            return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
         // --- Fluxo de sucesso ---
