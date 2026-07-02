@@ -1,0 +1,79 @@
+# spec.md — O Quê & Por Quê (UniFafire · Sistema de Gerenciamento de Chaves)
+
+> Perspectiva de produto, agnóstica de tecnologia. Gerado na Fase 6 a partir do
+> `overview.md`, `handoff.md` e das Fases 1–3. Mudanças de escopo entram primeiro
+> no Changelog abaixo, depois no `plan.md`.
+
+## Changelog
+| Data | Versão | Alteração | Motivo |
+|------|--------|-----------|--------|
+| 2026-07-02 | 1.0 | Criação inicial (baseline do sistema legado + requisitos de estabilização) | — |
+
+---
+
+## 1. Problema e Objetivo
+
+A UniFafire precisa controlar o empréstimo e a devolução das chaves de salas e ambientes
+da instituição de forma **segura e auditável**. O sistema responde, a qualquer momento,
+"quem está com qual chave" e mantém histórico confiável das movimentações.
+O sistema substitui/estrutura um legado ad-hoc do Colégio São José; esta especificação
+documenta o **estado atual como baseline** e os requisitos de **estabilização** antes de
+novas features.
+
+**Usuários:** equipe interna (portaria, gestão, administração) e portadores de chave
+(funcionários e alunos). Uso em horário letivo, rede local.
+
+## 2. Atores e Permissões (RBAC — baseline aprovada)
+
+| Perfil | Permissões-chave | Super Admin? |
+|--------|-----------------|:---:|
+| ADMIN | Acesso total: chaves, usuários, configurações, histórico e logs de auditoria | sim |
+| GESTOR | Igual ao ADMIN, exceto logs de auditoria | não |
+| PORTEIRO | Opera entrega/devolução de chaves, vê histórico e dashboard | não |
+| FUNCIONARIO | Confirma a própria transação (dupla confirmação) | não |
+| ALUNO | Confirma a própria transação (dupla confirmação) | não |
+
+Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
+
+## 3. Requisitos Funcionais
+
+### Núcleo (comportamento existente — baseline a preservar)
+- **REQ-001 — Autenticação:** login com usuário/senha; sessão identifica id, username e papel. Erro de credencial não revela se o usuário existe.
+- **REQ-002 — Gestão de chaves:** ADMIN/GESTOR/PORTEIRO cadastram, editam e listam chaves (nome + sala). Cada chave tem estado: disponível | emprestada.
+- **REQ-003 — Retirada com dupla confirmação:** porteiro registra a retirada (`withdraw`) vinculando chave + usuário; o portador confirma a transação em `/confirm`. Transação pendente expira/cancela via `cancel`.
+- **REQ-004 — Devolução:** fluxo `return` com o mesmo padrão de dupla confirmação.
+- **REQ-005 — Histórico:** toda movimentação registrada com timestamp preciso; PORTEIRO+ consultam em `/history`. Transações individuais são imutáveis (sem editar/excluir).
+- **REQ-006 — Dashboard:** visão em tempo real de chaves emprestadas vs. disponíveis e pendências, em `/`.
+- **REQ-007 — Gestão de usuários:** ADMIN/GESTOR criam usuários, alteram papel e resetam senha em `/users`.
+- **REQ-008 — Configurações:** ADMIN/GESTOR definem horário de backup e retenção em `/settings`.
+- **REQ-009 — Backup e restauração:** backup diário automático do banco; ADMIN exporta, importa e restaura backups.
+- **REQ-010 — Logs de auditoria:** ações administrativas registradas e visíveis apenas para ADMIN em `/logs`.
+
+### Estabilização (gaps identificados na auditoria da Fase 6 — novos)
+- **REQ-011 — Sessão persistente e expirável:** sessões sobrevivem a restart do servidor (segredo persistente) e expiram (7 dias absoluto / 24h idle). *Baseline atual viola: segredo aleatório por boot, token sem expiração.*
+- **REQ-012 — Política de credenciais:** senha mínima de 8 caracteres; lockout após 5 falhas/15 min; rate limit nas rotas de autenticação. *Baseline atual: mínimo 6, sem lockout, sem rate limit.*
+- **REQ-013 — Identidade de sessão e conta:** shell exibe nome + papel do usuário logado com menu; rotas `/account/profile` (dados próprios) e `/account/security` (troca de senha). *Baseline atual: troca de senha existe só como API.*
+- **REQ-014 — Operações destrutivas controladas:** limpeza de histórico e reset de banco (funções existentes no legado) restritas a ADMIN, com modal de confirmação destrutiva e registro prévio em log de auditoria. *Exceção consciente à imutabilidade do REQ-005, restrita ao super admin — o `threat_model_stride.md` deve ser atualizado para refletir isso.*
+- **REQ-015 — Cobertura de testes:** fluxos críticos (login, retirada, confirmação, devolução) cobertos por testes automatizados antes de qualquer feature nova.
+
+## 4. Fluxos que não podem falhar
+1. Login → dashboard.
+2. Retirada de chave (porteiro) → confirmação pelo portador.
+3. Devolução de chave → confirmação → chave volta a "disponível".
+4. Backup diário automático executa e é restaurável.
+
+## 5. Métricas de Negócio (mensuráveis via tabela `transactions` + logs)
+| Métrica | Definição | Alvo |
+|---|---|---|
+| Taxa de dupla confirmação | % de transações criadas que foram confirmadas pelo portador em ≤ 10 min | ≥ 95% |
+| Chaves em atraso | Nº de chaves retiradas há > 12h sem devolução, por dia | tendência ↓; alerta no dashboard |
+| Tempo de operação no balcão | Tempo mediano entre criação da transação e confirmação | ≤ 2 min |
+| Confiabilidade do backup | % de dias com backup diário concluído com sucesso (log) | 100% |
+
+## 6. Restrições Não-Funcionais
+- Uso interno em horário letivo (sem SLA formal 24/7); latência p95 < 500ms nas rotas críticas em rede local.
+- Sem modo offline; instância única em servidor local (PM2).
+- Volume: dezenas de usuários simultâneos no pico; centenas de chaves; milhares de transações/ano — SQLite é suficiente.
+- Compliance: LGPD básica — proteção de credenciais (bcrypt) e não-exposição de dados pessoais em logs.
+- DR: RPO 24h / RTO 4h (constitution §4).
+- Sem integrações externas e sem API pública.
