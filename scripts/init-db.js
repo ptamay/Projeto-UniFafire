@@ -31,17 +31,23 @@ db.exec(`
     room TEXT,
     status TEXT DEFAULT 'available', -- 'available', 'in_use'
     employee_id INTEGER,
+    user_id INTEGER,
     active INTEGER DEFAULT 1,
-    FOREIGN KEY(employee_id) REFERENCES employees(id)
+    FOREIGN KEY(employee_id) REFERENCES employees(id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
   CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     employee_id INTEGER,
+    user_id INTEGER,
+    username TEXT,
     key_id INTEGER,
     action TEXT, -- 'withdraw', 'return'
+    transaction_id INTEGER,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(key_id) REFERENCES keys(id)
+    FOREIGN KEY(key_id) REFERENCES keys(id),
+    FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
   CREATE TABLE IF NOT EXISTS audit_logs (
@@ -73,6 +79,20 @@ db.exec(`
     ip TEXT,
     success INTEGER,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS key_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    status TEXT NOT NULL,
+    porteiro_id INTEGER,
+    user_confirmed_at DATETIME,
+    porteiro_confirmed_at DATETIME,
+    cancelled_at DATETIME,
+    completed_at DATETIME,
+    initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 

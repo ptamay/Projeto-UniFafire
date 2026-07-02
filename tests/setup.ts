@@ -33,17 +33,23 @@ beforeAll(() => {
             room TEXT,
             status TEXT DEFAULT 'available',
             employee_id INTEGER,
+            user_id INTEGER,
             active INTEGER DEFAULT 1,
-            FOREIGN KEY(employee_id) REFERENCES employees(id)
+            FOREIGN KEY(employee_id) REFERENCES employees(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id INTEGER,
+            user_id INTEGER,
+            username TEXT,
             key_id INTEGER,
             action TEXT,
+            transaction_id INTEGER,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(key_id) REFERENCES keys(id)
+            FOREIGN KEY(key_id) REFERENCES keys(id),
+            FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS action_logs (
@@ -77,7 +83,7 @@ beforeAll(() => {
             porteiro_confirmed_at DATETIME,
             cancelled_at DATETIME,
             completed_at DATETIME,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     `);
 
@@ -92,6 +98,10 @@ beforeAll(() => {
     insertUser.run('test_porteiro', hash, 'PORTEIRO');
     insertUser.run('test_funcionario', hash, 'FUNCIONARIO');
     insertUser.run('test_aluno', hash, 'ALUNO');
+
+    // 3. Semear uma chave disponível
+    const insertKey = db.prepare("INSERT INTO keys (name, room, status) VALUES (?, ?, 'available')");
+    insertKey.run('Chave Teste', 'Sala 101');
 });
 
 afterAll(() => {
