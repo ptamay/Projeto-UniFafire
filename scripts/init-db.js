@@ -2,7 +2,9 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 const path = require('path');
 
-const dbPath = path.resolve(process.cwd(), 'keys.db');
+const dbPath = process.env.MOCK_DB_IN_MEMORY === 'true'
+  ? ':memory:'
+  : path.resolve(process.cwd(), process.env.DB_PATH || 'keys.db');
 const db = new Database(dbPath);
 
 console.log('Initializing database at:', dbPath);

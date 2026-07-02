@@ -7,7 +7,11 @@ const globalWithDb = global as typeof globalThis & {
     db: Database.Database;
 };
 
-const dbPath = path.resolve(process.cwd(), 'keys.db');
+// Se MOCK_DB_IN_MEMORY for verdadeiro, usaremos SQLite In-Memory.
+// Senão, usaremos o DB_PATH (para test.db isolado) ou fallback para keys.db
+const dbPath = process.env.MOCK_DB_IN_MEMORY === 'true' 
+    ? ':memory:' 
+    : path.resolve(process.cwd(), process.env.DB_PATH || 'keys.db');
 
 export function initDb() {
     const instance = new Database(dbPath);
@@ -15,8 +19,8 @@ export function initDb() {
     globalWithDb.db = instance;
     console.log('Database connected.');
     
-    // Evitar iniciar jobs de cron durante o build
-    if (process.env.NEXT_PHASE !== 'phase-production-build') {
+    // Evitar iniciar jobs de cron durante o build ou ambiente de teste
+    if (process.env.NEXT_PHASE !== 'phase-production-build' && process.env.NODE_ENV !== 'test') {
         startCronJobs();
     }
 }
