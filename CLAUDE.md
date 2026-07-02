@@ -43,12 +43,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Fase 9 — tasks da Sprint 7 (responsividade mobile) geradas
-Última ação  : Commit 3110c3c — docs/tasks-sprint-7.md (6 tasks, 14 pts, TASK-023 a TASK-028)
-Próxima ação : Fase 10 — execução da Sprint 7 pelo Antigravity (criar branch feature/sprint-7-mobile a partir desta base)
+Sessão       : Merge Sprint 6 em main + Sprint 7 pronta para execução
+Última ação  : Merge 579640a publicado em origin/main (gates: audit 0 vulns, Vitest 20/20); gate anti-regressão desktop adicionado ao tasks-sprint-7.md
+Próxima ação : Fase 10 — Antigravity executa Sprint 7 (branch feature/sprint-7-mobile a partir de main); atenção aos débitos no backlog do plan.md (lint em src/ + 4 testes .old desativados)
 Decisões em aberto : nenhuma
 Arquivos não commitados : nenhum relevante
-Branch atual : feature/sprint-6-backup-refactor (Sprint 6 concluída — considerar merge em master antes de iniciar Sprint 7)
+Branch atual : main
 Atualizado em : 2026-07-02
 ```
 

@@ -84,6 +84,7 @@
 
 ### Débitos técnicos registrados
 - **Lint:** `npx eslint src` acusa 46 erros (majoritariamente `no-explicit-any` e `no-unused-vars`) + scripts utilitários (`scripts/`, `scratch/`, `tmp/`) com `no-require-imports`. Detectado no gate de merge da Sprint 6 (2026-07-02). Ação: sprint de higiene ou ajuste de escopo do ESLint (ignorar `scripts/`/`scratch/`/`tmp/`, corrigir `src/`). Regra vigente: nenhuma sprint pode introduzir erro novo.
+- **Testes desativados na Sprint 6:** 4 arquivos renomeados para `.test.old` em `src/lib/` (`schemas`, `security-profile`, `session-expiration`, `session`) — cobertura do REQ-011/012 (Sprint 1) fora da suíte. Detectado no merge de 2026-07-02. Ação: reativar/adaptar antes ou durante a Sprint 7 — violação do REQ-015 se permanecer.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
