@@ -10,6 +10,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
+    const [showForgotPopup, setShowForgotPopup] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,14 +24,14 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                if (data.requiresPasswordChange) {
+                window.location.href = '/';
+            } else {
+                if (data.error === 'REQUIRE_PASSWORD_CHANGE') {
                     setRequireNewPassword(true);
                     setError('');
                 } else {
-                    window.location.href = '/';
+                    setError(data.error || 'Credenciais inválidas. Tente novamente.');
                 }
-            } else {
-                setError(data.error || 'Credenciais inválidas. Tente novamente.');
             }
         } catch {
             setError('Erro de conexão. Tente novamente.');
@@ -92,10 +93,10 @@ export default function LoginPage() {
                                         id="newPassword"
                                         type={showPass ? 'text' : 'password'}
                                         className="input input-with-icon input-with-action"
-                                        placeholder="Mínimo de 6 caracteres"
+                                        placeholder="Mínimo de 8 caracteres"
                                         value={newPassword}
                                         onChange={e => setNewPassword(e.target.value)}
-                                        minLength={6}
+                                        minLength={8}
                                         required
                                     />
                                     <button
@@ -197,10 +198,41 @@ export default function LoginPage() {
                             </>
                         )}
                     </button>
+                    
+                    {!requireNewPassword && (
+                        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                            <button
+                                type="button"
+                                className="btn-link"
+                                onClick={() => setShowForgotPopup(true)}
+                                style={{ background: 'none', border: 'none', color: 'var(--green-500)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                                Esqueci minha senha
+                            </button>
+                        </div>
+                    )}
                 </form>
 
                 <p className="login-footer-text">Acesso Institucional Protegido</p>
             </div>
+
+            {showForgotPopup && (
+                <div className="modal-overlay" onClick={() => setShowForgotPopup(false)}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Recuperação de Acesso</h3>
+                        </div>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                            Para garantir a segurança do sistema institucional, a recuperação de senhas é realizada diretamente pelo setor de Administração.
+                            <br /><br />
+                            Por favor, <strong>entre em contato com um Administrador ou Gestor</strong> para que sua senha seja redefinida no painel de controle.
+                        </p>
+                        <div className="action-row mt-6" style={{ justifyContent: 'center' }}>
+                            <button className="btn btn-green w-full" onClick={() => setShowForgotPopup(false)}>Entendido</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .login-page {
