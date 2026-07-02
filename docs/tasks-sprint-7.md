@@ -96,8 +96,25 @@
 ## Backlog — Próxima Sprint
 *(nenhuma task movida por limite de capacidade)*
 
+## Gate anti-regressão desktop (obrigatório — vale para TODAS as tasks)
+
+> A versão desktop é a interface de trabalho da portaria e da gestão. Nenhuma task desta
+> sprint pode alterá-la como efeito colateral. Regras de engenharia:
+
+1. **CSS mobile é aditivo:** todo estilo mobile entra dentro de `@media (max-width: 768px)`
+   (ou breakpoint documentado na TASK-023). **Proibido** alterar regras base (desktop) de
+   `globals.css`/`page.module.css` — exceção apenas se o BDD da task exigir, com justificativa
+   no commit.
+2. **Markup compartilhado exige dupla verificação:** se a task alterar JSX/estrutura (não só
+   CSS), o critério "Then" deve ser verificado nos dois viewports — 360px e 1280px — antes
+   do commit da task.
+3. **Suíte Vitest (20 testes) verde após cada task** — não apenas ao fim da sprint.
+4. **TASK-028 roda os smokes E2E em DOIS projetos** (desktop 1280×800 + mobile 375×812);
+   uma falha no projeto desktop é regressão e bloqueia o merge da sprint.
+5. **Padrão tabela→card (TASK-026):** a tabela desktop permanece o markup primário; o card
+   mobile é renderização alternativa — nunca substituição da tabela.
+
 ## Notas para o agente de execução (Antigravity)
 - Carregar `ui-context.md` (task-agent, UI) — tokens, shell e primitives (`.card`, `.stat-card`, `.btn*`, `.input`).
 - Nenhuma task toca schema — Gate de Migration não se aplica.
-- `npm audit` + ESLint limpos como gate de merge (constitution).
-- Regressão desktop é critério de aceite implícito em todas as tasks: os testes das Sprints 3–6 devem permanecer verdes.
+- `npm audit` limpo como gate de merge (constitution). ESLint: não introduzir NENHUM erro novo — há débito pré-existente registrado no backlog do `plan.md`; não é licença para ampliá-lo.
