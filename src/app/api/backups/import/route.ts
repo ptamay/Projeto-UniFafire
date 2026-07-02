@@ -4,6 +4,7 @@ import { verifySession } from '@/lib/session';
 import path from 'path';
 import fs from 'fs';
 import { resetConnection } from '@/lib/db';
+import { logAction } from '@/lib/logger';
 
 export async function POST(request: Request) {
     try {
@@ -36,7 +37,6 @@ export async function POST(request: Request) {
         });
 
         // Registrar a ação do administrador
-        const { logAction } = require('@/lib/logger');
         logAction(session.id, session.username, 'IMPORT_DATABASE', file.name, 'Banco de dados importado manualmente pelo upload de arquivo.');
 
         return NextResponse.json({ success: true, message: 'Banco de dados importado com sucesso.' });

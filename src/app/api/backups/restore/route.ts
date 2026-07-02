@@ -4,6 +4,7 @@ import { verifySession } from '@/lib/session';
 import path from 'path';
 import fs from 'fs';
 import { resetConnection } from '@/lib/db';
+import { logAction } from '@/lib/logger';
 
 export async function POST(request: Request) {
     try {
@@ -46,7 +47,6 @@ export async function POST(request: Request) {
         });
 
         // Registrar a ação do administrador após voltar o banco de dados principal reativado
-        const { logAction } = require('@/lib/logger');
         logAction(session.id, session.username, 'RESTORE_BACKUP', filename, 'Sistema inteiro restaurado a partir de um backup.');
 
         return NextResponse.json({ success: true, message: 'Restauração de sistema concluída com sucesso. O banco de dados agora está rodando na versão do backup escolhido.' });

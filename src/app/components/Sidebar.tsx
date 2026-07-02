@@ -65,8 +65,11 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     useEffect(() => {
+        // Sincronização única com localStorage (estado externo) na montagem —
+        // intencional para evitar mismatch de hidratação SSR (tema só existe no cliente).
         const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
         if (savedTheme) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTheme(savedTheme);
             if (savedTheme === 'light') document.documentElement.classList.add('light-mode');
         }

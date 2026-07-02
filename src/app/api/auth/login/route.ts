@@ -5,8 +5,10 @@ import bcrypt from 'bcrypt';
 import { logAction } from '@/lib/logger';
 import { signSession } from '@/lib/session';
 import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts } from '@/lib/security-profile';
+import { logTiming } from '@/lib/structured-logger';
 
 export async function POST(request: Request) {
+    const started = performance.now();
     try {
         const body = await request.json();
         
@@ -83,5 +85,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    } finally {
+        logTiming('POST /api/auth/login', performance.now() - started);
     }
 }

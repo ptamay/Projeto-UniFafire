@@ -1,5 +1,6 @@
 import db from '@/lib/db';
 import { headers } from 'next/headers';
+import { logStructured } from '@/lib/structured-logger';
 
 export async function logAction(userId: number | null, username: string | undefined | null, action: string, target: string, details?: string) {
     try {
@@ -36,7 +37,17 @@ export async function logAction(userId: number | null, username: string | undefi
         const safeUserId = userId === 0 ? null : userId;
 
         stmt.run(safeUserId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString());
-        console.log(`[ACTION LOG] ${safeUsername} (${ipAddress}) performed ${action} on ${target}`);
+        // TASK-033: além da trilha no banco (REQ-010), emite pelo canal estruturado
+        // persistente em arquivo — sobrevive a limpezas do banco (REQ-014).
+        logStructured('info', 'audit_action', {
+            audit: true,
+            user_id: safeUserId,
+            username: safeUsername,
+            action,
+            target,
+            details: details || null,
+            ip: ipAddress,
+        });
     } catch (error) {
         console.error('Failed to log action:', error);
     }

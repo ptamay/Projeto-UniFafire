@@ -36,8 +36,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     `;
     
     let countQuery = 'SELECT COUNT(*) as total FROM history h';
-    let conditions = [];
-    let params: any[] = [];
+    const conditions = [];
+    const params: any[] = [];
 
     if (date) {
         conditions.push('DATE(h.timestamp) = DATE(?)');

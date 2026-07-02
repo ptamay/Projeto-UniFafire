@@ -35,6 +35,20 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [isClearingDb, setIsClearingDb] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
     const [serverInfo, setServerInfo] = useState<{ ips: string[], hostname: string } | null>(null);
+    const [bkpReliability, setBkpReliability] = useState<{ totalDays: number; successDays: number; percent: number | null } | null>(null);
+
+    const fetchBackups = () => {
+        fetch('/api/backups').then(r => r.json()).then(d => { setBackups(Array.isArray(d) ? d : []); setLoadingBkp(false); });
+        // TASK-032: métrica de confiabilidade do backup (spec §5, alvo 100%)
+        fetch('/api/backups/reliability').then(r => r.ok ? r.json() : null).then(d => {
+            if (d && typeof d.totalDays === 'number') setBkpReliability(d);
+        }).catch(() => {});
+    };
+
+    const loadBackups = () => {
+        setLoadingBkp(true);
+        fetchBackups();
+    };
 
     useEffect(() => {
         fetch('/api/settings').then(r => r.json()).then(d => {
@@ -46,13 +60,9 @@ export default function SettingsClient({ userRole, username }: Props) {
         fetch('/api/server-info').then(r => r.json()).then(d => {
             if (d.ips) setServerInfo(d.ips ? d : null);
         });
-        loadBackups();
+        // loadingBkp já inicia true — busca direta evita setState síncrono no effect
+        fetchBackups();
     }, []);
-
-    const loadBackups = () => {
-        setLoadingBkp(true);
-        fetch('/api/backups').then(r => r.json()).then(d => { setBackups(Array.isArray(d) ? d : []); setLoadingBkp(false); });
-    };
 
     const saveSettings = async () => {
         setSavingSettings(true);
@@ -312,6 +322,15 @@ export default function SettingsClient({ userRole, username }: Props) {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             Backups Disponíveis
                         </h2>
+                        {bkpReliability && bkpReliability.totalDays > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.625rem 0.75rem', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.8125rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Confiabilidade (30 dias):</span>
+                                <strong style={{ color: bkpReliability.percent === 100 ? 'var(--green-400)' : 'var(--red-500)' }}>
+                                    {bkpReliability.percent}%
+                                </strong>
+                                <span style={{ color: 'var(--text-muted)' }}>({bkpReliability.successDays}/{bkpReliability.totalDays} dias com backup verificado)</span>
+                            </div>
+                        )}
                         <button className="btn btn-blue" onClick={generateBackup} disabled={generatingBkp} style={{ marginBottom: '1rem', width: '100%' }}>
                             {generatingBkp ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
                                 <>
