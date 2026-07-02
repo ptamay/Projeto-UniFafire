@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 
@@ -76,6 +78,31 @@ export default function HistoryClient({ history, userRole, username, currentPage
         router.push(`/history?${params.toString()}`);
     };
 
+    const handleExportPDF = () => {
+        if (history.length === 0) return;
+        const doc = new jsPDF();
+        doc.text('Relatório de Movimentações de Chaves', 14, 15);
+        doc.setFontSize(10);
+        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+
+        const tableColumn = ["Data/Hora", "Ação", "Chave", "Funcionário", "Confirmado por"];
+        const tableRows = history.map(item => [
+            new Date(item.timestamp).toLocaleString('pt-BR'),
+            item.action === 'withdraw' ? 'Retirada' : 'Devolução',
+            `${item.key_name} (${item.room})`,
+            item.employee_name || '-',
+            item.confirmed_by || 'Sistêmico'
+        ]);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 28,
+        });
+
+        doc.save(`relatorio_chaves_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
     return (
         <div className="page-wrapper">
             <div className="no-print">
@@ -139,6 +166,9 @@ export default function HistoryClient({ history, userRole, username, currentPage
                                         Limpar Histórico
                                     </button>
                                 )}
+                                <button className="btn btn-blue" onClick={handleExportPDF} style={{ fontSize: '0.9rem' }}>
+                                    Exportar PDF
+                                </button>
                                 <PrintButton />
                             </div>
                         </div>

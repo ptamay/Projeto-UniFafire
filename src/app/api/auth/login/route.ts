@@ -49,6 +49,7 @@ export async function POST(request: Request) {
         // --- Fluxo de sucesso ---
         clearLoginAttempts(user.username, ip); // Reseta as falhas
 
+        let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova
         if (user.requires_password_change) {
             if (!body.newPassword) {
@@ -60,10 +61,12 @@ export async function POST(request: Request) {
             const hashedNew = await bcrypt.hash(body.newPassword, 10);
             db.prepare('UPDATE users SET password_hash = ?, requires_password_change = 0 WHERE id = ?').run(hashedNew, user.id);
             logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
+            currentHash = hashedNew;
         }
 
-        // Set secure cookie with user info
-        const payloadParams = { id: user.id, username: user.username, role: user.role };
+        // Set secure cookie with user info (include pwd_hash for strict session check)
+        const pwd_hash = typeof currentHash === 'string' ? currentHash.slice(-10) : '';
+        const payloadParams = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const sessionToken = await signSession(payloadParams);
 
         (await cookies()).set('session', sessionToken, {

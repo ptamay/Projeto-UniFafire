@@ -13,6 +13,7 @@ interface Key {
     employee_name?: string;
     employee_role?: string;
     pending_info?: { action: 'withdraw' | 'return'; user_confirmed: boolean; porteiro_confirmed: boolean; user_name: string; user_role: string; };
+    in_use_since?: string;
 }
 
 interface User {
@@ -158,7 +159,28 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         try {
             const kRes = await fetch('/api/keys');
             const uRes = await fetch('/api/users');
-            if (kRes.ok) setKeys(await kRes.json());
+            if (kRes.ok) {
+                const newKeys = await kRes.json();
+                
+                // Checar se alguma chave nossa foi aprovada
+                if (!isPorteiroOrAdmin) {
+                    setKeys(prevKeys => {
+                        prevKeys.forEach(oldKey => {
+                            const newKey = newKeys.find((k: Key) => k.id === oldKey.id);
+                            if (newKey && oldKey.pending_info && !newKey.pending_info && newKey.status === 'in_use') {
+                                // Se estava pendente e agora está in_use, foi aprovada!
+                                // Para ter certeza de que é nossa:
+                                if (oldKey.pending_info.action === 'withdraw' && oldKey.pending_info.user_name === username) {
+                                    toast.success(`Sua solicitação da chave ${newKey.name} foi aprovada!`, { duration: 5000 });
+                                }
+                            }
+                        });
+                        return newKeys;
+                    });
+                } else {
+                    setKeys(newKeys);
+                }
+            }
             if (uRes.ok) {
                 const uData = await uRes.json();
                 setEmployees(uData.map((u: any) => ({ ...u, name: u.full_name || u.username || '' })));
@@ -333,6 +355,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             });
     }, [keys, search, filter]);
 
+    // Calcular atrasos
+    const delayedKeys = useMemo(() => {
+        return keys.filter(k => {
+            if (k.status !== 'in_use' || !k.in_use_since) return false;
+            const diffHours = (new Date().getTime() - new Date(k.in_use_since).getTime()) / (1000 * 60 * 60);
+            return diffHours > 4; // Mais de 4 horas = Atrasada
+        }).map(k => ({
+            ...k,
+            diffHours: Math.floor((new Date().getTime() - new Date(k.in_use_since!).getTime()) / (1000 * 60 * 60))
+        }));
+    }, [keys]);
+
     return (
         <div className="page-wrapper">
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
@@ -364,6 +398,23 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </div>
                     </div>
                 </header>
+
+                {/* Painel de Alertas */}
+                {delayedKeys.length > 0 && isPorteiroOrAdmin && (
+                    <div style={{ marginBottom: '1.5rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--red-500)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red-500)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <div>
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--red-600)', fontSize: '0.9rem', fontWeight: 800 }}>Atenção: Chaves em Atraso</h3>
+                            <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--red-700)', fontSize: '0.8rem' }}>
+                                {delayedKeys.map(k => (
+                                    <li key={k.id}>
+                                        A chave <strong>{k.name}</strong> está com <strong>{k.employee_name}</strong> há mais de {k.diffHours} horas.
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 {/* Unified Control Bar */}
                 <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>

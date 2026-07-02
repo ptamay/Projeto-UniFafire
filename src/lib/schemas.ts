@@ -69,7 +69,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
 
 // Users
 export const UserSchema = z.object({
-    username: z.string().min(3, "O usuário deve ter pelo menos 3 caracteres.").max(50, "Máximo de 50 caracteres."),
+    username: z.string().min(3, "O usuário deve ter pelo menos 3 caracteres.").max(50, "Máximo de 50 caracteres.").optional(),
     password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres.").max(128).optional().or(z.literal('')),
     role: z.enum(ROLES).default('FUNCIONARIO'),
     full_name: z.string().min(2, "Nome completo deve ter ao menos 2 caracteres.").optional(),
