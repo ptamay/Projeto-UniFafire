@@ -3,7 +3,9 @@ import path from 'path';
 import cron from 'node-cron';
 import db from './db';
 
-const dbPath = path.resolve(process.cwd(), 'keys.db');
+const dbPath = process.env.MOCK_DB_IN_MEMORY === 'true' 
+    ? ':memory:' 
+    : path.resolve(process.cwd(), process.env.DB_PATH || 'keys.db');
 const backupsDir = path.resolve(process.cwd(), 'backups');
 
 let lastBackupDay = ''; // YYYY-MM-DD to prevent duplicates

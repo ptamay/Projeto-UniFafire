@@ -1,7 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { startCronJobs } from './backup';
 
 const globalWithDb = global as typeof globalThis & {
     db: Database.Database;
@@ -19,10 +18,7 @@ export function initDb() {
     globalWithDb.db = instance;
     console.log('Database connected.');
     
-    // Evitar iniciar jobs de cron durante o build ou ambiente de teste
-    if (process.env.NEXT_PHASE !== 'phase-production-build' && process.env.NODE_ENV !== 'test') {
-        startCronJobs();
-    }
+    // A inicialização de jobs de cron agora é gerida pelo instrumentation.ts do Next.js
 }
 
 if (!globalWithDb.db) {
