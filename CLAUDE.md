@@ -43,9 +43,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Sprint 7 (dívida de estabilização) EXECUTADA e mergeada
-Última ação  : Merge da sprint 7 em main + push 3611f51 — TASK-029 a 036 entregues (15/15 pts); gates: ESLint 0 erros, Vitest 61/61, tsc ok, audit 0 vulns, CI gates 6/6; migrações baseline + imutabilidade aplicadas ao keys.db
-Próxima ação : Sprint 8 — Responsividade Mobile (docs/tasks-sprint-8.md), branch feature/sprint-8-mobile a partir de main; respeitar gate anti-regressão desktop
+Sessão       : Sprint 8 (responsividade mobile) EXECUTADA e mergeada — REQ-016 entregue
+Última ação  : Merge da sprint 8 em main + push 1c56917 — TASK-023 a 028 (14/14 pts); E2E 6/6 em desktop 1280×800 E mobile 375×812; fix de boot Edge Runtime (regressão sprint 7); shell mobile consertado (menu não abria em 4 telas)
+Próxima ação : Baseline + mobile completos. Backlog vazio — novas ideias entram via Change Request. Sugestão: sprint de higiene (warnings de lint) quando conveniente
 Decisões em aberto : nenhuma
 Arquivos não commitados : .agents/rules/* e .husky/ (mudanças externas de outra sessão — não tocadas)
 Branch atual : main
