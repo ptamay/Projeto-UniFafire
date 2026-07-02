@@ -1,19 +1,11 @@
 import { jwtVerify, SignJWT } from 'jose';
 
-// This secret is generated randomly at boot time.
-// Since Next.js starts up standard processes and middleware runs in Edge handlers,
-// a generated random secret in module scope will mean ANY server restart 
-// invalidates all previous sessions.
-const globalForSession = globalThis as unknown as {
-    __RUNTIME_SECRET__: Uint8Array;
-};
-
-if (!globalForSession.__RUNTIME_SECRET__) {
-    // Attempt to use web crypto if available, or fallback
-    globalForSession.__RUNTIME_SECRET__ = new TextEncoder().encode(crypto.randomUUID());
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+    throw new Error('CRITICAL FATAL ERROR: JWT_SECRET environment variable is missing or too short. It must be at least 32 characters long.');
 }
 
-const RUNTIME_SECRET = globalForSession.__RUNTIME_SECRET__;
+const RUNTIME_SECRET = new TextEncoder().encode(jwtSecret);
 
 interface SessionPayload {
     id: number;
