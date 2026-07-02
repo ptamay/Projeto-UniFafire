@@ -4,8 +4,10 @@ import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { TransactionSchema } from '@/lib/schemas';
 import { logAction } from '@/lib/logger';
+import { logTiming } from '@/lib/structured-logger';
 
 export async function POST(request: Request) {
+    const started = performance.now();
     try {
         const sessionCookie = (await cookies()).get('session');
         if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -121,5 +123,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Transaction error:', error);
         return NextResponse.json({ error: 'Falha na transação.' }, { status: 500 });
+    } finally {
+        logTiming('POST /api/transactions', performance.now() - started);
     }
 }

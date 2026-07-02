@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
+import { logTiming } from '@/lib/structured-logger';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -11,6 +12,7 @@ interface RouteParams {
 // POST /api/transactions/[id]/user-confirm
 // O usuário confirma que retirou ou devolveu a chave
 export async function POST(request: Request, { params }: RouteParams) {
+    const started = performance.now();
     try {
         const { id } = await params;
         const transactionId = parseInt(id, 10);
@@ -103,5 +105,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     } catch (error) {
         console.error('User confirm error:', error);
         return NextResponse.json({ error: 'Falha ao confirmar transação.' }, { status: 500 });
+    } finally {
+        logTiming('POST /api/transactions/[id]/user-confirm', performance.now() - started);
     }
 }
