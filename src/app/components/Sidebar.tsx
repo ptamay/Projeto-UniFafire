@@ -63,6 +63,14 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const [mounted, setMounted] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    // TASK-023: o Sidebar é dono do próprio estado de drawer mobile — o botão da
+    // topbar funciona em TODAS as telas, mesmo nas que não passam isOpen/onMobileClose.
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const drawerOpen = Boolean(isOpen) || mobileOpen;
+    const closeMobile = () => {
+        setMobileOpen(false);
+        onMobileClose?.();
+    };
 
     useEffect(() => {
         // Sincronização única com localStorage (estado externo) na montagem —
@@ -130,7 +138,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
     const navigate = (href: string) => {
         router.push(href);
-        onMobileClose?.();
+        closeMobile();
     };
 
     const roleBadgeMap: Record<string, string> = {
@@ -181,10 +189,10 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     return (
         <>
             {/* ── MOBILE SIDEBAR DRAWER OVERLAY ── */}
-            {isOpen && <div className="sidebar-overlay active" onClick={onMobileClose} />}
+            {drawerOpen && <div className="sidebar-overlay active" onClick={closeMobile} />}
 
             {/* ── SIDEBAR LATERAL (Desktop + Drawer Mobile) ── */}
-            <aside className={`sidebar${isOpen ? ' open' : ''}`}>
+            <aside className={`sidebar${drawerOpen ? ' open' : ''}`}>
                 {/* Logo Header */}
                 <div className="sidebar-logo" style={{ justifyContent: isCollapsed ? 'center' : 'space-between' }}>
                     {!isCollapsed && (
@@ -334,7 +342,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
             {/* ── MOBILE TOP BAR ── */}
             <div className="mobile-topbar">
                 <button
-                    onClick={() => { /* handled by parent setSidebarOpen */ }}
+                    onClick={() => setMobileOpen(true)}
                     id="mobile-menu-btn"
                     style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)', minWidth: 44, minHeight: 44, WebkitTapHighlightColor: 'transparent' }}
                     aria-label="Abrir menu"

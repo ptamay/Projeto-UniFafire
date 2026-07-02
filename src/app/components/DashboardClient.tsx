@@ -388,15 +388,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         <div className="page-wrapper">
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-            {/* Mobile topbar */}
-            <div className="mobile-topbar">
-                <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                </button>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-green)' }}>Dashboard</span>
-                <div style={{ width: 36 }} />
-            </div>
-
             <main className="main-content">
                 {/* Header */}
                 <header style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
