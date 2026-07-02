@@ -5,5 +5,13 @@
   "start_url": "/login",
   "display": "standalone",
   "background_color": "#060e2a",
-  "theme_color": "#1d8046"
+  "theme_color": "#1d8046",
+  "icons": [
+    {
+      "src": "/logo/unifafire_logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

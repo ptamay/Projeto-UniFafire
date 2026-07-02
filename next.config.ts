@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     // Silencing Turbopack/Webpack conflict warning
+    instrumentationHook: true,
   },
   // As per suggestion: setting empty turbopack config
   // Note: Depending on exact Next 16 schema, it might be in experimental or top level.
