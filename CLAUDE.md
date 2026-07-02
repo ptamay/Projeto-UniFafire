@@ -43,11 +43,11 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Reconciliação sprints 4–6 (ADR-002) concluída
-Última ação  : Commits 7286396 + 13374e0 — CR retroativo (REQ-017–020, spec v1.2), Sprint 7 = Dívida de Estabilização (TASK-029–036), mobile renumerado para Sprint 8
-Próxima ação : Fase 10 — Antigravity executa Sprint 7 (dívida) via docs/tasks-sprint-7.md; DEPOIS Sprint 8 (mobile, docs/tasks-sprint-8.md). Regra reforçada: nenhuma task fora do plan.md sem CR
+Sessão       : Sprint 7 (dívida de estabilização) EXECUTADA e mergeada
+Última ação  : Merge da sprint 7 em main + push 3611f51 — TASK-029 a 036 entregues (15/15 pts); gates: ESLint 0 erros, Vitest 61/61, tsc ok, audit 0 vulns, CI gates 6/6; migrações baseline + imutabilidade aplicadas ao keys.db
+Próxima ação : Sprint 8 — Responsividade Mobile (docs/tasks-sprint-8.md), branch feature/sprint-8-mobile a partir de main; respeitar gate anti-regressão desktop
 Decisões em aberto : nenhuma
-Arquivos não commitados : nenhum relevante
+Arquivos não commitados : .agents/rules/* e .husky/ (mudanças externas de outra sessão — não tocadas)
 Branch atual : main
 Atualizado em : 2026-07-02
 ```
