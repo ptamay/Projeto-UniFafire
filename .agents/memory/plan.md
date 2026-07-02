@@ -71,6 +71,17 @@
 
 ## 4. Backlog — Próximas Sprints (pós-estabilização)
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — recomendado em MODO EXPRESSO, não bloqueante; promover a sprint quando a rede de testes (Sprint 3) estiver estável.
+
+### Sprint 7 — Responsividade Mobile (CR 2026-07-02, Tipo C — REQ-016, ADR-001)
+> Tasks tipo Refactor. Implementação dentro do CSS nativo (D-03 mantida), tokens do
+> `ui-context.md`. Critérios BDD detalhados na Fase 9. Alvo: funcional a partir de 360px.
+- TASK-023 → REQ-016: layout base responsivo — breakpoints documentados em `globals.css`, shell/navegação mobile (menu do usuário e navegação colapsáveis em telas pequenas).
+- TASK-024 → REQ-016: `/login` e `/confirm` mobile-first — fluxo do portador (funcionário/aluno) no celular; alvos de toque ≥ 44px.
+- TASK-025 → REQ-016: dashboard (`/`) — cards de chaves emprestadas/disponíveis, pendências e alertas adaptados a telas pequenas.
+- TASK-026 → REQ-016: telas de listagem (`/history`, `/logs`, `/users`, `/keys`) — padrão tabela→card em viewport estreito, mantendo filtros e ações.
+- TASK-027 → REQ-016: formulários e modais (`/settings`, `/account/profile`, `/account/security`, modais de confirmação destrutiva) adaptados a touch.
+- TASK-028 → REQ-015/016: E2E smoke Playwright dos 4 fluxos críticos (spec §4) com viewport mobile 375×812, somado ao viewport desktop.
+
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
 ## 5. AI Cost Budget

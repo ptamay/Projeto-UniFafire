@@ -8,6 +8,7 @@
 | Data | Versão | Alteração | Motivo |
 |------|--------|-----------|--------|
 | 2026-07-02 | 1.0 | Criação inicial (baseline do sistema legado + requisitos de estabilização) | — |
+| 2026-07-02 | 1.1 | REQ-016 — responsividade mobile em todas as telas (Change Request Tipo C, ADR-001) | Funcionários e alunos solicitam, confirmam e devolvem chaves pelo celular; UI atual só tem adaptação parcial em 5 arquivos |
 
 ---
 
@@ -56,6 +57,9 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-014 — Operações destrutivas controladas:** limpeza de histórico e reset de banco (funções existentes no legado) restritas a ADMIN, com modal de confirmação destrutiva e registro prévio em log de auditoria. *Exceção consciente à imutabilidade do REQ-005, restrita ao super admin — o `threat_model_stride.md` deve ser atualizado para refletir isso.*
 - **REQ-015 — Cobertura de testes:** fluxos críticos (login, retirada, confirmação, devolução) cobertos por testes automatizados antes de qualquer feature nova.
 
+### Change Requests aprovados (pós-Fase 6)
+- **REQ-016 — Responsividade mobile (CR 2026-07-02, Tipo C):** todas as telas do sistema são 100% funcionais em dispositivos móveis (viewport ≥ 360px). Fluxos prioritários: confirmação do portador em `/confirm` e `/login` (funcionário/aluno no celular), dashboard e operação de entrega/devolução. Telas baseadas em tabela (histórico, logs, usuários, chaves) adotam layout alternativo em card em telas pequenas. Implementação dentro do CSS nativo existente (D-03 mantida) — ver ADR-001. *Baseline atual: apenas 5 arquivos têm media queries; keys, users, settings, logs, confirm e login não têm adaptação responsiva.*
+
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.
 2. Retirada de chave (porteiro) → confirmação pelo portador.
@@ -72,6 +76,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 
 ## 6. Restrições Não-Funcionais
 - Uso interno em horário letivo (sem SLA formal 24/7); latência p95 < 500ms nas rotas críticas em rede local.
+- Responsividade: todas as telas funcionais em viewports a partir de 360px de largura; alvos de toque ≥ 44px nos controles dos fluxos críticos (REQ-016).
 - Sem modo offline; instância única em servidor local (PM2).
 - Volume: dezenas de usuários simultâneos no pico; centenas de chaves; milhares de transações/ano — SQLite é suficiente.
 - Compliance: LGPD básica — proteção de credenciais (bcrypt) e não-exposição de dados pessoais em logs.
