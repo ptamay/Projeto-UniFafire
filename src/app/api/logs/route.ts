@@ -36,8 +36,8 @@ export async function GET(request: Request) {
 
         let query = `SELECT * FROM ${tableName}`;
         let countQuery = `SELECT COUNT(*) as total FROM ${tableName}`;
-        let conditions = [];
-        let params: any[] = [];
+        const conditions = [];
+        const params: any[] = [];
 
         if (search) {
             if (tableName === 'action_logs') {

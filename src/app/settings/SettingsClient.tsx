@@ -36,6 +36,15 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [showClearModal, setShowClearModal] = useState(false);
     const [serverInfo, setServerInfo] = useState<{ ips: string[], hostname: string } | null>(null);
 
+    const fetchBackups = () => {
+        fetch('/api/backups').then(r => r.json()).then(d => { setBackups(Array.isArray(d) ? d : []); setLoadingBkp(false); });
+    };
+
+    const loadBackups = () => {
+        setLoadingBkp(true);
+        fetchBackups();
+    };
+
     useEffect(() => {
         fetch('/api/settings').then(r => r.json()).then(d => {
             if (d.backupTime) setBackupTime(d.backupTime);
@@ -46,13 +55,9 @@ export default function SettingsClient({ userRole, username }: Props) {
         fetch('/api/server-info').then(r => r.json()).then(d => {
             if (d.ips) setServerInfo(d.ips ? d : null);
         });
-        loadBackups();
+        // loadingBkp já inicia true — busca direta evita setState síncrono no effect
+        fetchBackups();
     }, []);
-
-    const loadBackups = () => {
-        setLoadingBkp(true);
-        fetch('/api/backups').then(r => r.json()).then(d => { setBackups(Array.isArray(d) ? d : []); setLoadingBkp(false); });
-    };
 
     const saveSettings = async () => {
         setSavingSettings(true);

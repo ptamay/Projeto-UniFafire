@@ -52,3 +52,6 @@ database.sqlite
 /scratch/
 *.zip
 tmp-test.txt
+
+# Logs estruturados (TASK-033)
+/logs/

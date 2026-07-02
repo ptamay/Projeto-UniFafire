@@ -10,13 +10,14 @@ export default async function UsersPage() {
         redirect('/login');
     }
 
+    // JSX e redirect() fora do try — NEXT_REDIRECT era engolido pelo catch.
+    let session: Awaited<ReturnType<typeof verifySession>> = null;
     try {
-        const session = await verifySession(sessionCookie.value);
-        if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR')) {
-            redirect('/');
-        }
-        return <UsersClient userRole={session.role} username={session.username} />;
+        session = await verifySession(sessionCookie.value);
     } catch {
-        redirect('/login');
+        session = null;
     }
+    if (!session) redirect('/login');
+    if (session.role !== 'ADMIN' && session.role !== 'GESTOR') redirect('/');
+    return <UsersClient userRole={session.role} username={session.username} />;
 }

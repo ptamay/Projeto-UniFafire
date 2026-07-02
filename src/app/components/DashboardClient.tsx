@@ -971,7 +971,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 Solicitar {confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?
                             </h3>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                                Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>"{confirmModal.keyName}"</strong> 
+                                Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
                                 {confirmModal.type === 'withdraw' && (
                                     <span> para <strong style={{ color: 'var(--green-400)' }}>{confirmModal.employeeName}</strong></span>
                                 )}.

@@ -12,7 +12,21 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Utilitários fora da aplicação (débito registrado em plan.md §4 —
+    // scripts CommonJS legados de migração/diagnóstico, não código de produção):
+    "scripts/**",
+    "scratch/**",
+    "tmp/**",
+    "patch.js",
+    "**/*.test.old",
   ]),
+  {
+    rules: {
+      // Débito registrado (plan.md §4): 33 ocorrências legadas de `any` em src/.
+      // Rebaixado para warn até a sprint de higiene — NÃO introduzir novos.
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

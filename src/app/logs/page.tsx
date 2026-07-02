@@ -10,13 +10,15 @@ export default async function LogsPage() {
         redirect('/login');
     }
 
+    // JSX e redirect() ficam fora do try: NEXT_REDIRECT lançado dentro do try
+    // era engolido pelo catch, mandando não-admins para /login em vez de /.
+    let sessionData: Awaited<ReturnType<typeof verifySession>> = null;
     try {
-        const sessionData = await verifySession(session.value);
-        if (!sessionData || (sessionData.role !== 'ADMIN' && sessionData.role !== 'GESTOR')) {
-            redirect('/');
-        }
-        return <LogsClient userRole={sessionData.role} username={sessionData.username} />;
+        sessionData = await verifySession(session.value);
     } catch {
-        redirect('/login');
+        sessionData = null;
     }
+    if (!sessionData) redirect('/login');
+    if (sessionData.role !== 'ADMIN' && sessionData.role !== 'GESTOR') redirect('/');
+    return <LogsClient userRole={sessionData.role} username={sessionData.username} />;
 }
