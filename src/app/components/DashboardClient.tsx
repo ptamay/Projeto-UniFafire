@@ -388,15 +388,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         <div className="page-wrapper">
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-            {/* Mobile topbar */}
-            <div className="mobile-topbar">
-                <button onClick={() => setSidebarOpen(true)} className="btn btn-ghost btn-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                </button>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-green)' }}>Dashboard</span>
-                <div style={{ width: 36 }} />
-            </div>
-
             <main className="main-content">
                 {/* Header */}
                 <header style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -404,7 +395,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Monitoramento de Chaves</h1>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Sistema Administrativo</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div className="dashboard-stats" style={{ display: 'flex', gap: '0.75rem' }}>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-available-text)' }}>{stats.available}</span>
@@ -885,12 +876,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     /* Modo Lista */
                     viewMode === 'list' && (
                         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                            <div style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px', 
-                                padding: '1rem 1rem 1rem 2.5rem', 
+                            <div className="dashboard-list-header" style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px',
+                                padding: '1rem 1rem 1rem 2.5rem',
                                 gap: '1rem',
-                                background: 'var(--bg-elevated)', 
+                                background: 'var(--bg-elevated)',
                                 borderBottom: '1px solid var(--border)',
                                 fontSize: '0.65rem',
                                 fontWeight: 800,
@@ -919,7 +910,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         borderBottom: '1px solid var(--border)',
                                         alignItems: 'center',
                                         transition: 'background 0.2s ease'
-                                    }} className="list-row-hover">
+                                    }} className="list-row-hover dashboard-list-row">
                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', textAlign: 'left' }}>
                                             {key.name}
                                         </div>

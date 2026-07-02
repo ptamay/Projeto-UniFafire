@@ -321,10 +321,22 @@ export default function LoginPage() {
                     transition: color 0.15s; display: flex; align-items: center;
                 }
                 .input-action-btn:hover { color: var(--text-accent); }
-                .login-submit { width: 100%; margin-top: 0.25rem; }
+                .login-submit { width: 100%; margin-top: 0.25rem; min-height: 48px; }
                 .login-footer-text {
                     text-align: center; font-size: 0.7rem;
                     color: var(--text-muted); margin-top: 1.5rem; letter-spacing: 0.03em;
+                }
+                /* TASK-024 (REQ-016): mobile-first — 100dvh acomoda o teclado virtual
+                   e o container usa toda a largura útil a partir de 360px */
+                @media (max-width: 768px) {
+                    .login-page {
+                        min-height: 100dvh;
+                        align-items: flex-start;
+                        padding-top: max(1.5rem, 6dvh);
+                    }
+                    .login-container { padding: 2rem 1.25rem; }
+                    .login-bg-orb-1 { width: 320px; height: 320px; }
+                    .login-bg-orb-2 { width: 260px; height: 260px; }
                 }
             `}</style>
         </div>

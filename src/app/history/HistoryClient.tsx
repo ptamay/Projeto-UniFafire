@@ -235,7 +235,7 @@ export default function HistoryClient({ history, userRole, username, currentPage
                         </div>
                     </div>
 
-                    <div className="table-wrapper">
+                    <div className="table-wrapper table-cards">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -249,15 +249,15 @@ export default function HistoryClient({ history, userRole, username, currentPage
                             <tbody>
                                 {history.map((item) => (
                                     <tr key={item.id}>
-                                        <td style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
-                                        <td>
+                                        <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
+                                        <td data-label="Ação">
                                             <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : 'status-available'}`}>
                                                 {item.action === 'withdraw' ? 'Retirada' : 'Devolução'}
                                             </span>
                                         </td>
-                                        <td><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>
-                                        <td>{item.employee_name || '-'}</td>
-                                        <td>
+                                        <td data-label="Chave"><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>
+                                        <td data-label="Funcionário">{item.employee_name || '-'}</td>
+                                        <td data-label="Confirmado por">
                                             {item.confirmed_by ? (
                                                 <span className="badge badge-porteiro" style={{ fontSize: '0.7rem' }}>
                                                     {item.confirmed_by}

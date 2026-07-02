@@ -55,3 +55,10 @@ tmp-test.txt
 
 # Logs estruturados (TASK-033)
 /logs/
+
+# E2E (TASK-028) — artefatos efêmeros
+e2e-test.db*
+e2e-backups/
+e2e-logs/
+playwright-report/
+test-results/

@@ -7,6 +7,13 @@
 /* ============================================================
    DESIGN SYSTEM — UniFAFIRE
    Paleta: Azul Profundo Institucional + Verde Vibrante
+   ============================================================
+   BREAKPOINTS OFICIAIS (TASK-023 · REQ-016 · ADR-001)
+   ─ mobile  : @media (max-width: 768px)  — único breakpoint do projeto;
+               tudo deve ser 100% funcional a partir de 360px de largura.
+   ─ desktop : > 768px — layout base (regras fora de media query).
+   Regra do gate anti-regressão: estilo mobile é ADITIVO, entra somente
+   dentro de @media (max-width: 768px); regras base desktop não mudam.
    ============================================================ */
 :root {
   color-scheme: dark;
@@ -56,6 +63,8 @@
   --sidebar-w: 260px;
   --sidebar-w-collapsed: 70px;
   --header-h: 70px;
+  --navbar-h: 56px; /* topbar mobile (TASK-023 — antes indefinida) */
+  --touch-target: 44px; /* alvo mínimo de toque nos fluxos críticos (spec §6, REQ-016) */
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -854,6 +863,139 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .flex-row { flex-direction: row; }
+
+/* ============================================================
+   MOBILE — Sprint 8 (REQ-016 · ADR-001 · TASK-023 a 027)
+   Bloco ADITIVO: nada aqui altera o desktop (gate anti-regressão).
+   ============================================================ */
+
+/* Topbar mobile: título e badge (classes usadas no Sidebar) */
+.mobile-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.mobile-topbar-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mobile-topbar-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--green-300);
+  border: 1px solid rgba(29, 128, 70, 0.4);
+  border-radius: var(--radius-full);
+  padding: 0.1rem 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  /* ── TASK-023: base ── */
+  html, body { overflow-x: hidden; }
+
+  /* Alvos de toque ≥ 44px (spec §6) */
+  .btn { min-height: var(--touch-target); }
+  .btn-icon { width: var(--touch-target); height: var(--touch-target); }
+  .btn-sm { min-height: 40px; }
+  .input { min-height: var(--touch-target); font-size: 16px; } /* 16px evita zoom automático no iOS */
+  .form-input { min-height: var(--touch-target); font-size: 16px; } /* inputs das telas de conta (TASK-027) */
+  .nav-item { min-height: var(--touch-target); }
+  .pagination button { width: var(--touch-target); height: var(--touch-target); }
+
+  /* Sidebar como drawer: ocupa quase toda a largura em telas pequenas */
+  .sidebar { width: min(300px, 85vw); }
+  .sidebar.open { width: min(300px, 85vw); }
+  /* Colapso de sidebar é conceito desktop — no drawer mobile, sempre expandida */
+  .sidebar-collapsed .sidebar-logo-text,
+  .sidebar-collapsed .nav-section-title,
+  .sidebar-collapsed .nav-item-text,
+  .sidebar-collapsed .user-info-text,
+  .sidebar-collapsed .logout-text { display: block !important; }
+  .sidebar-collapsed .nav-item { justify-content: flex-start; }
+  .btn-toggle-sidebar { display: none !important; }
+
+  .page-header { flex-direction: column; align-items: flex-start; }
+  .search-bar { max-width: 100%; }
+  .form-grid { grid-template-columns: 1fr; }
+  .action-row { flex-wrap: wrap; }
+
+  /* ── TASK-027: modais em telas pequenas ── */
+  .modal-overlay { padding: 0.75rem; }
+  .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 1.25rem;
+  }
+
+  /* ── TASK-026: padrão tabela→card ──
+     Aplicar a classe .table-cards ao .table-wrapper. A tabela permanece o
+     markup primário (desktop intacto); no mobile cada <tr> vira um card e
+     cada <td> exibe seu rótulo via atributo data-label. */
+  .table-cards { overflow-x: visible; border: none; }
+  .table-cards .table,
+  .table-cards .table tbody,
+  .table-cards .table tbody tr,
+  .table-cards .table tbody td { display: block; width: 100%; }
+  .table-cards .table thead { display: none; }
+  .table-cards .table tbody tr {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .table-cards .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+  .table-cards .table tbody td:last-child { border-bottom: none; }
+  .table-cards .table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .table-cards .table tbody td[data-label=''],
+  .table-cards .table tbody td:not([data-label])::before { content: none; }
+  .table-cards .table tbody td.td-actions { justify-content: flex-end; }
+
+  /* ── TASK-025: dashboard ──
+     Componentes usam estilo inline; !important é necessário para o override
+     mobile (exceção documentada — não usar !important fora deste bloco). */
+  .dashboard-stats {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 0.5rem !important;
+  }
+  .dashboard-list-header { display: none !important; }
+  .dashboard-list-row {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  .dashboard-list-row > div { text-align: left !important; }
+}
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 0.75rem; }
 .gap-4 { gap: 1rem; }
