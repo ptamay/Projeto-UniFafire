@@ -27,17 +27,32 @@ export async function GET(request: Request) {
         const date = searchParams.get('date') || '';
         const month = searchParams.get('month') || '';
         const hour = searchParams.get('hour') || '';
+        const type = searchParams.get('type') || 'actions'; // 'actions', 'logins', 'audit'
         const offset = (page - 1) * limit;
 
-        let query = 'SELECT * FROM action_logs';
-        let countQuery = 'SELECT COUNT(*) as total FROM action_logs';
+        let tableName = 'action_logs';
+        if (type === 'logins') tableName = 'login_attempts';
+        else if (type === 'audit') tableName = 'audit_logs';
+
+        let query = `SELECT * FROM ${tableName}`;
+        let countQuery = `SELECT COUNT(*) as total FROM ${tableName}`;
         let conditions = [];
         let params: any[] = [];
 
         if (search) {
-            conditions.push('(username LIKE ? OR action LIKE ? OR target LIKE ? OR ip_address LIKE ?)');
-            const searchParam = `%${search}%`;
-            params.push(searchParam, searchParam, searchParam, searchParam);
+            if (tableName === 'action_logs') {
+                conditions.push('(username LIKE ? OR action LIKE ? OR target LIKE ? OR ip_address LIKE ?)');
+                const searchParam = `%${search}%`;
+                params.push(searchParam, searchParam, searchParam, searchParam);
+            } else if (tableName === 'login_attempts') {
+                conditions.push('(username LIKE ? OR ip LIKE ?)');
+                const searchParam = `%${search}%`;
+                params.push(searchParam, searchParam);
+            } else if (tableName === 'audit_logs') {
+                conditions.push('(action LIKE ? OR details LIKE ?)');
+                const searchParam = `%${search}%`;
+                params.push(searchParam, searchParam);
+            }
         }
 
         if (date) {
@@ -66,7 +81,6 @@ export async function GET(request: Request) {
 
         const logs = db.prepare(query).all(...params);
         
-        // For countQuery, we need all params EXCEPT the last two (limit/offset)
         const countParams = params.slice(0, -2);
         const total = db.prepare(countQuery).get(...countParams) as any;
 

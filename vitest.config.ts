@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    exclude: ['**/node_modules/**', 'tests/e2e/**'],
     env: {
       MOCK_DB_IN_MEMORY: 'true',
       JWT_SECRET: 'test_secret_32_characters_long_1234567890',

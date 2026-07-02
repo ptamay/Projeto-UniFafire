@@ -98,15 +98,18 @@ export default function UsersClient({ userRole, username }: Props) {
                 } else { toast.error(data.error || 'Erro ao atualizar.'); }
             } else {
                 // Create new user
+                const payload = { ...formData };
+                if (!payload.username) delete (payload as any).username;
+                
                 const res = await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    setUsers(prev => [...prev, { id: data.id, ...formData }]);
-                    toast.success(data.reactivated ? 'Usuário reativado!' : 'Usuário criado!');
+                    setUsers(prev => [...prev, { id: data.id, ...formData, username: data.username }]);
+                    toast.success(data.reactivated ? `Usuário reativado: @${data.username}` : `Usuário criado: @${data.username}`);
                     setShowForm(false);
                 } else { toast.error(data.error || 'Erro ao criar usuário.'); }
             }
@@ -273,16 +276,27 @@ export default function UsersClient({ userRole, username }: Props) {
                             </button>
                         </div>
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-                                <div className="input-group">
-                                    <label className="input-label">Nome de Usuário *</label>
-                                    <input className="input" value={formData.username} onChange={e => setFormData(p => ({ ...p, username: e.target.value.toLowerCase().replace(/\s/g, '') }))} required={!editUser} disabled={!!editUser} minLength={3} placeholder="ex: joao.silva" />
-                                </div>
-                            </div>
                             <div className="input-group">
-                                <label className="input-label">Nome Completo</label>
-                                <input className="input" value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))} placeholder="ex: João da Silva Pereira" />
+                                <label className="input-label">Nome e Sobrenome {editUser ? '' : '*'}</label>
+                                <input className="input" value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))} placeholder="ex: João da Silva Pereira" required={!editUser} />
+                                {!editUser && formData.full_name.trim().length > 2 && (
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--blue-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                        O nome de usuário gerado será algo parecido com: <strong>@{(() => {
+                                            const parts = formData.full_name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").split(/\s+/);
+                                            const first = parts[0] || '';
+                                            const last = parts.length > 1 ? parts[parts.length - 1] : '';
+                                            return `${first[0]}${last}`;
+                                        })()}</strong>
+                                    </span>
+                                )}
                             </div>
+                            {editUser && (
+                                <div className="input-group">
+                                    <label className="input-label">Nome de Usuário (somente leitura)</label>
+                                    <input className="input" value={formData.username} disabled />
+                                </div>
+                            )}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div className="input-group">
                                     <label className="input-label">Matrícula {formData.role === 'ALUNO' ? '*' : '(opcional)'}</label>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySession } from '@/lib/session';
+import { verifySessionEdge } from '@/lib/session-edge';
 
 export async function middleware(request: NextRequest) {
     const sessionCookie = request.cookies.get('session');
@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const payload = await verifySession(sessionCookie.value);
+    const payload = await verifySessionEdge(sessionCookie.value);
     const response = NextResponse.next();
 
     if (payload) {

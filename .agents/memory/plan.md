@@ -82,6 +82,9 @@
 - TASK-027 → REQ-016: formulários e modais (`/settings`, `/account/profile`, `/account/security`, modais de confirmação destrutiva) adaptados a touch.
 - TASK-028 → REQ-015/016: E2E smoke Playwright dos 4 fluxos críticos (spec §4) com viewport mobile 375×812, somado ao viewport desktop.
 
+### Débitos técnicos registrados
+- **Lint:** `npx eslint src` acusa 46 erros (majoritariamente `no-explicit-any` e `no-unused-vars`) + scripts utilitários (`scripts/`, `scratch/`, `tmp/`) com `no-require-imports`. Detectado no gate de merge da Sprint 6 (2026-07-02). Ação: sprint de higiene ou ajuste de escopo do ESLint (ignorar `scripts/`/`scratch/`/`tmp/`, corrigir `src/`). Regra vigente: nenhuma sprint pode introduzir erro novo.
+
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
 ## 5. AI Cost Budget

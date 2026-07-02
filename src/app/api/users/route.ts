@@ -39,13 +39,46 @@ export async function POST(request: Request) {
         
         const { username, password, role, full_name, matricula, phone } = parseResult.data;
 
+        let finalUsername = username;
+        if (!finalUsername && full_name) {
+            const parts = full_name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").split(/\s+/);
+            const first = parts[0] || '';
+            const last = parts.length > 1 ? parts[parts.length - 1] : '';
+
+            let found = false;
+            for (let i = 1; i <= first.length; i++) {
+                const attempt = first.substring(0, i) + last;
+                if (!db.prepare('SELECT id FROM users WHERE username = ?').get(attempt)) {
+                    finalUsername = attempt;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                let idx = 1;
+                while (true) {
+                    const fallback = first.substring(0, 1) + last + idx;
+                    if (!db.prepare('SELECT id FROM users WHERE username = ?').get(fallback)) {
+                        finalUsername = fallback;
+                        break;
+                    }
+                    idx++;
+                }
+            }
+        }
+
+        if (!finalUsername) {
+            return NextResponse.json({ error: 'Nome Completo é obrigatório para gerar o usuário.' }, { status: 400 });
+        }
+
         let finalPassword = password;
         if (!finalPassword) {
             const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'default_reset_password'").get() as { value: string } | undefined;
             finalPassword = settingsRow ? settingsRow.value : 'unifafire123';
         }
 
-        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(username) as any;
+        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(finalUsername) as any;
         if (existing) {
             if (existing.active === 1) {
                 return NextResponse.json({ error: 'Este usuário já está cadastrado e ativo' }, { status: 400 });
@@ -55,10 +88,10 @@ export async function POST(request: Request) {
                 db.prepare('UPDATE users SET active = 1, password_hash = ?, role = ?, full_name = ?, matricula = ?, phone = ?, requires_password_change = 1 WHERE id = ?')
                     .run(hash, role, full_name || null, matricula || null, phone || null, existing.id);
 
-                logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', username, 'User reactivated with new data');
+                logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
 
                 return NextResponse.json({
-                    id: existing.id, username, role,
+                    id: existing.id, username: finalUsername, role,
                     message: 'Usuário reativado com sucesso',
                     reactivated: true
                 });
@@ -67,11 +100,11 @@ export async function POST(request: Request) {
 
         const hash = await bcrypt.hash(finalPassword, 10);
         const info = db.prepare('INSERT INTO users (username, password_hash, role, full_name, matricula, phone, requires_password_change) VALUES (?, ?, ?, ?, ?, ?, 1)')
-            .run(username, hash, role, full_name || null, matricula || null, phone || null);
+            .run(finalUsername, hash, role, full_name || null, matricula || null, phone || null);
 
-        logAction(currentUser.id, currentUser.username, 'CREATE_USER', username, `New user created with role: ${role}`);
+        logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
 
-        return NextResponse.json({ id: info.lastInsertRowid, username, role, full_name, matricula });
+        return NextResponse.json({ id: info.lastInsertRowid, username: finalUsername, role, full_name, matricula });
     } catch (error) {
         console.error('Create user error:', error);
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
@@ -98,6 +131,10 @@ export async function DELETE(request: Request) {
 
         const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+
+        if (targetUser.username === 'admin') {
+            return NextResponse.json({ error: 'O usuário administrador principal do sistema (admin) não pode ser excluído por questões de segurança.' }, { status: 403 });
+        }
 
         if (targetUser.role === 'ADMIN') {
             const result = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'").get() as any;
@@ -135,6 +172,10 @@ export async function PUT(request: Request) {
 
         const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+
+        if (targetUser.username === 'admin' && role && role !== 'ADMIN') {
+            return NextResponse.json({ error: 'O perfil do administrador principal do sistema não pode ser rebaixado.' }, { status: 403 });
+        }
 
         db.prepare('UPDATE users SET full_name = ?, matricula = ?, phone = ?, role = ? WHERE id = ?')
             .run(full_name || null, matricula || null, phone || null, role || targetUser.role, id);
