@@ -3,6 +3,13 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import toast from 'react-hot-toast';
+import { OVERDUE_HOURS } from '@/lib/business-rules';
+
+interface BusinessMetrics {
+    totalTransactions: number;
+    doubleConfirmationRate: number | null;
+    medianCounterMinutes: number | null;
+}
 
 interface Key {
     id: number;
@@ -152,8 +159,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [actionLoading, setActionLoading] = useState<number | null>(null);
     const [selectedEmployee, setSelectedEmployee] = useState<Record<number, number>>({});
-    
+    const [bizMetrics, setBizMetrics] = useState<BusinessMetrics | null>(null);
+
     const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
+
+    // TASK-034: métricas de negócio (spec §5) — só para quem opera o balcão
+    useEffect(() => {
+        if (!isPorteiroOrAdmin) return;
+        fetch('/api/metrics/business')
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => { if (d) setBizMetrics(d); })
+            .catch(() => {});
+    }, [isPorteiroOrAdmin]);
 
     const refreshData = async () => {
         try {
@@ -355,12 +372,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             });
     }, [keys, search, filter]);
 
-    // Calcular atrasos
+    // Calcular atrasos — threshold do spec §5 (TASK-034), centralizado em business-rules
     const delayedKeys = useMemo(() => {
         return keys.filter(k => {
             if (k.status !== 'in_use' || !k.in_use_since) return false;
             const diffHours = (new Date().getTime() - new Date(k.in_use_since).getTime()) / (1000 * 60 * 60);
-            return diffHours > 4; // Mais de 4 horas = Atrasada
+            return diffHours > OVERDUE_HOURS;
         }).map(k => ({
             ...k,
             diffHours: Math.floor((new Date().getTime() - new Date(k.in_use_since!).getTime()) / (1000 * 60 * 60))
@@ -396,6 +413,23 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Em Uso</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
                         </div>
+                        {/* TASK-034 — métricas de negócio (spec §5): taxa de dupla confirmação e tempo de balcão */}
+                        {isPorteiroOrAdmin && bizMetrics && (
+                            <>
+                                <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
+                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
+                                        {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
+                                    </span>
+                                </div>
+                                <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
+                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                        {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
+                                    </span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </header>
 
