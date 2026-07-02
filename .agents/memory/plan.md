@@ -119,3 +119,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | Sprint | Início | Fim | Dias | Pts plan. | Pts entr. | Tasks c/ retrabalho | Falhas de gate | Bugs pós-release | Custo IA (US$) |
 |--------|--------|-----|------|-----------|-----------|--------------------|----------------|------------------|----------------|
 | 7 (dívida) | 2026-07-02 | 2026-07-02 | 1 | 15 | 15 | 0 | 1 (pre-commit lint bloqueado por débito legado — quitado na própria sprint) | — | — |
+| 8 (mobile) | 2026-07-02 | 2026-07-02 | 1 | 14 | 14 | 0 | 1 (boot Edge Runtime quebrado por regressão da Sprint 7 — corrigido; detectado pelo E2E) | — | — |

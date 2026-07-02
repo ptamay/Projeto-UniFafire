@@ -22,10 +22,10 @@
 ## TASK-023: Fundação responsiva — breakpoints e shell mobile consolidados
 - **Tipo:** Refactor
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** o sistema aberto em viewport 360px, **When** qualquer tela autenticada é carregada, **Then** a `.mobile-topbar` aparece, a sidebar fica off-canvas e nenhum elemento gera scroll horizontal na página.
-  - [ ] **Given** a sidebar aberta via topbar no mobile, **When** o usuário toca em um item de navegação ou no overlay, **Then** a sidebar fecha e a navegação ocorre.
-  - [ ] **Given** os breakpoints do projeto, **When** um agente ou dev consulta `globals.css`, **Then** existe um bloco comentado único documentando os breakpoints oficiais (mobile ≤ 768px; alvo mínimo 360px) — media queries dispersas passam a referenciá-los.
-  - [ ] **Given** o usuário logado no mobile, **When** abre o menu do usuário no shell (identidade de sessão, REQ-013), **Then** nome, papel e ações ficam acessíveis e tocáveis (≥ 44px).
+  - [x] **Given** o sistema aberto em viewport 360px, **When** qualquer tela autenticada é carregada, **Then** a `.mobile-topbar` aparece, a sidebar fica off-canvas e nenhum elemento gera scroll horizontal na página.
+  - [x] **Given** a sidebar aberta via topbar no mobile, **When** o usuário toca em um item de navegação ou no overlay, **Then** a sidebar fecha e a navegação ocorre.
+  - [x] **Given** os breakpoints do projeto, **When** um agente ou dev consulta `globals.css`, **Then** existe um bloco comentado único documentando os breakpoints oficiais (mobile ≤ 768px; alvo mínimo 360px) — media queries dispersas passam a referenciá-los.
+  - [x] **Given** o usuário logado no mobile, **When** abre o menu do usuário no shell (identidade de sessão, REQ-013), **Then** nome, papel e ações ficam acessíveis e tocáveis (≥ 44px).
 - **Isolamento de Tenant:** N/A — sistema single-tenant, task não acessa dados.
 - **Referência spec.md:** §3 REQ-016, §6
 - **Referência plan.md:** Sprint 8 (backlog §4), D-03
@@ -35,10 +35,10 @@
 ## TASK-024: Portador solicita/confirma pelo celular — `/login` e `/confirm` mobile-first
 - **Tipo:** Refactor
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** um funcionário/aluno acessando `/login` em viewport 360px, **When** a tela renderiza, **Then** formulário, logo e mensagens de erro cabem sem zoom nem scroll horizontal, com inputs e botão ≥ 44px de altura.
-  - [ ] **Given** um portador com transação pendente acessando `/confirm` no celular, **When** a lista de pendências renderiza, **Then** cada transação aparece como card legível (chave, sala, ação, horário) com botão de confirmação ≥ 44px.
-  - [ ] **Given** o portador confirma a transação no celular, **When** toca em confirmar, **Then** o fluxo completa com feedback visível (toast) e a pendência sai da lista — dupla confirmação (REQ-003/004) intacta, sem regressão nos testes de integração existentes.
-  - [ ] **Given** teclado virtual aberto no mobile, **When** o usuário digita nos campos, **Then** o campo em foco permanece visível (sem ficar sob o teclado ou topbar).
+  - [x] **Given** um funcionário/aluno acessando `/login` em viewport 360px, **When** a tela renderiza, **Then** formulário, logo e mensagens de erro cabem sem zoom nem scroll horizontal, com inputs e botão ≥ 44px de altura.
+  - [x] **Given** um portador com transação pendente acessando `/confirm` no celular, **When** a lista de pendências renderiza, **Then** cada transação aparece como card legível (chave, sala, ação, horário) com botão de confirmação ≥ 44px.
+  - [x] **Given** o portador confirma a transação no celular, **When** toca em confirmar, **Then** o fluxo completa com feedback visível (toast) e a pendência sai da lista — dupla confirmação (REQ-003/004) intacta, sem regressão nos testes de integração existentes.
+  - [x] **Given** teclado virtual aberto no mobile, **When** o usuário digita nos campos, **Then** o campo em foco permanece visível (sem ficar sob o teclado ou topbar).
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016 (fluxo prioritário), REQ-003/004, §4 fluxos 2–3
 - **Referência plan.md:** Sprint 8 (backlog §4)
@@ -48,9 +48,9 @@
 ## TASK-025: Dashboard operacional no celular
 - **Tipo:** Refactor
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** um porteiro/gestor no dashboard (`/`) em viewport 360px, **When** a tela renderiza, **Then** os stat-cards (emprestadas vs. disponíveis, pendências) empilham em coluna única sem corte de conteúdo.
-  - [ ] **Given** chaves em atraso > 12h, **When** o dashboard renderiza no mobile, **Then** o alerta visual de atraso (Sprint 6) permanece visível sem scroll horizontal.
-  - [ ] **Given** as métricas de negócio no dashboard (Sprint 6), **When** visualizadas no mobile, **Then** os valores são legíveis em coluna única, sem sobreposição.
+  - [x] **Given** um porteiro/gestor no dashboard (`/`) em viewport 360px, **When** a tela renderiza, **Then** os stat-cards (emprestadas vs. disponíveis, pendências) empilham em coluna única sem corte de conteúdo.
+  - [x] **Given** chaves em atraso > 12h, **When** o dashboard renderiza no mobile, **Then** o alerta visual de atraso (Sprint 6) permanece visível sem scroll horizontal.
+  - [x] **Given** as métricas de negócio no dashboard (Sprint 6), **When** visualizadas no mobile, **Then** os valores são legíveis em coluna única, sem sobreposição.
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016, REQ-006, §5
 - **Referência plan.md:** Sprint 8 (backlog §4)
@@ -60,10 +60,10 @@
 ## TASK-026: Listagens tabela→card — `/history`, `/logs`, `/users`, `/keys`
 - **Tipo:** Refactor
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** qualquer uma das 4 telas de listagem em viewport ≤ 768px, **When** a lista renderiza, **Then** cada linha vira um card empilhado com os campos essenciais visíveis, sem scroll horizontal (padrão tabela→card do ADR-001).
-  - [ ] **Given** a mesma tela em viewport > 768px, **When** renderiza, **Then** a tabela tradicional permanece (sem regressão desktop).
-  - [ ] **Given** filtros, busca e paginação de cada listagem, **When** usados no mobile, **Then** todos operáveis por toque (≥ 44px) e o comportamento (incl. debounce de abas em `/logs`, Sprint 6) é preservado.
-  - [ ] **Given** ações por item (editar/resetar senha em `/users`, editar chave em `/keys`, exportar PDF em `/history`), **When** acionadas no card mobile, **Then** funcionam idênticas ao desktop, respeitando RBAC (matriz da Sprint 3 sem regressão).
+  - [x] **Given** qualquer uma das 4 telas de listagem em viewport ≤ 768px, **When** a lista renderiza, **Then** cada linha vira um card empilhado com os campos essenciais visíveis, sem scroll horizontal (padrão tabela→card do ADR-001).
+  - [x] **Given** a mesma tela em viewport > 768px, **When** renderiza, **Then** a tabela tradicional permanece (sem regressão desktop).
+  - [x] **Given** filtros, busca e paginação de cada listagem, **When** usados no mobile, **Then** todos operáveis por toque (≥ 44px) e o comportamento (incl. debounce de abas em `/logs`, Sprint 6) é preservado.
+  - [x] **Given** ações por item (editar/resetar senha em `/users`, editar chave em `/keys`, exportar PDF em `/history`), **When** acionadas no card mobile, **Then** funcionam idênticas ao desktop, respeitando RBAC (matriz da Sprint 3 sem regressão).
 - **Isolamento de Tenant:** N/A — sistema single-tenant; RBAC por papel coberto pelos testes existentes.
 - **Referência spec.md:** §3 REQ-016, REQ-002/005/007/010
 - **Referência plan.md:** Sprint 8 (backlog §4); ADR-001 §Decisão 3
@@ -73,9 +73,9 @@
 ## TASK-027: Formulários, configurações e modais destrutivos em touch
 - **Tipo:** Refactor
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** `/settings`, `/account/profile` e `/account/security` em viewport 360px, **When** o usuário edita e salva, **Then** formulários completos são operáveis sem zoom, com validação visível e controles ≥ 44px.
-  - [ ] **Given** um ADMIN acionando operação destrutiva (limpar histórico / reset de banco, REQ-014) no mobile, **When** o modal de confirmação destrutiva abre, **Then** o modal cabe na tela, o texto de confirmação é legível e os botões não são acionáveis por toque acidental (confirmar e cancelar separados, ≥ 44px).
-  - [ ] **Given** modais de criação/edição (usuário, chave) no mobile, **When** abertos com teclado virtual ativo, **Then** o conteúdo do modal permanece rolável e o botão de submit acessível.
+  - [x] **Given** `/settings`, `/account/profile` e `/account/security` em viewport 360px, **When** o usuário edita e salva, **Then** formulários completos são operáveis sem zoom, com validação visível e controles ≥ 44px.
+  - [x] **Given** um ADMIN acionando operação destrutiva (limpar histórico / reset de banco, REQ-014) no mobile, **When** o modal de confirmação destrutiva abre, **Then** o modal cabe na tela, o texto de confirmação é legível e os botões não são acionáveis por toque acidental (confirmar e cancelar separados, ≥ 44px).
+  - [x] **Given** modais de criação/edição (usuário, chave) no mobile, **When** abertos com teclado virtual ativo, **Then** o conteúdo do modal permanece rolável e o botão de submit acessível.
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-016, REQ-008, REQ-013, REQ-014
 - **Referência plan.md:** Sprint 8 (backlog §4)
@@ -85,9 +85,9 @@
 ## TASK-028: E2E smoke mobile — 4 fluxos que não podem falhar
 - **Tipo:** Chore
 - **Critério de Aceite (BDD):**
-  - [ ] **Given** a suíte Playwright existente (`tests/e2e/`), **When** executada, **Then** existe um projeto de configuração com viewport mobile 375×812 além do desktop.
-  - [ ] **Given** o projeto mobile, **When** os smokes rodam, **Then** cobrem os 4 fluxos do spec §4: login → dashboard; retirada → confirmação pelo portador; devolução → confirmação → chave disponível; (backup verificado via teste existente da Sprint 5 — não duplicar).
-  - [ ] **Given** qualquer smoke mobile, **When** um elemento essencial do fluxo estiver fora do viewport ou inacessível por toque, **Then** o teste falha (asserções de visibilidade real, não apenas presença no DOM).
+  - [x] **Given** a suíte Playwright existente (`tests/e2e/`), **When** executada, **Then** existe um projeto de configuração com viewport mobile 375×812 além do desktop.
+  - [x] **Given** o projeto mobile, **When** os smokes rodam, **Then** cobrem os 4 fluxos do spec §4: login → dashboard; retirada → confirmação pelo portador; devolução → confirmação → chave disponível; (backup verificado via teste existente da Sprint 5 — não duplicar).
+  - [x] **Given** qualquer smoke mobile, **When** um elemento essencial do fluxo estiver fora do viewport ou inacessível por toque, **Then** o teste falha (asserções de visibilidade real, não apenas presença no DOM).
 - **Isolamento de Tenant:** N/A — sistema single-tenant.
 - **Referência spec.md:** §3 REQ-015/016, §4
 - **Referência plan.md:** Sprint 8 (backlog §4); backlog E2E smoke (§4)
