@@ -1,42 +1,60 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import db from '@/lib/db';
 import bcrypt from 'bcrypt';
-import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { signSession } from '@/lib/session';
+import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts } from '@/lib/security-profile';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { username, password } = body;
+        
+        // Pega IP do client. Em ambiente local pode vir do cabeçalho ou fallback genérico.
+        // O header 'x-forwarded-for' é o padrão se houver reverse proxy (Nginx).
+        const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        
+        if (!checkRateLimit(ip)) {
+            logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
+            return NextResponse.json({ error: 'Muitas tentativas. Tente novamente mais tarde.' }, { status: 429 });
+        }
 
-        if (!username || !password) {
-            return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
+        if (checkLockout(body.username, ip)) {
+            logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
+            return NextResponse.json({ error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' }, { status: 423 });
+        }
+
+        if (!body.username || !body.password) {
+            recordLoginAttempt(body.username || 'empty', ip, false);
+            return NextResponse.json({ error: 'Usuário e senha são obrigatórios' }, { status: 400 });
         }
 
         const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1');
-        const user = stmt.get(username) as any; // simplified type
+        const user = stmt.get(body.username) as any;
 
         if (!user) {
-            console.error(`Login error: Invalid username or inactive account: ${username}`);
-            logAction(null, username, 'LOGIN_FAILED', 'System', 'Invalid username or inactive account');
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+            recordLoginAttempt(body.username, ip, false);
+            return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
         }
 
-        const match = await bcrypt.compare(password, user.password_hash);
+        const match = await bcrypt.compare(body.password, user.password_hash);
 
         if (!match) {
-            console.error(`Login error: Invalid password for username: ${username}`);
-            logAction(user.id, username, 'LOGIN_FAILED', 'System', 'Invalid password');
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+            recordLoginAttempt(user.username, ip, false);
+            logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
+            return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
         }
 
+        // --- Fluxo de sucesso ---
+        clearLoginAttempts(user.username, ip); // Reseta as falhas
+
+        // Se o usuário precisa trocar a senha inicial e enviou uma nova
         if (user.requires_password_change) {
             if (!body.newPassword) {
-                return NextResponse.json({ requiresPasswordChange: true });
+                return NextResponse.json({ error: 'REQUIRE_PASSWORD_CHANGE' }, { status: 403 });
             }
-            if (body.newPassword.length < 6) {
-                return NextResponse.json({ error: 'A nova senha deve ter no mínimo 6 caracteres' }, { status: 400 });
+            if (body.newPassword.length < 8) {
+                return NextResponse.json({ error: 'A nova senha deve ter no mínimo 8 caracteres' }, { status: 400 });
             }
             const hashedNew = await bcrypt.hash(body.newPassword, 10);
             db.prepare('UPDATE users SET password_hash = ?, requires_password_change = 0 WHERE id = ?').run(hashedNew, user.id);
