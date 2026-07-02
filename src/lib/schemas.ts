@@ -70,7 +70,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
 // Users
 export const UserSchema = z.object({
     username: z.string().min(3, "O usuário deve ter pelo menos 3 caracteres.").max(50, "Máximo de 50 caracteres."),
-    password: z.string().max(128).optional().or(z.literal('')),
+    password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres.").max(128).optional().or(z.literal('')),
     role: z.enum(ROLES).default('FUNCIONARIO'),
     full_name: z.string().min(2, "Nome completo deve ter ao menos 2 caracteres.").optional(),
     matricula: z.string().optional(),
@@ -80,7 +80,7 @@ export const UserSchema = z.object({
 export const ChangePasswordSchema = z.object({
     userId: z.number().int().positive(),
     currentPassword: z.string().min(1),
-    newPassword: z.string().min(6, "A nova senha deve ter no mínimo 6 caracteres.")
+    newPassword: z.string().min(8, "A nova senha deve ter no mínimo 8 caracteres.")
 });
 
 export const ChangeRoleSchema = z.object({
