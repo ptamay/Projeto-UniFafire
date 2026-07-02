@@ -131,7 +131,7 @@ export default function KeysClient({
                         <button className="btn btn-green" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
                     </div>
 
-                    <div className="table-wrapper">
+                    <div className="table-wrapper table-cards">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -144,14 +144,14 @@ export default function KeysClient({
                             <tbody>
                                 {keys.map(key => (
                                     <tr key={key.id}>
-                                        <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{key.name}</td>
-                                        <td style={{ color: 'var(--text-secondary)' }}>{key.room}</td>
-                                        <td>
+                                        <td data-label="Nome" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{key.name}</td>
+                                        <td data-label="Sala/Local" style={{ color: 'var(--text-secondary)' }}>{key.room}</td>
+                                        <td data-label="Status">
                                             <span className={`status-tag ${key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
                                                 {key.status === 'available' ? 'Disponível' : 'Em Uso'}
                                             </span>
                                         </td>
-                                        <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                        <td className="td-actions" style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                             <button
                                                 className="btn btn-ghost btn-sm"
                                                 onClick={() => handleEditKey(key)}
