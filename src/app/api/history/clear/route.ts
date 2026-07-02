@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 export async function DELETE(request: Request) {
     try {
@@ -21,9 +22,9 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Clear History
-        const stmt = db.prepare('DELETE FROM history');
-        const info = stmt.run();
+        // Clear History — bypass de manutenção (REQ-014): triggers de imutabilidade
+        // (TASK-030) bloqueiam DELETE fora deste fluxo.
+        const info = withMaintenanceMode(() => db.prepare('DELETE FROM history').run());
 
         // Log Action
         logAction(session.id, session.username, 'CLEAR_HISTORY', 'History Table', `Deleted ${info.changes} records`);

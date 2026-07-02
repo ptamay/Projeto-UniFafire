@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 export async function POST() {
     try {
@@ -13,7 +14,9 @@ export async function POST() {
 
         const tablesToClear = ['history', 'action_logs', 'audit_logs', 'keys', 'employees'];
         
-        const trans = db.transaction(() => {
+        // Bypass de manutenção (REQ-014): history tem triggers de imutabilidade
+        // (TASK-030) que bloqueiam DELETE fora deste fluxo.
+        withMaintenanceMode(() => {
             for (const table of tablesToClear) {
                 try {
                     // Check if table exists first to avoid error noise
@@ -27,8 +30,6 @@ export async function POST() {
                 }
             }
         });
-        
-        trans();
 
         return NextResponse.json({ success: true, message: 'Banco de dados limpo com sucesso!' });
     } catch (e) {
