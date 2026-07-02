@@ -904,6 +904,7 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }
   .btn-sm { min-height: 40px; }
   .input { min-height: var(--touch-target); font-size: 16px; } /* 16px evita zoom automático no iOS */
+  .form-input { min-height: var(--touch-target); font-size: 16px; } /* inputs das telas de conta (TASK-027) */
   .nav-item { min-height: var(--touch-target); }
   .pagination button { width: var(--touch-target); height: var(--touch-target); }
 

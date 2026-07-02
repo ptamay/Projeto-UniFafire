@@ -192,7 +192,7 @@ export default function SettingsClient({ userRole, username }: Props) {
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.5rem' }}>
                     {/* Server Info Card */}
                     <div className="card" style={{ background: 'linear-gradient(135deg, var(--blue-800), var(--blue-900))', border: '1px solid var(--green-500)', boxShadow: '0 0 15px rgba(29, 128, 70, 0.1)' }}>
                         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--green-400)' }}>
