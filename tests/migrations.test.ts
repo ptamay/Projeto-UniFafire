@@ -36,7 +36,7 @@ describe('TASK-029 — migrações UP/DOWN pareadas', () => {
         expect(result.applied.length).toBeGreaterThan(0);
 
         const db = new Database(dbFile, { readonly: true });
-        const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r: { name?: unknown }) => r.name);
+        const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map(r => r.name);
         for (const t of ['users', 'keys', 'history', 'key_transactions', 'action_logs', 'settings']) {
             expect(tables, `tabela ${t} ausente`).toContain(t);
         }

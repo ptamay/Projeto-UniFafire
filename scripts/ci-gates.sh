@@ -49,9 +49,16 @@ fi
 
 echo "▶ Gate 4 — Ordem TDD: red antes de green (disciplina)"
 GATE4_FAIL=0
-TASKS=$(git log --pretty=%s 2>/dev/null | grep -oE 'feat\(TASK-[0-9]+\)' | grep -oE 'TASK-[0-9]+' | sort -u || true)
+# Escopo: apenas commits ainda não publicados (origin/main..HEAD). Histórico já
+# pushado é imutável — auditá-lo aqui bloquearia todo push para sempre.
+if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+  RANGE="origin/main..HEAD"
+else
+  RANGE="HEAD"
+fi
+TASKS=$(git log $RANGE --pretty=%s 2>/dev/null | grep -oE 'feat\(TASK-[0-9]+\)' | grep -oE 'TASK-[0-9]+' | sort -u || true)
 for t in $TASKS; do
-  first=$(git log --reverse --pretty=%s | grep -E "^(test|feat)\($t\)" | head -1 || true)
+  first=$(git log --reverse $RANGE --pretty=%s | grep -E "^(test|feat)\($t\)" | head -1 || true)
   case "$first" in
     feat*)
       echo "  ❌ $t: commit 'feat' sem 'test: red' anterior — TDD atômico violado"

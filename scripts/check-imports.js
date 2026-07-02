@@ -20,7 +20,9 @@ function walk(dir) {
       if (!['node_modules', '.next', 'dist', 'build'].includes(entry.name)) walk(full);
     } else if (exts.includes(path.extname(entry.name))) {
       const code = fs.readFileSync(full, 'utf8');
-      const re = /(?:import|from|require\()\s*['"]([^'".][^'"]*)['"]/g;
+      // Lookbehind evita falso-positivo quando "import"/"from" aparece dentro de
+      // strings/URLs (ex.: fetch('/api/backups/import', ...)).
+      const re = /(?<![\w/.'"-])(?:import|from|require\()\s*['"]([^'".][^'"]*)['"]/g;
       let m;
       while ((m = re.exec(code))) {
         let dep = m[1];

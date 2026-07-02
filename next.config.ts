@@ -9,10 +9,8 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   /* config options here */
-  experimental: {
-    // Silencing Turbopack/Webpack conflict warning
-    instrumentationHook: true,
-  },
+  // instrumentation.ts é habilitado por padrão desde o Next 15 —
+  // experimental.instrumentationHook não existe mais no Next 16.
   // As per suggestion: setting empty turbopack config
   // Note: Depending on exact Next 16 schema, it might be in experimental or top level.
   // The error said "setting an empty turbopack config in your Next config file (e.g. `turbopack: {}`)"
