@@ -33,8 +33,9 @@ export async function logAction(userId: number | null, username: string | undefi
 
         // Ensure username is a string or null
         const safeUsername = username || 'Unknown';
+        const safeUserId = userId === 0 ? null : userId;
 
-        stmt.run(userId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString());
+        stmt.run(safeUserId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString());
         console.log(`[ACTION LOG] ${safeUsername} (${ipAddress}) performed ${action} on ${target}`);
     } catch (error) {
         console.error('Failed to log action:', error);

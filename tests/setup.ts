@@ -53,6 +53,7 @@ beforeAll(() => {
             action TEXT NOT NULL,
             target TEXT,
             details TEXT,
+            ip_address TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
