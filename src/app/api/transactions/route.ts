@@ -5,6 +5,7 @@ import { verifySession } from '@/lib/session';
 import { TransactionSchema } from '@/lib/schemas';
 import { logAction } from '@/lib/logger';
 import { logTiming } from '@/lib/structured-logger';
+import type { KeyTableRow, TargetUserRow } from '@/lib/db-rows';
 
 export async function POST(request: Request) {
     const started = performance.now();
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
         // Resolver o user_id: preferir user_id, fallback para employee_id (legado)
         const resolvedUserId = userId || legacyEmployeeId || null;
 
-        const key = db.prepare('SELECT * FROM keys WHERE id = ?').get(keyId) as any;
+        const key = db.prepare('SELECT * FROM keys WHERE id = ?').get(keyId) as KeyTableRow | undefined;
         if (!key) return NextResponse.json({ error: 'Chave não encontrada.' }, { status: 404 });
         if (key.active === 0) return NextResponse.json({ error: 'Esta chave foi desativada.' }, { status: 400 });
 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
             }
 
             // Verificar se usuário existe e está ativo
-            const targetUser = db.prepare('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1').get(resolvedUserId) as any;
+            const targetUser = db.prepare('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1').get(resolvedUserId) as TargetUserRow | undefined;
             if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado ou inativo.' }, { status: 400 });
 
             // Verificar se já há transação pendente para esta chave

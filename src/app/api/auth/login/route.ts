@@ -7,6 +7,14 @@ import { signSession } from '@/lib/session';
 import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts } from '@/lib/security-profile';
 import { logTiming } from '@/lib/structured-logger';
 
+interface LoginUserRow {
+    id: number;
+    username: string;
+    password_hash: string;
+    role: string;
+    requires_password_change: number;
+}
+
 export async function POST(request: Request) {
     const started = performance.now();
     try {
@@ -32,7 +40,7 @@ export async function POST(request: Request) {
         }
 
         const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1');
-        const user = stmt.get(body.username) as any;
+        const user = stmt.get(body.username) as LoginUserRow | undefined;
 
         if (!user) {
             recordLoginAttempt(body.username, ip, false);

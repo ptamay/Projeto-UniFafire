@@ -3,6 +3,13 @@ import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
+import type { CountRow } from '@/lib/db-rows';
+
+interface RoleRow {
+    id: number;
+    username: string;
+    role: string;
+}
 
 export async function POST(request: Request) {
     try {
@@ -28,7 +35,7 @@ export async function POST(request: Request) {
         }
 
         const targetUserStmt = db.prepare('SELECT * FROM users WHERE id = ?');
-        const targetUser = targetUserStmt.get(targetUserId) as any;
+        const targetUser = targetUserStmt.get(targetUserId) as RoleRow | undefined;
 
         if (!targetUser) {
             return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
@@ -37,7 +44,7 @@ export async function POST(request: Request) {
         // Integrity Check: Do not allow demotion if user is the last ADMIN
         if (targetUser.role === 'ADMIN' && newRole === 'PORTEIRO') {
             const adminCountStmt = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'");
-            const result = adminCountStmt.get() as any;
+            const result = adminCountStmt.get() as CountRow;
             if (result.count <= 1) {
                 return NextResponse.json({ error: 'Ação bloqueada: Não é possível rebaixar o único administrador.' }, { status: 400 });
             }

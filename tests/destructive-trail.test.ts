@@ -70,7 +70,7 @@ describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
         db.prepare(`INSERT INTO history (key_id, user_id, username, action) VALUES (?, 1, 'test_admin', 'withdraw')`).run(keyId);
 
         const { DELETE } = await import('@/app/api/history/clear/route');
-        const res = await DELETE(new Request('http://localhost/api/history/clear', { method: 'DELETE' }));
+        const res = await DELETE();
         expect(res.status).toBe(200);
 
         // Trilha no banco (action_logs não é alvo do history/clear)

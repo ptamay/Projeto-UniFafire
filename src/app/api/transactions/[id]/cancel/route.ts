@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
+import type { KeyTransactionRow } from '@/lib/db-rows';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const tx = db.prepare('SELECT * FROM key_transactions WHERE id = ?').get(transactionId) as any;
+        const tx = db.prepare('SELECT * FROM key_transactions WHERE id = ?').get(transactionId) as KeyTransactionRow | undefined;
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
         // Apenas porteiro que iniciou, admin, ou o próprio usuário pode cancelar

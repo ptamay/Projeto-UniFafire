@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
 import { logTiming } from '@/lib/structured-logger';
+import type { KeyTransactionJoinRow } from '@/lib/db-rows';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -29,7 +30,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             LEFT JOIN keys k ON kt.key_id = k.id
             LEFT JOIN users u ON kt.user_id = u.id
             WHERE kt.id = ?
-        `).get(transactionId) as any;
+        `).get(transactionId) as KeyTransactionJoinRow | undefined;
 
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
@@ -80,9 +81,9 @@ export async function POST(request: Request, { params }: RouteParams) {
 
             completeTransaction();
 
-            logAction(session.id, session.username, 
+            logAction(session.id, session.username,
                 tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : 'KEY_RETURNED',
-                tx.key_name, 
+                tx.key_name || 'Chave removida',
                 `Transação #${transactionId} completada com dupla confirmação`
             );
 
