@@ -17,7 +17,7 @@ export async function verifySession(token: string) {
 
     try {
         const stmt = db.prepare('SELECT password_hash FROM users WHERE id = ? AND active = 1');
-        const user = stmt.get(payload.id) as any;
+        const user = stmt.get(payload.id) as { password_hash: string } | undefined;
 
         if (!user || typeof user.password_hash !== 'string') {
             return null; // Usuário não existe ou inativo

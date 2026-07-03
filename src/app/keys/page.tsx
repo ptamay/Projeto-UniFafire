@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import db from '@/lib/db';
 import KeysClient from '../components/KeysClient';
+import type { KeyTableRow } from '@/lib/db-rows';
 
 export default async function KeysPage() {
     const sessionCookie = (await cookies()).get('session');
@@ -16,11 +17,12 @@ export default async function KeysPage() {
         if (!user) redirect('/login');
     } catch { redirect('/login'); }
 
-    const keys = db.prepare("SELECT * FROM keys WHERE active = 1 ORDER BY CASE WHEN status = 'in_use' THEN 0 ELSE 1 END, name ASC").all();
+    const rawKeys = db.prepare("SELECT * FROM keys WHERE active = 1 ORDER BY CASE WHEN status = 'in_use' THEN 0 ELSE 1 END, name ASC").all() as KeyTableRow[];
+    const keys = rawKeys.map((k) => ({ ...k, room: k.room ?? '' }));
 
     return (
         <main>
-            <KeysClient initialKeys={keys as any} userRole={session.role} username={session.username} />
+            <KeysClient initialKeys={keys} userRole={session.role} username={session.username} />
         </main>
     );
 }

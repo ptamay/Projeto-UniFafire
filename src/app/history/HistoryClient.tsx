@@ -7,7 +7,7 @@ import autoTable from 'jspdf-autotable';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 
-interface HistoryItem {
+export interface HistoryItem {
     id: number;
     action: string;
     timestamp: string;

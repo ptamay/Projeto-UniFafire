@@ -96,10 +96,11 @@ export default function UsersClient({ userRole, username }: Props) {
                     setShowForm(false);
                 } else { toast.error(data.error || 'Erro ao atualizar.'); }
             } else {
-                // Create new user
-                const payload = { ...formData };
-                if (!payload.username) delete (payload as any).username;
-                
+                // Create new user — omite username quando vazio (gerado automaticamente pelo servidor)
+                const { username, ...rest } = formData;
+                const payload = username ? { username, ...rest } : rest;
+
+
                 const res = await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

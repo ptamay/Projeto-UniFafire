@@ -11,7 +11,7 @@ interface BusinessMetrics {
     medianCounterMinutes: number | null;
 }
 
-interface Key {
+export interface Key {
     id: number;
     name: string;
     room?: string;
@@ -23,7 +23,7 @@ interface Key {
     in_use_since?: string;
 }
 
-interface User {
+export interface User {
     id: number;
     name: string;
     role?: string;
@@ -199,8 +199,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 }
             }
             if (uRes.ok) {
-                const uData = await uRes.json();
-                setEmployees(uData.map((u: any) => ({ ...u, name: u.full_name || u.username || '' })));
+                const uData = await uRes.json() as { id: number; username: string; full_name: string | null; role: string }[];
+                setEmployees(uData.map((u) => ({ ...u, full_name: u.full_name ?? undefined, name: u.full_name || u.username || '' })));
             }
             router.refresh();
         } catch (e) {

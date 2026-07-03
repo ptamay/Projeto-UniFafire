@@ -2,7 +2,19 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import db from '@/lib/db';
-import DashboardClient from './components/DashboardClient';
+import DashboardClient, { type Key, type User } from './components/DashboardClient';
+
+interface RawKeyRow {
+    id: number;
+    name: string;
+    room: string | null;
+    status: 'available' | 'in_use';
+    employee_id: number | null;
+    employee_name: string | null;
+    employee_username: string | null;
+    employee_role: string | null;
+    pending_info: string | null;
+}
 
 function getData() {
     const rawKeys = db.prepare(`
@@ -22,22 +34,34 @@ function getData() {
         LEFT JOIN users u ON k.user_id = u.id
         WHERE k.active = 1
         ORDER BY k.name ASC
-    `).all();
+    `).all() as RawKeyRow[];
 
-    const keys = rawKeys.map((k: any) => ({
+    const keys: Key[] = rawKeys.map((k) => ({
         ...k,
-        pending_info: k.pending_info ? JSON.parse(k.pending_info) : null
+        room: k.room ?? undefined,
+        employee_id: k.employee_id ?? undefined,
+        employee_name: k.employee_name ?? undefined,
+        employee_role: k.employee_role ?? undefined,
+        pending_info: k.pending_info ? JSON.parse(k.pending_info) : undefined,
     }));
     
     // Pegar apenas usuários que podem receber chaves (FUNCIONARIO e ALUNO)
     const users = db.prepare(`
-        SELECT id, username, full_name, role 
-        FROM users 
-        WHERE active = 1 AND role IN ('FUNCIONARIO', 'ALUNO') 
+        SELECT id, username, full_name, role
+        FROM users
+        WHERE active = 1 AND role IN ('FUNCIONARIO', 'ALUNO')
         ORDER BY COALESCE(full_name, username) ASC
-    `).all();
-    
-    return { keys, users };
+    `).all() as { id: number; username: string; full_name: string | null; role: string }[];
+
+    const mappedUsers: User[] = users.map((u) => ({
+        id: u.id,
+        name: u.full_name || u.username,
+        role: u.role,
+        username: u.username,
+        full_name: u.full_name ?? undefined,
+    }));
+
+    return { keys, users: mappedUsers };
 }
 
 export default async function Home() {
@@ -59,8 +83,8 @@ export default async function Home() {
     return (
         <main>
             <DashboardClient
-                initialKeys={keys as any}
-                initialUsers={users as any}
+                initialKeys={keys}
+                initialUsers={users}
                 userRole={sessionData.role || 'FUNCIONARIO'}
                 userId={sessionData.id}
                 username={sessionData.username}

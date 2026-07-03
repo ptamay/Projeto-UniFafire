@@ -6,8 +6,25 @@ import Sidebar from '../components/Sidebar';
 
 type LogType = 'actions' | 'audit' | 'logins';
 
+interface LogEntry {
+    id: number;
+    timestamp: string;
+    // 'actions'
+    username?: string;
+    action?: string;
+    target?: string;
+    ip_address?: string;
+    details?: string;
+    // 'audit'
+    actor_id?: number;
+    target_user_id?: number;
+    // 'logins'
+    ip?: string;
+    success?: number;
+}
+
 export default function LogsClient({ userRole, username }: { userRole: string, username: string }) {
-    const [logs, setLogs] = useState<any[]>([]);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<LogType>('actions');
     const [searchTerm, setSearchTerm] = useState('');
