@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 
@@ -35,7 +35,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
     const [totalPages, setTotalPages] = useState(1);
     const router = useRouter();
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -62,14 +62,14 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, page, searchTerm, dateFilter, monthFilter, hourFilter, router]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchLogs();
         }, 300); // Debounce search
         return () => clearTimeout(timer);
-    }, [page, searchTerm, dateFilter, monthFilter, hourFilter, activeTab]);
+    }, [fetchLogs]);
 
     return (
         <div className="page-wrapper">

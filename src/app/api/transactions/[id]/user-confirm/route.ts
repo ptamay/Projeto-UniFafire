@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         }
 
         // Verificar se ambas as partes já confirmaram
-        const updatedTx = db.prepare('SELECT porteiro_confirmed_at, user_confirmed_at FROM key_transactions WHERE id = ?').get(transactionId) as any;
+        const updatedTx = db.prepare('SELECT porteiro_confirmed_at, user_confirmed_at FROM key_transactions WHERE id = ?').get(transactionId) as Pick<KeyTransactionJoinRow, 'porteiro_confirmed_at' | 'user_confirmed_at'>;
 
         if (updatedTx.porteiro_confirmed_at && updatedTx.user_confirmed_at) {
             // Ambas as partes confirmaram, completar a transação
