@@ -6,7 +6,7 @@ import { verifySession } from '@/lib/session';
 import { withMaintenanceMode } from '@/lib/db-maintenance';
 import { logStructured } from '@/lib/structured-logger';
 
-export async function DELETE(request: Request) {
+export async function DELETE() {
     try {
         const sessionCookie = (await cookies()).get('session');
         if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

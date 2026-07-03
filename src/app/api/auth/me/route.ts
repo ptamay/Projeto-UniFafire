@@ -22,7 +22,7 @@ export async function GET() {
             username: session.username,
             role: session.role
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 }

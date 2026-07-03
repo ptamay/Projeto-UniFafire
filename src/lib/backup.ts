@@ -135,7 +135,7 @@ export function createBackup(options: { force?: boolean } = {}) {
         try {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'backup_retention_count'").get() as { value: string };
             if (row) retentionCount = parseInt(row.value, 10);
-        } catch (e) {
+        } catch {
             console.error('[Backup] Erro ao ler retention_count, usando padrão 3');
         }
 

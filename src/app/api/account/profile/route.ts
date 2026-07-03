@@ -11,7 +11,7 @@ const ProfileUpdateSchema = z.object({
     phone: z.string().optional().or(z.literal('')),
 });
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         const sessionCookie = (await cookies()).get('session')?.value;
         if (!sessionCookie) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });

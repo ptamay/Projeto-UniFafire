@@ -6,6 +6,16 @@ import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
 import { UserSchema } from '@/lib/schemas';
 
+interface UserRow {
+    id: number;
+    username: string;
+    active: number;
+    role: string;
+    full_name: string | null;
+    matricula: string | null;
+    phone: string | null;
+}
+
 // Get all users
 export async function GET() {
     try {
@@ -16,7 +26,7 @@ export async function GET() {
 
         const users = db.prepare('SELECT id, username, full_name, matricula, phone, role FROM users WHERE active = 1').all();
         return NextResponse.json(users);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
     }
 }
@@ -78,7 +88,7 @@ export async function POST(request: Request) {
             finalPassword = settingsRow ? settingsRow.value : 'unifafire123';
         }
 
-        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(finalUsername) as any;
+        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(finalUsername) as Pick<UserRow, 'id' | 'active'> | undefined;
         if (existing) {
             if (existing.active === 1) {
                 return NextResponse.json({ error: 'Este usuário já está cadastrado e ativo' }, { status: 400 });
@@ -129,7 +139,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Você não pode excluir a si mesmo.' }, { status: 403 });
         }
 
-        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
+        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
         if (targetUser.username === 'admin') {
@@ -137,7 +147,7 @@ export async function DELETE(request: Request) {
         }
 
         if (targetUser.role === 'ADMIN') {
-            const result = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'").get() as any;
+            const result = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'").get() as { count: number };
             if (result.count <= 1) {
                 return NextResponse.json({ error: 'Não é possível excluir o único administrador.' }, { status: 403 });
             }
@@ -170,7 +180,7 @@ export async function PUT(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
+        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
         if (targetUser.username === 'admin' && role && role !== 'ADMIN') {

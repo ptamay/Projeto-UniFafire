@@ -22,7 +22,7 @@ export async function logAction(userId: number | null, username: string | undefi
             if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1') {
                 ipAddress = '127.0.0.1';
             }
-        } catch (e) {
+        } catch {
             // Not in a request context (e.g. build time or background job)
             ipAddress = 'System';
         }
