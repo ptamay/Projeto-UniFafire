@@ -153,6 +153,11 @@ export async function DELETE(request: Request) {
             }
         }
 
+        const keysInPossession = db.prepare("SELECT COUNT(*) as count FROM keys WHERE user_id = ? AND status = 'in_use'").get(id) as { count: number };
+        if (keysInPossession.count > 0) {
+            return NextResponse.json({ error: 'Não é possível excluir: o usuário possui chaves em sua posse.' }, { status: 400 });
+        }
+
         const info = db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(id);
         if (info.changes === 0) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
