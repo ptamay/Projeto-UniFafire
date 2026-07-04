@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifySessionEdge } from '@/lib/session-edge';
 
-export async function middleware(request: NextRequest) {
+// TASK Next 16: renomeado de middleware.ts para proxy.ts (convenção depreciada
+// — https://nextjs.org/docs/messages/middleware-to-proxy). Mesma lógica.
+export async function proxy(request: NextRequest) {
     const sessionCookie = request.cookies.get('session');
     
     // Evita interferir com as rotas de auth (login/logout)
