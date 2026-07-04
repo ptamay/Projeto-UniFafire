@@ -104,8 +104,9 @@
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 
 ### Débitos técnicos registrados
-- **Lint (parcialmente quitado na Sprint 7, 2026-07-02):** erros zerados — 13 erros reais corrigidos (incl. bug de NEXT_REDIRECT engolido por try/catch em logs/settings/users); escopo do ESLint ajustado (ignora `scripts/`/`scratch/`/`tmp/`). **Restante:** `no-explicit-any` rebaixado para *warn* (33 ocorrências legadas) + ~40 warnings de vars não usadas — promover a *error* e zerar em sprint de higiene futura. Regra vigente: nenhuma sprint introduz warning novo.
+- ~~**Lint**~~ — **quitado (Sprint 9 — higiene, 2026-07-03):** os 64 warnings restantes (33 `no-explicit-any`, 28 `no-unused-vars`, 3 `exhaustive-deps`) foram zerados. `no-explicit-any` voltou de *warn* para *error* no `eslint.config.mjs` — nenhuma exceção residual. `npx eslint src` limpo (0 erros, 0 warnings).
 - ~~**Testes desativados na Sprint 6**~~ — **quitado (TASK-035, Sprint 7):** os 4 `.test.old` viraram suíte Vitest real (session-policy, password-policy, security-profile) com cobertura extra do strict pwd_hash check.
+- ~~**Next 16 — convenção `middleware` deprecada**~~ — **quitado (Sprint 9, 2026-07-03):** `src/middleware.ts` renomeado para `src/proxy.ts` (função `middleware` → `proxy`), conforme codemod oficial `middleware-to-proxy`.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 

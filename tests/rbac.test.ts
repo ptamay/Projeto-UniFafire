@@ -12,7 +12,13 @@ vi.mock('next/headers', () => {
     };
 });
 
-let currentSession: any = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+interface MockSession {
+    id: number;
+    role: string;
+    username: string;
+}
+
+let currentSession: MockSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
 
 vi.mock('@/lib/session', () => {
     return {
@@ -35,7 +41,6 @@ describe('RBAC - Controle de Acesso', () => {
         });
 
         it('NÃO deve listar usuários (GET /api/users)', async () => {
-            const req = new Request('http://localhost/api/users');
             const res = await UsersGET();
             expect(res.status).toBe(403);
         });
