@@ -55,7 +55,6 @@ export default function UsersClient({ userRole, username }: Props) {
     const [saving, setSaving] = useState(false);
     const [deleteModal, setDeleteModal] = useState<User | null>(null);
     const [resetModal, setResetModal] = useState<User | null>(null);
-    const [resetPass, setResetPass] = useState('');
     const [sysDefaultPass, setSysDefaultPass] = useState('unifafire123');
     const [filterRole, setFilterRole] = useState('all');
     const [search, setSearch] = useState('');
@@ -97,10 +96,11 @@ export default function UsersClient({ userRole, username }: Props) {
                     setShowForm(false);
                 } else { toast.error(data.error || 'Erro ao atualizar.'); }
             } else {
-                // Create new user
-                const payload = { ...formData };
-                if (!payload.username) delete (payload as any).username;
-                
+                // Create new user — omite username quando vazio (gerado automaticamente pelo servidor)
+                const { username, ...rest } = formData;
+                const payload = username ? { username, ...rest } : rest;
+
+
                 const res = await fetch('/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -247,7 +247,7 @@ export default function UsersClient({ userRole, username }: Props) {
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                                     Editar
                                                 </button>
-                                                <button className="btn btn-ghost btn-sm" onClick={() => { setResetModal(u); setResetPass(''); }}>
+                                                <button className="btn btn-ghost btn-sm" onClick={() => setResetModal(u)}>
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                                     Redefinir
                                                 </button>

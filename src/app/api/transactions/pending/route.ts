@@ -2,7 +2,23 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
-import { logAction } from '@/lib/logger';
+
+interface PendingTransactionRow {
+    id: number;
+    key_id: number;
+    user_id: number;
+    action: 'withdraw' | 'return';
+    status: 'pending' | 'porteiro_confirmed';
+    porteiro_id: number | null;
+    porteiro_confirmed_at: string | null;
+    user_confirmed_at: string | null;
+    initiated_at: string;
+    key_name: string | null;
+    key_room: string | null;
+    user_username: string | null;
+    user_full_name: string | null;
+    porteiro_username: string | null;
+}
 
 // GET /api/transactions/pending — retorna transações pendentes para o usuário logado
 export async function GET() {
@@ -14,7 +30,7 @@ export async function GET() {
 
         // Porteiros veem todas as transações iniciadas por eles
         // Outros usuários veem apenas as que são para eles
-        let transactions;
+        let transactions: PendingTransactionRow[];
         if (session.role === 'ADMIN' || session.role === 'GESTOR' || session.role === 'PORTEIRO') {
             transactions = db.prepare(`
                 SELECT kt.*, 
@@ -27,7 +43,7 @@ export async function GET() {
                 LEFT JOIN users p ON kt.porteiro_id = p.id
                 WHERE kt.status IN ('pending', 'porteiro_confirmed')
                 ORDER BY kt.initiated_at DESC
-            `).all();
+            `).all() as PendingTransactionRow[];
         } else {
             transactions = db.prepare(`
                 SELECT kt.*,
@@ -40,7 +56,7 @@ export async function GET() {
                 LEFT JOIN users p ON kt.porteiro_id = p.id
                 WHERE kt.user_id = ? AND kt.status IN ('pending', 'porteiro_confirmed')
                 ORDER BY kt.initiated_at DESC
-            `).all(session.id);
+            `).all(session.id) as PendingTransactionRow[];
         }
 
         return NextResponse.json(transactions);

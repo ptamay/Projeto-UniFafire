@@ -12,8 +12,14 @@ vi.mock('next/headers', () => {
     };
 });
 
+interface MockSession {
+    id: number;
+    role: string;
+    username: string;
+}
+
 // Helper for changing the current logged in user
-let currentSession: any = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+let currentSession: MockSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
 
 vi.mock('@/lib/session', () => {
     return {
@@ -51,7 +57,7 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         const txId = withdrawData.transactionId;
 
         // A chave ainda deve estar disponível enquanto aguarda confirmação
-        let keyStatus = db.prepare('SELECT status FROM keys WHERE id = 1').get() as any;
+        const keyStatus = db.prepare('SELECT status FROM keys WHERE id = 1').get() as { status: string };
         expect(keyStatus.status).toBe('available');
 
         // 2. Porteiro (ID 3) confirma a retirada
@@ -69,12 +75,12 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         expect(confirmData.status).toBe('completed');
 
         // 3. Verifica se a chave foi pra 'in_use' e o user_id foi associado
-        keyStatus = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as any;
-        expect(keyStatus.status).toBe('in_use');
-        expect(keyStatus.user_id).toBe(5);
-        
+        const keyStatus2 = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
+        expect(keyStatus2.status).toBe('in_use');
+        expect(keyStatus2.user_id).toBe(5);
+
         // Verifica histórico
-        const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('withdraw') as any;
+        const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('withdraw') as { c: number };
         expect(historyCount.c).toBe(1);
     });
 
@@ -113,12 +119,12 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         expect(confirmData.status).toBe('completed');
 
         // 4. Verifica se a chave voltou pra 'available' e o user_id foi limpo
-        const keyStatus = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as any;
+        const keyStatus = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
         expect(keyStatus.status).toBe('available');
         expect(keyStatus.user_id).toBeNull();
-        
+
         // Verifica histórico
-        const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('return') as any;
+        const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('return') as { c: number };
         expect(historyCount.c).toBe(1);
     });
 });

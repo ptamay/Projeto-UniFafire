@@ -5,6 +5,17 @@ import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
 import { KeySchema } from '@/lib/schemas';
 
+interface KeyRow {
+    id: number;
+    name: string;
+    room: string | null;
+    status: 'available' | 'in_use';
+    employee_name?: string | null;
+    employee_role?: string | null;
+    pending_info: string | null;
+    in_use_since: string | null;
+}
+
 async function getUser() {
     const sessionCookie = (await cookies()).get('session');
     if (!sessionCookie) return null;
@@ -41,15 +52,15 @@ export async function GET() {
             FROM keys k 
             LEFT JOIN users u ON k.user_id = u.id
             WHERE k.active = 1
-        `).all();
+        `).all() as KeyRow[];
 
-        const keys = rawKeys.map((k: any) => ({
+        const keys = rawKeys.map((k) => ({
             ...k,
             pending_info: k.pending_info ? JSON.parse(k.pending_info) : null
         }));
 
         return NextResponse.json(keys);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch keys' }, { status: 500 });
     }
 }
@@ -83,7 +94,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ id: info.lastInsertRowid, name, room, status: 'available' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to create key' }, { status: 500 });
     }
 }
@@ -106,7 +117,7 @@ export async function PUT(request: Request) {
         
         const { id, name, room } = parseResult.data;
 
-        const currentKey = db.prepare('SELECT * FROM keys WHERE id = ?').get(id) as any;
+        const currentKey = db.prepare('SELECT * FROM keys WHERE id = ?').get(id) as KeyRow | undefined;
 
         const stmt = db.prepare('UPDATE keys SET name = ?, room = ? WHERE id = ?');
         const info = stmt.run(name, room || '', id);
@@ -121,7 +132,7 @@ export async function PUT(request: Request) {
         }
 
         return NextResponse.json({ success: true, id, name, room });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to update key' }, { status: 500 });
     }
 }
@@ -138,7 +149,7 @@ export async function DELETE(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-        const key = db.prepare('SELECT name, room, status FROM keys WHERE id = ?').get(id) as any;
+        const key = db.prepare('SELECT name, room, status FROM keys WHERE id = ?').get(id) as Pick<KeyRow, 'name' | 'room' | 'status'> | undefined;
 
         if (!key) return NextResponse.json({ error: 'Key not found' }, { status: 404 });
 
@@ -154,7 +165,7 @@ export async function DELETE(request: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to delete key' }, { status: 500 });
     }
 }

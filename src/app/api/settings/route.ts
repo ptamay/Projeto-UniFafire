@@ -16,7 +16,7 @@ export async function GET() {
             backupCount: parseInt(settingsMap['backup_retention_count'] || '3', 10),
             defaultResetPassword: settingsMap['default_reset_password'] || 'saojose123'
         });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ autoLogoutTime: '18:30', backupTime: '03:00', backupCount: 3, defaultResetPassword: 'saojose123' });
     }
 }

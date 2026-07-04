@@ -51,7 +51,7 @@ export async function DELETE(request: Request) {
         } else {
             return NextResponse.json({ error: 'Arquivo não encontrado ou erro ao excluir.' }, { status: 404 });
         }
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: 'Erro ao processar exclusão.' }, { status: 500 });
     }
 }

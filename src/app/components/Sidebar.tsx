@@ -129,7 +129,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     }, 60000);
                     return () => clearInterval(checkInterval);
                 }
-            } catch (e) {
+            } catch {
                 console.error('Failed to initialize auto logout check');
             }
         };
@@ -166,7 +166,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     const data = await res.json();
                     setPendingCount(Array.isArray(data) ? data.length : 0);
                 }
-            } catch (e) {}
+            } catch { /* silencioso — badge de pendências é best-effort */ }
         };
         fetchPendingCount();
         const handleUpdate = () => fetchPendingCount();
@@ -180,9 +180,6 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
     // Itens visíveis por papel
     const allVisibleItems = navItems.flatMap(s => s.items).filter(i => i.roles.includes(userRole));
-    // Bottom nav: máx 4 itens + "Mais" se necessário
-    const bottomNavItems = allVisibleItems.slice(0, 4);
-    const hasMoreItems = allVisibleItems.length > 4;
 
     const currentPageTitle = allVisibleItems.find(i => i.href === pathname)?.label || 'Sistema de Gestão de Chaves';
 
@@ -368,8 +365,6 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                 </button>
             </div>
 
-            {/* ── MOBILE BOTTOM NAVIGATION BAR ── */}
-            
         </>
     );
 }

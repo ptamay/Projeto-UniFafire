@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 
-interface HistoryItem {
+export interface HistoryItem {
     id: number;
     action: string;
     timestamp: string;
@@ -31,7 +30,7 @@ interface HistoryClientProps {
     };
 }
 
-export default function HistoryClient({ history, userRole, username, currentPage, totalPages, initialFilters }: HistoryClientProps) {
+export default function HistoryClient({ history, userRole, username, initialFilters }: HistoryClientProps) {
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const router = useRouter();
     

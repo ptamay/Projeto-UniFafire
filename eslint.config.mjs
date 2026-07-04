@@ -20,13 +20,6 @@ const eslintConfig = defineConfig([
     "patch.js",
     "**/*.test.old",
   ]),
-  {
-    rules: {
-      // Débito registrado (plan.md §4): 33 ocorrências legadas de `any` em src/.
-      // Rebaixado para warn até a sprint de higiene — NÃO introduzir novos.
-      "@typescript-eslint/no-explicit-any": "warn",
-    },
-  },
 ]);
 
 export default eslintConfig;

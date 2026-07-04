@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import fs from 'fs';
 
 const globalWithDb = global as typeof globalThis & {
     db: Database.Database;
@@ -45,11 +44,11 @@ export function resetConnection(onClosed?: () => void) {
 }
 
 // Create a proxy so that all imports of 'db' dynamically point to the current global instance.
-const dbProxy = new Proxy({}, {
-    get: (target, prop) => {
+const dbProxy = new Proxy({} as Database.Database, {
+    get: (_target, prop: keyof Database.Database) => {
         if (!globalWithDb.db) initDb();
 
-        const value = (globalWithDb.db as any)[prop];
+        const value = globalWithDb.db[prop];
         if (typeof value === 'function') {
             return value.bind(globalWithDb.db);
         }

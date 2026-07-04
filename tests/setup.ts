@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from 'vitest';
-import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
 
 // Importa a instância global inicializada do banco (já que setamos DB_PATH)
@@ -108,5 +107,5 @@ afterAll(() => {
     // Para in-memory DB, fechar a conexão descarta tudo automaticamente.
     try {
         db.close();
-    } catch(e) {}
+    } catch { /* in-memory DB — nada a fazer se já fechado */ }
 });

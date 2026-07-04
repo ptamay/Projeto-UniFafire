@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import db from '@/lib/db';
-import HistoryClient from './HistoryClient';
+import HistoryClient, { type HistoryItem } from './HistoryClient';
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ page?: string, date?: string, month?: string, hour?: string }> }) {
     const resolvedParams = await searchParams;
@@ -36,8 +36,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     `;
     
     let countQuery = 'SELECT COUNT(*) as total FROM history h';
-    const conditions = [];
-    const params: any[] = [];
+    const conditions: string[] = [];
+    const params: (string | number)[] = [];
 
     if (date) {
         conditions.push('DATE(h.timestamp) = DATE(?)');
@@ -61,7 +61,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     query += ' ORDER BY h.timestamp DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const history = db.prepare(query).all(...params) as any[];
+    const history = db.prepare(query).all(...params) as HistoryItem[];
 
     const countParams = params.slice(0, -2);
     const countRow = db.prepare(countQuery).get(...countParams) as { total: number };

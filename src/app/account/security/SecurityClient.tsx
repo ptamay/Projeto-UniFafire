@@ -2,12 +2,15 @@
 import { useState } from 'react';
 import Sidebar from '@/app/components/Sidebar';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
 
-export default function SecurityClient({ userRole, username }: any) {
+interface SecurityClientProps {
+    userRole: string;
+    username: string;
+}
+
+export default function SecurityClient({ userRole, username }: SecurityClientProps) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
 
     const [formData, setFormData] = useState({
         currentPassword: '',
@@ -46,7 +49,7 @@ export default function SecurityClient({ userRole, username }: any) {
                 setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 // Limpa o form após sucesso
             }
-        } catch (error) {
+        } catch {
             toast.error('Erro de conexão');
         } finally {
             setLoading(false);

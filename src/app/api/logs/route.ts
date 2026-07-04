@@ -36,8 +36,8 @@ export async function GET(request: Request) {
 
         let query = `SELECT * FROM ${tableName}`;
         let countQuery = `SELECT COUNT(*) as total FROM ${tableName}`;
-        const conditions = [];
-        const params: any[] = [];
+        const conditions: string[] = [];
+        const params: (string | number)[] = [];
 
         if (search) {
             if (tableName === 'action_logs') {
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
         const logs = db.prepare(query).all(...params);
         
         const countParams = params.slice(0, -2);
-        const total = db.prepare(countQuery).get(...countParams) as any;
+        const total = db.prepare(countQuery).get(...countParams) as { total: number };
 
         return NextResponse.json({
             logs,

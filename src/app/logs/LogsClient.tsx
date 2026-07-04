@@ -1,13 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 
 type LogType = 'actions' | 'audit' | 'logins';
 
+interface LogEntry {
+    id: number;
+    timestamp: string;
+    // 'actions'
+    username?: string;
+    action?: string;
+    target?: string;
+    ip_address?: string;
+    details?: string;
+    // 'audit'
+    actor_id?: number;
+    target_user_id?: number;
+    // 'logins'
+    ip?: string;
+    success?: number;
+}
+
 export default function LogsClient({ userRole, username }: { userRole: string, username: string }) {
-    const [logs, setLogs] = useState<any[]>([]);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<LogType>('actions');
     const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +35,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
     const [totalPages, setTotalPages] = useState(1);
     const router = useRouter();
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -45,14 +62,14 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, page, searchTerm, dateFilter, monthFilter, hourFilter, router]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchLogs();
         }, 300); // Debounce search
         return () => clearTimeout(timer);
-    }, [page, searchTerm, dateFilter, monthFilter, hourFilter, activeTab]);
+    }, [fetchLogs]);
 
     return (
         <div className="page-wrapper">

@@ -5,6 +5,7 @@ import { verifySession, signSession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
+import type { UserAuthRow } from '@/lib/db-rows';
 
 const PasswordChangeSchema = z.object({
     currentPassword: z.string().min(1, "A senha atual é obrigatória"),
@@ -29,7 +30,7 @@ export async function PUT(request: Request) {
 
         // Recupera o usuário
         const stmt = db.prepare('SELECT id, username, password_hash, role FROM users WHERE id = ?');
-        const user = stmt.get(payload.id) as any;
+        const user = stmt.get(payload.id) as UserAuthRow | undefined;
 
         if (!user) {
             return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });

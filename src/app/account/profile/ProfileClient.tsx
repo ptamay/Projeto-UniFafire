@@ -3,7 +3,13 @@ import { useState } from 'react';
 import Sidebar from '@/app/components/Sidebar';
 import toast from 'react-hot-toast';
 
-export default function ProfileClient({ userRole, username, initialData }: any) {
+interface ProfileClientProps {
+    userRole: string;
+    username: string;
+    initialData: { full_name?: string; matricula?: string; phone?: string };
+}
+
+export default function ProfileClient({ userRole, username, initialData }: ProfileClientProps) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -31,7 +37,7 @@ export default function ProfileClient({ userRole, username, initialData }: any) 
             } else {
                 toast.success('Perfil atualizado com sucesso!');
             }
-        } catch (error) {
+        } catch {
             toast.error('Erro de conexão');
         } finally {
             setLoading(false);

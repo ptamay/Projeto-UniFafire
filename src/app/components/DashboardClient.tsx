@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import toast from 'react-hot-toast';
@@ -11,7 +11,7 @@ interface BusinessMetrics {
     medianCounterMinutes: number | null;
 }
 
-interface Key {
+export interface Key {
     id: number;
     name: string;
     room?: string;
@@ -23,7 +23,7 @@ interface Key {
     in_use_since?: string;
 }
 
-interface User {
+export interface User {
     id: number;
     name: string;
     role?: string;
@@ -172,7 +172,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             .catch(() => {});
     }, [isPorteiroOrAdmin]);
 
-    const refreshData = async () => {
+    const refreshData = useCallback(async () => {
         try {
             const kRes = await fetch('/api/keys');
             const uRes = await fetch('/api/users');
@@ -199,14 +199,14 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 }
             }
             if (uRes.ok) {
-                const uData = await uRes.json();
-                setEmployees(uData.map((u: any) => ({ ...u, name: u.full_name || u.username || '' })));
+                const uData = await uRes.json() as { id: number; username: string; full_name: string | null; role: string }[];
+                setEmployees(uData.map((u) => ({ ...u, full_name: u.full_name ?? undefined, name: u.full_name || u.username || '' })));
             }
             router.refresh();
         } catch (e) {
             console.error('Refresh error:', e);
         }
-    };
+    }, [isPorteiroOrAdmin, username, router]);
 
     useEffect(() => {
         const handleUpdate = () => refreshData();
@@ -216,7 +216,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             window.removeEventListener('pending-transactions-updated', handleUpdate);
             clearInterval(interval);
         };
-    }, []);
+    }, [refreshData]);
 
     // Normalização para busca ignorando acentos
     // const normalize = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -337,6 +337,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
+        // confirmAction é recriada a cada render e já reflete o confirmModal atual —
+        // os campos abaixo são o que de fato determina quando o efeito precisa rodar de novo.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [confirmModal.open, confirmModal.keyId, confirmModal.type, confirmModal.employeeId]);
 
     useEffect(() => {

@@ -11,7 +11,7 @@ interface SessionPayload {
     id: number;
     username: string;
     role: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {
@@ -27,7 +27,7 @@ export async function verifySessionEdge(token: string): Promise<SessionPayload |
     try {
         const { payload } = await jwtVerify(token, RUNTIME_SECRET);
         return payload as SessionPayload;
-    } catch (error) {
+    } catch {
         return null;
     }
 }

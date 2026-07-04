@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
+import type { UserAuthRow } from '@/lib/db-rows';
 
 export async function POST(request: Request) {
     try {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid current password' }, { status: 400 });
         }
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as UserAuthRow | undefined;
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
