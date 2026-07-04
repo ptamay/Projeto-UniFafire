@@ -1,10 +1,9 @@
 ---
 trigger: model_decision
+description: "Ative OBRIGATORIAMENTE quando a tarefa for executar tasks de sprint, rodar o ciclo TDD, ou orquestrar os sub-agentes das Fases 10-11."
 ---
 
 # 10-sprint-tdd — Execução de Sprint (Model Decision)
-<!-- Ativação: MODEL DECISION. Descrição: ative quando a tarefa for executar tasks de sprint, -->
-<!-- rodar o ciclo TDD, ou orquestrar os sub-agentes das Fases 10–11. -->
 
 ## TDD Atômico (inviolável)
 Para CADA task:

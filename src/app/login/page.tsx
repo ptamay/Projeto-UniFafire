@@ -248,7 +248,7 @@ export default function LoginPage() {
                 .login-bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
                 .login-bg-orb-1 {
                     width: 520px; height: 520px;
-                    background: radial-gradient(circle, rgba(26,46,138,0.65) 0%, transparent 70%);
+                    background: radial-gradient(circle, var(--blue-800) 0%, transparent 70%);
                     top: -120px; left: -120px;
                 }
                 .login-bg-orb-2 {
@@ -263,7 +263,7 @@ export default function LoginPage() {
                     padding: 2.5rem 2rem;
                     width: 100%;
                     max-width: 420px;
-                    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+                    box-shadow: var(--shadow-lg);
                     position: relative;
                     z-index: 1;
                 }
@@ -300,10 +300,10 @@ export default function LoginPage() {
                 .login-error {
                     display: flex; align-items: center; gap: 0.5rem;
                     padding: 0.75rem 1rem;
-                    background: rgba(239,68,68,0.1);
-                    border: 1px solid rgba(239,68,68,0.25);
+                    background: var(--status-inuse-bg);
+                    border: 1px solid var(--border-strong);
                     border-radius: var(--radius-sm);
-                    color: #f87171; font-size: 0.875rem;
+                    color: var(--text-primary); font-size: 0.875rem;
                 }
                 .input-icon-wrap { position: relative; }
                 .input-icon {
@@ -317,7 +317,7 @@ export default function LoginPage() {
                     position: absolute; right: 0.75rem; top: 50%;
                     transform: translateY(-50%);
                     background: none; border: none; color: var(--text-muted);
-                    cursor: pointer; padding: 4px; border-radius: 4px;
+                    cursor: pointer; padding: 4px; border-radius: var(--radius-sm);
                     transition: color 0.15s; display: flex; align-items: center;
                 }
                 .input-action-btn:hover { color: var(--text-accent); }

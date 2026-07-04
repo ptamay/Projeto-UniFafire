@@ -1,10 +1,9 @@
 ---
 trigger: model_decision
+description: "Ative OBRIGATORIAMENTE quando o usuário trouxer uma ideia nova, pedir para melhorar algo já planejado, ou propor mudança de escopo pós-Fase 6."
 ---
 
 # 40-change-request — Novas Ideias e Mudanças de Escopo (Model Decision)
-<!-- Ativação: MODEL DECISION. Descrição: ative quando o usuário trouxer uma ideia nova, -->
-<!-- pedir para melhorar algo já planejado, ou propor mudança de escopo pós-Fase 6. -->
 
 Quando o usuário trouxer uma ideia nova ou mudança de escopo, classifique antes de agir.
 Referência completa: `master-spec-core.md` Seção 6.1.

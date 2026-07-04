@@ -255,7 +255,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                                         <span style={{
                                                             fontSize: '0.85rem',
                                                             padding: '2px 8px',
-                                                            borderRadius: '12px',
+                                                            borderRadius: 'var(--radius-sm)',
                                                             background: 'var(--bg-elevated)',
                                                             color: 'var(--text-secondary)',
                                                             fontWeight: 500,
@@ -276,7 +276,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                                     <td data-label="Alvo">ID: {log.target_user_id}</td>
                                                     <td data-label="Ação">
                                                         <span style={{
-                                                            fontSize: '0.85rem', padding: '2px 8px', borderRadius: '12px',
+                                                            fontSize: '0.85rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
                                                             background: 'var(--blue-900)', color: 'var(--blue-300)',
                                                             border: '1px solid var(--blue-700)'
                                                         }}>
@@ -293,10 +293,10 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                                     <td data-label="IP" style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{log.ip}</td>
                                                     <td data-label="Status">
                                                         <span style={{
-                                                            fontSize: '0.85rem', padding: '2px 8px', borderRadius: '12px',
-                                                            background: log.success ? 'var(--green-900)' : 'var(--red-900)', 
-                                                            color: log.success ? 'var(--green-300)' : '#ef4444',
-                                                            border: `1px solid ${log.success ? 'var(--green-700)' : '#dc2626'}`
+                                                            fontSize: '0.85rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                                                            background: log.success ? 'var(--status-available-bg)' : 'var(--status-inuse-bg)', 
+                                                            color: log.success ? 'var(--text-green)' : 'var(--text-secondary)',
+                                                            border: `1px solid var(--border-strong)`
                                                         }}>
                                                             {log.success ? 'Sucesso' : 'Falha'}
                                                         </span>

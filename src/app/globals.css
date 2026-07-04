@@ -34,6 +34,9 @@
   --green-200: #77de9e;
   --green-100: #b8f0cf;
 
+  --blue-200: #b8c6f5;
+  --blue-100: #dbe3ff;
+
   /* --- MODO ESCURO (Padrão) --- */
   --bg-page:        #060B19; /* Azul bem escuro, quase preto para conforto visual */
   --bg-surface:     #0F172A; /* Azul acinzedado (Slate 900) para superfícies */
@@ -50,6 +53,8 @@
 
   --accent-primary: var(--green-400);
   --accent-hover:   var(--green-300);
+  --bg-selection:   rgba(29, 128, 70, 0.15);
+  --bg-selection-light: rgba(29, 128, 70, 0.05);
 
   --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
   --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
@@ -58,6 +63,8 @@
 
   --status-available-bg:  rgba(34, 197, 94, 0.12);
   --status-inuse-bg:      rgba(251, 146, 60, 0.12);
+  --status-available-text: #34d399; /* verde legível sobre fundo escuro */
+  --status-inuse-text:     #fb7185; /* rosa/vermelho legível sobre fundo escuro */
 
   /* Layout */
   --sidebar-w: 260px;
@@ -85,7 +92,7 @@
   --bg-elevated:    #f8fafc;
   --bg-input:       #ffffff;
   --border:         rgba(15, 29, 87, 0.15); /* #0F1D57 rgba */
-  --border-strong:  rgba(29, 128, 70, 0.7);
+  --border-strong:  rgba(15, 29, 87, 0.3);
 
   --text-primary:   #0F1D57;
   --text-secondary: #414d61;
@@ -94,6 +101,8 @@
 
   --accent-primary: #1D8046;
   --accent-hover:   #125930;
+  --bg-selection:   rgba(29, 128, 70, 0.10);
+  --bg-selection-light: rgba(29, 128, 70, 0.03);
 
   --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
   --shadow-md:  0 4px 10px rgba(0,0,0,0.08);
@@ -102,6 +111,8 @@
 
   --status-available-bg:  rgba(16, 185, 129, 0.12);
   --status-inuse-bg:      rgba(244, 63, 94, 0.12);
+  --status-available-text: #059669; /* emerald-600 — contraste AA sobre fundo claro */
+  --status-inuse-text:     #e11d48; /* rose-600 — contraste AA sobre fundo claro */
 }
 
 /* Força menus nativos a ficarem brancos no Windows/Chrome */
@@ -112,10 +123,24 @@
 }
 
 /* Melhora contraste do botão desabilitado e texto no modo claro */
-.light-mode .btn-green:disabled {
-  background: #e2e8f0 !important;
-  color: #94a3b8 !important;
+.light-mode .btn-green:disabled,
+.light-mode .btn:disabled {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
   border-color: #cbd5e1 !important;
+}
+
+.light-mode .status-available {
+  color: #059669; /* emerald-600 */
+  background: rgba(16, 185, 129, 0.15);
+}
+.light-mode .status-inuse, .light-mode .status-in_use {
+  color: #e11d48; /* rose-600 */
+  background: rgba(244, 63, 94, 0.15);
+}
+.light-mode .status-pending {
+  color: #d97706; /* amber-600 */
+  background: rgba(245, 158, 11, 0.15);
 }
 
 /* ── Reset & Base ────────────────────────────────────────── */
@@ -273,7 +298,7 @@ h3 { font-size: 1.125rem; }
 
 .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
 .btn-lg { padding: 1rem 2.5rem; font-size: 1rem; }
-.btn-icon { padding: 0.5rem; width: 40px; height: 40px; }
+.btn-icon { padding: 0.5rem; width: 44px; height: 44px; }
 
 /* ── Inputs ───────────────────────────────────────────────── */
 .input {
@@ -285,6 +310,7 @@ h3 { font-size: 1.125rem; }
   font-family: 'Inter', sans-serif;
   font-size: 0.9375rem;
   padding: 0.875rem 1rem;
+  min-height: 44px;
   outline: none;
   transition: all 0.2s;
 }
@@ -604,6 +630,30 @@ h3 { font-size: 1.125rem; }
   padding-left: 2.5rem;
 }
 
+/* ── Unified Control Bar ────────────────────────────────── */
+.unified-control-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.control-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+.control-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* ── Badges ─────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
@@ -710,6 +760,7 @@ h3 { font-size: 1.125rem; }
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -865,6 +916,217 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
 .flex-row { flex-direction: row; }
 
 /* ============================================================
+   ACESSIBILIDADE, TOOLTIPS E NAV MOBILE — Melhoria de UI
+   Bloco ADITIVO e por último no arquivo (last-wins): adiciona
+   comportamento novo (foco de teclado, dicas, barra inferior)
+   sem reescrever regras de layout desktop existentes.
+   ============================================================ */
+:root {
+  --bottom-nav-h: 60px;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-drawer-overlay: 900;
+  --z-drawer: 950;
+  --z-bottom-nav: 850;
+  --z-modal: 1000;
+  --z-toast: 1100;
+  --z-tooltip: 1200;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Foco acessível por teclado (WCAG 2.4.7) ──────────────
+   Anel visível apenas na navegação por teclado (:focus-visible),
+   sem poluir cliques de mouse. Cobre botões, links, inputs e os
+   comboboxes/opções customizados do dashboard. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="combobox"]:focus-visible,
+[role="option"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Inputs já têm anel próprio verde no :focus — não duplicar */
+.input:focus-visible { outline: none; }
+
+/* Leitores de tela: conteúdo visualmente oculto porém anunciado */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Tooltips ("dicas") ───────────────────────────────────
+   Uso: adicione data-tooltip="texto" (e opcional data-tooltip-pos).
+   Aparece no hover E no foco de teclado (acessível). Em telas de
+   toque não atrapalha: o toque aciona a ação, não a dica. */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  padding: 0.4rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  max-width: min(260px, 80vw);
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* Em telas realmente touch (sem hover), esconder — evita dica presa após toque */
+@media (hover: none) {
+  [data-tooltip]:hover::after { opacity: 0; }
+}
+
+/* ── Barra de navegação inferior (mobile) ─────────────────
+   Substitui a dependência do drawer para as ações mais usadas
+   da portaria. Sempre visível, alvos ≥ 56px, alcance do polegar. */
+.mobile-bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: var(--z-bottom-nav);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.25);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease;
+    position: relative;
+  }
+  .bottom-nav-item svg { width: 22px; height: 22px; }
+  .bottom-nav-item .bottom-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bottom-nav-item:active { color: var(--text-secondary); }
+  .bottom-nav-item.active { color: var(--accent-hover); }
+  .bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px; height: 3px;
+    background: var(--accent-primary);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 0 8px rgba(29,128,70,0.5);
+  }
+  .bottom-nav-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 8px);
+    min-width: 16px; height: 16px;
+    padding: 0 4px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    line-height: 16px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--bg-surface);
+  }
+
+  /* Espaço para a barra inferior não cobrir conteúdo/rodapé */
+  .main-content {
+    padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1rem);
+  }
+
+  /* Ação rápida do dashboard: o campo "Para quem?" tem largura fixa
+     (220px) no desktop; no mobile deve preencher a coluna empilhada. */
+  .unified-emp-input { width: 100% !important; }
+
+  /* ── Safe-area: topbar e drawer respeitam notch/home-bar ── */
+  .mobile-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--navbar-h) + var(--safe-top));
+    padding-top: var(--safe-top);
+    padding-left: max(0.5rem, var(--safe-left));
+    padding-right: max(0.5rem, var(--safe-right));
+    z-index: var(--z-sticky);
+  }
+  .main-content { padding-top: calc(var(--navbar-h) + var(--safe-top) + 1rem); }
+
+  .sidebar {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    z-index: var(--z-drawer);
+  }
+  .sidebar-overlay { z-index: var(--z-drawer-overlay); }
+}
+
+/* ── Movimento reduzido (WCAG 2.3.3) ──────────────────────
+   Respeita usuários com sensibilidade a movimento: mantém o
+   feedback essencial via transição instantânea, sem choreografia. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
    MOBILE — Sprint 8 (REQ-016 · ADR-001 · TASK-023 a 027)
    Bloco ADITIVO: nada aqui altera o desktop (gate anti-regressão).
    ============================================================ */
@@ -924,6 +1186,27 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   .search-bar { max-width: 100%; }
   .form-grid { grid-template-columns: 1fr; }
   .action-row { flex-wrap: wrap; }
+
+  /* Unified Control Bar on Mobile */
+  .unified-control-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+  .unified-control-bar > .control-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0.5rem 0;
+  }
+  .unified-control-bar .search-bar, 
+  .unified-control-bar .control-actions {
+    min-width: 100% !important;
+    width: 100%;
+  }
+  .unified-control-bar .control-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
   /* ── TASK-027: modais em telas pequenas ── */
   .modal-overlay { padding: 0.75rem; }
@@ -991,10 +1274,66 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
     display: flex !important;
     flex-direction: column;
     align-items: stretch !important;
-    gap: 0.5rem !important;
-    padding: 1rem !important;
+    gap: 0.75rem !important;
+    padding: 1.25rem 1rem !important;
   }
-  .dashboard-list-row > div { text-align: left !important; }
+  .dashboard-list-row > div { 
+    text-align: left !important;
+    justify-content: flex-start !important; 
+  }
+  /* ── Mobile Sidebar Drawer & Topbar ── */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--navbar-h);
+    padding: 0 0.5rem;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 80;
+  }
+  .mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .mobile-topbar-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .mobile-topbar-badge {
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    font-weight: 800;
+  }
+}
+@media (min-width: 769px) {
+  .mobile-topbar { display: none; }
 }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 0.75rem; }

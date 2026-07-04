@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-04T10:45:00Z",
+  "title": "Design System: Colégio São José - Gerenciamento de Chaves",
+  "extensions": {
+    "colorMeta": {
+      "primary-action": { "role": "primary", "displayName": "Verde Ação (Green 400)", "canonical": "#28a35c", "tonalRamp": ["#083318", "#125930", "#1D8046", "#28a35c", "#45c47a", "#77de9e", "#b8f0cf", "#e6f9ef"] },
+      "brand-blue": { "role": "secondary", "displayName": "Azul Institucional (Blue 900)", "canonical": "#0F1D57", "tonalRamp": ["#060e2a", "#0F1D57", "#162a75", "#1e3a9c", "#2a4ebf", "#3b62d8", "#6279d8", "#8a9deb"] },
+      "bg-page": { "role": "neutral", "displayName": "Dark Page (Slate/Blue 950)", "canonical": "#060B19", "tonalRamp": ["#020409", "#060B19", "#0F172A", "#1E293B", "#334155", "#475569", "#64748b", "#94A3B8"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos principais de páginas e cabeçalhos grandes." },
+      "label": { "displayName": "Label All-Caps", "purpose": "Cabeçalhos de tabelas, nomes de campos, metadados menores." }
+    },
+    "shadows": [
+      { "name": "shadow-sm", "value": "0 1px 3px rgba(0,0,0,0.4)", "purpose": "Cards default." },
+      { "name": "shadow-md", "value": "0 4px 16px rgba(0,0,0,0.5)", "purpose": "Cards hover, popovers." },
+      { "name": "shadow-lg", "value": "0 8px 32px rgba(0,0,0,0.6)", "purpose": "Modais focados." },
+      { "name": "shadow-accent", "value": "0 0 24px rgba(29,128,70,0.15)", "purpose": "Glow ao redor de ações primárias ou cards estáticos de alta importância." }
+    ],
+    "motion": [
+      { "name": "default-transition", "value": "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Padrão para interações de botões e inputs (rápido e direto)." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button Primary",
+      "kind": "button",
+      "refersTo": "btn-green",
+      "description": "Ação principal e rápida para o fluxo da portaria.",
+      "html": "<button class=\"ds-btn ds-btn-green\">Registrar Saída</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; border: none; outline: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .ds-btn-green { background: linear-gradient(135deg, #5cb884, #23824d); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(29, 128, 70, 0.25); } .ds-btn-green:hover { background: linear-gradient(135deg, #7ec9a0, #2d965d); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(29, 128, 70, 0.35); }"
+    },
+    {
+      "name": "Button Ghost",
+      "kind": "button",
+      "refersTo": "btn-ghost",
+      "description": "Ações secundárias, botões de cancelamento ou edição rápida.",
+      "html": "<button class=\"ds-btn ds-btn-ghost\">Cancelar</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-ghost { background: #0F172A; color: #F8FAFC; border: 2px solid rgba(255, 255, 255, 0.24); } .ds-btn-ghost:hover { background: #334155; border-color: #28a35c; color: #45c47a; transform: translateY(-1px); }"
+    },
+    {
+      "name": "Status Tag (Available)",
+      "kind": "chip",
+      "refersTo": "status-tag",
+      "description": "Sinaliza chaves ou itens disponíveis (Verde).",
+      "html": "<div class=\"ds-status-tag ds-status-available\">Disponível</div>",
+      "css": ".ds-status-tag { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.875rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 800; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s ease; } .ds-status-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; } .ds-status-available { background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); } .ds-status-available::before { background: #10b981; box-shadow: 0 0 8px #10b981; }"
+    },
+    {
+      "name": "Base Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contêiner padrão da interface.",
+      "html": "<div class=\"ds-card\"><h3 style=\"margin: 0; font-family: Inter; color: #F8FAFC; font-size: 1.125rem;\">Título do Card</h3><p style=\"margin-top: 0.5rem; font-family: Inter; color: #94A3B8;\">O card recebe um hover state bem definido.</p></div>",
+      "css": ".ds-card { background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s; } .ds-card:hover { border-color: rgba(255, 255, 255, 0.24); box-shadow: 0 4px 16px rgba(0,0,0,0.5); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo de busca ou entrada de dados, super visível.",
+      "html": "<div style=\"display: flex; flex-direction: column; gap: 0.5rem;\"><label class=\"ds-input-label\">Busca rápida</label><input type=\"text\" class=\"ds-input\" placeholder=\"Digite o nome da chave...\" /></div>",
+      "css": ".ds-input-label { display: block; font-family: 'Inter', sans-serif; font-size: 0.8125rem; font-weight: 600; color: #CBD5E1; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; } .ds-input { width: 100%; background: #0F172A; border: 2px solid rgba(255, 255, 255, 0.24); border-radius: 10px; color: #F8FAFC; font-family: 'Inter', sans-serif; font-size: 0.9375rem; padding: 0.875rem 1rem; outline: none; transition: all 0.2s; box-sizing: border-box; } .ds-input::placeholder { color: #94A3B8; } .ds-input:focus { border-color: #28a35c; box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Efficient Concierge",
+    "overview": "Institucional, transmitindo a confiança e o legado do colégio com foco total na clareza de leitura. O sistema existe para um cenário de uso intensivo na portaria, onde a fricção deve ser absolutamente zero. A informação é a interface, ancorada por elementos claros e alvos de toque acessíveis.",
+    "keyCharacteristics": [
+      "Zero Fricção: Navegação direta, rápida e óbvia.",
+      "Tolerante ao Foco: Interfaces calmas, com dados bem segmentados por padding.",
+      "Contraste Acessível: Fundos escuros profundos contra textos de alto contraste."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "O Verde Ação é reservado estritamente para CTAs primárias e status positivo. Jamais utilize-o como elemento decorativo sem interatividade.", "section": "colors" },
+      { "name": "The Capital Label Rule", "body": "Para separar metadados ou nomes de campo dos dados reais, as labels devem sempre utilizar uppercase e um sutil letter-spacing.", "section": "typography" },
+      { "name": "The Lift and Glow Rule", "body": "Quando um elemento interativo recebe hover, ele não apenas muda de cor: ele deve subir no eixo Y (translado) e projetar uma sombra ligeiramente maior.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do manter botões e inputs com alturas que atinjam o touch-target mínimo de 44px.",
+      "Do priorizar a tipografia Label para separar metadados dos dados brutos.",
+      "Do aplicar o 'Lift and Glow' nos botões primários."
+    ],
+    "donts": [
+      "Don't criar sistemas excessivamente complexos com menus escondidos.",
+      "Don't abusar do Verde Institucional como decoração passiva de backgrounds inteiros.",
+      "Don't remover os indicadores de contraste ou o suporte vital ao Dark e Light modes.",
+      "Don't criar layouts extremamente adensados sem o devido padding nas tabelas ou cards."
+    ]
+  }
+}

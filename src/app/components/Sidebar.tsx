@@ -181,6 +181,9 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     // Itens visíveis por papel
     const allVisibleItems = navItems.flatMap(s => s.items).filter(i => i.roles.includes(userRole));
 
+    // Barra inferior mobile: as 3 ações mais usadas + botão "Mais" (abre o drawer completo).
+    const primaryItems = allVisibleItems.slice(0, 3);
+
     const currentPageTitle = allVisibleItems.find(i => i.href === pathname)?.label || 'Sistema de Gestão de Chaves';
 
     return (
@@ -204,6 +207,8 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     <button
                         className="btn-toggle-sidebar"
                         onClick={toggleCollapse}
+                        aria-label={isCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+                        aria-expanded={!isCollapsed}
                         style={{ background: 'transparent', border: 'none', color: '#5b7ab8', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>
@@ -358,12 +363,51 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
                 <button
                     onClick={toggleTheme}
+                    data-tooltip={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                    data-tooltip-pos="bottom"
                     style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)', minWidth: 44, minHeight: 44, WebkitTapHighlightColor: 'transparent' }}
-                    aria-label={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+                    aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 >
                     {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
                 </button>
             </div>
+
+            {/* ── BARRA DE NAVEGAÇÃO INFERIOR (Mobile) ──
+                Acesso 1-toque às ações mais usadas da portaria, sem abrir o drawer.
+                O botão "Mais" abre o drawer com o menu completo (perfil, admin, sair). */}
+            <nav className="mobile-bottom-nav" aria-label="Navegação rápida">
+                {primaryItems.map(item => {
+                    const isActive = pathname === item.href;
+                    const showBadge = item.href === '/confirm' && pendingCount > 0;
+                    return (
+                        <button
+                            key={item.href}
+                            className={`bottom-nav-item${isActive ? ' active' : ''}`}
+                            onClick={() => navigate(item.href)}
+                            aria-current={isActive ? 'page' : undefined}
+                            aria-label={showBadge ? `${item.label}, ${pendingCount} pendente${pendingCount > 1 ? 's' : ''}` : item.label}
+                        >
+                            <Icon name={item.icon} size={22} />
+                            {showBadge && (
+                                <span className="bottom-nav-badge" aria-hidden="true">
+                                    {pendingCount > 9 ? '9+' : pendingCount}
+                                </span>
+                            )}
+                            <span className="bottom-nav-label">{item.label}</span>
+                        </button>
+                    );
+                })}
+                <button
+                    className={`bottom-nav-item${drawerOpen ? ' active' : ''}`}
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="Abrir menu completo"
+                    aria-haspopup="menu"
+                    aria-expanded={drawerOpen}
+                >
+                    <Icon name="more" size={22} />
+                    <span className="bottom-nav-label">Mais</span>
+                </button>
+            </nav>
 
         </>
     );

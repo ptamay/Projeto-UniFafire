@@ -146,7 +146,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                 border-collapse: collapse;
                             }
                             th, td {
-                                border: 1px solid #ddd;
+                                border: 1px solid var(--border);
                                 padding: 8px;
                             }
                         }
@@ -160,7 +160,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                     <button
                                         className="btn btn-danger"
                                         onClick={() => setShowClearConfirm(true)}
-                                        style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', fontSize: '0.9rem' }}
+                                        style={{ backgroundColor: 'var(--status-inuse-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', fontSize: '0.9rem' }}
                                     >
                                         Limpar Histórico
                                     </button>

@@ -14,11 +14,11 @@ type User = {
 };
 
 const ROLES = [
-    { value: 'ADMIN', label: 'Administrador', color: '#ef4444', desc: 'Acesso total ao sistema' },
-    { value: 'GESTOR', label: 'Gestor', color: '#8b5cf6', desc: 'Gerencia o sistema' },
-    { value: 'PORTEIRO', label: 'Porteiro', color: '#3b82f6', desc: 'Operação de chaves' },
-    { value: 'FUNCIONARIO', label: 'Funcionário', color: '#f59e0b', desc: 'Confirma retirada/devolução' },
-    { value: 'ALUNO', label: 'Aluno', color: '#10b981', desc: 'Confirma retirada/devolução' },
+    { value: 'ADMIN', label: 'Administrador', color: 'var(--text-primary)', desc: 'Acesso total ao sistema' },
+    { value: 'GESTOR', label: 'Gestor', color: 'var(--blue-300)', desc: 'Gerencia o sistema' },
+    { value: 'PORTEIRO', label: 'Porteiro', color: 'var(--blue-400)', desc: 'Operação de chaves' },
+    { value: 'FUNCIONARIO', label: 'Funcionário', color: 'var(--text-secondary)', desc: 'Confirma retirada/devolução' },
+    { value: 'ALUNO', label: 'Aluno', color: 'var(--green-400)', desc: 'Confirma retirada/devolução' },
 ];
 
 const ROLE_BADGE_CLASS: Record<string, string> = {

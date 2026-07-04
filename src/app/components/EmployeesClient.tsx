@@ -131,7 +131,7 @@ export default function EmployeesClient({
                             />
                             <span className="search-icon">🔍</span>
                         </div>
-                    <div className="table-wrapper">
+                    <div className="table-wrapper table-cards">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -143,10 +143,10 @@ export default function EmployeesClient({
                             <tbody>
                                 {filteredEmployees.map(emp => (
                                     <tr key={emp.id}>
-                                        <td style={{ fontWeight: 600, color: '#334155' }}>{emp.name}</td>
-                                        <td style={{ color: '#64748b' }}>{emp.role}</td>
+                                        <td data-label="Nome" style={{ fontWeight: 600, color: '#334155' }}>{emp.name}</td>
+                                        <td data-label="Cargo" style={{ color: '#64748b' }}>{emp.role}</td>
                                         {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
-                                            <td style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                            <td className="td-actions" style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                                 <button
                                                     className="btn btn-ghost btn-sm"
                                                     onClick={() => handleEditEmployee(emp)}

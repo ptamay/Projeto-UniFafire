@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -15,6 +15,18 @@ export const metadata: Metadata = {
     manifest: "/manifest.json",
 };
 
+// viewport-fit=cover: habilita env(safe-area-inset-*) em celulares com notch/home-bar.
+// maximumScale=5: acessibilidade — nunca bloquear o zoom do usuário (WCAG 1.4.4).
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: [
+        { media: "(prefers-color-scheme: dark)", color: "#060B19" },
+        { media: "(prefers-color-scheme: light)", color: "#0F1D57" },
+    ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="pt-BR" className={inter.variable}>
@@ -24,9 +36,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     position="top-right"
                     toastOptions={{
                         style: {
-                            background: '#0f1d57',
-                            color: '#e8f0ff',
-                            border: '1px solid rgba(29,128,70,0.30)',
+                            background: 'var(--bg-elevated)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-strong)',
                             fontFamily: 'Inter, sans-serif',
                             fontSize: '0.875rem',
                         },

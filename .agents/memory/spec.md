@@ -10,6 +10,7 @@
 | 2026-07-02 | 1.0 | Criação inicial (baseline do sistema legado + requisitos de estabilização) | — |
 | 2026-07-02 | 1.1 | REQ-016 — responsividade mobile em todas as telas (Change Request Tipo C, ADR-001) | Funcionários e alunos solicitam, confirmam e devolvem chaves pelo celular; UI atual só tem adaptação parcial em 5 arquivos |
 | 2026-07-02 | 1.2 | REQ-017 a REQ-020 — CR retroativo: features entregues nas Sprints 4–6 sem passar por Change Request (ADR-002) | Reconciliação: eliminar escopo fantasma — o que está em produção deve estar no spec |
+| 2026-07-04 | 1.3 | REQ-021 — Bypass de dupla confirmação e UI Inteligente (CR Tipo C, ADR-003) | Otimizar rotina da portaria e acomodar usuários sem celular; evitar bloqueios no fluxo. |
 
 ---
 
@@ -64,6 +65,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-019 — Username automático (CR retroativo 2026-07-02, ADR-002):** criação de usuário sem digitar username; sistema gera a partir do nome completo com resolução de colisão e preview na UI. *Entregue nas Sprints 5–6 reais.*
 - **REQ-020 — "Esqueci minha senha" instrucional (CR retroativo 2026-07-02, ADR-002):** link no login exibindo instrução para procurar a administração (sem envio de e-mail). *Entregue na Sprint 5 real.*
 - **REQ-016 — Responsividade mobile (CR 2026-07-02, Tipo C):** todas as telas do sistema são 100% funcionais em dispositivos móveis (viewport ≥ 360px). Fluxos prioritários: confirmação do portador em `/confirm` e `/login` (funcionário/aluno no celular), dashboard e operação de entrega/devolução. Telas baseadas em tabela (histórico, logs, usuários, chaves) adotam layout alternativo em card em telas pequenas. Implementação dentro do CSS nativo existente (D-03 mantida) — ver ADR-001. *Baseline atual: apenas 5 arquivos têm media queries; keys, users, settings, logs, confirm e login não têm adaptação responsiva.*
+- **REQ-021 — Bypass de Confirmação e Ação Rápida Inteligente (CR 2026-07-04, Tipo C):** Adição de bypass de dupla confirmação para porteiros/gestores atribuírem chaves diretamente com justificativa auditável; barra de ação rápida no dashboard autocompleta e lista usuários frequentes por chave; lista de chaves prioriza chaves frequentes para o portador; navegação total por teclado (setas/Enter) - ver ADR-003.
 
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.

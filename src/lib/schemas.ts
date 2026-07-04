@@ -102,13 +102,15 @@ export const EmployeeSchema = z.object({
     role: z.string().optional()
 });
 
-// Transactions (novo fluxo com dupla confirmação)
 export const TransactionSchema = z.object({
     action: z.enum(['withdraw', 'return']),
     key_id: z.number().int().positive("ID da chave inválido."),
     user_id: z.number().int().positive("ID do usuário inválido.").nullable().optional(),
     // Legacy support
     employee_id: z.number().int().positive().nullable().optional(),
+    // Bypass (CR)
+    bypassConfirmation: z.boolean().optional(),
+    justification: z.string().optional(),
 });
 
 // Settings

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Dados inválidos' }, { status: 400 });
         }
         
-        const { action, key_id: keyId, user_id: userId, employee_id: legacyEmployeeId } = parseResult.data;
+        const { action, key_id: keyId, user_id: userId, employee_id: legacyEmployeeId, bypassConfirmation, justification } = parseResult.data;
 
         // Resolver o user_id: preferir user_id, fallback para employee_id (legado)
         const resolvedUserId = userId || legacyEmployeeId || null;
@@ -53,8 +53,40 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'Já existe uma transação pendente para esta chave.' }, { status: 400 });
             }
 
-            // Criar transação pendente — dupla confirmação necessária
             const now = new Date().toISOString();
+
+            if (bypassConfirmation) {
+                if (!isPorteiroOrAdmin) return NextResponse.json({ error: 'Apenas porteiros ou gestores podem atribuir chaves sem confirmação.' }, { status: 403 });
+                if (!justification || justification.trim() === '') return NextResponse.json({ error: 'Justificativa é obrigatória ao atribuir sem confirmação.' }, { status: 400 });
+
+                // Atribuição direta
+                const txResult = db.prepare(`
+                    INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
+                    VALUES (?, ?, 'withdraw', ?, ?, ?, 'completed', ?, ?, ?)
+                `).run(keyId, resolvedUserId, session.id, now, now, now, now, justification.trim());
+
+                const transactionId = txResult.lastInsertRowid;
+
+                db.prepare("UPDATE keys SET status = 'in_use', user_id = ? WHERE id = ?").run(resolvedUserId, keyId);
+
+                db.prepare(`
+                    INSERT INTO history (key_id, action, user_id, username, transaction_id)
+                    VALUES (?, 'withdraw', ?, ?, ?)
+                `).run(keyId, resolvedUserId, targetUser.username, transactionId);
+
+                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name, 
+                    `Atribuída diretamente para ${targetUser.full_name || targetUser.username}. Justificativa: ${justification.trim()}`);
+
+                return NextResponse.json({ 
+                    success: true, 
+                    transactionId,
+                    status: 'completed',
+                    message: 'Chave atribuída com sucesso.',
+                    requiresUserConfirmation: false
+                });
+            }
+
+            // Criar transação pendente — dupla confirmação necessária
             const porteiroId = isPorteiroOrAdmin ? session.id : null;
             const porteiroConfirmedAt = isPorteiroOrAdmin ? now : null;
             const userConfirmedAt = isPorteiroOrAdmin ? null : now;

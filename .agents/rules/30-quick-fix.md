@@ -1,10 +1,9 @@
 ---
 trigger: model_decision
+description: "Ative OBRIGATORIAMENTE quando o usuário pedir uma mudança pequena e direta (ex: ajuste este estilo, corrija este texto, melhore este componente) fora de sprint."
 ---
 
 # 30-quick-fix — Pedidos Pontuais (Model Decision)
-<!-- Ativação: MODEL DECISION. Descrição: ative quando o usuário pedir uma mudança pequena e -->
-<!-- direta ("ajuste este estilo", "corrija este texto", "melhore este componente") fora de sprint. -->
 
 > Não substitui o ciclo TDD para features ou mudanças estruturais.
 

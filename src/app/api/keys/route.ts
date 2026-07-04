@@ -35,11 +35,13 @@ export async function GET() {
         const rawKeys = db.prepare(`
             SELECT k.*, u.full_name as employee_name, u.role as employee_role,
                    (SELECT json_object(
+                       'transaction_id', kt.id,
                        'action', kt.action,
                        'user_confirmed', kt.user_confirmed_at IS NOT NULL,
                        'porteiro_confirmed', kt.porteiro_confirmed_at IS NOT NULL,
                        'user_name', u_kt.full_name,
-                       'user_role', u_kt.role
+                       'user_role', u_kt.role,
+                       'user_id', kt.user_id
                    )
                     FROM key_transactions kt
                     LEFT JOIN users u_kt ON kt.user_id = u_kt.id

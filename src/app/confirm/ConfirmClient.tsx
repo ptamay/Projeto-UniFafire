@@ -96,12 +96,12 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
 
             <main className="main-content animate-fade">
                 {/* ── HEADER ── */}
-                <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <header className="page-header">
                     <div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                        <h1 className="page-title">
                             {isPorteiroOrAdmin ? 'Central de Confirmações' : 'Minhas Confirmações'}
                         </h1>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                        <p className="page-subtitle">
                             {isPorteiroOrAdmin
                                 ? 'Valide as movimentações de chaves do sistema.'
                                 : 'Confirme as chaves que você está retirando ou devolvendo.'}
