@@ -153,14 +153,13 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                     `}</style>
 
                     <div className="page-header mb-6 no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
                             <h2 className="page-title m-0">Histórico de Movimentações</h2>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                                 {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
                                     <button
                                         className="btn btn-danger"
                                         onClick={() => setShowClearConfirm(true)}
-                                        style={{ backgroundColor: 'var(--status-inuse-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', fontSize: '0.9rem' }}
                                     >
                                         Limpar Histórico
                                     </button>

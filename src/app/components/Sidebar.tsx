@@ -238,16 +238,16 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                                 <span style={{
                                                     position: 'absolute', top: -2, right: -2,
                                                     width: 10, height: 10,
-                                                    background: '#ef4444', borderRadius: '50%',
+                                                    background: 'var(--danger)', borderRadius: '50%',
                                                     border: '2px solid var(--blue-900)',
-                                                    boxShadow: '0 0 8px rgba(239,68,68,0.4)'
+                                                    boxShadow: '0 0 8px var(--danger-bg)'
                                                 }} />
                                             )}
                                         </span>
                                         <span className="nav-item-text" style={{ marginLeft: '0.125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
                                             {item.label}
                                             {item.href === '/confirm' && pendingCount > 0 && !isCollapsed && (
-                                                <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
+                                                <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
                                                     {pendingCount}
                                                 </span>
                                             )}
@@ -324,7 +324,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
                                 </button>
                                 <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
+                                <button className="nav-item" onClick={handleLogout} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
                                     <span className="nav-icon"><Icon name="log-out" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Sair</span>
                                 </button>
@@ -333,7 +333,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     </div>
                     
                     {!isUserMenuOpen && (
-                        <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
+                        <button className="nav-item" onClick={handleLogout} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
                             <span className="nav-icon"><Icon name="log-out" size={18} /></span>
                             <span className="nav-item-text">Sair</span>
                         </button>
@@ -358,7 +358,6 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
                 <div className="mobile-topbar-brand">
                     <span className="mobile-topbar-title">{currentPageTitle}</span>
-                    <span className="mobile-topbar-badge">SGC</span>
                 </div>
 
                 <button
