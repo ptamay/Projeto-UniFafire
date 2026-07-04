@@ -43,13 +43,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Sprint 9 (higiene) EXECUTADA e mergeada — débito de lint zerado + Next 16 (proxy)
-Última ação  : Merge da sprint 9 em main + push 76a231f — ESLint 64→0 warnings em todo o repo (não só src/), no-explicit-any volta a error sem exceções, Navbar.tsx órfão removido, middleware.ts→proxy.ts (convenção Next 16); gates: tsc limpo, Vitest 61/61, E2E 6/6, CI gates 6/6, audit 0 vulns
-Próxima ação : Baseline + mobile + higiene completos. Backlog vazio — novas ideias entram via Change Request.
+Sessão       : Change Request Tipo C (Bypass e Inteligência UI)
+Última ação  : Implementado REQ-021: bypass de confirmação com justificativa + Ação Rápida Inteligente. Criado ADR-003, spec.md atualizado, git commit de Memory Sync realizado.
+Próxima ação : Nenhuma, backlog em dia. Aguardando novas sprints ou ideias (Change Requests).
 Decisões em aberto : nenhuma
-Arquivos não commitados : .agents/rules/* e .husky/ (mudanças externas de outra sessão — não tocadas)
+Arquivos não commitados : nenhum
 Branch atual : main
-Atualizado em : 2026-07-03
+Atualizado em : 2026-07-04
 ```
 
 ---
