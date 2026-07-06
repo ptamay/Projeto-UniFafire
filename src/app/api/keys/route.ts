@@ -42,7 +42,8 @@ export async function GET() {
                        'porteiro_confirmed', kt.porteiro_confirmed_at IS NOT NULL,
                        'user_name', u_kt.full_name,
                        'user_role', u_kt.role,
-                       'user_id', kt.user_id
+                       'user_id', kt.user_id,
+                       'porteiro_id', kt.porteiro_id
                    )
                     FROM key_transactions kt
                     LEFT JOIN users u_kt ON kt.user_id = u_kt.id

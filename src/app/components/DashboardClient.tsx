@@ -1030,7 +1030,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 </div>
                                             )}
 
-                                            {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId) && (
+                                            {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) && (
                                                 <button
                                                     className="key-card-action-btn"
                                                     disabled={cancelLoading === key.pending_info.transaction_id}

@@ -237,7 +237,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                             )}
 
                                             {/* Cancelar Transação */}
-                                            {(isPorteiroOrAdmin || tx.user_id === userId) && (
+                                            {(isPorteiroOrAdmin || tx.user_id === userId || tx.porteiro_id === userId) && (
                                                 <button
                                                     className="btn btn-ghost"
                                                     style={{ flex: '0 1 auto', minWidth: '100px', minHeight: 44, fontSize: '0.9rem', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}

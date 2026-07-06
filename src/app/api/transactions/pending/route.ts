@@ -54,9 +54,10 @@ export async function GET() {
                 LEFT JOIN keys k ON kt.key_id = k.id
                 LEFT JOIN users u ON kt.user_id = u.id
                 LEFT JOIN users p ON kt.porteiro_id = p.id
-                WHERE kt.user_id = ? AND kt.status IN ('pending', 'porteiro_confirmed')
+                WHERE (kt.user_id = ? OR kt.porteiro_id = ?) 
+                  AND kt.status IN ('pending', 'porteiro_confirmed')
                 ORDER BY kt.initiated_at DESC
-            `).all(session.id) as PendingTransactionRow[];
+            `).all(session.id, session.id) as PendingTransactionRow[];
         }
 
         return NextResponse.json(transactions);
