@@ -44,12 +44,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Change Request Tipo C (Transferência de Chaves e Consolidação de Logs)
-Última ação  : Adicionado REQ-022 e REQ-023 ao spec.md e plan.md. Criado ADR-004. Memory Sync e commit realizados.
-Próxima ação : Nenhuma nesta sessão. As tasks de transferência e log entram pelo ciclo TDD na próxima sprint (Sprint 10).
+Sessão       : Change Request Tipo C (Transferência de Chaves entre Usuários Comuns)
+Última ação  : Adicionado REQ-024 ao spec.md e TASK-040 ao plan.md. Criado ADR-005. Memory Sync e commit docs realizados.
+Próxima ação : Nenhuma nesta sessão. A TASK-040 (transferência por usuários, fluxo pendente) entra pelo ciclo TDD na próxima sprint.
 Decisões em aberto : Nenhuma
 Arquivos não commitados : Nenhum
-Branch atual : main
+Branch atual : feature/sprint-10-transferencia-logs
 Atualizado em : 2026-07-06
 ```
 
