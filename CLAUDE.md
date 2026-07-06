@@ -45,9 +45,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Sprint 11 concluída. (Nenhuma task ativa no momento).
-- Última Ação: Implementação, build e commit da TASK-042 (Transferência no Mobile) finalizando a Sprint 11.
-- Próxima Ação: Review pós-sprint (se desejado via Claude Code) ou avançar para novas necessidades do usuário.
+- Sprint/Task Ativa: Nenhuma task ativa (Quick-Fix de UI concluído).
+- Última Ação: Correção da visibilidade do botão 'Devolver' para usuários normais e correção da exibição do botão 'Transferir' para porteiros/admins no mobile (`DashboardClient.tsx`).
+- Próxima Ação: Aguardar nova task do usuário (Sprint 12 ou novas requests).
 - Decisões em aberto: Nenhuma
 - Arquivos não commitados: Nenhum
 - Branch atual: feature/sprint-10-transferencia-logs
