@@ -108,7 +108,7 @@
 - ~~TASK-041 → REQ-025: Ajustar API e UI (`/confirm`, Dashboard) para que o remetente (initiator) visualize e possa cancelar transferências pendentes.~~
 
 ### Sprint 11 🏃‍♂️ — UI/UX Mobile (CR 2026-07-06, Tipo C)
-- [ ] **TASK-042**: Transferência no Mobile (REQ-026)
+- ~~TASK-042: Transferência no Mobile (REQ-026)~~
       *Adaptar a view de cards (mobile) no DashboardClient para incluir o botão/ação de Transferir chaves.*
 
 ### Itens não bloqueantes

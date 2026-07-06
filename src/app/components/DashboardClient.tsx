@@ -1042,6 +1042,23 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
                                                 </button>
                                             )}
+                                            {key.status === 'in_use' && !key.pending_info && (!isPorteiroOrAdmin && key.employee_id === userId) && (
+                                                <button
+                                                    className="key-card-action-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setConfirmModal({
+                                                            open: true,
+                                                            keyId: key.id,
+                                                            keyName: key.name,
+                                                            type: 'transfer'
+                                                        });
+                                                    }}
+                                                    style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                >
+                                                    Transferir
+                                                </button>
+                                            )}
                                         </div>
                                         <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
                                             {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
