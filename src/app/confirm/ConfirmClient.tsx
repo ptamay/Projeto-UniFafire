@@ -15,6 +15,7 @@ interface PendingTransaction {
     user_username: string;
     user_full_name: string;
     porteiro_username?: string;
+    porteiro_id?: number;
     initiated_at: string;
     user_confirmed_at?: string;
     porteiro_confirmed_at?: string;
