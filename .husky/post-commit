@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+# Constitutional SDD v5 — lembrete pós Memory Sync (via husky)
+
+COMMIT_MSG=$(git log -1 --pretty=%s)
+
+if echo "$COMMIT_MSG" | grep -q "memory sync"; then
+  echo ""
+  echo "✅ Memory Sync concluído — memória do projeto atualizada."
+  echo "   Próximos passos comuns: review pós-sprint no Claude Code (/code-review),"
+  echo "   ADRs pendentes, ou /retoma em qualquer agente para continuar."
+  echo ""
+fi

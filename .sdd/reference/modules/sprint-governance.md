@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # sprint-governance.md
 > **Módulo:** Sprint Governance | **Versão:** 4.0
 > **Carregado em:** Fases 7–9 (setup + tasks) | Fases 10–11 (execução + release)
@@ -20,6 +22,9 @@ Este módulo contém a estrutura completa de todas as fases operacionais: desde 
 ---
 
 ### Fase Comercial — Discovery e Proposta (opcional, antes da Fase 0)
+
+> 💡 **Skill dedicada:** no Claude Code, invoque `/proposta` — ela encapsula todo o fluxo
+> abaixo e gera o `proposta-[cliente].md` (e o `.docx` via skill `docx`).
 
 > *Para projetos de cliente externo. Roda em qualquer chat — não precisa de workspace.*
 > Objetivo: transformar a conversa de venda em proposta com preço e prazo defensáveis,
@@ -45,6 +50,9 @@ Este módulo contém a estrutura completa de todas as fases operacionais: desde 
 6. **Proposta aceita** → rode `novo-projeto.ps1`, mova a proposta para `/docs/` do
    projeto e inicie a Fase 0 — o texto do discovery vira rascunho do `overview.md`.
 
+> 💡 **Skill auxiliar:** para entregar a proposta em formato profissional ao cliente,
+> use a skill `docx` (auto-ativa) — gera o `.docx` a partir do `proposta-[cliente].md`.
+
 > ⚠️ A estimativa desta fase é compromisso de PROPOSTA, não de spec. Se as Fases 1–5
 > revelarem escopo maior que o proposto, isso é **Change Request comercial** — renegocie
 > com o cliente antes da Fase 6. Nunca absorva a diferença silenciosamente.
@@ -69,7 +77,7 @@ Este módulo contém a estrutura completa de todas as fases operacionais: desde 
 
 1. O usuário escreve em linguagem humana e tópicos livres tudo que o sistema deve fazer — funcionalidades, perfis, permissões, restrições, integrações, modelo de negócio. Pode ser direto no chat ou colando um texto pronto.
 2. O usuário instrui o agente:
-   > *"Formate o texto abaixo como um `overview.md` estruturado, respeitando exatamente este template, sem inventar informações não fornecidas, e salve em `/.agents/memory/overview.md`:"*
+   > *"Formate o texto abaixo como um `overview.md` estruturado, respeitando exatamente este template, sem inventar informações não fornecidas, e salve em `/.sdd/memory/overview.md`:"*
 3. Use o template abaixo como estrutura de saída obrigatória:
 
 ```
@@ -97,7 +105,7 @@ Este módulo contém a estrutura completa de todas as fases operacionais: desde 
 [SaaS, licença, marketplace, uso interno — e se é B2B/multi-tenant]
 ```
 
-4. O agente salva o arquivo em `/.agents/memory/overview.md` e confirma o caminho ao usuário.
+4. O agente salva o arquivo em `/.sdd/memory/overview.md` e confirma o caminho ao usuário.
 5. Prossiga para a Fase 1 — na mesma sessão, se estiver no Antigravity. O agente lerá o arquivo do workspace — não há upload.
 
 > **Regra desta fase — o agente apenas FORMATA:** não entreviste, não sugira, não complete
@@ -129,7 +137,7 @@ permitindo handoff de contexto entre Antigravity e Claude Code sem intervenção
 ```markdown
 # CLAUDE.md — Contexto do Projeto para Claude Code
 > Lido automaticamente pelo Claude Code ao iniciar em qualquer diretório do projeto.
-> Versão compatível com Constitutional SDD v4.0
+> Versão compatível com Constitutional SDD v5
 > ⚠️ Não editar manualmente — atualizado automaticamente pelo Memory Sync (Step 10) ao fim de cada sprint,
 > e pelo Checkpoint (comando "checkpoint") a qualquer momento durante uma sessão.
 
@@ -195,10 +203,10 @@ Atualizado em : [YYYY-MM-DD HH:MM]
 **Se o checkpoint estiver vazio, desatualizado, ou a ação exigir contexto estrutural:**
 → Leia nesta ordem, parando assim que tiver o suficiente para a tarefa:
 
-1. `.agents/memory/constitution.md` — lei máxima (se ausente: pare e avise)
-2. `.agents/memory/plan.md` — stack aprovada, decisões, AI Cost Budget
-3. `.agents/memory/spec.md` — escopo e métricas (leia só se a tarefa envolve requisitos)
-4. `.agents/memory/overview.md` — contexto humano (leia só se não tiver clareza do domínio)
+1. `.sdd/memory/constitution.md` — lei máxima (se ausente: pare e avise)
+2. `.sdd/memory/plan.md` — stack aprovada, decisões, AI Cost Budget
+3. `.sdd/memory/spec.md` — escopo e métricas (leia só se a tarefa envolve requisitos)
+4. `.sdd/memory/overview.md` — contexto humano (leia só se não tiver clareza do domínio)
 
 > Nunca releia todos os 4 por reflexo. Se `constitution.md` + `plan.md` são suficientes
 > para a tarefa, pare aí. `spec.md` e `overview.md` são sob demanda.
@@ -207,22 +215,30 @@ Atualizado em : [YYYY-MM-DD HH:MM]
 
 ## Seu papel neste projeto
 
-Você é o **agente de arquitetura e desbloqueio**, não o agente de execução de sprint.
+Você é, **por padrão**, o agente de arquitetura e desbloqueio — o Antigravity é o executor
+padrão de sprint. **Mas você assume a execução quando o usuário direcionar** (módulo crítico,
+ou preferência de qualidade sobre custo), seguindo o mesmo `sprint-execution.md` e os mesmos
+Gates 1–6. A qualidade é do workflow, não do executor.
 
 | Faça | Não faça |
 |------|----------|
-| Auditar consistência de artefatos | Executar tasks do `tasks.md` autonomamente |
-| Gerar e revisar ADRs | Substituir o Antigravity na execução de sprint |
+| Auditar consistência de artefatos | Executar tasks do `tasks.md` **sem o usuário pedir** (o default é Antigravity) |
+| Gerar e revisar ADRs | Executar sprint **pulando** o ciclo TDD ou os gates |
 | Depurar decisões complexas | Criar código sem verificar `constitution.md` |
-| Revisar Fitness Functions (`.semgrep/`) | Assumir stack não listada no `plan.md` |
-| Apoiar a Fase 6 (síntese SDD Triad) | Avançar fases sem aprovação explícita do usuário |
+| Executar módulos críticos quando direcionado (com TDD + gates) | Assumir stack não listada no `plan.md` |
+| Revisar Fitness Functions (`.semgrep/`) | Avançar fases sem aprovação explícita do usuário |
+| Apoiar a Fase 6 (síntese SDD Triad) | |
+
+> Quando executar uma sprint: siga `.agents/workflows/sprint-execution.md` igual ao
+> Antigravity. Guia de modelo por tarefa (Opus para crítico, Sonnet para padrão,
+> Haiku para mecânico): `master-spec-core.md` Seção 5.2.
 
 ---
 
 ## Estado atual do projeto
 
 > ⚠️ Esta seção é atualizada pelo Antigravity ao fim de cada sprint via Memory Sync (Step 10).
-> Se estiver desatualizada, leia `.agents/memory/constitution.md` como fonte de verdade.
+> Se estiver desatualizada, leia `.sdd/memory/constitution.md` como fonte de verdade.
 
 ```
 Modo do projeto   : [PREENCHER NA FASE 1 — MVP | Expresso | Padrão]
@@ -237,7 +253,7 @@ Próxima ação      : Fase 8 — geração de tasks da Sprint 1
 
 ## Stack aprovada (referência rápida)
 
-> Fonte canônica: `.agents/memory/plan.md` — seção "Stack e Decisões".
+> Fonte canônica: `.sdd/memory/plan.md` — seção "Stack e Decisões".
 > Não use ferramentas fora desta lista sem registro explícito em `plan.md`.
 
 | Camada | Ferramenta padrão |
@@ -263,8 +279,8 @@ Próxima ação      : Fase 8 — geração de tasks da Sprint 1
 > ⚠️ Nesta fase, `constitution.md`, `spec.md` e `plan.md` **ainda não existem** —
 > sua função é GERÁ-LOS, não auditá-los.
 
-Leia `.agents/memory/handoff.md` (gerado pelo Gemini ao fim da Fase 5) e
-`.agents/memory/overview.md`. Carregue os módulos `security-constitution.md` +
+Leia `.sdd/memory/handoff.md` (gerado pelo Gemini ao fim da Fase 5) e
+`.sdd/memory/overview.md`. Carregue os módulos `security-constitution.md` +
 `architecture-governance.md` da skill `novo-projeto` (eles fazem parte do framework
 instalado — pasta `resources/modules/` da skill — e **não** vivem neste repositório)
 antes de gerar qualquer artefato.
@@ -357,7 +373,7 @@ para acionar o Claude Code — sem intervenção manual do usuário.
 
 ```bash
 #!/bin/sh
-# post-commit hook — Constitutional SDD v4.0
+# post-commit hook — Constitutional SDD v5
 # Detecta commits de Memory Sync e sugere acionar o Claude Code.
 
 COMMIT_MSG=$(git log -1 --pretty=%s)
@@ -406,7 +422,7 @@ Crie `scripts/ci-gates.sh`:
 
 ```bash
 #!/bin/bash
-# Gates mecânicos — Constitutional SDD v4.0
+# Gates mecânicos — Constitutional SDD v5
 # Não dependem de julgamento do LLM. Rodam no CI e no pre-push.
 set -e
 
@@ -596,7 +612,7 @@ E ao `.git/hooks/commit-msg` (valida a convenção de rastreabilidade a cada com
 
 ```bash
 #!/bin/sh
-# commit-msg — valida convenção de rastreabilidade (Constitutional SDD v4.0)
+# commit-msg — valida convenção de rastreabilidade (Constitutional SDD v5)
 # feat/test exigem escopo (TASK-NNN); refactor exige (TASK-NNN) ou (MAINT).
 # fix/style/chore sem escopo continuam válidos (caminho do Quick Fix).
 MSG=$(head -1 "$1")
@@ -689,7 +705,7 @@ Crie `scripts/sync-rules.sh`:
 
 ```bash
 #!/bin/bash
-# Detector de deriva dos arquivos de regras — Constitutional SDD v4.0
+# Detector de deriva dos arquivos de regras — Constitutional SDD v5
 # Compara o hash combinado dos 5 arquivos de regras com o hash registrado na
 # última sincronização. Não regenera automaticamente (os arquivos são curados
 # manualmente); apenas ALERTA quando algum deles mudou e merece revisão humana.
@@ -746,7 +762,7 @@ E ao `.git/hooks/pre-commit` (avisa localmente, antes mesmo do commit — custo 
 
 ```bash
 #!/bin/sh
-# pre-commit — detector de deriva dos arquivos de regras (Constitutional SDD v4.0)
+# pre-commit — detector de deriva dos arquivos de regras (Constitutional SDD v5)
 # Roda antes de cada commit. Não bloqueia — apenas avisa, porque a deriva
 # pode ser intencional (você está no meio de atualizar o framework).
 if [ -f scripts/sync-rules.sh ]; then
@@ -787,9 +803,13 @@ chore: add rules drift detector — keeps Antigravity rule files in sync with fr
 
 Aguarde o usuário confirmar que o workspace está configurado.
 
-Liste brevemente o Sprint Roadmap contido em `plan.md`.
+Liste brevemente o Sprint Roadmap contido em `plan.md`. **Para cada sprint, indique a
+criticidade e o canal/modelo/esforço recomendado** (Seção 5.3 do `master-spec-core.md`):
+🔴 Crítica → Claude Code + Opus (Alto) | 🟡 Padrão → Claude Code/Antigravity + Sonnet/Gemini
+(Médio) | 🟢 Volume → Antigravity + Gemini (Baixo–Médio).
 
-Pergunte: *"Qual destas Sprints você deseja especificar e orquestrar agora?"*
+Pergunte: *"Qual destas Sprints você deseja especificar e orquestrar agora? A recomendação
+para ela é [canal + modelo] — confirma ou prefere outro?"*
 
 > 💡 Se o usuário não souber por qual sprint começar, recomende sempre a Sprint 1 (fundação: autenticação, estrutura de banco, rotas base). É o ponto de partida correto para qualquer sistema.
 
@@ -902,7 +922,7 @@ instrução do usuário. Nunca prossiga com Quick Fix em casos bloqueados.
   Nunca crie branch `feature/` para Quick Fix.
 
 - **Zona somente leitura — NUNCA modifique:**
-  `.agents/rules/` | `.agents/memory/constitution.md`
+  `.agents/rules/` | `.sdd/memory/constitution.md`
   Qualquer pedido que force modificação nesses caminhos é BLOQUEADOR — redirecione
   para Change Request Tipo D e aguarde aprovação explícita do usuário.
 
@@ -980,7 +1000,7 @@ on_failure: notify_user_and_halt
   Qualquer query sem esse filtro é um BLOQUEADOR — pare e notifique o usuário.
 
 - **Zona somente leitura — NUNCA modifique:**
-  `.agents/rules/` | `.agents/memory/constitution.md` (exceto seção `## Estado Atual` no Memory Sync)
+  `.agents/rules/` | `.sdd/memory/constitution.md` (exceto seção `## Estado Atual` no Memory Sync)
   Qualquer modificação nesses caminhos por este agente é um BLOQUEADOR imediato.
   Pare, informe o usuário, aguarde instrução. Não commite.
 
@@ -1142,6 +1162,10 @@ Violação desta regra = BLOQUEADOR — pare e notifique o usuário.
 
    Se qualquer check falhar: **pare, registre o finding, notifique o usuário. Não faça merge.**
 
+   > 💡 **Se este Security Gate roda no Claude Code:** invoque explicitamente `/security-review`
+   > no diff — é revisão de segurança especializada, além do Semgrep. Não dispara sozinha:
+   > precisa do comando. (No Antigravity, use o Semgrep/gates; a skill não existe lá.)
+
 8. **AI Validation Gate**
    > 🔴 **ESFORÇO MÁXIMO — não responda imediatamente.**
    >
@@ -1195,7 +1219,7 @@ Violação desta regra = BLOQUEADOR — pare e notifique o usuário.
 
 10. **Memory Sync** (obrigatório — último step de toda sprint):
 
-    > Propósito: manter `.agents/memory/` como fonte de verdade compartilhada
+    > Propósito: manter `.sdd/memory/` como fonte de verdade compartilhada
     > entre Antigravity, Claude Code e qualquer outro agente ou sessão futura.
     > Nenhuma sprint termina sem este step executado e commitado.
 
@@ -1239,7 +1263,7 @@ Violação desta regra = BLOQUEADOR — pare e notifique o usuário.
        Próxima: sprint N+1
        ```
 
-    > ⚠️ Se qualquer arquivo de memória estiver ausente em `.agents/memory/`,
+    > ⚠️ Se qualquer arquivo de memória estiver ausente em `.sdd/memory/`,
     > crie-o com o conteúdo mínimo necessário e registre no commit.
     > Nunca deixe o Memory Bank incompleto ao fim de uma sprint.
 ```
@@ -1303,8 +1327,15 @@ recomende pentest humano além deste — este não é pentest certificado.
 > ⚠️ **Não confundir com migration de schema** (`20-migrations.md`, que altera a ESTRUTURA
 > do banco). Aqui é **carga de CONTEÚDO** — trazer os dados existentes do cliente para dentro.
 >
+> 💡 **Skill dedicada:** no Claude Code, invoque `/carga-dados` — encapsula o protocolo
+> abaixo e aciona `xlsx`/`pdf` para ler as fontes.
+>
 > Ambiente: executada com Claude Code (raciocínio) ou Antigravity, sempre **primeiro contra
 > branch Neon efêmero / staging**, nunca a primeira execução direto em produção.
+
+> 💡 **Skills auxiliares (Claude Code):** se a fonte for planilha, use a skill `xlsx` para
+> ler e limpar; se for PDF (ex: contratos digitalizados), use a skill `pdf` para extrair os
+> campos. Ambas auto-ativam pela descrição da tarefa — alimentam o `data-mapping.md`.
 
 **Descoberta (levantada na Fase Comercial/Fase 1, detalhada aqui):**
 - Existe dado legado? Volume (N registros)? Formato (planilha, PDF, papel, dump de banco,
@@ -1388,6 +1419,8 @@ Após execução da sprint:
 
 1. **Demonstre** a funcionalidade ao cliente/stakeholder em staging (demo ao vivo,
    vídeo curto ou sequência de screenshots — o que o cliente conseguir consumir).
+   > 💡 No Claude Code, use `/run` para subir o app na demo e `/verify` para confirmar
+   > que o comportamento real bate com o critério BDD antes de mostrar ao cliente.
 2. **Registre o resultado** no changelog do `spec.md`:
    `Aceite Sprint N: aprovado | aprovado com ajustes | reprovado` + data + observações.
 3. **Ajustes solicitados NUNCA são implementados ad-hoc:**

@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # architecture-governance.md
 > **Módulo:** Architecture Governance | **Versão:** 4.0
 > **Carregado em:** Fase 6 (Opus) | Fases 7–9 (setup + tasks)
@@ -71,6 +73,41 @@ Este módulo contém a stack de referência PME validada e o mapa completo de ar
 
 ---
 
+### Skills do Próprio Framework (Claude Code)
+
+> Instaladas junto com `novo-projeto` (via `atualizar-skill.ps1`). Invocáveis em qualquer
+> sessão do Claude Code.
+
+| Skill | Quando | Fase |
+|-------|--------|------|
+| `/proposta` | Antes de fechar com o cliente — discovery + estimativa + proposta | Fase Comercial |
+| `/carga-dados` | Migrar dados legados (planilha/sistema) para o novo sistema | Fase 10.5 |
+| `novo-projeto` | Orquestrador principal — todas as fases | 0–11 |
+
+### Skills Auxiliares do Claude Code (built-in)
+
+> ⚠️ Só funcionam em sessões do **Claude Code** (Fase 6, Change Requests, desbloqueio,
+> revisões) — NÃO dentro do Antigravity. As marcadas como *slash* precisam ser invocadas
+> explicitamente (`/comando`); as *auto* disparam sozinhas pela descrição da tarefa.
+
+| Skill | Tipo | Onde o framework a invoca |
+|-------|------|---------------------------|
+| `xlsx` | auto | Fase 10.5 — ler/limpar planilha de dados legados |
+| `pdf` | auto | Fase 10.5 — extrair dados de PDFs (ex: contratos) para a carga |
+| `docx` | auto | Fase Comercial (proposta) + artefatos LGPD (RoPA/DPIA) formais |
+| `/security-review` | slash | Security Gate (Step 7) + AI Red Team — invocar no diff antes do merge |
+| `/code-review` | slash | Step 8 (AI Validation Gate) — invocar no diff antes do merge |
+| `/simplify` | slash | Step 4 (Refactor) — limpeza sem caça a bug |
+| `/verify` | slash | DoD + Aceite do Cliente — sobe o app e confirma comportamento real |
+| `/run` | slash | Go-live / demo de aceite da sprint |
+| `/schedule` ou `/loop` | slash | Ciclo de manutenção mensal da frota (`fleet-operations.md`) |
+| `skill-creator` | manual | Criar skills próprias do framework (ex: automatizar a carga) |
+
+> As slash não disparam sozinhas: o step correspondente DEVE mandar invocá-las
+> explicitamente, senão o Claude faz a versão genérica em vez da skill especializada.
+
+---
+
 ### Critério de Desvio da Stack Padrão
 
 Se qualquer ferramenta desta stack for substituída, registrar obrigatoriamente em `plan.md`:
@@ -110,7 +147,7 @@ Fase 4.0 (geração):
   Gemini/GPT-4o Vision analisa /assets/brand/logo.svg
   → extrai paleta + tom visual
   + Gemini/GPT-4o gera layout shell JSON
-  → agente gera e salva /.agents/memory/ui-context.md
+  → agente gera e salva /.sdd/memory/ui-context.md
 
 Consumo (todas as sprints com componentes UI):
   Step 0 do sprint-execution.md carrega ui-context.md
@@ -122,13 +159,13 @@ Consumo (todas as sprints com componentes UI):
 |---|---|---|---|
 | `VERSION` | bootstrap | `/.agents/` | Versão do framework copiada do template — comparada pelo `atualizar-projeto.ps1` para detectar projeto desatualizado |
 | `proposta-[cliente].md` | Comercial | `/docs/` (após criação do projeto) | Proposta com escopo macro, preço, prazo e exclusões explícitas |
-| `overview.md` | 0 | `/.agents/memory/` | Contexto inicial do projeto em linguagem humana formatada |
+| `overview.md` | 0 | `/.sdd/memory/` | Contexto inicial do projeto em linguagem humana formatada |
 | `threat_model_stride.md` | 3 | `/docs/` | Auditoria de segurança + cross-tenant risks |
-| `ui-context.md` | 4.0 | `/.agents/memory/` | Identidade visual e layout shell — contexto fixo para todos os agentes de UI |
-| `handoff.md` | 5 | `/.agents/memory/` | Resumo compacto de escopo das Fases 1–5 para transição Gemini → Opus |
-| `constitution.md` | 6 | `/.agents/memory/` | Lei máxima dos agentes |
-| `spec.md` | 6 | `/.agents/memory/` | O Quê & Por Quê + métricas de negócio |
-| `plan.md` | 6 | `/.agents/memory/` | Como & Roadmap + Decisões e Justificativas |
+| `ui-context.md` | 4.0 | `/.sdd/memory/` | Identidade visual e layout shell — contexto fixo para todos os agentes de UI |
+| `handoff.md` | 5 | `/.sdd/memory/` | Resumo compacto de escopo das Fases 1–5 para transição Gemini → Opus |
+| `constitution.md` | 6 | `/.sdd/memory/` | Lei máxima dos agentes |
+| `spec.md` | 6 | `/.sdd/memory/` | O Quê & Por Quê + métricas de negócio |
+| `plan.md` | 6 | `/.sdd/memory/` | Como & Roadmap + Decisões e Justificativas |
 | `api-contract.md` | 6 | `/docs/` | Contrato de API versionada (se aplicável) |
 | `mcp_config.json` | 7 | `/.agents/` | Governança de ferramentas MCP |
 | `agent_config.py` | 7 | `/.agents/` | Sandbox deny-by-default |

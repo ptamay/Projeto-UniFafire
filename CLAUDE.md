@@ -1,6 +1,7 @@
 # CLAUDE.md — Contexto do Projeto para Claude Code
 > Lido automaticamente pelo Claude Code ao iniciar em qualquer diretório do projeto.
-> Versão compatível com Constitutional SDD v4.0
+> Versão compatível com Constitutional SDD v5 (migrado do v4.4.0 em 2026-07-06)
+> Mapa do projeto: `AGENTS.md` · Memória permanente: `.sdd/memory/`
 > ⚠️ Não editar manualmente — atualizado automaticamente pelo Memory Sync (Step 10) ao fim de cada sprint,
 > e pelo Checkpoint (comando "checkpoint") a qualquer momento durante uma sessão.
 
@@ -67,10 +68,10 @@ Atualizado em : 2026-07-04
 **Se o checkpoint estiver vazio, desatualizado, ou a ação exigir contexto estrutural:**
 → Leia nesta ordem, parando assim que tiver o suficiente para a tarefa:
 
-1. `.agents/memory/constitution.md` — lei máxima (se ausente: pare e avise)
-2. `.agents/memory/plan.md` — stack aprovada, decisões, AI Cost Budget
-3. `.agents/memory/spec.md` — escopo e métricas (leia só se a tarefa envolve requisitos)
-4. `.agents/memory/overview.md` — contexto humano (leia só se não tiver clareza do domínio)
+1. `.sdd/memory/constitution.md` — lei máxima (se ausente: pare e avise)
+2. `.sdd/memory/plan.md` — stack aprovada, decisões, AI Cost Budget
+3. `.sdd/memory/spec.md` — escopo e métricas (leia só se a tarefa envolve requisitos)
+4. `.sdd/memory/overview.md` — contexto humano (leia só se não tiver clareza do domínio)
 
 > Nunca releia todos os 4 por reflexo. Se `constitution.md` + `plan.md` são suficientes
 > para a tarefa, pare aí. `spec.md` e `overview.md` são sob demanda.
@@ -84,7 +85,7 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 | Faça | Não faça |
 |------|----------|
 | Auditar consistência de artefatos | Executar tasks do `tasks.md` autonomamente |
-| Gerar e revisar ADRs | Substituir o Antigravity na execução de sprint |
+| Gerar e revisar ADRs | Executar sprint sem direcionamento do usuário (sprints 🔴 críticas rodam aqui via skill `sprint`) |
 | Depurar decisões complexas | Criar código sem verificar `constitution.md` |
 | Revisar Fitness Functions (`.semgrep/`) | Assumir stack não listada no `plan.md` |
 | Apoiar a Fase 6 (síntese SDD Triad) | Avançar fases sem aprovação explícita do usuário |
@@ -94,7 +95,7 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 ## Estado atual do projeto
 
 > ⚠️ Esta seção é atualizada pelo Antigravity ao fim de cada sprint via Memory Sync (Step 10).
-> Se estiver desatualizada, leia `.agents/memory/constitution.md` como fonte de verdade.
+> Se estiver desatualizada, leia `.sdd/memory/constitution.md` como fonte de verdade.
 
 ```
 Modo do projeto   : EXPRESSO
@@ -109,7 +110,7 @@ Próxima ação      : Fase 8 — geração de tasks da Sprint 1
 
 ## Stack aprovada (referência rápida)
 
-> Fonte canônica: `.agents/memory/plan.md` — seção "Stack e Decisões".
+> Fonte canônica: `.sdd/memory/plan.md` — seção "Stack e Decisões".
 > Não use ferramentas fora desta lista sem registro explícito em `plan.md`.
 
 | Camada | Ferramenta padrão |
@@ -131,30 +132,29 @@ Próxima ação      : Fase 8 — geração de tasks da Sprint 1
 > ⚠️ Nesta fase, `constitution.md`, `spec.md` e `plan.md` **ainda não existem** —
 > sua função é GERÁ-LOS, não auditá-los.
 
-Leia `.agents/memory/handoff.md` (gerado pelo Gemini ao fim da Fase 5) e
-`.agents/memory/overview.md`. Carregue os módulos `security-constitution.md` +
-`architecture-governance.md` da skill `novo-projeto` (eles fazem parte do framework
-instalado — pasta `resources/modules/` da skill — e **não** vivem neste repositório)
-antes de gerar qualquer artefato.
+Use a skill `arquitetura`. Leia `.sdd/memory/handoff.md` (gerado ao fim da Fase 5) e
+`.sdd/memory/overview.md`. Carregue `.sdd/reference/modules/security-constitution.md` +
+`.sdd/reference/modules/architecture-governance.md` (no v5 eles vivem neste repositório,
+em `.sdd/reference/`) antes de gerar qualquer artefato.
 
 Gere `constitution.md`, `spec.md`, `plan.md` (e `api-contract.md` + `adr/*.md` se
-aplicável) conforme o template da Fase 6 em `master-spec-core.md` (skill `novo-projeto`).
+aplicável) conforme o template da Fase 6 em `.sdd/reference/master-spec-core.md`.
 
 Ao final, execute o checklist do CHECKPOINT da Fase 6 (mesmo arquivo) antes de
 informar ao usuário que pode prosseguir para a Fase 7.
 
 **Calibração de esforço nesta fase:** ver seção "Effort Levels — Fase 6" em
-`master-spec-core.md` (skill `novo-projeto`). Gates e checklists usam esforço mínimo; síntese de
+`.sdd/reference/master-spec-core.md`. Gates e checklists usam esforço mínimo; síntese de
 `constitution.md`, `plan.md` e auditoria cruzada usam esforço máximo.
 
 ### Desbloqueio de sprint (Antigravity travou)
-Leia `.agents/workflows/sprint-execution.md` + `tasks.md` da sprint atual.
+Leia `.agents/workflows/sprint.md` + `tasks.md` da sprint atual.
 Entenda o que o agente fez, o que falhou e por quê.
 Proponha a correção. Não reescreva o que já foi feito sem necessidade.
 
 ### Change Request — nova ideia ou mudança de escopo
 Ouça a descrição do usuário. Classifique como Tipo A, B, C ou D conforme
-a Seção 6.1 do `master-spec-core.md`. Apresente a classificação e o impacto
+a regra `.agents/rules/40-change-request.md` (autocontida). Apresente a classificação e o impacto
 antes de alterar qualquer artefato. Aguarde confirmação para Tipo C e D.
 Nunca implemente a mudança diretamente — atualize `spec.md`, `plan.md` e/ou
 `adr/*.md` e faça o commit do Change Request. A implementação entra pelo
@@ -166,7 +166,7 @@ Baseie-se em decisões já tomadas e registradas em `plan.md`.
 Nunca invente decisão — apenas formalize o que já foi decidido.
 
 ### Review pós-sprint
-Leia o Report do Step 9 em `.agents/workflows/sprint-execution.md`.
+Leia o Report do Step 9 em `.agents/workflows/sprint.md`.
 Verifique Fitness Functions, AI Validation Gate e débitos técnicos.
 Atualize `plan.md` se necessário.
 
@@ -186,7 +186,7 @@ Atualize `plan.md` se necessário.
 ## Localização dos artefatos principais
 
 ```
-.agents/
+.sdd/
   memory/
     constitution.md     ← lei máxima
     spec.md             ← o quê e por quê
@@ -194,12 +194,16 @@ Atualize `plan.md` se necessário.
     overview.md         ← contexto humano
     handoff.md          ← resumo Fases 1–5 (para Fase 6)
     ui-context.md       ← identidade visual (para agentes de UI)
-  workflows/
-    sprint-execution.md ← workflow autônomo Antigravity
-    quick-fix.md        ← workflow de pedidos pontuais
-  rules/                ← regras Antigravity (00-core … 40-change-request) — zona somente leitura
+    threat_model_stride.md
+  reference/            ← processo completo do framework (ler POR SEÇÃO, nunca inteiro)
   mcp_config.json       ← governança MCP
   agent_config.py       ← sandbox deny-by-default
+
+.agents/
+  rules/                ← regras (00-core … 40-change-request) — zona somente leitura
+  workflows/            ← /escopo /sprint /quick-fix /change-request /status … (Antigravity)
+
+.claude/skills/         ← skills do Claude Code (arquitetura, sprint, carga-dados…)
 
 docs/
   adr/                  ← Architecture Decision Records

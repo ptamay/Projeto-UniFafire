@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # maturity-gaps.md
 > **Módulo:** Maturity Gaps & Evolution | **Versão:** 4.0
 > **Carregado em:** Revisões, auditorias e evoluções do documento
@@ -150,7 +152,7 @@ Nunca executar em produção sem plano de rollback imediato.
 | 12 | strict_rules | Regras de multi-tenancy, versionamento de API e observabilidade adicionadas | Tornam esses requisitos parte da lei máxima, não sugestões |
 | 13 | strict_rules + Fase 5 | Stack de observabilidade substituída por ferramentas gratuitas (Sentry free, Vercel Analytics, PostHog 1M/mês) com critério explícito de upgrade | Reduz custo operacional em fase inicial; PostHog cobre as 3 camadas sozinho |
 | 14 | Fase 0 (nova) | Pré-processamento do `overview.md` com template canônico, fora do Antigravity | Preserva o fluxo de escrita humana → formatação por IA, agora entregue como arquivo no workspace em vez de upload temporário |
-| 15 | Fase 1 | Substituído "solicite upload" por "leia `/.agents/memory/overview.md` do workspace" | Contexto persistente no projeto; arquivo disponível para todas as fases sem repassar manualmente |
+| 15 | Fase 1 | Substituído "solicite upload" por "leia `/.sdd/memory/overview.md` do workspace" | Contexto persistente no projeto; arquivo disponível para todas as fases sem repassar manualmente |
 | 16 | Seção 4 (nova) | Memory Bank documentado como conceito explícito com protocolo de leitura e atualização obrigatórios | Modelos perdem contexto entre sessões; Memory Bank é o mecanismo que mantém decisões arquiteturais vivas |
 | 17 | strict_rules | Regra de migração com rollback obrigatório adicionada | Agentes de IA aplicam ALTER TABLE sem considerar reversão — risco crítico em produção |
 | 18 | strict_rules | SAST (Semgrep) + SCA (npm audit/pip-audit) adicionados como regras inegociáveis | Cobertura de 80% não detecta secrets hardcoded nem CVEs em dependências |
@@ -346,6 +348,45 @@ Nunca executar em produção sem plano de rollback imediato.
 | 145 | `modules/security-constitution.md` (bloco CARGA INICIAL DE DADOS) | Strict_rule da carga: dry-run, idempotência, rollback, backup pré-carga, reconciliação mecânica, criptografia/trilha desde a migração, aceite do cliente; distinta de migration de schema | Torna a segurança da carga parte da lei máxima, não recomendação |
 | 146 | `master-spec-core.md` (Fase 1 pergunta 9 + Fase Comercial) + `.agents/rules/20-migrations.md` | Pergunta de dado legado na Fase 1 e na estimativa comercial; distinção explícita schema-migration vs content-migration na rule 20 | Detectar cedo (afeta preço/prazo) e evitar confusão entre os dois tipos de "migração" |
 | 147 | `modules/architecture-governance.md` + `SKILL.md` + Fase 11 go-live | Artefatos migration/* no mapa; entrada no mapa de carregamento; go-live bloqueado sem carga reconciliada quando há dado legado | Integração completa: artefatos visíveis e carga como pré-requisito de go-live |
+
+---
+
+## 3.9 Diff v4.4.0 → v4.5.0 (Skills Auxiliares do Claude Code)
+
+| # | Arquivo | O que mudou | Por quê |
+|---|---------|-------------|---------|
+| 148 | `modules/architecture-governance.md` (Camada 5) | Tabela de Skills Auxiliares do Claude Code, distinguindo auto-ativadas (xlsx/pdf/docx) de slash commands (`/security-review`, `/code-review`, `/simplify`, `/verify`, `/run`, `/schedule`) e onde cada uma encaixa | Skills embutidas do Claude Code potencializam o fluxo, mas só no Claude Code (não no Antigravity); as slash não disparam sozinhas — o framework precisa mandar invocá-las |
+| 149 | `modules/sprint-governance.md` (Fase 10.5, Step 7, Aceite, Fase Comercial) | Invocação explícita: `xlsx`/`pdf` na carga de dados, `/security-review` no Security Gate, `/run`+`/verify` no aceite, `docx` na proposta | Corrige a suposição de "aciona automático": os slash commands precisam de invocação explícita no step certo, senão o Claude faz a versão genérica |
+
+---
+
+## 3.10 Diff v4.5.0 → v4.6.0 (Skills Próprias do Framework)
+
+| # | Arquivo | O que mudou | Por quê |
+|---|---------|-------------|---------|
+| 150 | `.agents/skills/proposta/SKILL.md` (nova) | Skill `/proposta`: encapsula a Fase Comercial (discovery + estimativa por pontos + geração de `proposta-[cliente].md` + `.docx`) invocável numa sessão do Claude Code antes do projeto existir | Transforma o protocolo da Fase Comercial em ação de um comando, em vez de depender de carregar a novo-projeto e navegar até a seção |
+| 151 | `.agents/skills/carga-dados/SKILL.md` (nova) | Skill `/carga-dados`: encapsula a Fase 10.5 (fonte via xlsx/pdf → mapa → limpeza → import idempotente → reconciliação → aceite), com bloqueadores explícitos | Migração de dados usa as skills xlsx/pdf (só Claude Code) — vira comando dedicado; consistente com sprint-execution/quick-fix/ai-pentest terem workflow próprio |
+| 152 | `atualizar-skill.ps1` | Reescrito para sincronizar TODAS as skills de `.agents/skills/*` (não só novo-projeto) para a instalação do Claude Code, sem tocar em skills de terceiros | À prova de futuro: qualquer skill nova do framework é instalada com um comando |
+| 153 | `modules/architecture-governance.md` + `modules/sprint-governance.md` | Tabela "Skills do Próprio Framework" (proposta/carga-dados/novo-projeto) separada das built-in; pointers `/proposta` na Fase Comercial e `/carga-dados` na Fase 10.5 | Distinguir as skills que SÃO o framework das built-in auxiliares do Claude |
+
+---
+
+## 3.11 Diff v4.6.0 → v4.7.0 (Escotilha de Canal + Guia de Modelo)
+
+| # | Arquivo | O que mudou | Por quê |
+|---|---------|-------------|---------|
+| 154 | `master-spec-core.md` (Seção 5 reescrita) | Escotilha de escape: Antigravity é o executor de sprint **default**, não exclusivo — Claude Code assume módulos críticos quando direcionado, com o mesmo workflow e gates. Modelo híbrido por criticidade (Claude Code = crítico, Antigravity = volume) | A regra lia como proibição, contradizendo o uso real; o split é escolha de custo/throughput, não limite técnico ou de qualidade |
+| 155 | `master-spec-core.md` (Seção 5.2, nova) | Guia de Modelo por Tarefa: Opus (sintetizar/decidir/auditar/atacar — Fase 6, módulo crítico, Step 8, pentest, CR C/D), Sonnet (execução padrão, CR A/B), Haiku (mecânico), Gemini (volume no sandbox); IDs atuais; regra de bolso; modelos novos encaixam por camada de esforço após teste | Faltava orientação explícita de QUAL modelo usar em cada ponto — capacidade proporcional ao risco, custo proporcional à trivialidade |
+| 156 | `.agents/rules/00-core.md` + `modules/sprint-governance.md` (tabela de papéis do CLAUDE.md) | Papel do Claude Code atualizado: executor por direção do usuário (não só desbloqueio), com TDD + gates; "Não faça" ajustado de "executar autonomamente" para "executar sem o usuário pedir / pulando gates" | Alinhar rules e CLAUDE.md com a escotilha; evitar contradição entre o que o framework diz e o que o usuário faz |
+
+---
+
+## 3.12 Diff v4.7.0 → v4.8.0 (Criticidade de Sprint → Canal/Modelo/Esforço)
+
+| # | Arquivo | O que mudou | Por quê |
+|---|---------|-------------|---------|
+| 157 | `master-spec-core.md` (Seção 5.3, nova) | Tabela de criticidade de sprint: 🔴 Crítica (auth/RLS/financeiro/pagamento/sensível/carga de dados) → Claude Code + Opus + Alto; 🟡 Padrão → Sonnet/Gemini + Médio; 🟢 Volume (CRUD/UI/boilerplate) → Antigravity + Gemini + Baixo–Médio. Regra "mistura assume o mais alto"; modelo vale para o code-agent (mecânicos ficam Haiku); fundação sempre 🔴 | O guia 5.2 era por tarefa; faltava a decisão por sprint inteira — qual canal/modelo/esforço uma sprint pede dado seu conteúdo |
+| 158 | `master-spec-core.md` (Fase 6 plan.md) + `modules/sprint-governance.md` (Fase 8) | Roadmap do plan.md registra a criticidade de cada sprint; Fase 8 apresenta a recomendação de canal/modelo ao selecionar a sprint e pede confirmação | Deixa a decisão de orquestração pronta no roadmap e explícita no momento de orquestrar — não improvisada |
 
 ---
 

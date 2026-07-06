@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: model_decision
 description: "Ative OBRIGATORIAMENTE quando o usuário pedir uma mudança pequena e direta (ex: ajuste este estilo, corrija este texto, melhore este componente) fora de sprint."
 ---
 
@@ -27,7 +27,7 @@ Se BLOQUEADOR: explique o motivo, sugira o caminho correto, aguarde instrução.
    · Bugfix → constitution.md seção DoD + arquivos afetados
    · Dúvida → constitution.md completo
 3. EXECUÇÃO: apenas o pedido — sem melhorias não solicitadas, sem refatoração oportunista
-4. VERIFICAÇÃO: tsc --noEmit passa + testes não regridem
+4. VERIFICAÇÃO: type-check da stack passa (tsc --noEmit, mypy, …) + testes não regridem
 5. COMMIT atômico: fix: | style: | chore: [descrição]
 6. Se qualquer verificação falhar: reporte antes de prosseguir
 ```

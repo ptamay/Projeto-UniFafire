@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: model_decision
 description: "Ative OBRIGATORIAMENTE quando o usuário trouxer uma ideia nova, pedir para melhorar algo já planejado, ou propor mudança de escopo pós-Fase 6."
 ---
 

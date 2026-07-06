@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # security-constitution.md
 > **Módulo:** Security Constitution | **Versão:** 4.0
 > **Carregado em:** Fase 6 (Opus) | Fases 10–11 (sprint execution) | Fase 9 se envolver schema ou API

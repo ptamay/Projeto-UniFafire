@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+# Constitutional SDD v5 — convenção de rastreabilidade (via husky)
+# feat/test exigem escopo (TASK-NNN); refactor exige (TASK-NNN) ou (MAINT).
+# fix/style/chore/docs sem escopo continuam válidos (caminho do Quick Fix).
+MSG=$(head -1 "$1")
+
+case "$MSG" in
+  feat\(TASK-[0-9]*\):*|test\(TASK-[0-9]*\):*) : ;;
+  feat*|test*)
+    echo "🛑 Commit bloqueado: '$MSG'"
+    echo "   feat e test exigem escopo de task: feat(TASK-NNN): descrição"
+    echo "   Sem task? Não é feat/test — ou abra a task, ou use o tipo correto."
+    exit 1 ;;
+esac
+
+case "$MSG" in
+  refactor\(TASK-[0-9]*\):*|refactor\(MAINT\):*) : ;;
+  refactor*)
+    echo "🛑 Commit bloqueado: '$MSG'"
+    echo "   refactor exige (TASK-NNN) ou (MAINT): refactor(MAINT): descrição"
+    exit 1 ;;
+esac
+
+# Aviso (não bloqueia): feat sem trailer REQ — obrigatório no MODO PADRÃO
+if echo "$MSG" | grep -qE '^feat\(TASK-' && ! grep -qE '^REQ: REQ-[0-9]+' "$1"; then
+  echo "ℹ️  Aviso: commit feat sem trailer 'REQ: REQ-NNN' (obrigatório no MODO PADRÃO)."
+fi
+exit 0

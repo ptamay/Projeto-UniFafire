@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # Master Spec v4.0 — Constitutional SDD + Antigravity Orchestration
 
 > **Versão:** 4.0 | **Paradigma:** Orquestração Autônoma via Constitutional SDD
@@ -179,23 +181,77 @@ Em dúvida sobre a natureza do dado → ative. Subproteger dado sensível = mult
 
 ---
 
-## 5. Modelo por Fase (Orquestração Multi-Model)
+## 5. Orquestração Multi-Model — Canal e Modelo
 
-| Fase | Modelo recomendado | Canal de Execução | Motivo |
-|------|--------------------|--------------------|--------|
-| 0 | Gemini Pro | **Antigravity** (ou Claude Code) | Formatação do overview no workspace — o agente salva `overview.md` no caminho correto; apenas formata, não entrevista |
-| 1 – 5 | Gemini Pro | **Antigravity** | Extração, mapeamento e sugestões — trabalho de throughput |
-| 6 | Claude Opus ou Sonnet | **Claude Code (Desktop ou Terminal) — fora do Antigravity** | Síntese profunda da Triad + auditoria de consistência interna |
-| 7 – 11 | Gemini Pro | **Antigravity** (Claude Code disponível para desbloqueio pontual) | Execução estruturada com Triad validada como contexto fixo |
+> Duas decisões, um princípio: **capacidade proporcional ao risco, custo proporcional à
+> trivialidade.** Use o cérebro caro (Opus) onde um erro custa caro ou o raciocínio é
+> profundo; o barato (Haiku) onde é mecânico; o Sonnet como cavalo de batalha; o Gemini
+> para volume no sandbox autônomo.
 
-> A troca de **canal** (Antigravity ↔ Claude Code) é um **ato deliberado do usuário**, não automático.
-> O checkpoint da Fase 6 é o gate que sinaliza o momento exato da troca.
->
-> **Ao final da Fase 5:** encerre a sessão do Antigravity. Abra o Claude Code (Desktop ou Terminal)
-> com o diretório de trabalho na **raiz do projeto** (onde está o `CLAUDE.md`). A Fase 6 é executada
-> inteiramente nesse ambiente — não dentro do Antigravity.
->
-> **Ao final da Fase 6 (CHECKPOINT aprovado):** volte ao Antigravity para retomar a Fase 7.
+### 5.1 Canal por Fase (com escotilha de escape)
+
+| Fase | Canal padrão | Motivo |
+|------|-------------|--------|
+| 0 | Antigravity (ou Claude Code) | Formatação do overview — apenas formata, não entrevista |
+| 1 – 5 | Antigravity | Extração de escopo — trabalho conversacional de throughput |
+| 6 | **Claude Code (fora do Antigravity)** | Síntese profunda da Triad + auditoria cruzada |
+| 7 – 11 | Antigravity (**default**) | Execução autônoma de sprint com Triad como contexto fixo |
+
+> 🔑 **Escotilha de escape (Fases 7–11):** o Antigravity é o executor **padrão**, não exclusivo.
+> O **Claude Code pode assumir a execução de sprint** quando você direcionar — seguindo o
+> mesmo `sprint-execution.md`, o mesmo ciclo TDD e os mesmos Gates 1–6. A qualidade é do
+> workflow, não do executor. Use o Claude Code para **módulos críticos** (lógica financeira,
+> isolamento RLS, regra de negócio sutil) e o Antigravity para **volume** (CRUD, UI,
+> boilerplate). Modelo híbrido por criticidade — não "tudo em um só".
+
+> A troca de **canal** é um **ato deliberado do usuário**, não automático. Ao final da Fase 5
+> encerre o Antigravity e abra o Claude Code na raiz do projeto para a Fase 6; ao final da
+> Fase 6 (CHECKPOINT aprovado) volte ao Antigravity — ou siga no Claude Code se escolher
+> executar um módulo crítico por lá.
+
+### 5.2 Guia de Modelo por Tarefa
+
+> IDs atuais: Opus 4.8 `claude-opus-4-8` | Sonnet 5 `claude-sonnet-5` |
+> Haiku 4.5 `claude-haiku-4-5-20251001` | Gemini Pro (no Antigravity).
+
+| Tarefa | Modelo | Por quê |
+|--------|--------|--------|
+| Fase 6 — síntese de `constitution.md`/`plan.md` + auditoria cruzada | **Opus 4.8** | Onde omissão custa caro; foi aqui que a "Triad esquecida" ocorreu em testes |
+| Fase 6 — gates/checklists (verificar, listar, confirmar) | Sonnet 5 / Haiku | Mecânico, esforço baixo — não gaste Opus |
+| Sprint — módulo crítico (financeiro, RLS, dinheiro, auth) | **Opus 4.8** | Bug caro; raciocínio > custo |
+| Sprint — execução padrão no Claude Code (Red-Green-Refactor) | **Sonnet 5** | Forte em código, bem mais barato que Opus — o default de execução |
+| Sprint — CRUD/UI/boilerplate de volume | **Gemini Pro** (Antigravity) | Barato, paralelo, qualidade suficiente |
+| Steps mecânicos (Context Load, Report, Memory Sync) | **Haiku 4.5** | Esforço baixo; Opus aqui é desperdício |
+| Step 8 — AI Validation Gate | **Opus 4.8** | Detecta spec drift e alucinação — esforço máximo obrigatório |
+| AI Red Team / pentest (`ai-pentest.md`) | **Opus 4.8** | Raciocínio adversarial profundo |
+| Change Request Tipo A/B | Sonnet 5 | Baixo risco |
+| Change Request Tipo C/D | **Opus 4.8** | Toca código implementado ou a constituição |
+| `/code-review`, `/security-review` | Opus 4.8 (crítico) ou Sonnet 5 | Conforme a criticidade do diff |
+
+> **Regra de bolso:** "sintetizar / decidir / auditar / atacar" → **Opus**.
+> "implementar tarefa comum" → **Sonnet**. "verificar / listar / resumir" → **Haiku**.
+> "gerar volume no sandbox" → **Gemini**. Modelos novos (ex: Fable 5) entram encaixando-se
+> nessas camadas de esforço **depois** de você testá-los no seu fluxo — não por reputação.
+
+> Isso conversa com o **AI Cost Budget** (`plan.md`) e com os **Effort Levels** de cada
+> step: a camada de esforço já sinaliza qual modelo cabe.
+
+### 5.3 Criticidade da Sprint → Canal / Modelo / Esforço
+
+> O guia 5.2 é por *tarefa*; aqui é por *sprint inteira*. Classifique cada sprint no roadmap
+> (Fase 6) e confirme na seleção (Fase 8). **Sprint que mistura níveis assume o MAIS ALTO.**
+
+| Criticidade | Gatilho (qualquer um) | Canal | Modelo (code-agent) | Esforço |
+|-------------|----------------------|-------|---------------------|:---:|
+| 🔴 **Crítica** | Auth, isolamento tenant/RLS, lógica financeira/dinheiro, pagamento, dado sensível, carga de dados (Fase 10.5) | **Claude Code** | **Opus 4.8** | Alto |
+| 🟡 **Padrão** | Regra de negócio relevante, integração externa, workflow com estados | Claude Code ou Antigravity | Sonnet 5 / Gemini Pro | Médio |
+| 🟢 **Volume** | CRUD, listagem, cadastro simples, UI estática, boilerplate | **Antigravity** | **Gemini Pro** | Baixo–Médio |
+
+> O modelo acima vale para o **code-agent** (Red-Green-Refactor). Os sub-agentes mecânicos
+> (Context Load, Report, Memory Sync) ficam em **Haiku** mesmo numa sprint crítica — ver a
+> tabela de sub-agentes em `sprint-governance.md`. A **sprint de fundação** (auth + shell +
+> base) é sempre 🔴 por causa do auth. Registre a criticidade de cada sprint no roadmap do
+> `plan.md` — assim a Fase 8 já sabe qual canal/modelo recomendar antes de orquestrar.
 
 ---
 
@@ -203,7 +259,7 @@ Em dúvida sobre a natureza do dado → ative. Subproteger dado sensível = mult
 
 O **Memory Bank** é o cérebro externo persistente do projeto. Sem ele, cada nova sessão de agente começa do zero e decisões arquiteturais tomadas nas Fases 1–6 se perdem.
 
-**Localização:** `/.agents/memory/`
+**Localização:** `/.sdd/memory/`
 
 **Arquivos que compõem o Memory Bank:**
 
@@ -218,7 +274,7 @@ O **Memory Bank** é o cérebro externo persistente do projeto. Sem ele, cada no
 
 **Protocolo de leitura obrigatória:**
 Todo agente ou sessão que interaja com o projeto DEVE carregar `constitution.md` antes de qualquer ação.
-Se `constitution.md` não for encontrado em `/.agents/memory/`, o agente PARA e instrui o usuário a executar a Fase 6 primeiro. (Exceção: em MODO MVP, `constitution-lite.md` cumpre esse papel — trate-o como equivalente.)
+Se `constitution.md` não for encontrado em `/.sdd/memory/`, o agente PARA e instrui o usuário a executar a Fase 6 primeiro. (Exceção: em MODO MVP, `constitution-lite.md` cumpre esse papel — trate-o como equivalente.)
 
 **Protocolo de atualização:**
 Os arquivos do Memory Bank são documentos vivos. Qualquer alteração de escopo pós-Fase 6 deve ser registrada no changelog do `spec.md` antes de ser aplicada no `plan.md`. Nenhum agente pode sobrescrever arquivos do Memory Bank sem instrução explícita do usuário.
@@ -365,9 +421,9 @@ já tem o contexto necessário.
 
 ### Fase 1 — Visão do Produto e Ingestão de Escopo (Planning Game)
 
-**Processo:** Leia o arquivo `/.agents/memory/overview.md` do workspace.
+**Processo:** Leia o arquivo `/.sdd/memory/overview.md` do workspace.
 
-> ⚠️ **Requisito de ambiente:** O arquivo `overview.md` deve estar salvo em `/.agents/memory/`
+> ⚠️ **Requisito de ambiente:** O arquivo `overview.md` deve estar salvo em `/.sdd/memory/`
 > dentro do workspace do projeto. Esta fase requer um ambiente com acesso a sistema de arquivos
 > (Antigravity, Claude Code, ou equivalente). Se o arquivo não for encontrado, instrua o usuário
 > a executar a **Fase 0** primeiro — descrita em `modules/sprint-governance.md`.
@@ -502,7 +558,7 @@ Retorne apenas JSON.
 
 **Passo 3 — Geração e salvamento do `ui-context.md`:**
 
-Após aprovação do usuário, o agente salva `/.agents/memory/ui-context.md` com o seguinte template:
+Após aprovação do usuário, o agente salva `/.sdd/memory/ui-context.md` com o seguinte template:
 
 ```markdown
 # ui-context.md — Identidade Visual e Layout Shell
@@ -558,10 +614,10 @@ Após aprovação do usuário, o agente salva `/.agents/memory/ui-context.md` co
 ```
 
 **Regra de uso obrigatório:**
-Todo agente que gerar componentes de UI DEVE carregar `ui-context.md` antes de qualquer implementação visual. Se o arquivo não existir em `/.agents/memory/`, o agente PARA e instrui o usuário a executar a Fase 4.0 primeiro.
+Todo agente que gerar componentes de UI DEVE carregar `ui-context.md` antes de qualquer implementação visual. Se o arquivo não existir em `/.sdd/memory/`, o agente PARA e instrui o usuário a executar a Fase 4.0 primeiro.
 
 **Instrução final:**
-> *"Aprovado o ui-context.md, salve em `/.agents/memory/ui-context.md` e adicione ao Mapa de Artefatos. Avance para a Fase 4."*
+> *"Aprovado o ui-context.md, salve em `/.sdd/memory/ui-context.md` e adicione ao Mapa de Artefatos. Avance para a Fase 4."*
 
 ---
 
@@ -697,7 +753,7 @@ Pergunte: *"Você aprova essa infraestrutura, observabilidade e estratégia de b
 
 **Ação obrigatória após aprovação da Fase 5 — Geração do `handoff.md`:**
 
-Antes de encerrar a sessão com Gemini, gere o arquivo `/.agents/memory/handoff.md`. Este artefato é o **pacote de contexto compacto** entregue ao Claude Opus na Fase 6. Sem ele, o Opus inicia a Fase 6 com apenas o histórico de conversa como contexto — que pode exceder sua janela de contexto ou conter ruído irrelevante.
+Antes de encerrar a sessão com Gemini, gere o arquivo `/.sdd/memory/handoff.md`. Este artefato é o **pacote de contexto compacto** entregue ao Claude Opus na Fase 6. Sem ele, o Opus inicia a Fase 6 com apenas o histórico de conversa como contexto — que pode exceder sua janela de contexto ou conter ruído irrelevante.
 
 ```markdown
 # handoff.md — Resumo de Escopo para Fase 6 (Opus)
@@ -758,7 +814,7 @@ que o Opus deve auditar com atenção especial antes de gerar a Triad]
 ```
 
 **Instrução ao usuário:**
-> *"Gemini gerou o handoff.md. Salve em `/.agents/memory/handoff.md`. Agora abra uma nova sessão com Claude Opus, carregue este arquivo como primeiro contexto e inicie a Fase 6."*
+> *"Gemini gerou o handoff.md. Salve em `/.sdd/memory/handoff.md`. Agora abra uma nova sessão com Claude Opus, carregue este arquivo como primeiro contexto e inicie a Fase 6."*
 
 ---
 
@@ -825,6 +881,10 @@ A perspectiva do produto (O Quê & Por Quê). Agnóstico de tecnologia. Contém 
 
 #### `plan.md`
 A perspectiva de engenharia (Como). Contém stack, decisões de UI/UX aprovadas e roadmap de 6 Sprints.
+
+> **No roadmap, cada sprint carrega sua criticidade** (🔴/🟡/🟢) com canal/modelo/esforço
+> recomendado conforme a Seção 5.3. Ex: `Sprint 6 — Módulo financeiro | 🔴 Crítica | Claude
+> Code + Opus | Alto`. Isso deixa a decisão de orquestração pronta antes da Fase 8.
 
 **Inclua obrigatoriamente a seção:**
 ```
@@ -914,7 +974,7 @@ Antes de continuar, o usuário deve:
    - [ ] Pelo menos uma task no roadmap de sprints do `plan.md` referenciando-o
    - [ ] Pelo menos um critério de aceite BDD previsto
    - Se qualquer requisito não tiver task vinculada → é escopo órfão: remover ou adicionar à sprint correta
-7. Salvar todos os arquivos em `/.agents/memory/` antes de prosseguir
+7. Salvar todos os arquivos em `/.sdd/memory/` antes de prosseguir
 
 **Esta auditoria de consistência (item acima) é executada pelo próprio Claude Code, com
 esforço alto, como parte do CHECKPOINT — não é uma etapa opcional ou externa.**
@@ -945,7 +1005,7 @@ Só responda **"Fase 7"** quando todos os arquivos estiverem revisados, ajustado
 **Transição de volta ao Antigravity:**
 > *"Tríade aprovada. Encerre esta sessão do Claude Code. Volte ao Antigravity, retome a
 > sessão (Gemini Pro) e diga 'Fase 7' para continuar — o Antigravity lerá `constitution.md`,
-> `spec.md` e `plan.md` recém-criados em `/.agents/memory/`."*
+> `spec.md` e `plan.md` recém-criados em `/.sdd/memory/`."*
 
 ---
 

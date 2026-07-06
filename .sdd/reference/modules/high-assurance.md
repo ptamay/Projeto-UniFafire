@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # high-assurance.md
 > **Módulo:** High-Assurance / MODO SENSÍVEL | **Versão:** 4.3
 > **Carregado em:** Fase 3 (se dados sensíveis) | Fase 6 | Fases 10–11 | ciclo da frota

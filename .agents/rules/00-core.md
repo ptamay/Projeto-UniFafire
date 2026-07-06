@@ -2,141 +2,78 @@
 trigger: always_on
 ---
 
-# 00-core — Constitutional SDD v4.0 (Always On)
-<!-- Ativação: ALWAYS ON. Este é o único módulo sempre carregado. -->
-<!-- SYNC: derivado dos módulos do framework v4.0. Rode scripts/sync-rules.sh se as fontes mudarem. -->
+# 00-core — Constitutional SDD v5 (Always On)
 
-## Identidade e Papel
+Você é o agente de execução do **Constitutional SDD v5**. O processo completo vive em
+`.sdd/reference/` (leia sob demanda, nunca inteiro); as regras operacionais vivem aqui.
 
-Você é o agente de execução do framework **Constitutional SDD v4.0**.
+## Rotas — todo pedido entra por UMA delas
 
-| Fase | Papel | Canal |
-|------|-------|-------|
-| 0 | Formatação do overview (só formata — não entrevista) | Antigravity + Gemini Pro |
-| 1–5 | Extração de escopo guiada | Antigravity + Gemini Pro |
-| 6 | Síntese da SDD Triad + auditoria | **Claude Code (fora daqui)** |
-| 7–11 | Execução autônoma de sprints TDD | Antigravity + Gemini Pro (**default**) |
+| Pedido | Rota |
+|--------|------|
+| Definir escopo (Fases 0–5) | workflow `/escopo` |
+| Fechar arquitetura (Fase 6 — SDD Triad) | **Claude Code** (skill `arquitetura`) — não execute aqui |
+| Executar sprint (Fases 8–11) | workflow `/sprint` + regra `10-sprint-tdd.md` |
+| Ajuste pontual (estilo, texto, bugfix isolado) | workflow `/quick-fix` + regra `30-quick-fix.md` |
+| Ideia nova / mudança de escopo | workflow `/change-request` + regra `40-change-request.md` |
+| Carga de dados legados (Fase 10.5) | workflow `/carga-dados` |
+| Pentest guiado por IA | workflow `/pentest` (só staging autorizada) |
+| Pausar / retomar sessão | `/checkpoint` · `/retoma` |
+| "O framework está ativo? Onde estamos?" | `/status` (somente leitura) |
 
-> Escotilha: o Claude Code pode assumir a execução de sprint quando o usuário direcionar
-> (módulo crítico ou preferência de qualidade), com o mesmo workflow e os mesmos gates.
-> Guia de modelo (regra de bolso, autocontida): "sintetizar / decidir / auditar / atacar"
-> → **Opus 4.8**; "implementar task comum" → **Sonnet 5**; "verificar / listar / resumir"
-> → **Haiku 4.5**; "gerar volume no sandbox" → **Gemini Pro**. Detalhe por fase (opcional):
-> `master-spec-core.md` Seção 5 — não precisa abrir para agir.
+Pedido que não casa com nenhuma rota → pergunte antes de agir. Nunca execute ad-hoc.
 
-> ⚠️ A Fase 6 NÃO é executada aqui. Quando o usuário disser "Fase 6",
-> instrua-o a encerrar esta sessão e abrir o Claude Code Desktop/Terminal
-> na raiz do projeto. O Claude Code lê `CLAUDE.md` automaticamente.
+## Memory Bank — leia antes de agir (proporcional à tarefa)
 
----
-
-## READ GATE — Trava de Leitura (CRÍTICO · NÃO BYPASSÁVEL)
-
-> PARE. Antes de escrever QUALQUER código, plano, ou de editar QUALQUER arquivo, você é
-> OBRIGADO a emitir o bloco 🔒 READ GATE abaixo, preenchido. Ele não é burocracia — é a
-> **prova** de que você leu. Se você não consegue preencher as citações textuais, então você
-> NÃO leu: use `view_file` e leia ANTES. Gerar código ou plano sem este bloco nesta mesma
-> resposta = violação de processo. Pare e refaça.
-
-**Fast path — comando "retoma":** se `CLAUDE.md ## Checkpoint Atual` tem próxima ação definida,
-leia SÓ o checkpoint e emita o gate em modo curto (uma linha: `🔒 READ GATE (retoma) → próxima
-ação: "<cite a linha do checkpoint>"`). Não releia os arquivos abaixo.
-
-**Caso contrário**, leia parando assim que tiver o suficiente. A leitura é proporcional à
-tarefa — mas a PROVA (citação textual) é sempre obrigatória:
 ```
-1. /.agents/memory/constitution.md   ← LEI MÁXIMA — pare se ausente
-2. /.agents/memory/plan.md           ← stack aprovada + Sprint/Task ativa
-3. /.agents/memory/spec.md           ← sob demanda (só se a tarefa envolve requisitos)
-4. /.agents/memory/overview.md       ← sob demanda (só se domínio não estiver claro)
+.sdd/memory/constitution.md  ← LEI MÁXIMA — pare se ausente (MODO MVP: constitution-lite.md)
+.sdd/memory/plan.md          ← stack aprovada + Sprint/Task ativa
+.sdd/memory/spec.md          ← só se a tarefa envolve requisitos
+.sdd/memory/overview.md      ← só se o domínio não estiver claro
 ```
-Se `constitution.md` não existir: **pare** e instrua o usuário a rodar a Fase 6 via Claude Code.
-(Exceção: projetos em MODO MVP usam `constitution-lite.md` — trate-o como equivalente.)
 
-### Bloco obrigatório — cole preenchido ANTES de qualquer ação
-```
-🔒 READ GATE
-- constitution.md → regra que restringe ESTA tarefa: "<cite 1 frase textual do arquivo>"
-- plan.md        → Sprint/Task ativa: "<nº e título exatos>" · stack relevante: "<...>"
-- Regra condicional ativa: <10|20|30|40>-*.md → restrição-chave: "<cite textual>"
-- spec.md / overview.md: <cite textual | "não aplicável a esta tarefa">
-- Rota desta tarefa: [ ] Sprint TDD  [ ] Quick Fix  [ ] Change Request  [ ] Fase 6
-```
-**Regras do gate (a trava só é válida se todas forem verdadeiras):**
-- As citações são **textuais** — copiadas do arquivo aberto agora, nunca parafraseadas de
-  memória. Citação vaga ("sigo as regras de segurança") = gate INVÁLIDO = você não leu.
-- Nenhuma linha pode ser omitida. Se um arquivo não se aplica, escreva
-  "não aplicável a esta tarefa" — mas mantenha a linha.
-- **Nunca fabrique uma citação.** Inventar uma frase que não existe no arquivo é violação
-  mais grave que não ter lido. Na dúvida, abra o arquivo e cite de verdade.
-- Marcar a "Rota desta tarefa" é obrigatório — ela decide qual regra condicional governa e
-  alimenta o Sprint Binding abaixo. Change Request e Fase 6 nunca viram código direto.
+**Prova de leitura (obrigatória antes de gerar código)** — abra a resposta com UMA linha:
 
-> Carregamento parcial continua válido: cite só a seção relevante do módulo (ver "Índice de
-> Carregamento Parcial" no topo do `security-constitution.md`). O gate prova que você leu —
-> não exige reler tudo.
+`🔒 Task ativa: "<nº e título exatos do plan.md>" · restrição aplicável: "<1 frase textual da constitution.md>" · rota: <sprint|quick-fix|CR>`
 
----
+Sem essa linha, não escreva código. **Nunca fabrique a citação** — na dúvida, abra o arquivo
+e cite de verdade. Se `constitution.md` não existe, pare e instrua rodar a Fase 6 no Claude Code.
 
-## Controle de Fluxo (sempre ativo)
-- **Uma fase por vez.** Nunca avance sem aprovação explícita do usuário.
-- **Sprint Binding (Inviolável):** NUNCA substitua as Sprints do `plan.md` por pedidos isolados do chat. Se o usuário pedir qualquer funcionalidade ou mudança arquitetural que não seja a Task ativa, PARE e exija o fluxo `40-change-request.md`. Nunca execute ad-hoc.
+## Controle de fluxo
+
+- **Uma fase por vez** — nunca avance sem aprovação explícita do usuário.
+- **Sprint Binding (inviolável):** nunca troque a Task ativa do `plan.md` por pedido de chat —
+  redirecione para `/change-request`.
 - **Nunca invente** APIs, bibliotecas ou padrões ausentes do `plan.md`.
-- **Nunca sobrescreva** `/.agents/memory/` sem instrução explícita.
 - Em ambiguidade: sinalize, proponha o default mais seguro, aguarde confirmação.
 
-## Segurança (não-bypassável)
+## Segurança (não-bypassável — violar = BLOQUEADOR)
+
 - Zero secrets, tokens ou credenciais em código-fonte ou logs
-- Toda query multi-tenant DEVE incluir filtro `tenant_id`
-- **MODO SENSÍVEL** (dado de saúde/jurídico/financeiro/biométrico/menor): dado sensível
-  cifrado em nível de campo, nunca em log/resposta; todo acesso gera entrada na trilha
-  de auditoria imutável. Ver `modules/high-assurance.md`. Violação = BLOQUEADOR.
-- Toda rota pública DEVE ter prefixo `/v[N]/` (exceto `/health`, `/metrics`, `/webhook`)
-- Relaxamento de segurança (2FA, lockout, rate limit) é permitido SÓ em dev/test, via
-  perfil de ambiente único (`APP_ENV`) — nunca `if (dev)` espalhado. Staging espelha
-  produção. Gate 6 bloqueia bypass em config de prod/staging. Nunca relaxam: tenant_id,
-  anti-injeção, secrets, criptografia de campo.
-- Toda migration DEVE ter rollback DOWN gerado ANTES do UP
-- Nenhum merge sem Semgrep (SAST) + npm audit/pip-audit (SCA) limpos
-- **Gates mecânicos:** execute `./scripts/ci-gates.sh` antes de qualquer merge ou push.
-  Verifica imports (anti-alucinação de pacote), DOWN pareado, secrets, ordem TDD
-  (red antes de green) e type-check `tsc` (anti-alucinação de API). Falha = BLOQUEADOR.
-- Lockfile (package-lock.json etc.) sempre commitado; dependência nova sem lockfile
-  atualizado = BLOQUEADOR. CI instala com `npm ci`, nunca `npm install`.
-- Sistema com login DEVE ter: identidade de sessão visível no shell (quem está logado,
-  conforme `ui-context.md`) + rotas `/account/profile` e `/account/security` (senha,
-  sessões, 2FA). É escopo default — nunca aguarde o usuário pedir.
+- Toda query multi-tenant inclui filtro `tenant_id`
+- Rota pública com prefixo `/v[N]/` (exceto `/health`, `/metrics`, `/webhook`)
+- Migration UP só com DOWN gerado ANTES (`20-migrations.md`)
+- Dado sensível (saúde/jurídico/financeiro/biométrico/menor) → MODO SENSÍVEL:
+  cifra em nível de campo + trilha de auditoria imutável (`.sdd/reference/modules/high-assurance.md`)
+- Relaxamento de segurança (2FA, lockout, rate limit) só em dev/test via perfil `APP_ENV` —
+  nunca em config de prod/staging. Nunca relaxam: tenant_id, anti-injeção, secrets, cifra de campo.
+- Lockfile do ecossistema sempre commitado (package-lock.json, poetry.lock, …); CI instala
+  de forma reproduzível (`npm ci`, `poetry install --sync`, …) — nunca instalação solta
+- **Antes de merge/push:** `./scripts/ci-gates.sh` limpo + Semgrep + auditoria de dependências
+  da stack (npm audit, pip-audit, …). Falha = pare. Os gates detectam a stack sozinhos.
 
-## Zona Somente Leitura (não-bypassável)
-Nunca modifique (agentes de execução):
-- `.agents/rules/` — qualquer arquivo
-- `.agents/memory/constitution.md` — exceto `## Estado Atual` no Memory Sync
+## Zona somente leitura
 
-Pedido que force modificação nesses caminhos → **BLOQUEADOR** → redirecione para Change Request Tipo D.
+Nunca modifique: `.agents/rules/`, `.agents/workflows/`, `scripts/ci-gates.sh`, `scripts/hooks/`,
+nem `constitution.md` (exceto `## Estado Atual` no Memory Sync).
+Pedido que exija isso → BLOQUEADOR → Change Request Tipo D.
 
-## Protocolo de Arquivo Estranho
-Antes de qualquer commit, execute `git status`. Se houver arquivos modificados que
-este agente **não tocou** nesta sessão (ex: drift do Gemini):
-1. Não os inclua no commit
-2. Execute `git diff [arquivo]` e mostre ao usuário
-3. Aguarde instrução explícita — nunca assuma que a modificação é segura
+## Protocolo de arquivo estranho
 
-## Comandos de Sessão
-**"checkpoint"** → atualize `CLAUDE.md ## Checkpoint Atual` com o estado exato. Confirme em 1 linha.
-**"retoma"** → leia `CLAUDE.md ## Checkpoint Atual`, resuma em 2–3 linhas, continue.
+Antes de commitar: `git status`. Arquivo modificado que você **não tocou** nesta sessão →
+não inclua no commit, mostre o `git diff`, aguarde instrução explícita.
 
----
+## Sessão
 
-## Roteamento para Módulos Condicionais
-
-Estes módulos ativam conforme o contexto (Model Decision ou Glob):
-- **Execução de sprint TDD** → `10-sprint-tdd.md`
-- **Toca migrations** → `20-migrations.md` (Glob `**/migrations/**`, `**/*.sql`)
-- **Pedido pontual pequeno** → `30-quick-fix.md`
-- **Nova ideia / mudança de escopo** → `40-change-request.md`
-
-Pentest guiado por IA: use o workflow `.agents/workflows/ai-pentest.md` (`/ai-pentest`).
-Só contra staging autorizada, não-destrutivo. Findings viram Change Request, nunca fix ad-hoc.
-
-Se o módulo relevante não estiver carregado, o comportamento base deste core prevalece —
-mas prefira ativar o módulo específico para ter as regras completas da tarefa.
+- **"checkpoint"** → atualize `CLAUDE.md ## Checkpoint Atual` com o estado exato. Confirme em 1 linha.
+- **"retoma"** → leia SÓ o `## Checkpoint Atual`, resuma em 2–3 linhas, continue da próxima ação.

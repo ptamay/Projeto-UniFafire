@@ -1,3 +1,5 @@
+> 📚 REFERÊNCIA — conteúdo v4 preservado. Onde este texto disser `.agents/memory` leia `.sdd/memory`. Estrutura v5: `.agents/` = só rules+workflows do Antigravity · skills em `.claude/skills/` · memória e referência em `.sdd/` (ver README da raiz). Leia este arquivo POR SEÇÃO, nunca inteiro.
+
 # fleet-operations.md
 > **Módulo:** Fleet Operations — Operação Pós-Entrega | **Versão:** 4.1
 > **Carregado em:** go-live de qualquer sistema | manutenção mensal | incidente em produção
