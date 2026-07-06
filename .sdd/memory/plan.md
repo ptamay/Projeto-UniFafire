@@ -100,12 +100,12 @@
 - TASK-027 → REQ-016: formulários e modais (`/settings`, `/account/profile`, `/account/security`, modais de confirmação destrutiva) adaptados a touch.
 - TASK-028 → REQ-015/016: E2E smoke Playwright dos 4 fluxos críticos (spec §4) com viewport mobile 375×812, somado ao viewport desktop.
 
-### Sprint 10 — Transferência de Chaves e Consolidação de Logs (CR 2026-07-06, Tipo C)
-- TASK-037 → REQ-022: Criar endpoint e interface para transferência direta de chave emprestada (com observação opcional).
-- TASK-038 → REQ-022: Adaptar queries de `/history` para refletir e exibir eventos de transferência de chaves corretamente.
-- TASK-039 → REQ-023: Refatorar página `/logs` consolidando as abas redundantes em uma visão unificada.
-- TASK-040 → REQ-024: Adaptar API e frontend para permitir transferência iniciada por usuário comum (requer dupla confirmação entre o remetente e o destinatário).
-- TASK-041 → REQ-025: Ajustar API e UI (`/confirm`, Dashboard) para que o remetente (initiator) visualize e possa cancelar transferências pendentes.
+### Sprint 10 ✅ — Transferência de Chaves e Consolidação de Logs (CR 2026-07-06, Tipo C)
+- ~~TASK-037 → REQ-022: Criar endpoint e interface para transferência direta de chave emprestada (com observação opcional).~~
+- ~~TASK-038 → REQ-022: Adaptar queries de `/history` para refletir e exibir eventos de transferência de chaves corretamente.~~
+- ~~TASK-039 → REQ-023: Refatorar página `/logs` consolidando as abas redundantes em uma visão unificada.~~
+- ~~TASK-040 → REQ-024: Adaptar API e frontend para permitir transferência iniciada por usuário comum (requer dupla confirmação entre o remetente e o destinatário).~~
+- ~~TASK-041 → REQ-025: Ajustar API e UI (`/confirm`, Dashboard) para que o remetente (initiator) visualize e possa cancelar transferências pendentes.~~
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
@@ -128,3 +128,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 |--------|--------|-----|------|-----------|-----------|--------------------|----------------|------------------|----------------|
 | 7 (dívida) | 2026-07-02 | 2026-07-02 | 1 | 15 | 15 | 0 | 1 (pre-commit lint bloqueado por débito legado — quitado na própria sprint) | — | — |
 | 8 (mobile) | 2026-07-02 | 2026-07-02 | 1 | 14 | 14 | 0 | 1 (boot Edge Runtime quebrado por regressão da Sprint 7 — corrigido; detectado pelo E2E) | — | — |
+| 10 (transfer) | 2026-07-06 | 2026-07-06 | 1 | 15 | 15 | 0 | 1 (lint type checking) | — | — |
