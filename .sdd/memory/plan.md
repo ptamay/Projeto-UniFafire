@@ -100,6 +100,11 @@
 - TASK-027 → REQ-016: formulários e modais (`/settings`, `/account/profile`, `/account/security`, modais de confirmação destrutiva) adaptados a touch.
 - TASK-028 → REQ-015/016: E2E smoke Playwright dos 4 fluxos críticos (spec §4) com viewport mobile 375×812, somado ao viewport desktop.
 
+### Sprint 10 — Transferência de Chaves e Consolidação de Logs (CR 2026-07-06, Tipo C)
+- TASK-037 → REQ-022: Criar endpoint e interface para transferência direta de chave emprestada (com observação opcional).
+- TASK-038 → REQ-022: Adaptar queries de `/history` para refletir e exibir eventos de transferência de chaves corretamente.
+- TASK-039 → REQ-023: Refatorar página `/logs` consolidando as abas redundantes em uma visão unificada.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 

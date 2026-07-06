@@ -44,13 +44,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Change Request Tipo C (Bypass e Inteligência UI)
-Última ação  : Implementado REQ-021: bypass de confirmação com justificativa + Ação Rápida Inteligente. Criado ADR-003, spec.md atualizado, git commit de Memory Sync realizado.
-Próxima ação : Nenhuma, backlog em dia. Aguardando novas sprints ou ideias (Change Requests).
-Decisões em aberto : nenhuma
-Arquivos não commitados : nenhum
+Sessão       : Change Request Tipo C (Transferência de Chaves e Consolidação de Logs)
+Última ação  : Adicionado REQ-022 e REQ-023 ao spec.md e plan.md. Criado ADR-004. Memory Sync e commit realizados.
+Próxima ação : Nenhuma nesta sessão. As tasks de transferência e log entram pelo ciclo TDD na próxima sprint (Sprint 10).
+Decisões em aberto : Nenhuma
+Arquivos não commitados : Nenhum
 Branch atual : main
-Atualizado em : 2026-07-04
+Atualizado em : 2026-07-06
 ```
 
 ---
