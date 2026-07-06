@@ -44,13 +44,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-Sessão       : Change Request Tipo C (Transferência de Chaves entre Usuários Comuns)
-Última ação  : Adicionado REQ-024 ao spec.md e TASK-040 ao plan.md. Criado ADR-005. Memory Sync e commit docs realizados.
-Próxima ação : Nenhuma nesta sessão. A TASK-040 (transferência por usuários, fluxo pendente) entra pelo ciclo TDD na próxima sprint.
-Decisões em aberto : Nenhuma
-Arquivos não commitados : Nenhum
-Branch atual : feature/sprint-10-transferencia-logs
-Atualizado em : 2026-07-06
+- Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
+- Sprint/Task Ativa: Sprint 10, TASK-041 (Ajustar API e UI para cancelamento de transferências pendentes).
+- Última Ação: Atualizamos o escopo com o REQ-025 e criamos a ADR-006 a pedido do usuário (Change Request Tipo C).
+- Próxima Ação: Rodar o ciclo TDD para implementar a TASK-041, permitindo que o iniciador veja e cancele transferências de chaves, ou aguardar o usuário iniciar a sprint explicitamente.
+- Decisões em aberto: Nenhuma
+- Arquivos não commitados: Nenhum
+- Branch atual: feature/sprint-10-transferencia-logs
+- Atualizado em: 2026-07-06
 ```
 
 ---

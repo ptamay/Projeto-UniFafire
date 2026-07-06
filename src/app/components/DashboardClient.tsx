@@ -13,9 +13,10 @@ export interface Key {
     employee_id?: number;
     employee_name?: string;
     employee_role?: string;
-    pending_info?: { transaction_id: number; action: 'withdraw' | 'return'; user_confirmed: boolean; porteiro_confirmed: boolean; user_name: string; user_role: string; user_id: number; };
+    pending_info?: { transaction_id: number; action: 'withdraw' | 'return' | 'transfer'; user_confirmed: boolean; porteiro_confirmed: boolean; user_name: string; user_role: string; user_id: number; };
     in_use_since?: string;
     withdraw_justification?: string;
+    user_id?: number;
 }
 
 export interface User {
@@ -333,7 +334,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const handleTransaction = async (keyId: number, type: 'withdraw' | 'return' | 'transfer', employeeId?: number) => {
         setActionLoading(keyId);
         try {
-            const empId = isPorteiroOrAdmin ? employeeId : userId;
+            // Para 'transfer', o destino é sempre o usuário selecionado (employeeId).
+            // Para 'withdraw'/'return', usuários normais usam o próprio ID (userId), enquanto porteiros usam o selecionado.
+            const empId = type === 'transfer' ? employeeId : (isPorteiroOrAdmin ? employeeId : userId);
             const finalJustification = justification === 'Outro' ? customJustification : justification;
             const res = await fetch('/api/transactions', {
                 method: 'POST',
@@ -1160,7 +1163,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     >
                                                         Devolver
                                                     </button>
-                                                    {isPorteiroOrAdmin && (
+                                                    {(isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <button
                                                             className="btn btn-ghost btn-sm"
                                                             disabled={actionLoading === key.id}

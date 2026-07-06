@@ -13,6 +13,7 @@
 | 2026-07-04 | 1.3 | REQ-021 — Bypass de dupla confirmação e UI Inteligente (CR Tipo C, ADR-003) | Otimizar rotina da portaria e acomodar usuários sem celular; evitar bloqueios no fluxo. |
 | 2026-07-06 | 1.4 | REQ-022 e REQ-023 — Transferência direta de chaves e consolidação das abas de logs (CR Tipo C, ADR-004) | Otimizar processo de repasse de chaves e melhorar UX da auditoria. |
 | 2026-07-06 | 1.5 | REQ-024 — Transferência de chaves entre usuários sem privilégios (CR Tipo C, ADR-005) | Extensão do REQ-022 para permitir que Funcionários e Alunos transfiram as próprias chaves entre si. |
+| 2026-07-06 | 1.6 | REQ-025 — Cancelamento e visualização de transferências pendentes (CR Tipo C, ADR-006) | Corrigir gap do REQ-024: o iniciador não conseguia ver ou cancelar a transferência pendente. |
 
 ---
 
@@ -71,6 +72,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-022 — Transferência direta de chaves (CR 2026-07-06, Tipo C):** Possibilidade de repassar uma chave emprestada diretamente para outro usuário, com observação opcional, sem precisar devolver à portaria. Refletido adequadamente no histórico de transações.
 - **REQ-023 — Consolidação de Logs (CR 2026-07-06, Tipo C):** Análise e unificação das 3 abas de logs na interface de auditoria (`/logs`), removendo redundâncias de conteúdo para facilitar a visualização centralizada por parte dos administradores.
 - **REQ-024 — Transferência entre Usuários Comuns (CR 2026-07-06, Tipo C):** Extensão do REQ-022. Permite que funcionários e alunos em posse de uma chave iniciem uma transferência para outro usuário comum. Diferente do bypass da portaria, essa operação gera uma transação *pendente* que exige a confirmação pelo usuário de destino.
+- **REQ-025 — Cancelamento de Transferências (CR 2026-07-06, Tipo C):** Correção de gap operacional do REQ-024. Garante que o usuário que iniciou uma transferência pendente consiga visualizá-la na aba de Confirmações e cancelá-la a qualquer momento, antes de o destinatário aceitar.
 
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.

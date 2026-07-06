@@ -197,7 +197,11 @@ export async function POST(request: Request) {
         } else if (action === 'transfer') {
             if (key.status !== 'in_use') return NextResponse.json({ error: 'A chave deve estar em uso para ser transferida.' }, { status: 400 });
             if (!resolvedUserId) return NextResponse.json({ error: 'Usuário de destino obrigatório para transferência.' }, { status: 400 });
-            if (!isPorteiroOrAdmin) return NextResponse.json({ error: 'Apenas porteiros ou gestores podem transferir chaves diretamente.' }, { status: 403 });
+            
+            // Verifica permissão: deve ser porteiro/admin OU ser o portador atual da chave
+            if (!isPorteiroOrAdmin && key.user_id !== session.id) {
+                return NextResponse.json({ error: 'Você só pode transferir chaves que estão sob sua posse.' }, { status: 403 });
+            }
 
             const targetUser = db.prepare('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1').get(resolvedUserId) as TargetUserRow | undefined;
             if (!targetUser) return NextResponse.json({ error: 'Usuário de destino não encontrado ou inativo.' }, { status: 400 });
@@ -214,30 +218,67 @@ export async function POST(request: Request) {
             const now = new Date().toISOString();
             const obs = observation || justification || null;
 
-            const txResult = db.prepare(`
-                INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
-                VALUES (?, ?, 'transfer', ?, ?, ?, 'completed', ?, ?, ?)
-            `).run(keyId, resolvedUserId, session.id, now, now, now, now, obs?.trim() || null);
+            if (isPorteiroOrAdmin) {
+                // Porteiro transfere imediatamente (como já era)
+                const txResult = db.prepare(`
+                    INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
+                    VALUES (?, ?, 'transfer', ?, ?, ?, 'completed', ?, ?, ?)
+                `).run(keyId, resolvedUserId, session.id, now, now, now, now, obs?.trim() || null);
 
-            const transactionId = txResult.lastInsertRowid;
+                const transactionId = txResult.lastInsertRowid;
 
-            db.prepare("UPDATE keys SET user_id = ? WHERE id = ?").run(resolvedUserId, keyId);
+                db.prepare("UPDATE keys SET user_id = ? WHERE id = ?").run(resolvedUserId, keyId);
 
-            db.prepare(`
-                INSERT INTO history (key_id, action, user_id, username, transaction_id)
-                VALUES (?, 'transfer', ?, ?, ?)
-            `).run(keyId, resolvedUserId, targetUser.username, transactionId);
+                db.prepare(`
+                    INSERT INTO history (key_id, action, user_id, username, transaction_id)
+                    VALUES (?, 'transfer', ?, ?, ?)
+                `).run(keyId, resolvedUserId, targetUser.username, transactionId);
 
-            logAction(session.id, session.username, 'KEY_TRANSFERRED', key.name, 
-                `Chave transferida para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
+                logAction(session.id, session.username, 'KEY_TRANSFERRED', key.name, 
+                    `Chave transferida (bypass admin) para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
 
-            return NextResponse.json({ 
-                success: true, 
-                transactionId,
-                status: 'completed',
-                message: 'Chave transferida com sucesso.',
-                requiresUserConfirmation: false
-            });
+                return NextResponse.json({ 
+                    success: true, 
+                    transactionId,
+                    status: 'completed',
+                    message: 'Chave transferida com sucesso.',
+                    requiresUserConfirmation: false
+                });
+            } else {
+                // Usuário comum iniciando transferência: cria transação pendente
+                // O destinatário (resolvedUserId) precisará aceitar (dupla confirmação).
+                // O porteiro_id será null. Usamos `user_confirmed_at` null porque o alvo deve confirmar.
+                // Mas quem iniciou foi o remetente (user_id = session.id). Porém, a transação deve apontar para o DESTINATÁRIO
+                // na tabela key_transactions, pois o alvo da ação de assumir a chave é ele.
+                // A chave ainda fica com o remetente até que a transação complete.
+                
+                // Vamos gravar o porteiro_id como sendo o remetente (ou seja, quem *cedeu* a chave atuando como a "portaria").
+                // Isso aproveita o fluxo de user-confirm: "porteiro" confirmou, falta o "usuário" confirmar.
+                // Aqui "porteiro_id" passa a significar "remetente_id" para transferências.
+                const txResult = db.prepare(`
+                    INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, justification)
+                    VALUES (?, ?, 'transfer', ?, ?, NULL, 'pending', ?, ?)
+                `).run(keyId, resolvedUserId, session.id, now, now, obs?.trim() || null);
+
+                const transactionId = txResult.lastInsertRowid;
+
+                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 
+                    `Transferência iniciada para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
+
+                return NextResponse.json({ 
+                    success: true, 
+                    transactionId,
+                    status: 'pending',
+                    message: 'Transferência iniciada. Aguardando confirmação do destinatário.',
+                    requiresUserConfirmation: true,
+                    targetUser: {
+                        id: targetUser.id,
+                        username: targetUser.username,
+                        full_name: targetUser.full_name,
+                        role: targetUser.role
+                    }
+                });
+            }
         } else {
             return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 });
         }

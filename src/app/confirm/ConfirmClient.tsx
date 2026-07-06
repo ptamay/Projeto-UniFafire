@@ -8,7 +8,7 @@ interface PendingTransaction {
     id: number;
     key_id: number;
     user_id: number;
-    action: 'withdraw' | 'return';
+    action: 'withdraw' | 'return' | 'transfer';
     status: 'pending' | 'porteiro_confirmed';
     key_name: string;
     key_room: string;
@@ -132,8 +132,9 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                     <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
                         {displayTxs.map(tx => {
                             const isWithdraw = tx.action === 'withdraw';
-                            const accentColor = isWithdraw ? '#b45309' : '#1d8046';
-                            const accentBg = isWithdraw ? 'rgba(180,83,9,0.08)' : 'rgba(29,128,70,0.08)';
+                            const isTransfer = tx.action === 'transfer';
+                            const accentColor = isWithdraw ? '#b45309' : isTransfer ? '#7e22ce' : '#1d8046';
+                            const accentBg = isWithdraw ? 'rgba(180,83,9,0.08)' : isTransfer ? 'rgba(126,34,206,0.08)' : 'rgba(29,128,70,0.08)';
 
                             return (
                                 <div key={tx.id} style={{
@@ -155,7 +156,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                 letterSpacing: '0.05em', color: accentColor,
                                                 background: accentBg, padding: '2px 8px', borderRadius: '99px', display: 'inline-block', marginBottom: '0.4rem'
                                             }}>
-                                                {isWithdraw ? 'Retirada de Chave' : 'Devolução de Chave'}
+                                                {isWithdraw ? 'Retirada de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
                                             </span>
                                             <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{tx.key_name}</div>
                                             {tx.key_room && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{tx.key_room}</div>}
@@ -167,16 +168,29 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                         }}>
                                             {isWithdraw
                                                 ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>}
+                                                : isTransfer
+                                                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
+                                                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>}
                                         </div>
                                     </div>
 
                                     {/* Contexto */}
                                     <div style={{ background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                        <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
-                                        {tx.porteiro_username
-                                            ? <>Iniciado pelo porteiro <strong>@{tx.porteiro_username}</strong> às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
-                                            : <>Iniciado por {isPorteiroOrAdmin ? 'usuário' : 'você'} às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>}
+                                        {isTransfer ? (
+                                            <>
+                                                Transferência para <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
+                                                {tx.porteiro_username && (
+                                                    <>Iniciada por <strong>@{tx.porteiro_username}</strong> às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
+                                                {tx.porteiro_username
+                                                    ? <>Iniciado pelo porteiro <strong>@{tx.porteiro_username}</strong> às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
+                                                    : <>Iniciado por {isPorteiroOrAdmin ? 'usuário' : 'você'} às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>}
+                                            </>
+                                        )}
                                     </div>
 
                                     {/* Status Administrativo */}

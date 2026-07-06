@@ -105,6 +105,7 @@
 - TASK-038 → REQ-022: Adaptar queries de `/history` para refletir e exibir eventos de transferência de chaves corretamente.
 - TASK-039 → REQ-023: Refatorar página `/logs` consolidando as abas redundantes em uma visão unificada.
 - TASK-040 → REQ-024: Adaptar API e frontend para permitir transferência iniciada por usuário comum (requer dupla confirmação entre o remetente e o destinatário).
+- TASK-041 → REQ-025: Ajustar API e UI (`/confirm`, Dashboard) para que o remetente (initiator) visualize e possa cancelar transferências pendentes.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.

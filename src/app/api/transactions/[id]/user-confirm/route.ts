@@ -71,10 +71,17 @@ export async function POST(request: Request, { params }: RouteParams) {
                         .run(tx.user_id, tx.key_id);
                     db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'withdraw', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
-                } else {
+                } else if (tx.action === 'return') {
                     db.prepare("UPDATE keys SET status = 'available', user_id = NULL, employee_id = NULL WHERE id = ?")
                         .run(tx.key_id);
                     db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'return', ?, ?)`)
+                        .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
+                } else if (tx.action === 'transfer') {
+                    // Na transferência por usuário comum, o alvo é o user_id da transação.
+                    // A chave continua in_use, mas agora com o novo usuário.
+                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ?, employee_id = NULL WHERE id = ?")
+                        .run(tx.user_id, tx.key_id);
+                    db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'transfer', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
                 }
             });
@@ -82,8 +89,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             completeTransaction();
 
             logAction(session.id, session.username,
-                tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : 'KEY_RETURNED',
-                tx.key_name || 'Chave removida',
+                tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : (tx.action === 'return' ? 'KEY_RETURNED' : 'KEY_TRANSFERRED'),
+                tx.key_name || 'Chave manipulada',
                 `Transação #${transactionId} completada com dupla confirmação`
             );
 
@@ -93,7 +100,7 @@ export async function POST(request: Request, { params }: RouteParams) {
                 action: tx.action,
                 message: tx.action === 'withdraw' 
                     ? 'Chave retirada com sucesso! Ambas as partes confirmaram.' 
-                    : 'Chave devolvida com sucesso! Ambas as partes confirmaram.'
+                    : (tx.action === 'return' ? 'Chave devolvida com sucesso! Ambas as partes confirmaram.' : 'Chave transferida com sucesso! Ambas as partes confirmaram.')
             });
         }
 

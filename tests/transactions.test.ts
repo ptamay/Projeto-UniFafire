@@ -155,4 +155,54 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('transfer') as { c: number };
         expect(historyCount.c).toBe(1);
     });
+
+    it('deve permitir a transferência (transfer) por usuário comum gerando transação pendente', async () => {
+        // 1. Setup: Colocar a chave 1 em 'in_use' pelo aluno 5
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        // 2. Aluno 5 inicia a transferência para o aluno 4
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        
+        const transferReq = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'transfer', key_id: 1, user_id: 4, observation: 'Te passei a chave' }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const transferRes = await TransactionPOST(transferReq);
+        const transferData = await transferRes.json();
+        
+        expect(transferRes.status).toBe(200);
+        expect(transferData.status).toBe('pending');
+        expect(transferData.transactionId).toBeDefined();
+
+        const txId = transferData.transactionId;
+
+        // A chave ainda deve estar com o aluno 5 enquanto aguarda confirmação
+        const keyStatus1 = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
+        expect(keyStatus1.status).toBe('in_use');
+        expect(keyStatus1.user_id).toBe(5);
+
+        // 3. Aluno 4 (destinatário) confirma a transferência
+        currentSession = { id: 4, role: 'ALUNO', username: 'test_funcionario' };
+        
+        const confirmReq = new Request(`http://localhost/api/transactions/${txId}/user-confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const params = Promise.resolve({ id: String(txId) });
+        const confirmRes = await ConfirmPOST(confirmReq, { params });
+        const confirmData = await confirmRes.json();
+
+        expect(confirmRes.status).toBe(200);
+        expect(confirmData.status).toBe('completed');
+
+        // 4. Verifica se a chave foi transferida para o aluno 4
+        const keyStatus2 = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
+        expect(keyStatus2.status).toBe('in_use');
+        expect(keyStatus2.user_id).toBe(4);
+
+        // Verifica histórico
+        const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('transfer') as { c: number };
+        expect(historyCount.c).toBe(1);
+    });
 });
