@@ -12,6 +12,7 @@
 | 2026-07-02 | 1.2 | REQ-017 a REQ-020 — CR retroativo: features entregues nas Sprints 4–6 sem passar por Change Request (ADR-002) | Reconciliação: eliminar escopo fantasma — o que está em produção deve estar no spec |
 | 2026-07-04 | 1.3 | REQ-021 — Bypass de dupla confirmação e UI Inteligente (CR Tipo C, ADR-003) | Otimizar rotina da portaria e acomodar usuários sem celular; evitar bloqueios no fluxo. |
 | 2026-07-06 | 1.4 | REQ-022 e REQ-023 — Transferência direta de chaves e consolidação das abas de logs (CR Tipo C, ADR-004) | Otimizar processo de repasse de chaves e melhorar UX da auditoria. |
+| 2026-07-06 | 1.5 | REQ-024 — Transferência de chaves entre usuários sem privilégios (CR Tipo C, ADR-005) | Extensão do REQ-022 para permitir que Funcionários e Alunos transfiram as próprias chaves entre si. |
 
 ---
 
@@ -69,6 +70,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-021 — Bypass de Confirmação e Ação Rápida Inteligente (CR 2026-07-04, Tipo C):** Adição de bypass de dupla confirmação para porteiros/gestores atribuírem chaves diretamente com justificativa auditável; barra de ação rápida no dashboard autocompleta e lista usuários frequentes por chave; lista de chaves prioriza chaves frequentes para o portador; navegação total por teclado (setas/Enter) - ver ADR-003.
 - **REQ-022 — Transferência direta de chaves (CR 2026-07-06, Tipo C):** Possibilidade de repassar uma chave emprestada diretamente para outro usuário, com observação opcional, sem precisar devolver à portaria. Refletido adequadamente no histórico de transações.
 - **REQ-023 — Consolidação de Logs (CR 2026-07-06, Tipo C):** Análise e unificação das 3 abas de logs na interface de auditoria (`/logs`), removendo redundâncias de conteúdo para facilitar a visualização centralizada por parte dos administradores.
+- **REQ-024 — Transferência entre Usuários Comuns (CR 2026-07-06, Tipo C):** Extensão do REQ-022. Permite que funcionários e alunos em posse de uma chave iniciem uma transferência para outro usuário comum. Diferente do bypass da portaria, essa operação gera uma transação *pendente* que exige a confirmação pelo usuário de destino.
 
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.

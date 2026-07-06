@@ -104,6 +104,7 @@
 - TASK-037 → REQ-022: Criar endpoint e interface para transferência direta de chave emprestada (com observação opcional).
 - TASK-038 → REQ-022: Adaptar queries de `/history` para refletir e exibir eventos de transferência de chaves corretamente.
 - TASK-039 → REQ-023: Refatorar página `/logs` consolidando as abas redundantes em uma visão unificada.
+- TASK-040 → REQ-024: Adaptar API e frontend para permitir transferência iniciada por usuário comum (requer dupla confirmação entre o remetente e o destinatário).
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
