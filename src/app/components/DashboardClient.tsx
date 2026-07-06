@@ -1130,7 +1130,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                                             {key.pending_info ? (
-                                                (isPorteiroOrAdmin || key.pending_info.user_id === userId) ? (
+                                                (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) ? (
                                                     <button
                                                         className="btn btn-ghost btn-sm"
                                                         data-tooltip="Cancelar esta solicitação"

@@ -96,7 +96,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
     };
 
     const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
-    const displayTxs = isPorteiroOrAdmin ? pendingTxs : pendingTxs.filter(tx => tx.user_id === userId);
+    const displayTxs = isPorteiroOrAdmin ? pendingTxs : pendingTxs.filter(tx => tx.user_id === userId || tx.porteiro_id === userId);
 
     return (
         <div className="page-wrapper">
