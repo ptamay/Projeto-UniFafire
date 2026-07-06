@@ -1042,7 +1042,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
                                                 </button>
                                             )}
-                                            {key.status === 'in_use' && !key.pending_info && (!isPorteiroOrAdmin && key.employee_id === userId) && (
+                                            {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.employee_id === userId) && (
                                                 <button
                                                     className="key-card-action-btn"
                                                     onClick={(e) => {
