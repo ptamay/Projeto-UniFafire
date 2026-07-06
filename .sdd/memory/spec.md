@@ -73,6 +73,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-023 — Consolidação de Logs (CR 2026-07-06, Tipo C):** Análise e unificação das 3 abas de logs na interface de auditoria (`/logs`), removendo redundâncias de conteúdo para facilitar a visualização centralizada por parte dos administradores.
 - **REQ-024 — Transferência entre Usuários Comuns (CR 2026-07-06, Tipo C):** Extensão do REQ-022. Permite que funcionários e alunos em posse de uma chave iniciem uma transferência para outro usuário comum. Diferente do bypass da portaria, essa operação gera uma transação *pendente* que exige a confirmação pelo usuário de destino.
 - **REQ-025 — Cancelamento de Transferências (CR 2026-07-06, Tipo C):** Correção de gap operacional do REQ-024. Garante que o usuário que iniciou uma transferência pendente consiga visualizá-la na aba de Confirmações e cancelá-la a qualquer momento, antes de o destinatário aceitar.
+- **REQ-026 — Transferência de chaves na interface mobile (CR 2026-07-06, Tipo C):** Extensão do REQ-022 e REQ-024 para o layout mobile. Na visualização em card (mobile) do Dashboard, incluir a ação de transferir a chave diretamente para outro usuário.
 
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.
