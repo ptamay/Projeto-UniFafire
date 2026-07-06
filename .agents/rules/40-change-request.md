@@ -1,12 +1,17 @@
 ---
-trigger: model_decision
+trigger: always_on
 description: "Ative OBRIGATORIAMENTE quando o usuário trouxer uma ideia nova, pedir para melhorar algo já planejado, ou propor mudança de escopo pós-Fase 6."
 ---
 
 # 40-change-request — Novas Ideias e Mudanças de Escopo (Model Decision)
 
 Quando o usuário trouxer uma ideia nova ou mudança de escopo, classifique antes de agir.
-Referência completa: `master-spec-core.md` Seção 6.1.
+
+> ✅ Este arquivo é AUTOCONTIDO. Tudo que você precisa para executar um Change Request está
+> aqui embaixo — classificação, gate de migration, checklist de estado final, commit e
+> memory sync. **Não abra outro arquivo para agir.** (A Seção 6.1 do `master-spec-core.md`,
+> dentro da skill `novo-projeto`, é a fonte histórica desta regra; consultá-la é opcional e
+> nunca pré-requisito para classificar ou executar.)
 
 ## Classificação
 

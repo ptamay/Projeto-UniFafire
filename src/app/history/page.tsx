@@ -26,7 +26,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         SELECT h.id, h.action, h.timestamp, 
                k.name as key_name, k.room, 
                COALESCE(u.full_name, u.username, e.name) as employee_name,
-               p.username as confirmed_by
+               p.username as confirmed_by,
+               kt.justification
         FROM history h
         LEFT JOIN keys k ON h.key_id = k.id
         LEFT JOIN employees e ON h.employee_id = e.id

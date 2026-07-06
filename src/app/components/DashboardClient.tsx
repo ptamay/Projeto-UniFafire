@@ -5,12 +5,6 @@ import Sidebar from './Sidebar';
 import toast from 'react-hot-toast';
 import { OVERDUE_HOURS } from '@/lib/business-rules';
 
-interface BusinessMetrics {
-    totalTransactions: number;
-    doubleConfirmationRate: number | null;
-    medianCounterMinutes: number | null;
-}
-
 export interface Key {
     id: number;
     name: string;
@@ -21,6 +15,7 @@ export interface Key {
     employee_role?: string;
     pending_info?: { transaction_id: number; action: 'withdraw' | 'return'; user_confirmed: boolean; porteiro_confirmed: boolean; user_name: string; user_role: string; user_id: number; };
     in_use_since?: string;
+    withdraw_justification?: string;
 }
 
 export interface User {
@@ -182,23 +177,23 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'available' | 'in_use'>('all');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [isDesktop, setIsDesktop] = useState(true);
+    
+    useEffect(() => {
+        const handleResize = () => setIsDesktop(window.innerWidth > 768);
+        handleResize(); // Executa na montagem
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    
+    const effectiveViewMode = isDesktop ? 'list' : 'grid';
+
     // Explicação da dupla confirmação — contextual e dispensável (não é tour forçado).
     const [showIntro, setShowIntro] = useState(false);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
     const [selectedEmployee, setSelectedEmployee] = useState<Record<number, number>>({});
-    const [bizMetrics, setBizMetrics] = useState<BusinessMetrics | null>(null);
 
     const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
-
-    // TASK-034: métricas de negócio (spec §5) — só para quem opera o balcão
-    useEffect(() => {
-        if (!isPorteiroOrAdmin) return;
-        fetch('/api/metrics/business')
-            .then(r => (r.ok ? r.json() : null))
-            .then(d => { if (d) setBizMetrics(d); })
-            .catch(() => {});
-    }, [isPorteiroOrAdmin]);
 
     const [frequentKeys, setFrequentKeys] = useState<number[]>([]);
     
@@ -216,7 +211,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const refreshData = useCallback(async () => {
         try {
             const kRes = await fetch('/api/keys');
-            const uRes = await fetch('/api/users');
+            let uRes = null;
+            if (isPorteiroOrAdmin) {
+                uRes = await fetch('/api/users');
+            }
+
             if (kRes.ok) {
                 const newKeys = await kRes.json();
                 
@@ -239,7 +238,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     setKeys(newKeys);
                 }
             }
-            if (uRes.ok) {
+            if (uRes && uRes.ok) {
                 const uData = await uRes.json() as { id: number; username: string; full_name: string | null; role: string }[];
                 setEmployees(uData.map((u) => ({ ...u, full_name: u.full_name ?? undefined, name: u.full_name || u.username || '' })));
             }
@@ -254,7 +253,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         window.addEventListener('pending-transactions-updated', handleUpdate);
         // Não reordena a lista se o usuário está no meio de uma ação (dropdown/modal
         // aberto ou campo preenchido) — evita que a linha "pule" sob o cursor.
-        const interval = setInterval(() => { if (!interactingRef.current) refreshData(); }, 30000);
+        const interval = setInterval(() => { if (!interactingRef.current) refreshData(); }, 3000);
         return () => {
             window.removeEventListener('pending-transactions-updated', handleUpdate);
             clearInterval(interval);
@@ -307,7 +306,17 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         type: 'withdraw' | 'return';
         employeeId?: number;
         employeeName?: string;
+        withdrawJustification?: string;
     }>({ open: false, keyId: 0, keyName: '', type: 'withdraw' });
+
+    // Modal Mobile: Escolha rápida 100% Touch
+    const [touchSelectModal, setTouchSelectModal] = useState<{
+        open: boolean;
+        keyId: number;
+        keyName: string;
+        searchStr: string;
+        suggestions: User[];
+    }>({ open: false, keyId: 0, keyName: '', searchStr: '', suggestions: [] });
 
     const [bypassConfirmation, setBypassConfirmation] = useState(false);
     const [justification, setJustification] = useState('');
@@ -398,7 +407,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             keyName: key.name,
             type,
             employeeId: targetEmpId,
-            employeeName: emp?.name
+            employeeName: emp?.name,
+            withdrawJustification: key.withdraw_justification
         });
         modalOpenTime.current = Date.now();
     };
@@ -428,15 +438,30 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     .then(freqUsers => {
                         const freqIds = new Set(freqUsers.map((u: User) => u.id));
                         const others = employees.filter(e => !freqIds.has(e.id));
-                        setEmpSuggestions([...freqUsers, ...others].slice(0, 5));
+                        const finalSuggestions = [...freqUsers, ...others];
+                        
+                        setEmpSuggestions(finalSuggestions.slice(0, 5));
                         setEmpIndex(-1);
-                        setTimeout(() => qaEmpRef.current?.focus(), 10);
+                        
+                        if (window.innerWidth <= 768) {
+                            setTouchSelectModal({ open: true, keyId: k.id, keyName: k.name, searchStr: '', suggestions: finalSuggestions });
+                        } else {
+                            setTimeout(() => qaEmpRef.current?.focus(), 10);
+                        }
                     })
                     .catch(() => {
                         setEmpSuggestions(employees.slice(0, 5));
                         setEmpIndex(-1);
-                        setTimeout(() => qaEmpRef.current?.focus(), 10);
+                        
+                        if (window.innerWidth <= 768) {
+                            setTouchSelectModal({ open: true, keyId: k.id, keyName: k.name, searchStr: '', suggestions: employees });
+                        } else {
+                            setTimeout(() => qaEmpRef.current?.focus(), 10);
+                        }
                     });
+            } else {
+                // Para usuários normais (não porteiros), o saque é automático para si mesmo.
+                requestTransaction(k.id, 'withdraw');
             }
         } else {
             requestTransaction(k.id, 'return');
@@ -482,16 +507,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     }, [confirmModal.open, confirmModal.keyId, confirmModal.type, confirmModal.employeeId]);
 
     useEffect(() => {
-        const savedView = localStorage.getItem('dashboard-view') as 'grid' | 'list' | null;
-        if (savedView) setViewMode(savedView);
         // Mostra a explicação só até o usuário dispensá-la (uma vez por navegador).
         if (localStorage.getItem('dashboard-intro-dismissed') !== 'true') setShowIntro(true);
     }, []);
-
-    const toggleView = (mode: 'grid' | 'list') => {
-        setViewMode(mode);
-        localStorage.setItem('dashboard-view', mode);
-    };
 
     const dismissIntro = () => {
         setShowIntro(false);
@@ -573,7 +591,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <h1 className="page-title">Monitoramento de Chaves</h1>
                         <p className="page-subtitle">Sistema Administrativo</p>
                     </div>
-                    <div className="dashboard-stats">
+                    <div className="dashboard-stats" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-available-text)' }}>{stats.available}</span>
@@ -582,23 +600,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Em Uso</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
                         </div>
-                        {/* TASK-034 — métricas de negócio (spec §5): taxa de dupla confirmação e tempo de balcão */}
-                        {isPorteiroOrAdmin && bizMetrics && (
-                            <>
-                                <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
-                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
-                                        {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
-                                    </span>
-                                </div>
-                                <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
-                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                                        {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
-                                    </span>
-                                </div>
-                            </>
-                        )}
                     </div>
                 </header>
 
@@ -643,23 +644,21 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 )}
 
                 {/* Unified Control Bar */}
-                <div className="unified-control-bar">
-                    <div className="search-bar" style={{ flex: '1', minWidth: '200px' }}>
-                        <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <div className="unified-control-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
+                    <div className="search-bar" style={{ flex: '1', minWidth: '200px', background: 'var(--bg-input)', borderRadius: '12px', position: 'relative' }}>
+                        <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input
                             className="input"
                             aria-label="Buscar chave ou usuário"
-                            style={{ paddingLeft: '2.5rem', minHeight: '44px', background: 'transparent', border: 'none' }}
+                            style={{ paddingLeft: '2.75rem', minHeight: '44px', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%' }}
                             placeholder="Buscar chave ou usuário..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
 
-                    <div className="control-divider" />
-
-                    <div className="control-actions" style={{ flex: '2', minWidth: '300px' }}>
-                        <div style={{ color: 'var(--green-500)', flexShrink: 0 }} aria-hidden="true">
+                    <div className="control-actions" style={{ flex: '2', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: '12px', paddingLeft: '1rem' }}>
+                        <div style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </div>
 
@@ -675,7 +674,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 aria-expanded={showKeyDrops}
                                 aria-controls="key-dropdown"
                                 value={qaKey}
-                                style={{ minHeight: '44px', fontSize: '0.8rem', border: '1px solid var(--border-strong)', width: '100%' }}
+                                style={{ minHeight: '44px', fontSize: '0.8rem', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%', paddingLeft: '0.5rem' }}
                                 onFocus={() => {
                                     setShowKeyDrops(true);
                                     setKeyIndex(-1);
@@ -791,7 +790,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             aria-expanded={showEmpDrops}
                                             aria-controls="emp-dropdown"
                                             value={qaEmp}
-                                            style={{ minHeight: '44px', fontSize: '0.8rem', width: '220px' }}
+                                            style={{ minHeight: '44px', fontSize: '0.8rem', width: '220px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)' }}
                                             onFocus={() => {
                                                 setShowEmpDrops(true);
                                                 setEmpIndex(-1);
@@ -891,26 +890,57 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     </div>
                 </div>
 
+                {/* Mobile: troca a Ação Rápida em 2 passos (chave + pessoa por
+                    digitação) por uma busca compacta de 1 campo — filtra a lista
+                    abaixo em tempo real, então basta tocar no card (que já dispara
+                    o mesmo fluxo de retirar/devolver). Atalhos de chaves frequentes
+                    dão acesso em 1 toque, sem digitar nada, para quem sempre pega
+                    a(s) mesma(s) chave(s) — a parte "inteligente" que já existia. */}
+                <div className="mobile-touch-bar">
+                    <div className="mobile-touch-search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input
+                            aria-label="Filtrar chave por nome ou sala"
+                            placeholder="Filtrar por nome ou sala..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                    </div>
+
+                    {!isPorteiroOrAdmin && frequentKeys.length > 0 && (
+                        <div className="mobile-quick-chips" role="list" aria-label="Chaves que você usa com frequência">
+                            {frequentKeys
+                                .map(id => keys.find(k => k.id === id))
+                                .filter((k): k is Key => Boolean(k))
+                                .slice(0, 5)
+                                .map(k => (
+                                    <button
+                                        key={k.id}
+                                        type="button"
+                                        role="listitem"
+                                        className={`mobile-quick-chip ${k.status === 'available' ? 'is-available' : 'is-inuse'}`}
+                                        onClick={() => selectQaKey(k)}
+                                    >
+                                        {k.name}
+                                    </button>
+                                ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Filters */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', width: '100%' }}>
                     {(['all','available','in_use'] as const).map(f => (
                         <button 
                             key={f} 
                             className={`btn ${filter === f ? 'btn-green' : 'btn-ghost'} btn-sm`} 
                             onClick={() => setFilter(f)}
+                            style={{ borderRadius: '10px', flex: 1 }}
                         >
                             {f === 'all' ? 'Todas' : f === 'available' ? 'Disponíveis' : 'Em Uso'}
                         </button>
                     ))}
 
-                    <div className="hidden md:flex" style={{ marginLeft: 'auto', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className={`btn ${viewMode === 'list' ? 'btn-green' : 'btn-ghost'} btn-sm`} onClick={() => toggleView('list')} data-tooltip="Ver em lista" aria-label="Ver em lista" aria-pressed={viewMode === 'list'}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                        </button>
-                        <button className={`btn ${viewMode === 'grid' ? 'btn-green' : 'btn-ghost'} btn-sm`} onClick={() => toggleView('grid')} data-tooltip="Ver em grade" aria-label="Ver em grade" aria-pressed={viewMode === 'grid'}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                        </button>
-                    </div>
                 </div>
 
                 {/* Content */}
@@ -947,123 +977,73 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             )}
                         </div>
                     )
-                ) : viewMode === 'grid' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
+                ) : effectiveViewMode === 'grid' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {filtered.map(key => (
-                            <div key={key.id} className={`key-card ${key.status === 'in_use' ? 'inuse' : 'available'}`}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '2rem' }}>
-                                    <div style={{ flex: 1 }} className="key-card-header-content">
-                                        <div className="key-card-title">{key.name}</div>
-                                        {key.room && <div className="key-card-room">{key.room}</div>}
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-                                        <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                            {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em Uso')}
-                                        </span>
-                                    </div>
+                            <div 
+                                key={key.id} 
+                                className={`key-card ${key.pending_info ? 'pending' : key.status === 'in_use' ? 'inuse' : 'available'}`}
+                                onClick={() => selectQaKey(key)}
+                            >
+                                <div className="key-card-icon-wrapper">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                                 </div>
-
-                                <div className="key-card-dynamic-area">
-                                    {key.status === 'in_use' && key.employee_name ? (
-                                        <div className="key-card-holder animate-fade" style={{ width: '100%', marginTop: 0 }}>
-                                            <div className="key-card-avatar">
-                                                {key.employee_name[0].toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                {key.employee_role && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
-                                            {isPorteiroOrAdmin ? (
-                                                    <UserSelector 
-                                                        users={employees} 
-                                                        selectedId={selectedEmployee[key.id]} 
-                                                        onSelect={(uid) => setSelectedEmployee(prev => ({ ...prev, [key.id]: uid }))}
-                                                        placeholder="Para quem?"
-                                                    />
-                                            ) : (
-                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', fontSize: '0.8125rem', color: 'var(--text-muted)', paddingLeft: '0.5rem', height: '42px' }}>
-                                                    Retirar para mim
+                                
+                                <div className="key-card-content-wrapper">
+                                    <div className="key-card-header-row">
+                                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'flex-start', width: '100%' }}>
+                                            <div className="key-card-title">{key.name}</div>
+                                            {key.room && <div className="key-card-room">{key.room}</div>}
+                                            
+                                            {key.status === 'in_use' && key.employee_name && !key.pending_info && (
+                                                <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
+                                                    <div className="key-card-avatar">
+                                                        {key.employee_name[0].toUpperCase()}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
+                                                        {key.employee_role && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
+                                                    </div>
                                                 </div>
                                             )}
-                                        </div>
-                                    )}
-                                </div>
+                                            
+                                            {key.pending_info && (
+                                                <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
+                                                    <div className="key-card-avatar">
+                                                        {(key.pending_info.user_name || 'U')[0].toUpperCase()}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
+                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.pending_info.user_role || 'Aluno'}</div>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                <div style={{ marginTop: 'auto' }}>
-                                    {key.pending_info ? (
-                                        <div className="animate-fade" style={{
-                                            background: 'var(--bg-elevated)',
-                                            border: '1px solid var(--border-strong)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            padding: '0.4rem 0.5rem 0.4rem 0.75rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.625rem',
-                                            minHeight: '42px',
-                                            boxSizing: 'border-box'
-                                        }}>
-                                            <div className="spinner" style={{ width: 14, height: 14, borderTopColor: 'var(--text-muted)', opacity: 0.8, flexShrink: 0 }} />
-                                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-                                                <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, marginBottom: '2px' }}>
-                                                    Aguardando confirmação
-                                                </span>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    de {(!key.pending_info.user_confirmed && key.pending_info.user_name) ? key.pending_info.user_name.split(' ')[0] : 'porteiro'}
-                                                </span>
-                                            </div>
-                                            {(isPorteiroOrAdmin || key.pending_info.user_id === userId) && (
+                                            {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId) && (
                                                 <button
-                                                    className="btn btn-ghost btn-sm"
-                                                    data-tooltip="Cancelar esta solicitação"
-                                                    aria-label={`Cancelar solicitação da chave ${key.name}`}
-                                                    style={{ padding: '0.4rem 0.7rem', fontSize: '0.72rem', flexShrink: 0 }}
+                                                    className="key-card-action-btn"
                                                     disabled={cancelLoading === key.pending_info.transaction_id}
-                                                    onClick={() => handleCancel(key.pending_info!.transaction_id, key.name)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleCancel(key.pending_info!.transaction_id, key.name);
+                                                    }}
                                                 >
                                                     {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
                                                 </button>
                                             )}
                                         </div>
-                                    ) : key.status === 'available' ? (
-                                        <button
-                                            className="btn btn-green btn-sm"
-                                            style={{ width: '100%', height: '42px', gap: '0.625rem' }}
-                                            disabled={actionLoading === key.id || (isPorteiroOrAdmin && !selectedEmployee[key.id])}
-                                            onClick={() => requestTransaction(key.id, 'withdraw')}
-                                        >
-                                            {actionLoading === key.id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                                    Solicitar Retirada
-                                                </>
-                                            )}
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className="btn btn-blue btn-sm"
-                                            disabled={actionLoading === key.id}
-                                            onClick={() => requestTransaction(key.id, 'return')}
-                                            style={{ width: '100%', height: '42px', gap: '0.625rem' }}
-                                        >
-                                            {actionLoading === key.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                                                    Solicitar Devolução
-                                                </>
-                                            )}
-                                        </button>
-                                    )}
+                                        <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
+                                            {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
                     /* Modo Lista */
-                    viewMode === 'list' && (
-                        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    effectiveViewMode === 'list' && (
+                        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
                             <div className="dashboard-list-header" style={{
                                 display: 'grid',
                                 gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px',
@@ -1098,7 +1078,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         borderBottom: '1px solid var(--border)',
                                         alignItems: 'center',
                                         transition: 'background 0.2s ease'
-                                    }} className="list-row-hover dashboard-list-row">
+                                    }} className={`list-row-hover dashboard-list-row ${key.pending_info ? 'row-pending' : key.status === 'available' ? 'row-available' : 'row-inuse'}`}>
                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', textAlign: 'left' }}>
                                             {key.name}
                                         </div>
@@ -1112,21 +1092,19 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
                                             {key.status === 'in_use' ? (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left', minWidth: 0 }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', textAlign: 'center', minWidth: 0 }}>
                                                     <div style={{ width: '32px', height: '32px', background: 'var(--accent-primary)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                                                         {key.employee_name?.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div style={{ minWidth: 0 }}>
-                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-green)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '-2px', letterSpacing: '0.025em' }}>Portador Atual</div>
                                                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center', textAlign: 'center' }}>
                                                     {isPorteiroOrAdmin ? (
                                                         <>
-                                                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '4px' }}>Selecionar Usuário</div>
                                                             <UserSelector 
                                                                 users={employees} 
                                                                 selectedId={selectedEmployee[key.id]} 
@@ -1178,10 +1156,62 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     </div>
                                 ))
                             )}
-                        </div>
+</div>
                     )
                 )}
             </main>
+
+            {/* Modal 100% Touch para Selecionar Usuário (Mobile/Porteiro) */}
+            {touchSelectModal.open && (
+                <div className="modal-overlay" onClick={() => setTouchSelectModal(prev => ({ ...prev, open: false }))}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()} style={{ padding: '1.25rem', height: '85vh', display: 'flex', flexDirection: 'column', gap: '1rem', width: '95%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.375rem', color: 'var(--text-primary)', margin: 0, fontWeight: 800 }}>Para quem?</h2>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Chave <strong style={{color: 'var(--green-400)'}}>{touchSelectModal.keyName}</strong></p>
+                            </div>
+                            <button className="icon-btn" onClick={() => setTouchSelectModal(prev => ({ ...prev, open: false }))} style={{ margin: '-0.5rem -0.5rem 0 0', padding: '0.5rem' }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                        
+                        <div className="search-bar" style={{ maxWidth: '100%', flexShrink: 0, margin: '0.5rem 0' }}>
+                            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input 
+                                className="input" 
+                                placeholder="Busque pelo nome se quiser..." 
+                                style={{ paddingLeft: '2.75rem', minHeight: '48px' }}
+                                value={touchSelectModal.searchStr}
+                                onChange={e => setTouchSelectModal(prev => ({ ...prev, searchStr: e.target.value }))}
+                            />
+                        </div>
+                        
+                        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', margin: '0 -1.25rem', padding: '0 0.5rem' }}>
+                            {touchSelectModal.suggestions.filter(u => normalize(u.name).includes(normalize(touchSelectModal.searchStr))).map((u, i) => (
+                                <div 
+                                    key={u.id}
+                                    className="touch-contact-item"
+                                    onClick={() => {
+                                        setTouchSelectModal(prev => ({ ...prev, open: false }));
+                                        requestTransaction(touchSelectModal.keyId, 'withdraw', u.id);
+                                    }}
+                                >
+                                    <div className="touch-contact-avatar">
+                                        {u.name[0]?.toUpperCase()}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                                        <span className="touch-contact-name">{u.name}</span>
+                                        <span className="touch-contact-role">{u.role || 'Usuário'}</span>
+                                    </div>
+                                    <div style={{ color: 'var(--text-muted)' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal de Confirmação Premium */}
             {confirmModal.open && (
@@ -1207,7 +1237,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             </p>
                             
                             {/* Bypass UI */}
-                            {confirmModal.type === 'withdraw' && isPorteiroOrAdmin && (
+                            {((confirmModal.type === 'withdraw' && isPorteiroOrAdmin) || 
+                              (confirmModal.type === 'return' && isPorteiroOrAdmin && confirmModal.withdrawJustification)) && (
                                 <div style={{ marginTop: '1rem', textAlign: 'left', background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                                         <input 
@@ -1217,12 +1248,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 setBypassConfirmation(e.target.checked);
                                                 if (!e.target.checked) setJustification('');
                                             }}
-                                            style={{ accentColor: 'var(--green-500)', width: '16px', height: '16px' }}
+                                            style={{ accentColor: confirmModal.type === 'withdraw' ? 'var(--green-500)' : 'var(--blue-500)', width: '16px', height: '16px' }}
                                         />
-                                        Atribuir chave imediatamente sem confirmação
+                                        {confirmModal.type === 'withdraw' ? 'Atribuir chave imediatamente sem confirmação' : 'Confirmar devolução imediatamente (sem celular)'}
                                     </label>
                                     
-                                    {bypassConfirmation && (
+                                    {bypassConfirmation && confirmModal.type === 'withdraw' && (
                                         <div className="animate-fade" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Justificativa Obrigatória</label>
                                             <select 

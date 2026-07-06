@@ -18,8 +18,8 @@ export default function ConfirmModal({ isOpen, title = 'Confirmação', message,
             <div className="modal-box" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: danger ? 'rgba(239,68,68,0.15)' : 'rgba(40, 163, 92, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={danger ? '#f87171' : 'var(--green-400)'} strokeWidth="2">
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: danger ? 'var(--danger-bg)' : 'var(--bg-selection)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={danger ? 'var(--danger-text)' : 'var(--green-400)'} strokeWidth="2">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                             </svg>

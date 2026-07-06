@@ -130,6 +130,50 @@ export async function POST(request: Request) {
             }
 
             const now = new Date().toISOString();
+
+            if (bypassConfirmation) {
+                if (!isPorteiroOrAdmin) return NextResponse.json({ error: 'Apenas porteiros ou gestores podem devolver chaves sem confirmação.' }, { status: 403 });
+                
+                const lastWithdraw = db.prepare(`
+                    SELECT justification FROM key_transactions 
+                    WHERE key_id = ? AND action = 'withdraw' AND status = 'completed'
+                    ORDER BY completed_at DESC LIMIT 1
+                `).get(keyId) as { justification: string | null } | undefined;
+
+                if (!lastWithdraw?.justification) {
+                    return NextResponse.json({ error: 'Não é possível forçar a devolução de uma chave que foi retirada normalmente (sem justificativa).' }, { status: 400 });
+                }
+
+                // Devolução direta
+                const txResult = db.prepare(`
+                    INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
+                    VALUES (?, ?, 'return', ?, ?, ?, 'completed', ?, ?, ?)
+                `).run(keyId, currentUserId || resolvedUserId, session.id, now, now, now, now, lastWithdraw.justification);
+
+                const transactionId = txResult.lastInsertRowid;
+
+                db.prepare("UPDATE keys SET status = 'available', user_id = NULL WHERE id = ?").run(keyId);
+
+                const targetUser = db.prepare('SELECT username FROM users WHERE id = ?').get(currentUserId || resolvedUserId) as { username: string } | undefined;
+
+                db.prepare(`
+                    INSERT INTO history (key_id, action, user_id, username, transaction_id)
+                    VALUES (?, 'return', ?, ?, ?)
+                `).run(keyId, currentUserId || resolvedUserId, targetUser?.username || 'Unknown', transactionId);
+
+                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name, 
+                    `Devolvida diretamente de ${targetUser?.username || 'Unknown'}. Justificativa herdada: ${lastWithdraw.justification}`);
+
+                return NextResponse.json({ 
+                    success: true, 
+                    transactionId,
+                    status: 'completed',
+                    message: 'Chave devolvida com sucesso.',
+                    requiresUserConfirmation: false
+                });
+            }
+
+            // Criar transação pendente de devolução
             const porteiroId = isPorteiroOrAdmin ? session.id : null;
             const porteiroConfirmedAt = isPorteiroOrAdmin ? now : null;
             const userConfirmedAt = isPorteiroOrAdmin ? null : now;

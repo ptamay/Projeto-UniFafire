@@ -57,19 +57,25 @@ export function recordLoginAttempt(username: string, ip: string, success: boolea
 export function checkLockout(username: string, ip: string): boolean {
     ensureLoginAttemptsTable();
     // Check failed attempts for this username OR this IP in the last 15 minutes
+    // ONLY count failures that happened AFTER the most recent successful login.
     const stmt = db.prepare(`
         SELECT COUNT(*) as failures 
         FROM login_attempts 
         WHERE (username = ? OR ip = ?) 
           AND success = 0 
           AND timestamp > datetime('now', '-${LOCKOUT_WINDOW_MINUTES} minutes')
+          AND timestamp > COALESCE((
+              SELECT MAX(timestamp) 
+              FROM login_attempts 
+              WHERE (username = ? OR ip = ?) AND success = 1
+          ), '1970-01-01')
     `);
-    const result = stmt.get(username, ip) as { failures: number };
+    const result = stmt.get(username, ip, username, ip) as { failures: number };
     
     return result.failures >= LOCKOUT_MAX_ATTEMPTS;
 }
 
 export function clearLoginAttempts(username: string, ip: string) {
-    ensureLoginAttemptsTable();
-    db.prepare('DELETE FROM login_attempts WHERE username = ? OR ip = ?').run(username, ip);
+    // Não deletamos mais os registros da tabela para preservar a auditoria.
+    // O checkLockout foi atualizado para ignorar falhas anteriores a um login de sucesso.
 }

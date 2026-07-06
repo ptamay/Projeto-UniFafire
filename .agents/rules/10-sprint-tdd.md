@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always_on
 description: "Ative OBRIGATORIAMENTE quando a tarefa for executar tasks de sprint, rodar o ciclo TDD, ou orquestrar os sub-agentes das Fases 10-11."
 ---
 

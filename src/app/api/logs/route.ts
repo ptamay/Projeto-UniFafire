@@ -32,12 +32,16 @@ export async function GET(request: Request) {
 
         let tableName = 'action_logs';
         if (type === 'logins') tableName = 'login_attempts';
-        else if (type === 'audit') tableName = 'audit_logs';
+        else if (type === 'audit') tableName = 'action_logs'; // Audit usa a tabela unificada
 
         let query = `SELECT * FROM ${tableName}`;
         let countQuery = `SELECT COUNT(*) as total FROM ${tableName}`;
         const conditions: string[] = [];
         const params: (string | number)[] = [];
+
+        if (type === 'audit') {
+            conditions.push("action IN ('LOGIN_FAILED', 'RATE_LIMIT_EXCEEDED', 'ACCOUNT_LOCKOUT', 'CHANGE_PASSWORD', 'PASSWORD_RESET', 'TRANSACTION_BYPASS')");
+        }
 
         if (search) {
             if (tableName === 'action_logs') {
@@ -46,10 +50,6 @@ export async function GET(request: Request) {
                 params.push(searchParam, searchParam, searchParam, searchParam);
             } else if (tableName === 'login_attempts') {
                 conditions.push('(username LIKE ? OR ip LIKE ?)');
-                const searchParam = `%${search}%`;
-                params.push(searchParam, searchParam);
-            } else if (tableName === 'audit_logs') {
-                conditions.push('(action LIKE ? OR details LIKE ?)');
                 const searchParam = `%${search}%`;
                 params.push(searchParam, searchParam);
             }

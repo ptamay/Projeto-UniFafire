@@ -184,12 +184,9 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                     onClick={() => {
                                         if (logs.length === 0) return;
                                         let csv = '';
-                                        if (activeTab === 'actions') {
+                                        if (activeTab === 'actions' || activeTab === 'audit') {
                                             csv = 'Data/Hora,Usuário,Ação Realizada,Alvo,Endereço IP,Detalhes\n' + 
-                                                logs.map(l => `"${new Date(l.timestamp).toLocaleString('pt-BR')}","${l.username}","${l.action}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
-                                        } else if (activeTab === 'audit') {
-                                            csv = 'Data/Hora,ID Ator,ID Alvo,Ação,Detalhes\n' + 
-                                                logs.map(l => `"${new Date(l.timestamp).toLocaleString('pt-BR')}","${l.actor_id}","${l.target_user_id}","${l.action}","${l.details || ''}"`).join('\n');
+                                                logs.map(l => `"${new Date(l.timestamp).toLocaleString('pt-BR')}","${l.username || ''}","${l.action || ''}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
                                         } else if (activeTab === 'logins') {
                                             csv = 'Data/Hora,Usuário,IP,Status\n' + 
                                                 logs.map(l => `"${new Date(l.timestamp).toLocaleString('pt-BR')}","${l.username}","${l.ip}","${l.success ? 'Sucesso' : 'Falha'}"`).join('\n');
@@ -214,20 +211,12 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                             <thead>
                                 <tr>
                                     <th>Data/Hora</th>
-                                    {activeTab === 'actions' && (
+                                    {(activeTab === 'actions' || activeTab === 'audit') && (
                                         <>
                                             <th>Usuário</th>
                                             <th>Ação Realizada</th>
                                             <th>Alvo</th>
                                             <th>Endereço IP</th>
-                                            <th>Detalhes</th>
-                                        </>
-                                    )}
-                                    {activeTab === 'audit' && (
-                                        <>
-                                            <th>ID Ator</th>
-                                            <th>ID Alvo</th>
-                                            <th>Ação</th>
                                             <th>Detalhes</th>
                                         </>
                                     )}
@@ -248,7 +237,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                         <tr key={log.id}>
                                             <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(log.timestamp).toLocaleString('pt-BR')}</td>
 
-                                            {activeTab === 'actions' && (
+                                            {(activeTab === 'actions' || activeTab === 'audit') && (
                                                 <>
                                                     <td data-label="Usuário"><strong>{log.username}</strong></td>
                                                     <td data-label="Ação">
@@ -256,8 +245,8 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                                             fontSize: '0.85rem',
                                                             padding: '2px 8px',
                                                             borderRadius: 'var(--radius-sm)',
-                                                            background: 'var(--bg-elevated)',
-                                                            color: 'var(--text-secondary)',
+                                                            background: activeTab === 'audit' ? 'var(--blue-900)' : 'var(--bg-elevated)',
+                                                            color: activeTab === 'audit' ? 'var(--blue-300)' : 'var(--text-secondary)',
                                                             fontWeight: 500,
                                                             border: '1px solid var(--border)'
                                                         }}>
@@ -266,23 +255,6 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                                     </td>
                                                     <td data-label="Alvo">{log.target || '-'}</td>
                                                     <td data-label="IP" style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{log.ip_address || '-'}</td>
-                                                    <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{log.details || '-'}</td>
-                                                </>
-                                            )}
-
-                                            {activeTab === 'audit' && (
-                                                <>
-                                                    <td data-label="Ator"><strong>ID: {log.actor_id}</strong></td>
-                                                    <td data-label="Alvo">ID: {log.target_user_id}</td>
-                                                    <td data-label="Ação">
-                                                        <span style={{
-                                                            fontSize: '0.85rem', padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-                                                            background: 'var(--blue-900)', color: 'var(--blue-300)',
-                                                            border: '1px solid var(--blue-700)'
-                                                        }}>
-                                                            {log.action}
-                                                        </span>
-                                                    </td>
                                                     <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{log.details || '-'}</td>
                                                 </>
                                             )}

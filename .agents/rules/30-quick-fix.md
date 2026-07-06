@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always_on
 description: "Ative OBRIGATORIAMENTE quando o usuário pedir uma mudança pequena e direta (ex: ajuste este estilo, corrija este texto, melhore este componente) fora de sprint."
 ---
 

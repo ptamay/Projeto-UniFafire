@@ -47,8 +47,15 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
 
     useEffect(() => {
         fetchPending();
-        const interval = setInterval(fetchPending, 10000);
-        return () => clearInterval(interval);
+        // Poll no mesmo ritmo do Dashboard e reage na hora a qualquer ação local
+        // (retirada/devolução/confirmação/cancelamento) — fluxo de balcão sem F5.
+        const handleUpdate = () => fetchPending();
+        window.addEventListener('pending-transactions-updated', handleUpdate);
+        const interval = setInterval(fetchPending, 3000);
+        return () => {
+            window.removeEventListener('pending-transactions-updated', handleUpdate);
+            clearInterval(interval);
+        };
     }, []);
 
     const confirmTransaction = async (txId: number) => {

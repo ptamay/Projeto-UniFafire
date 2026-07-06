@@ -11,6 +11,11 @@ colors:
   text-main: "#F8FAFC"
   text-secondary: "#CBD5E1"
   border: "rgba(255, 255, 255, 0.12)"
+  danger: "#ef4444"
+  danger-text: "#f87171"
+  warning: "#f59e0b"
+  status-available-text: "#34d399"
+  status-inuse-text: "#fb7185"
 typography:
   display:
     fontFamily: "'Inter', system-ui, sans-serif"
@@ -86,6 +91,16 @@ O sistema equilibra o "Azul Institucional Profundo" como a base imersiva de supo
 - **Text Main** (#F8FAFC): Off-white. Evitamos branco puro para reduzir ofuscamento em ambientes de baixa iluminação.
 
 **The One Voice Rule.** O Verde Ação é reservado estritamente para CTAs primárias e status positivo. Jamais utilize-o como elemento decorativo sem interatividade, sob pena de diluir seu peso hierárquico na portaria.
+
+### Semantic States (tokens)
+
+Cores de estado têm papéis semânticos fixos — use os tokens, nunca literais soltos. Cada um tem override no `.light-mode` para manter contraste AA.
+
+- **Danger** (`--danger` `#ef4444`, `--danger-hover`, `--danger-text` `#f87171`, `--danger-bg`): ações destrutivas (excluir), logout, badges de pendência crítica, ícones de alerta. `--danger` é fundo; `--danger-text` é texto/ícone sobre fundo escuro.
+- **Warning** (`--warning` `#f59e0b`, `--warning-text`, `--warning-bg`): atenção/pendência não crítica (status "Aguardando").
+- **Status: disponível** (`--status-available-text` `#34d399`, `--status-available-bg`) e **em uso** (`--status-inuse-text` `#fb7185`, `--status-inuse-bg`): indicadores de estado da chave; também usados no alerta de "chaves em atraso".
+
+**The Token Rule.** Vermelhos e âmbares nunca entram como hex literal em componentes — sempre `var(--danger*)` / `var(--warning*)` / `var(--status-*)`. Isso mantém o modo claro correto e evita drift de paleta.
 
 ## 3. Typography
 

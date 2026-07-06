@@ -118,6 +118,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         const checkAutoLogout = async () => {
             try {
                 const res = await fetch('/api/settings');
+                if (!res.ok) return;
                 const data = await res.json();
                 if (data.autoLogoutTime) {
                     const checkInterval = setInterval(() => {
@@ -130,7 +131,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     return () => clearInterval(checkInterval);
                 }
             } catch {
-                console.error('Failed to initialize auto logout check');
+                // Silently ignore if settings fetch fails or is blocked (e.g. USER role without permission)
             }
         };
         checkAutoLogout();
@@ -171,7 +172,10 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         fetchPendingCount();
         const handleUpdate = () => fetchPendingCount();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        const interval = setInterval(fetchPendingCount, 15000);
+        // Mesmo ritmo do Dashboard/Confirmações (3s) — o evento cobre a mesma aba,
+        // mas o badge também precisa refletir rápido pedidos/devoluções feitos
+        // por OUTRO dispositivo, que só chegam via polling.
+        const interval = setInterval(fetchPendingCount, 3000);
         return () => {
             clearInterval(interval);
             window.removeEventListener('pending-transactions-updated', handleUpdate);
