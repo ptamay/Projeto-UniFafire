@@ -82,7 +82,8 @@ beforeAll(() => {
             porteiro_confirmed_at DATETIME,
             cancelled_at DATETIME,
             completed_at DATETIME,
-            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            justification TEXT
         );
     `);
 

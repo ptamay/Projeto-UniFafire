@@ -24,7 +24,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Dados inválidos' }, { status: 400 });
         }
         
-        const { action, key_id: keyId, user_id: userId, employee_id: legacyEmployeeId, bypassConfirmation, justification } = parseResult.data;
+        const { action, key_id: keyId, user_id: userId, employee_id: legacyEmployeeId, bypassConfirmation, justification, observation } = parseResult.data;
 
         // Resolver o user_id: preferir user_id, fallback para employee_id (legado)
         const resolvedUserId = userId || legacyEmployeeId || null;
@@ -193,6 +193,50 @@ export async function POST(request: Request) {
                 status: 'pending',
                 message: 'Devolução iniciada. Aguardando confirmação do usuário.',
                 requiresUserConfirmation: true,
+            });
+        } else if (action === 'transfer') {
+            if (key.status !== 'in_use') return NextResponse.json({ error: 'A chave deve estar em uso para ser transferida.' }, { status: 400 });
+            if (!resolvedUserId) return NextResponse.json({ error: 'Usuário de destino obrigatório para transferência.' }, { status: 400 });
+            if (!isPorteiroOrAdmin) return NextResponse.json({ error: 'Apenas porteiros ou gestores podem transferir chaves diretamente.' }, { status: 403 });
+
+            const targetUser = db.prepare('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1').get(resolvedUserId) as TargetUserRow | undefined;
+            if (!targetUser) return NextResponse.json({ error: 'Usuário de destino não encontrado ou inativo.' }, { status: 400 });
+
+            if (key.user_id === resolvedUserId) return NextResponse.json({ error: 'A chave já está com este usuário.' }, { status: 400 });
+
+            const existingPending = db.prepare(
+                "SELECT id FROM key_transactions WHERE key_id = ? AND status IN ('pending', 'porteiro_confirmed')"
+            ).get(keyId);
+            if (existingPending) {
+                return NextResponse.json({ error: 'Há uma transação pendente. Cancele-a antes de transferir.' }, { status: 400 });
+            }
+
+            const now = new Date().toISOString();
+            const obs = observation || justification || null;
+
+            const txResult = db.prepare(`
+                INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
+                VALUES (?, ?, 'transfer', ?, ?, ?, 'completed', ?, ?, ?)
+            `).run(keyId, resolvedUserId, session.id, now, now, now, now, obs?.trim() || null);
+
+            const transactionId = txResult.lastInsertRowid;
+
+            db.prepare("UPDATE keys SET user_id = ? WHERE id = ?").run(resolvedUserId, keyId);
+
+            db.prepare(`
+                INSERT INTO history (key_id, action, user_id, username, transaction_id)
+                VALUES (?, 'transfer', ?, ?, ?)
+            `).run(keyId, resolvedUserId, targetUser.username, transactionId);
+
+            logAction(session.id, session.username, 'KEY_TRANSFERRED', key.name, 
+                `Chave transferida para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
+
+            return NextResponse.json({ 
+                success: true, 
+                transactionId,
+                status: 'completed',
+                message: 'Chave transferida com sucesso.',
+                requiresUserConfirmation: false
             });
         } else {
             return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 });

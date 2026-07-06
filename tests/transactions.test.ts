@@ -133,22 +133,23 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         // 1. Setup: Colocar a chave 1 em 'in_use' pelo aluno 5
         db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
 
-        // 2. Porteiro (ID 3) inicia a transferência para o aluno 6
+        // 2. Porteiro (ID 3) inicia a transferência para o aluno 4 (test_funcionario)
         currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
         
         const transferReq = new Request('http://localhost/api/transactions', {
             method: 'POST',
-            body: JSON.stringify({ action: 'transfer', key_id: 1, user_id: 6, observation: 'Passando a chave' }),
+            body: JSON.stringify({ action: 'transfer', key_id: 1, user_id: 4, observation: 'Passando a chave' }),
             headers: { 'Content-Type': 'application/json' }
         });
         const transferRes = await TransactionPOST(transferReq);
-        
+                const transferData = await transferRes.json();
+        if (transferRes.status !== 200) console.log("ERROR:", transferData);
         expect(transferRes.status).toBe(200);
         
-        // 3. Verifica se a chave continuou em 'in_use' e o user_id mudou para 6
+        // 3. Verifica se a chave continuou em 'in_use' e o user_id mudou para 4
         const keyStatus = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
         expect(keyStatus.status).toBe('in_use');
-        expect(keyStatus.user_id).toBe(6);
+        expect(keyStatus.user_id).toBe(4);
 
         // Verifica histórico
         const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('transfer') as { c: number };

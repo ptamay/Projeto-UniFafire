@@ -103,7 +103,7 @@ export const EmployeeSchema = z.object({
 });
 
 export const TransactionSchema = z.object({
-    action: z.enum(['withdraw', 'return']),
+    action: z.enum(['withdraw', 'return', 'transfer']),
     key_id: z.number().int().positive("ID da chave inválido."),
     user_id: z.number().int().positive("ID do usuário inválido.").nullable().optional(),
     // Legacy support
@@ -111,6 +111,7 @@ export const TransactionSchema = z.object({
     // Bypass (CR)
     bypassConfirmation: z.boolean().optional(),
     justification: z.string().optional(),
+    observation: z.string().optional(),
 });
 
 // Settings
