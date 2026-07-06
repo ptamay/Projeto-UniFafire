@@ -575,7 +575,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     // ── Ação Rápida: valores derivados do estado (fonte única de verdade) ──
     const qaResolvedKey = keys.find(k => normalize(k.name) === normalize(qaKey.trim())) || null;
     const qaStep: 'withdraw' | 'return' | null = qaResolvedKey
-        ? (qaResolvedKey.status === 'available' ? 'withdraw' : 'return')
+        ? (qaResolvedKey.status === 'available' ? 'withdraw' : (isPorteiroOrAdmin || qaResolvedKey.employee_id === userId ? 'return' : null))
         : null;
     const qaResolvedEmp = employees.find(e => normalize(e.name) === normalize(qaEmp.trim())) || null;
     const qaConfirmEnabled = qaStep === 'return'
@@ -1172,30 +1172,32 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 </button>
                                             ) : (
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button
-                                                        className="btn btn-blue btn-sm"
-                                                        disabled={actionLoading === key.id}
-                                                        onClick={() => requestTransaction(key.id, 'return')}
-                                                        style={{ padding: '0.4rem 1.25rem' }}
-                                                    >
-                                                        Devolver
-                                                    </button>
-                                                    {(isPorteiroOrAdmin || key.user_id === userId) && (
-                                                        <button
-                                                            className="btn btn-ghost btn-sm"
-                                                            disabled={actionLoading === key.id}
-                                                            onClick={() => {
-                                                                setConfirmModal({
-                                                                    open: true,
-                                                                    keyId: key.id,
-                                                                    keyName: key.name,
-                                                                    type: 'transfer'
-                                                                });
-                                                            }}
-                                                            style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                        >
-                                                            Transferir
-                                                        </button>
+                                                    {(isPorteiroOrAdmin || key.employee_id === userId) && (
+                                                        <>
+                                                            <button
+                                                                className="btn btn-blue btn-sm"
+                                                                disabled={actionLoading === key.id}
+                                                                onClick={() => requestTransaction(key.id, 'return')}
+                                                                style={{ padding: '0.4rem 1.25rem' }}
+                                                            >
+                                                                Devolver
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-ghost btn-sm"
+                                                                disabled={actionLoading === key.id}
+                                                                onClick={() => {
+                                                                    setConfirmModal({
+                                                                        open: true,
+                                                                        keyId: key.id,
+                                                                        keyName: key.name,
+                                                                        type: 'transfer'
+                                                                    });
+                                                                }}
+                                                                style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                            >
+                                                                Transferir
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             )}
