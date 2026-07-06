@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST as TransactionPOST } from '@/app/api/transactions/route';
+import { GET as PendingGET } from '@/app/api/transactions/pending/route';
+import { POST as CancelPOST } from '@/app/api/transactions/[id]/cancel/route';
 import { POST as ConfirmPOST } from '@/app/api/transactions/[id]/user-confirm/route';
 import db from '@/lib/db';
 
@@ -204,5 +206,46 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         // Verifica histórico
         const historyCount = db.prepare('SELECT count(*) as c FROM history WHERE key_id = 1 AND action = ?').get('transfer') as { c: number };
         expect(historyCount.c).toBe(1);
+    });
+
+    it('deve permitir que o remetente (initiator) veja e cancele uma transferência pendente (TASK-041)', async () => {
+        // Setup: Colocar a chave 1 em 'in_use' pelo aluno 5
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        // 1. Aluno 5 inicia a transferência para o aluno 4
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        
+        const transferReq = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'transfer', key_id: 1, user_id: 4, observation: 'Oops errado' }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const transferRes = await TransactionPOST(transferReq);
+        const transferData = await transferRes.json();
+        
+        expect(transferRes.status).toBe(200);
+        const txId = transferData.transactionId;
+
+        // 2. Aluno 5 verifica as pendências dele
+        const pendingReq = new Request('http://localhost/api/transactions/pending', { method: 'GET' });
+        const pendingRes = await PendingGET(pendingReq);
+        const pendingData = await pendingRes.json();
+
+        // Ele deve conseguir ver a transação que iniciou
+        expect(pendingRes.status).toBe(200);
+        expect(pendingData.some((t: { id: number }) => t.id === txId)).toBe(true);
+
+        // 3. Aluno 5 cancela a transação
+        const cancelReq = new Request(`http://localhost/api/transactions/${txId}/cancel`, { method: 'POST' });
+        const params = Promise.resolve({ id: String(txId) });
+        const cancelRes = await CancelPOST(cancelReq, { params });
+        const cancelData = await cancelRes.json();
+
+        expect(cancelRes.status).toBe(200);
+        expect(cancelData.success).toBe(true);
+
+        // Verifica no banco se foi cancelada
+        const tx = db.prepare('SELECT status FROM key_transactions WHERE id = ?').get(txId) as { status: string };
+        expect(tx.status).toBe('cancelled');
     });
 });
