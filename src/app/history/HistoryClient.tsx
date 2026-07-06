@@ -107,7 +107,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
         const tableColumn = ["Data/Hora", "Ação", "Chave", "Funcionário", "Confirmado por"];
         const tableRows = history.map(item => [
             new Date(item.timestamp).toLocaleString('pt-BR'),
-            item.action === 'withdraw' ? 'Retirada' : 'Devolução',
+            item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução',
             `${item.key_name} (${item.room})`,
             item.employee_name || '-',
             item.confirmed_by || 'Sistêmico'
@@ -287,8 +287,8 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                     <tr key={item.id}>
                                         <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
                                         <td data-label="Ação">
-                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : 'status-available'}`}>
-                                                {item.action === 'withdraw' ? 'Retirada' : 'Devolução'}
+                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : item.action === 'transfer' ? 'status-transfer' : 'status-available'}`}>
+                                                {item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução'}
                                             </span>
                                         </td>
                                         <td data-label="Chave"><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>

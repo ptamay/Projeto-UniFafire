@@ -64,18 +64,15 @@ export function checkLockout(username: string, ip: string): boolean {
         WHERE (username = ? OR ip = ?) 
           AND success = 0 
           AND timestamp > datetime('now', '-${LOCKOUT_WINDOW_MINUTES} minutes')
-          AND timestamp > COALESCE((
-              SELECT MAX(timestamp) 
-              FROM login_attempts 
-              WHERE (username = ? OR ip = ?) AND success = 1
-          ), '1970-01-01')
     `);
-    const result = stmt.get(username, ip, username, ip) as { failures: number };
+    const result = stmt.get(username, ip) as { failures: number };
     
     return result.failures >= LOCKOUT_MAX_ATTEMPTS;
 }
 
 export function clearLoginAttempts(username: string, ip: string) {
-    // Não deletamos mais os registros da tabela para preservar a auditoria.
-    // O checkLockout foi atualizado para ignorar falhas anteriores a um login de sucesso.
+    // Como a auditoria agora é 100% concentrada na tabela action_logs,
+    // a tabela login_attempts pode ser efêmera (apenas para bloqueio temporário).
+    // Podemos deletar os registros para limpar o bloqueio sem perder auditoria.
+    db.prepare('DELETE FROM login_attempts WHERE username = ? OR ip = ?').run(username, ip);
 }

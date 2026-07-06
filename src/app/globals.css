@@ -155,6 +155,10 @@
   color: #e11d48; /* rose-600 */
   background: rgba(244, 63, 94, 0.15);
 }
+.light-mode .status-transfer {
+  color: #9333ea; /* purple-600 */
+  background: rgba(168, 85, 247, 0.15);
+}
 .light-mode .status-pending {
   color: #d97706; /* amber-600 */
   background: rgba(245, 158, 11, 0.15);
@@ -457,6 +461,13 @@ h3 { font-size: 1.125rem; }
   border: 1px solid rgba(244, 63, 94, 0.2);
 }
 .status-inuse::before, .status-in_use::before { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+
+.status-transfer {
+  background: rgba(168, 85, 247, 0.08);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+.status-transfer::before { background: #c084fc; box-shadow: 0 0 8px #c084fc; }
 
 .status-pending {
   background: rgba(245, 158, 11, 0.08);

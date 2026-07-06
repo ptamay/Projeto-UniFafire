@@ -303,11 +303,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         open: boolean;
         keyId: number;
         keyName: string;
-        type: 'withdraw' | 'return';
+        type: 'withdraw' | 'return' | 'transfer';
         employeeId?: number;
         employeeName?: string;
         withdrawJustification?: string;
     }>({ open: false, keyId: 0, keyName: '', type: 'withdraw' });
+    const [transferTargetId, setTransferTargetId] = useState<number | undefined>(undefined);
 
     // Modal Mobile: Escolha rápida 100% Touch
     const [touchSelectModal, setTouchSelectModal] = useState<{
@@ -329,7 +330,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     ];
 
     // Processamento da Transação
-    const handleTransaction = async (keyId: number, type: 'withdraw' | 'return', employeeId?: number) => {
+    const handleTransaction = async (keyId: number, type: 'withdraw' | 'return' | 'transfer', employeeId?: number) => {
         setActionLoading(keyId);
         try {
             const empId = isPorteiroOrAdmin ? employeeId : userId;
@@ -342,7 +343,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     key_id: keyId, 
                     user_id: empId,
                     bypassConfirmation: bypassConfirmation,
-                    justification: finalJustification
+                    justification: finalJustification,
+                    observation: type === 'transfer' ? customJustification : undefined
                 }),
             });
             const data = await res.json();
@@ -364,6 +366,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             setBypassConfirmation(false);
             setJustification('');
             setCustomJustification('');
+            setTransferTargetId(undefined);
         }
     };
 
@@ -414,7 +417,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     };
 
     const confirmAction = () => {
-        handleTransaction(confirmModal.keyId, confirmModal.type, confirmModal.employeeId);
+        const empId = confirmModal.type === 'transfer' ? transferTargetId : confirmModal.employeeId;
+        if (confirmModal.type === 'transfer' && !empId) {
+            toast.error('Selecione o usuário de destino.');
+            return;
+        }
+        handleTransaction(confirmModal.keyId, confirmModal.type, empId);
         // Limpa a barra de Ação Rápida via estado (o render cuida do resto).
         setKeySuggestions([]);
         setEmpSuggestions([]);
@@ -1143,14 +1151,33 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     Solicitar
                                                 </button>
                                             ) : (
-                                                <button
-                                                    className="btn btn-blue btn-sm"
-                                                    disabled={actionLoading === key.id}
-                                                    onClick={() => requestTransaction(key.id, 'return')}
-                                                    style={{ padding: '0.4rem 1.25rem' }}
-                                                >
-                                                    Devolver
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button
+                                                        className="btn btn-blue btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => requestTransaction(key.id, 'return')}
+                                                        style={{ padding: '0.4rem 1.25rem' }}
+                                                    >
+                                                        Devolver
+                                                    </button>
+                                                    {isPorteiroOrAdmin && (
+                                                        <button
+                                                            className="btn btn-ghost btn-sm"
+                                                            disabled={actionLoading === key.id}
+                                                            onClick={() => {
+                                                                setConfirmModal({
+                                                                    open: true,
+                                                                    keyId: key.id,
+                                                                    keyName: key.name,
+                                                                    type: 'transfer'
+                                                                });
+                                                            }}
+                                                            style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                        >
+                                                            Transferir
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -1218,28 +1245,59 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 <div className="modal-overlay" onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}>
                     <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
                         <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--green-100)' : 'var(--blue-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--green-100)' : confirmModal.type === 'transfer' ? 'var(--purple-100)' : 'var(--blue-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                                 {confirmModal.type === 'withdraw' ? (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                ) : confirmModal.type === 'transfer' ? (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-600)" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
                                 ) : (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>
                                 )}
                             </div>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                                Solicitar {confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?
+                                {confirmModal.type === 'transfer' ? 'Transferir Chave?' : `Solicitar ${confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?`}
                             </h3>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                                Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
-                                {confirmModal.type === 'withdraw' && (
-                                    <span> para <strong style={{ color: 'var(--green-400)' }}>{confirmModal.employeeName}</strong></span>
-                                )}.
-                                <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
-                            </p>
                             
-                            {/* Bypass UI */}
-                            {((confirmModal.type === 'withdraw' && isPorteiroOrAdmin) || 
-                              (confirmModal.type === 'return' && isPorteiroOrAdmin && confirmModal.withdrawJustification)) && (
-                                <div style={{ marginTop: '1rem', textAlign: 'left', background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                            {confirmModal.type === 'transfer' ? (
+                                <div style={{ textAlign: 'left', marginTop: '1rem' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                                        Transferir a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong> diretamente para outro usuário.
+                                    </p>
+                                    <div style={{ marginBottom: '1.25rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Para quem?</label>
+                                        <UserSelector 
+                                            users={employees} 
+                                            selectedId={transferTargetId} 
+                                            onSelect={(uid) => setTransferTargetId(uid)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Observação (opcional)</label>
+                                        <input 
+                                            type="text"
+                                            value={customJustification}
+                                            onChange={e => setCustomJustification(e.target.value)}
+                                            placeholder="Ex: Passando a chave no corredor"
+                                            className="input"
+                                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                        Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
+                                        {confirmModal.type === 'withdraw' && (
+                                            <span> para <strong style={{ color: 'var(--green-400)' }}>{confirmModal.employeeName}</strong></span>
+                                        )}.
+                                        <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
+                                    </p>
+                                    
+                                    {/* Bypass UI */}
+                                    {((confirmModal.type === 'withdraw' && isPorteiroOrAdmin) || 
+                                      (confirmModal.type === 'return' && isPorteiroOrAdmin && confirmModal.withdrawJustification)) && (
+                                        <div style={{ marginTop: '1rem', textAlign: 'left', background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                                         <input 
                                             type="checkbox" 
@@ -1283,6 +1341,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     )}
                                 </div>
                             )}
+                            </>
+                        )}
                         </div>
                         <div style={{ padding: '1rem', background: 'var(--bg-elevated)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                             <button
