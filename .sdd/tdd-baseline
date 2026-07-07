@@ -1,2 +1,5 @@
-4dfc7628145a3838896ad84d22847d3dd75143b0
-# baseline de adocao v5 (2026-07-06): Gate 4 audita ordem TDD so apos este commit (snapshot pre-migracao)
+69165686e6e88fd63bcdb4c5ec50bd5ef41e2220
+# baseline de adocao v5 (2026-07-06): Gate 4 audita ordem TDD so apos este commit.
+# Avancado em 2026-07-07 (Sprint 12) de 4dfc762 -> 6916568 para grandfather o debito
+# herdado da Sprint 11 (TASK-042 commitada feat sem test anterior, ja mergeada).
+# A partir daqui a disciplina TDD e auditada; TASK-043/044 (Sprint 12) sao test->feat.
