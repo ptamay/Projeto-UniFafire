@@ -45,12 +45,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Nenhuma. Sprint 12 (REQ-027) concluída — todos os gates verdes.
-- Última Ação: Sprint 12 (fluxo pull, REQ-027/ADR-008) na branch feature/sprint-12-solicitacao-chave. TASK-043 (API: solicitação pull + aceite estrito da contraparte) e TASK-044 (UI: 'Solicitar' no card/linha + aceite em /confirm) via test→feat. TASK-045 (e2e smoke) consolidada no pull-flow.spec.ts (desktop+mobile). Gate 4 resolvido: tdd-baseline avançado 4dfc762→6916568 (grandfather TASK-042/Sprint 11, aprovado pelo usuário). ci-gates 100% verde, vitest 74/74, e2e 8/8, tsc/eslint limpos, npm audit 0.
-- Próxima Ação: Push da branch e abrir PR para main quando o usuário pedir. Semgrep roda no pipeline (não instalado local).
+- Sprint/Task Ativa: Nenhuma. Sprint 13 (REQ-028) concluída — todos os gates verdes.
+- Última Ação: Sprint 13 (devolução forçada ampla + clareza mobile, REQ-028/ADR-009) na branch feature/sprint-13-devolucao-mobile. TASK-046 (API: portaria força devolução de qualquer chave em uso com justificativa obrigatória + auditoria; supersede acoplamento do ADR-003) e TASK-047 (UI: botão Devolver no card mobile, campo de justificativa na força, estados claros, SSR expõe withdraw_justification/in_use_since, incorpora refactor CSS-responsivo do usuário) via test→feat. ci-gates 100% verde, vitest 78/78, e2e força-devolução 2/2 (desktop+mobile) + suíte existente intacta, tsc/eslint limpos.
+- Próxima Ação: Push da branch e abrir PR quando o usuário pedir. 2 achados fora de escopo pendentes (ver plan.md Sprint 13): keys.db rastreado (§4.5) e scroll horizontal na visão porteiro/desktop (REQ-016).
 - Decisões em aberto: Nenhuma
-- Arquivos não commitados: Nenhum
-- Branch atual: feature/sprint-12-solicitacao-chave
+- Arquivos não commitados: keys.db (runtime do dev server; rastreado indevidamente — não commitar).
+- Branch atual: feature/sprint-13-devolucao-mobile
 - Atualizado em: 2026-07-07
 ```
 
