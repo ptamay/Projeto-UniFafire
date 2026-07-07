@@ -7,7 +7,7 @@ interface PendingTransactionRow {
     id: number;
     key_id: number;
     user_id: number;
-    action: 'withdraw' | 'return';
+    action: 'withdraw' | 'return' | 'transfer';
     status: 'pending' | 'porteiro_confirmed';
     porteiro_id: number | null;
     porteiro_confirmed_at: string | null;

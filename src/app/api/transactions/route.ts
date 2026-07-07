@@ -118,6 +118,12 @@ export async function POST(request: Request) {
         } else if (action === 'return') {
             if (key.status !== 'in_use') return NextResponse.json({ error: 'Esta chave não está em uso.' }, { status: 400 });
 
+            // Somente a portaria ou o portador atual podem iniciar a devolução —
+            // sem isso, um usuário comum criaria uma devolução "confirmada" em nome do portador.
+            if (!isPorteiroOrAdmin && key.user_id !== session.id) {
+                return NextResponse.json({ error: 'Você só pode devolver chaves que estão sob sua posse.' }, { status: 403 });
+            }
+
             // Pegar o user_id atual da chave (quem tem ela)
             const currentUserId = key.user_id || resolvedUserId;
 

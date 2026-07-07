@@ -352,7 +352,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(type === 'withdraw' ? 'Solicitação de retirada enviada!' : 'Solicitação de devolução enviada!');
+                toast.success(data.message || (type === 'withdraw' ? 'Solicitação de retirada enviada!' : type === 'transfer' ? 'Solicitação de transferência enviada!' : 'Solicitação de devolução enviada!'));
                 refreshData();
                 window.dispatchEvent(new CustomEvent('pending-transactions-updated'));
                 if (type === 'withdraw') {
@@ -474,8 +474,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 // Para usuários normais (não porteiros), o saque é automático para si mesmo.
                 requestTransaction(k.id, 'withdraw');
             }
-        } else {
+        } else if (isPorteiroOrAdmin || k.user_id === userId) {
             requestTransaction(k.id, 'return');
+        } else {
+            // Chave de outro usuário: sem ação de devolução (fluxo de solicitação virá via REQ-027).
+            toast(`Esta chave está com ${k.employee_name || 'outro usuário'}.`);
         }
     };
 
@@ -575,7 +578,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     // ── Ação Rápida: valores derivados do estado (fonte única de verdade) ──
     const qaResolvedKey = keys.find(k => normalize(k.name) === normalize(qaKey.trim())) || null;
     const qaStep: 'withdraw' | 'return' | null = qaResolvedKey
-        ? (qaResolvedKey.status === 'available' ? 'withdraw' : (isPorteiroOrAdmin || qaResolvedKey.employee_id === userId ? 'return' : null))
+        ? (qaResolvedKey.status === 'available' ? 'withdraw' : (isPorteiroOrAdmin || qaResolvedKey.user_id === userId ? 'return' : null))
         : null;
     const qaResolvedEmp = employees.find(e => normalize(e.name) === normalize(qaEmp.trim())) || null;
     const qaConfirmEnabled = qaStep === 'return'
@@ -656,7 +659,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
                 {/* Unified Control Bar */}
                 <div className="unified-control-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
-                    <div className="search-bar" style={{ flex: '1', minWidth: '200px', background: 'var(--bg-input)', borderRadius: '12px', position: 'relative' }}>
+                    <div className="search-bar" style={{ flex: '1', minWidth: '200px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', position: 'relative' }}>
                         <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input
                             className="input"
@@ -668,7 +671,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         />
                     </div>
 
-                    <div className="control-actions" style={{ flex: '2', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: '12px', paddingLeft: '1rem' }}>
+                    <div className="control-actions" style={{ flex: '2', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', paddingLeft: '1rem' }}>
                         <div style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </div>
@@ -1042,7 +1045,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
                                                 </button>
                                             )}
-                                            {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.employee_id === userId) && (
+                                            {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
                                                 <button
                                                     className="key-card-action-btn"
                                                     onClick={(e) => {
@@ -1172,7 +1175,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 </button>
                                             ) : (
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    {(isPorteiroOrAdmin || key.employee_id === userId) && (
+                                                    {(isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <>
                                                             <button
                                                                 className="btn btn-blue btn-sm"

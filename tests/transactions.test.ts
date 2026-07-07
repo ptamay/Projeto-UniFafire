@@ -208,6 +208,75 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         expect(historyCount.c).toBe(1);
     });
 
+    it('não deve permitir que usuário comum inicie devolução de chave que não está com ele', async () => {
+        // Setup: chave 1 em uso pelo aluno 5
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        // Funcionário 4 (não portador) tenta iniciar a devolução
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+
+        const returnReq = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, user_id: 4 }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const returnRes = await TransactionPOST(returnReq);
+
+        expect(returnRes.status).toBe(403);
+
+        // Nenhuma transação deve ter sido criada
+        const txCount = db.prepare('SELECT count(*) as c FROM key_transactions').get() as { c: number };
+        expect(txCount.c).toBe(0);
+    });
+
+    it('deve permitir que o próprio portador inicie a devolução da sua chave', async () => {
+        // Setup: chave 1 em uso pelo aluno 5
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+
+        const returnReq = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, user_id: 5 }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const returnRes = await TransactionPOST(returnReq);
+        const returnData = await returnRes.json();
+
+        expect(returnRes.status).toBe(200);
+        expect(returnData.status).toBe('pending');
+
+        // O lado do usuário já nasce confirmado (ele mesmo iniciou); falta a portaria
+        const tx = db.prepare('SELECT user_confirmed_at, porteiro_confirmed_at FROM key_transactions WHERE id = ?')
+            .get(returnData.transactionId) as { user_confirmed_at: string | null; porteiro_confirmed_at: string | null };
+        expect(tx.user_confirmed_at).not.toBeNull();
+        expect(tx.porteiro_confirmed_at).toBeNull();
+    });
+
+    it('deve permitir que qualquer porteiro cancele uma pendência que não iniciou', async () => {
+        // Aluno 5 solicita a retirada da chave 1 (porteiro_id fica null)
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        const withdrawReq = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'withdraw', key_id: 1, user_id: 5 }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const withdrawRes = await TransactionPOST(withdrawReq);
+        const withdrawData = await withdrawRes.json();
+        expect(withdrawRes.status).toBe(200);
+        const txId = withdrawData.transactionId;
+
+        // Porteiro 3 (não iniciou) cancela
+        currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
+        const cancelReq = new Request(`http://localhost/api/transactions/${txId}/cancel`, { method: 'POST' });
+        const params = Promise.resolve({ id: String(txId) });
+        const cancelRes = await CancelPOST(cancelReq, { params });
+
+        expect(cancelRes.status).toBe(200);
+        const tx = db.prepare('SELECT status FROM key_transactions WHERE id = ?').get(txId) as { status: string };
+        expect(tx.status).toBe('cancelled');
+    });
+
     it('deve permitir que o remetente (initiator) veja e cancele uma transferência pendente (TASK-041)', async () => {
         // Setup: Colocar a chave 1 em 'in_use' pelo aluno 5
         db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
@@ -227,8 +296,7 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         const txId = transferData.transactionId;
 
         // 2. Aluno 5 verifica as pendências dele
-        const pendingReq = new Request('http://localhost/api/transactions/pending', { method: 'GET' });
-        const pendingRes = await PendingGET(pendingReq);
+        const pendingRes = await PendingGET();
         const pendingData = await pendingRes.json();
 
         // Ele deve conseguir ver a transação que iniciou
