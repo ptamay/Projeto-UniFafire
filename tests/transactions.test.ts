@@ -318,6 +318,95 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
     });
 });
 
+// REQ-028 (ADR-009) — Devolução forçada ampla pela portaria.
+describe('Devolução forçada ampla (REQ-028)', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM key_transactions').run();
+        db.prepare('DELETE FROM history').run();
+        db.prepare('DELETE FROM action_logs').run();
+        db.prepare("UPDATE keys SET status = 'available', user_id = NULL").run();
+    });
+
+    it('porteiro força a devolução de chave retirada normalmente, com justificativa', async () => {
+        // Chave 1 em uso pelo aluno 5 (retirada normal, sem justificativa herdada)
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, bypassConfirmation: true, justification: 'Funcionário sem celular — devolução no balcão' }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(data.status).toBe('completed');
+
+        const key = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number | null };
+        expect(key.status).toBe('available');
+        expect(key.user_id).toBeNull();
+
+        const hist = db.prepare("SELECT count(*) as c FROM history WHERE key_id = 1 AND action = 'return'").get() as { c: number };
+        expect(hist.c).toBe(1);
+        const audit = db.prepare("SELECT count(*) as c FROM action_logs WHERE target = 'Chave Teste'").get() as { c: number };
+        expect(audit.c).toBeGreaterThanOrEqual(1);
+    });
+
+    it('rejeita a devolução forçada sem justificativa', async () => {
+        // Chave atribuída via bypass (tem justificativa na retirada) — antes seria aceita por herança
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 4 WHERE id = 1").run();
+        db.prepare("INSERT INTO key_transactions (key_id, user_id, action, status, justification, completed_at) VALUES (1, 4, 'withdraw', 'completed', 'Atribuída via bypass', ?)").run(new Date().toISOString());
+
+        currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, bypassConfirmation: true }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+
+        expect(res.status).toBe(400);
+        const key = db.prepare('SELECT status FROM keys WHERE id = 1').get() as { status: string };
+        expect(key.status).toBe('in_use');
+    });
+
+    it('não permite que usuário comum force a devolução', async () => {
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, bypassConfirmation: true, justification: 'qualquer' }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+
+        expect(res.status).toBe(403);
+        const key = db.prepare('SELECT status FROM keys WHERE id = 1').get() as { status: string };
+        expect(key.status).toBe('in_use');
+    });
+
+    it('mantém a devolução forçada de chave atribuída via bypass (regressão)', async () => {
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 4 WHERE id = 1").run();
+        db.prepare("INSERT INTO key_transactions (key_id, user_id, action, status, justification, completed_at) VALUES (1, 4, 'withdraw', 'completed', 'Atribuída via bypass', ?)").run(new Date().toISOString());
+
+        currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'return', key_id: 1, bypassConfirmation: true, justification: 'Devolução no balcão' }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(data.status).toBe('completed');
+        const key = db.prepare('SELECT status FROM keys WHERE id = 1').get() as { status: string };
+        expect(key.status).toBe('available');
+    });
+});
+
 // REQ-027 (ADR-008) — Solicitação de chave em uso ao portador (fluxo "pull").
 // Usuários: test_porteiro(3), test_funcionario(4=B), test_aluno(5=A), test_aluno2(6=C).
 describe('Solicitação de Chave em Uso — fluxo pull (REQ-027)', () => {
