@@ -304,9 +304,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         open: boolean;
         keyId: number;
         keyName: string;
-        type: 'withdraw' | 'return' | 'transfer';
+        type: 'withdraw' | 'return' | 'transfer' | 'request';
         employeeId?: number;
         employeeName?: string;
+        holderName?: string;
         withdrawJustification?: string;
     }>({ open: false, keyId: 0, keyName: '', type: 'withdraw' });
     const [transferTargetId, setTransferTargetId] = useState<number | undefined>(undefined);
@@ -331,28 +332,32 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     ];
 
     // Processamento da Transação
-    const handleTransaction = async (keyId: number, type: 'withdraw' | 'return' | 'transfer', employeeId?: number) => {
+    const handleTransaction = async (keyId: number, type: 'withdraw' | 'return' | 'transfer' | 'request', employeeId?: number) => {
         setActionLoading(keyId);
         try {
-            // Para 'transfer', o destino é sempre o usuário selecionado (employeeId).
-            // Para 'withdraw'/'return', usuários normais usam o próprio ID (userId), enquanto porteiros usam o selecionado.
-            const empId = type === 'transfer' ? employeeId : (isPorteiroOrAdmin ? employeeId : userId);
+            // 'request' (pull, REQ-027) é uma transferência cujo destino é o próprio solicitante.
+            // 'transfer' (push): destino é o usuário selecionado (employeeId).
+            // 'withdraw'/'return': usuários normais usam o próprio ID; porteiros, o selecionado.
+            const apiAction = type === 'request' ? 'transfer' : type;
+            const empId = type === 'transfer' ? employeeId
+                : type === 'request' ? userId
+                : (isPorteiroOrAdmin ? employeeId : userId);
             const finalJustification = justification === 'Outro' ? customJustification : justification;
             const res = await fetch('/api/transactions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: type, 
-                    key_id: keyId, 
+                body: JSON.stringify({
+                    action: apiAction,
+                    key_id: keyId,
                     user_id: empId,
                     bypassConfirmation: bypassConfirmation,
                     justification: finalJustification,
-                    observation: type === 'transfer' ? customJustification : undefined
+                    observation: (type === 'transfer' || type === 'request') ? customJustification : undefined
                 }),
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(data.message || (type === 'withdraw' ? 'Solicitação de retirada enviada!' : type === 'transfer' ? 'Solicitação de transferência enviada!' : 'Solicitação de devolução enviada!'));
+                toast.success(data.message || (type === 'withdraw' ? 'Solicitação de retirada enviada!' : type === 'transfer' ? 'Solicitação de transferência enviada!' : type === 'request' ? 'Solicitação enviada ao portador!' : 'Solicitação de devolução enviada!'));
                 refreshData();
                 window.dispatchEvent(new CustomEvent('pending-transactions-updated'));
                 if (type === 'withdraw') {
@@ -419,6 +424,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         modalOpenTime.current = Date.now();
     };
 
+    // Abre o modal de solicitação (pull, REQ-027): um não-portador pede a chave ao portador atual.
+    const openRequestModal = (k: Key) => {
+        setConfirmModal({
+            open: true,
+            keyId: k.id,
+            keyName: k.name,
+            type: 'request',
+            holderName: k.employee_name,
+        });
+        modalOpenTime.current = Date.now();
+    };
+
     const confirmAction = () => {
         const empId = confirmModal.type === 'transfer' ? transferTargetId : confirmModal.employeeId;
         if (confirmModal.type === 'transfer' && !empId) {
@@ -476,9 +493,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             }
         } else if (isPorteiroOrAdmin || k.user_id === userId) {
             requestTransaction(k.id, 'return');
+        } else if (k.pending_info) {
+            toast('Esta chave já tem uma solicitação em andamento.');
         } else {
-            // Chave de outro usuário: sem ação de devolução (fluxo de solicitação virá via REQ-027).
-            toast(`Esta chave está com ${k.employee_name || 'outro usuário'}.`);
+            // Chave de outro usuário: solicitar diretamente ao portador (pull, REQ-027).
+            openRequestModal(k);
         }
     };
 
@@ -1062,6 +1081,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     Transferir
                                                 </button>
                                             )}
+                                            {key.status === 'in_use' && !key.pending_info && !isPorteiroOrAdmin && key.user_id !== userId && (
+                                                <button
+                                                    className="key-card-action-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openRequestModal(key);
+                                                    }}
+                                                    style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                >
+                                                    Solicitar
+                                                </button>
+                                            )}
                                         </div>
                                         <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
                                             {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
@@ -1202,6 +1233,16 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             </button>
                                                         </>
                                                     )}
+                                                    {!isPorteiroOrAdmin && key.user_id !== userId && (
+                                                        <button
+                                                            className="btn btn-ghost btn-sm"
+                                                            disabled={actionLoading === key.id}
+                                                            onClick={() => openRequestModal(key)}
+                                                            style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                        >
+                                                            Solicitar
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -1270,20 +1311,43 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 <div className="modal-overlay" onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}>
                     <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
                         <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--green-100)' : confirmModal.type === 'transfer' ? 'var(--purple-100)' : 'var(--blue-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--green-100)' : (confirmModal.type === 'transfer' || confirmModal.type === 'request') ? 'var(--purple-100)' : 'var(--blue-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                                 {confirmModal.type === 'withdraw' ? (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                                 ) : confirmModal.type === 'transfer' ? (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-600)" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
+                                ) : confirmModal.type === 'request' ? (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-600)" strokeWidth="2.5"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                                 ) : (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>
                                 )}
                             </div>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                                {confirmModal.type === 'transfer' ? 'Transferir Chave?' : `Solicitar ${confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?`}
+                                {confirmModal.type === 'transfer' ? 'Transferir Chave?'
+                                    : confirmModal.type === 'request' ? 'Solicitar esta Chave?'
+                                    : `Solicitar ${confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?`}
                             </h3>
-                            
-                            {confirmModal.type === 'transfer' ? (
+
+                            {confirmModal.type === 'request' ? (
+                                <div style={{ textAlign: 'left', marginTop: '1rem' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                                        Solicitar a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
+                                        {confirmModal.holderName && <span> que está com <strong style={{ color: 'var(--purple-400)' }}>{confirmModal.holderName}</strong></span>}.
+                                        <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>O portador precisa aceitar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para a chave passar para você.</span>
+                                    </p>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Observação (opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={customJustification}
+                                            onChange={e => setCustomJustification(e.target.value)}
+                                            placeholder="Ex: Preciso usar a sala agora"
+                                            className="input"
+                                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : confirmModal.type === 'transfer' ? (
                                 <div style={{ textAlign: 'left', marginTop: '1rem' }}>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                                         Transferir a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong> diretamente para outro usuário.

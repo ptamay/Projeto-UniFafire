@@ -134,6 +134,10 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                         {displayTxs.map(tx => {
                             const isWithdraw = tx.action === 'withdraw';
                             const isTransfer = tx.action === 'transfer';
+                            // Numa transferência pendente, se o lado do portador ainda não confirmou,
+                            // é uma solicitação (pull, REQ-027): quem tem a chave é que precisa aceitar.
+                            const isPull = isTransfer && !tx.porteiro_confirmed_at;
+                            const isHolderViewer = tx.porteiro_id === userId;
                             const accentColor = isWithdraw ? '#b45309' : isTransfer ? '#7e22ce' : '#1d8046';
                             const accentBg = isWithdraw ? 'rgba(180,83,9,0.08)' : isTransfer ? 'rgba(126,34,206,0.08)' : 'rgba(29,128,70,0.08)';
 
@@ -157,7 +161,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                 letterSpacing: '0.05em', color: accentColor,
                                                 background: accentBg, padding: '2px 8px', borderRadius: '99px', display: 'inline-block', marginBottom: '0.4rem'
                                             }}>
-                                                {isWithdraw ? 'Retirada de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
+                                                {isWithdraw ? 'Retirada de Chave' : isPull ? 'Solicitação de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
                                             </span>
                                             <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{tx.key_name}</div>
                                             {tx.key_room && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{tx.key_room}</div>}
@@ -177,7 +181,14 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
 
                                     {/* Contexto */}
                                     <div style={{ background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                        {isTransfer ? (
+                                        {isPull ? (
+                                            <>
+                                                <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong> solicitou esta chave.<br/>
+                                                {isHolderViewer
+                                                    ? <>Está com você — aceite para repassá-la. Pedido às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
+                                                    : tx.porteiro_username && <>Aguardando <strong>@{tx.porteiro_username}</strong> aceitar. Pedido às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>}
+                                            </>
+                                        ) : isTransfer ? (
                                             <>
                                                 Transferência para <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
                                                 {tx.porteiro_username && (
@@ -218,8 +229,9 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                 </button>
                                             )}
 
-                                            {/* Se for Porteiro/Admin, o usuário JÁ confirmou, mas o porteiro AINDA NÃO */}
-                                            {isPorteiroOrAdmin && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
+                                            {/* Porteiro/Admin: o usuário JÁ confirmou e falta o porteiro — exceto em solicitação pull,
+                                                cujo aceite é estrito do portador (ADR-008), nunca da portaria por papel. */}
+                                            {isPorteiroOrAdmin && !isPull && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
                                                 <button
                                                     className="btn btn-green"
                                                     style={{ flex: 1, minWidth: '120px', minHeight: 44, fontSize: '0.9rem', fontWeight: 700 }}
@@ -230,10 +242,22 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                 </button>
                                             )}
 
-                                            {/* Mensagem de aguardando porteiro para usuários comuns */}
+                                            {/* Portador aceita uma solicitação pull da chave que está com ele (REQ-027) */}
+                                            {isPull && isHolderViewer && (
+                                                <button
+                                                    className="btn btn-green"
+                                                    style={{ flex: 1, minWidth: '120px', minHeight: 44, fontSize: '0.9rem', fontWeight: 700 }}
+                                                    onClick={() => confirmTransaction(tx.id)}
+                                                    disabled={actionLoading === tx.id}
+                                                >
+                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : '✓ Aceitar'}
+                                                </button>
+                                            )}
+
+                                            {/* Mensagem de espera para quem iniciou e aguarda a outra parte */}
                                             {!isPorteiroOrAdmin && tx.user_id === userId && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
                                                 <div style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontWeight: 700, borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', border: '1px solid rgba(217,119,6,0.2)', flex: 1 }}>
-                                                    ⏳ Aguardando porteiro
+                                                    ⏳ Aguardando {isPull ? 'o portador' : 'porteiro'}
                                                 </div>
                                             )}
 
