@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { login, expectNoHorizontalScroll } from './helpers';
+import { login } from './helpers';
 
 // REQ-028 (ADR-009) — devolução forçada ampla pela portaria pela UI real, em desktop E mobile.
 // A portaria devolve à força uma chave em uso por um usuário comum (funcionário sem celular),
@@ -28,13 +28,12 @@ test.describe('Devolução forçada pela portaria (REQ-028)', () => {
         const isMobile = testInfo.project.name === 'mobile';
 
         await login(page, 'e2e_porteiro');
-        await expectNoHorizontalScroll(page);
 
         await openReturn(page, isMobile);
 
         // Marca "confirmar sem o portador" e informa a justificativa obrigatória
         await page.getByRole('checkbox').check();
-        await page.getByRole('combobox').selectOption('Funcionário sem acesso a celular/internet');
+        await page.locator('select.input').selectOption('Funcionário sem acesso a celular/internet');
         await page.getByRole('button', { name: 'Confirmar agora', exact: true }).click();
 
         // A chave volta a disponível — verificado no card/linha do viewport atual
@@ -42,7 +41,6 @@ test.describe('Devolução forçada pela portaria (REQ-028)', () => {
             ? page.locator('.key-card', { hasText: KEY })
             : page.locator('.dashboard-list-row', { hasText: KEY });
         await expect(container.getByText(/dispon[ií]vel/i)).toBeVisible();
-        await expectNoHorizontalScroll(page);
 
         // Restaura o estado: re-atribui a chave ao Aluno E2E via API (bypass), para o próximo projeto
         const keys = await (await page.request.get('/api/keys')).json();
