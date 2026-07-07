@@ -45,11 +45,11 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Sprint 12 (REQ-027) implementada — TDD completo. Aguardando decisão sobre Gate 4 (débito herdado) antes de push/merge.
-- Última Ação: Sprint 12 (fluxo pull, REQ-027/ADR-008) na branch feature/sprint-12-solicitacao-chave. TASK-043 (API: solicitação pull + aceite estrito da contraparte) e TASK-044 (UI: 'Solicitar' no card/linha + aceite em /confirm) com ciclo test→feat. TASK-045 (e2e smoke) consolidada no pull-flow.spec.ts (desktop+mobile). Gates: vitest 74/74, e2e 8/8, tsc limpo, eslint 0 erros, npm audit 0. Semgrep não instalado nesta máquina.
-- Próxima Ação: Resolver Gate 4 — falha por TASK-042 (Sprint 11) commitada feat sem test (débito herdado, anterior a esta sprint). Decidir com o usuário: avançar o tdd-baseline (grandfather) ou não. Depois, push/PR.
-- Decisões em aberto: Como tratar o débito herdado da TASK-042 no Gate 4 (não introduzido pela Sprint 12).
-- Arquivos não commitados: Memory sync (este commit).
+- Sprint/Task Ativa: Nenhuma. Sprint 12 (REQ-027) concluída — todos os gates verdes.
+- Última Ação: Sprint 12 (fluxo pull, REQ-027/ADR-008) na branch feature/sprint-12-solicitacao-chave. TASK-043 (API: solicitação pull + aceite estrito da contraparte) e TASK-044 (UI: 'Solicitar' no card/linha + aceite em /confirm) via test→feat. TASK-045 (e2e smoke) consolidada no pull-flow.spec.ts (desktop+mobile). Gate 4 resolvido: tdd-baseline avançado 4dfc762→6916568 (grandfather TASK-042/Sprint 11, aprovado pelo usuário). ci-gates 100% verde, vitest 74/74, e2e 8/8, tsc/eslint limpos, npm audit 0.
+- Próxima Ação: Push da branch e abrir PR para main quando o usuário pedir. Semgrep roda no pipeline (não instalado local).
+- Decisões em aberto: Nenhuma
+- Arquivos não commitados: Nenhum
 - Branch atual: feature/sprint-12-solicitacao-chave
 - Atualizado em: 2026-07-07
 ```
