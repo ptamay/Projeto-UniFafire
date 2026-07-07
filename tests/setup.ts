@@ -98,6 +98,7 @@ beforeAll(() => {
     insertUser.run('test_porteiro', hash, 'PORTEIRO');
     insertUser.run('test_funcionario', hash, 'FUNCIONARIO');
     insertUser.run('test_aluno', hash, 'ALUNO');
+    insertUser.run('test_aluno2', hash, 'ALUNO');
 
     // 3. Semear uma chave disponível
     const insertKey = db.prepare("INSERT INTO keys (name, room, status) VALUES (?, ?, 'available')");

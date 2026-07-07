@@ -317,3 +317,144 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
         expect(tx.status).toBe('cancelled');
     });
 });
+
+// REQ-027 (ADR-008) — Solicitação de chave em uso ao portador (fluxo "pull").
+// Usuários: test_porteiro(3), test_funcionario(4=B), test_aluno(5=A), test_aluno2(6=C).
+describe('Solicitação de Chave em Uso — fluxo pull (REQ-027)', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM key_transactions').run();
+        db.prepare('DELETE FROM history').run();
+        db.prepare("UPDATE keys SET status = 'available', user_id = NULL").run();
+        // Chave 1 em uso pelo aluno A (id 5)
+        db.prepare("UPDATE keys SET status = 'in_use', user_id = 5 WHERE id = 1").run();
+    });
+
+    async function requestPull(requesterId: number, keyId = 1) {
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'transfer', key_id: keyId, user_id: requesterId }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+        return { res, data: await res.json() };
+    }
+
+    it('cria a solicitação pull com solicitante já confirmado e portador pendente', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const { res, data } = await requestPull(4);
+
+        expect(res.status).toBe(200);
+        expect(data.status).toBe('pending');
+
+        const tx = db.prepare('SELECT user_id, porteiro_id, user_confirmed_at, porteiro_confirmed_at, action FROM key_transactions WHERE id = ?')
+            .get(data.transactionId) as { user_id: number; porteiro_id: number; user_confirmed_at: string | null; porteiro_confirmed_at: string | null; action: string };
+        expect(tx.action).toBe('transfer');
+        expect(tx.user_id).toBe(4);        // solicitante (destino)
+        expect(tx.porteiro_id).toBe(5);    // portador atual (contraparte)
+        expect(tx.user_confirmed_at).not.toBeNull();
+        expect(tx.porteiro_confirmed_at).toBeNull();
+
+        // A chave permanece com A (id 5) até o aceite
+        const key = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number };
+        expect(key.status).toBe('in_use');
+        expect(key.user_id).toBe(5);
+    });
+
+    it('completa a troca de posse quando o portador aceita', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const { data } = await requestPull(4);
+        const txId = data.transactionId;
+
+        // Portador A (id 5) aceita via user-confirm
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        const confirmReq = new Request(`http://localhost/api/transactions/${txId}/user-confirm`, { method: 'POST' });
+        const confirmRes = await ConfirmPOST(confirmReq, { params: Promise.resolve({ id: String(txId) }) });
+        const confirmData = await confirmRes.json();
+
+        expect(confirmRes.status).toBe(200);
+        expect(confirmData.status).toBe('completed');
+
+        const key = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number };
+        expect(key.status).toBe('in_use');
+        expect(key.user_id).toBe(4);   // chave agora com o solicitante B
+
+        const hist = db.prepare("SELECT count(*) as c FROM history WHERE key_id = 1 AND action = 'transfer'").get() as { c: number };
+        expect(hist.c).toBe(1);
+    });
+
+    it('rejeita (403) o aceite por terceiro não envolvido — autorização estrita', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const { data } = await requestPull(4);
+        const txId = data.transactionId;
+
+        // Terceiro comum C (id 6), que não é o solicitante nem o portador
+        currentSession = { id: 6, role: 'ALUNO', username: 'test_aluno2' };
+        const confirmReq = new Request(`http://localhost/api/transactions/${txId}/user-confirm`, { method: 'POST' });
+        const confirmRes = await ConfirmPOST(confirmReq, { params: Promise.resolve({ id: String(txId) }) });
+
+        expect(confirmRes.status).toBe(403);
+        const tx = db.prepare('SELECT status FROM key_transactions WHERE id = ?').get(txId) as { status: string };
+        expect(tx.status).toBe('pending');
+    });
+
+    it('não deixa um porteiro forçar o aceite no lugar do portador (ADR-008 estrito)', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const { data } = await requestPull(4);
+        const txId = data.transactionId;
+
+        // Porteiro (staff) tenta aceitar a solicitação pull no lugar do portador comum
+        currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
+        const confirmReq = new Request(`http://localhost/api/transactions/${txId}/user-confirm`, { method: 'POST' });
+        const confirmRes = await ConfirmPOST(confirmReq, { params: Promise.resolve({ id: String(txId) }) });
+
+        expect(confirmRes.status).toBe(403);
+        const key = db.prepare('SELECT user_id FROM keys WHERE id = 1').get() as { user_id: number };
+        expect(key.user_id).toBe(5);   // chave não mudou de mãos
+    });
+
+    it('permite ao portador recusar cancelando a solicitação', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const { data } = await requestPull(4);
+        const txId = data.transactionId;
+
+        // Portador A (id 5) recusa = cancela
+        currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
+        const cancelReq = new Request(`http://localhost/api/transactions/${txId}/cancel`, { method: 'POST' });
+        const cancelRes = await CancelPOST(cancelReq, { params: Promise.resolve({ id: String(txId) }) });
+
+        expect(cancelRes.status).toBe(200);
+        const tx = db.prepare('SELECT status FROM key_transactions WHERE id = ?').get(txId) as { status: string };
+        expect(tx.status).toBe('cancelled');
+        const key = db.prepare('SELECT status, user_id FROM keys WHERE id = 1').get() as { status: string; user_id: number };
+        expect(key.status).toBe('in_use');
+        expect(key.user_id).toBe(5);
+    });
+
+    it('bloqueia uma segunda solicitação enquanto há pendência na chave', async () => {
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        await requestPull(4);
+
+        // Outro usuário comum C (id 6) tenta solicitar a mesma chave
+        currentSession = { id: 6, role: 'ALUNO', username: 'test_aluno2' };
+        const { res } = await requestPull(6);
+
+        expect(res.status).toBe(400);
+        const count = db.prepare('SELECT count(*) as c FROM key_transactions').get() as { c: number };
+        expect(count.c).toBe(1);
+    });
+
+    it('rejeita (403) solicitação cujo destino não é o próprio solicitante', async () => {
+        // B (id 4) tenta solicitar a chave para um terceiro (id 6) em vez de para si
+        currentSession = { id: 4, role: 'FUNCIONARIO', username: 'test_funcionario' };
+        const req = new Request('http://localhost/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'transfer', key_id: 1, user_id: 6 }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const res = await TransactionPOST(req);
+
+        expect(res.status).toBe(403);
+        const count = db.prepare('SELECT count(*) as c FROM key_transactions').get() as { c: number };
+        expect(count.c).toBe(0);
+    });
+});
