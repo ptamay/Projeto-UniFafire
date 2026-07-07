@@ -203,10 +203,13 @@ export async function POST(request: Request) {
         } else if (action === 'transfer') {
             if (key.status !== 'in_use') return NextResponse.json({ error: 'A chave deve estar em uso para ser transferida.' }, { status: 400 });
             if (!resolvedUserId) return NextResponse.json({ error: 'Usuário de destino obrigatório para transferência.' }, { status: 400 });
-            
-            // Verifica permissão: deve ser porteiro/admin OU ser o portador atual da chave
-            if (!isPorteiroOrAdmin && key.user_id !== session.id) {
-                return NextResponse.json({ error: 'Você só pode transferir chaves que estão sob sua posse.' }, { status: 403 });
+
+            // Dois fluxos de usuário comum:
+            //  • push (REQ-024): o portador cede a chave a outro.
+            //  • pull (REQ-027): quem não está com a chave a solicita ao portador — só para si mesmo.
+            const isHolder = key.user_id === session.id;
+            if (!isPorteiroOrAdmin && !isHolder && resolvedUserId !== session.id) {
+                return NextResponse.json({ error: 'Você só pode solicitar a chave para si mesmo.' }, { status: 403 });
             }
 
             const targetUser = db.prepare('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1').get(resolvedUserId) as TargetUserRow | undefined;
@@ -250,17 +253,9 @@ export async function POST(request: Request) {
                     message: 'Chave transferida com sucesso.',
                     requiresUserConfirmation: false
                 });
-            } else {
-                // Usuário comum iniciando transferência: cria transação pendente
-                // O destinatário (resolvedUserId) precisará aceitar (dupla confirmação).
-                // O porteiro_id será null. Usamos `user_confirmed_at` null porque o alvo deve confirmar.
-                // Mas quem iniciou foi o remetente (user_id = session.id). Porém, a transação deve apontar para o DESTINATÁRIO
-                // na tabela key_transactions, pois o alvo da ação de assumir a chave é ele.
-                // A chave ainda fica com o remetente até que a transação complete.
-                
-                // Vamos gravar o porteiro_id como sendo o remetente (ou seja, quem *cedeu* a chave atuando como a "portaria").
-                // Isso aproveita o fluxo de user-confirm: "porteiro" confirmou, falta o "usuário" confirmar.
-                // Aqui "porteiro_id" passa a significar "remetente_id" para transferências.
+            } else if (isHolder) {
+                // PUSH (REQ-024): o portador cede a chave. O destinatário (user_id) aceita.
+                // `porteiro_id` guarda o remetente que já confirmou ao iniciar (contraparte).
                 const txResult = db.prepare(`
                     INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, justification)
                     VALUES (?, ?, 'transfer', ?, ?, NULL, 'pending', ?, ?)
@@ -268,14 +263,41 @@ export async function POST(request: Request) {
 
                 const transactionId = txResult.lastInsertRowid;
 
-                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 
+                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
                     `Transferência iniciada para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
 
-                return NextResponse.json({ 
-                    success: true, 
+                return NextResponse.json({
+                    success: true,
                     transactionId,
                     status: 'pending',
                     message: 'Transferência iniciada. Aguardando confirmação do destinatário.',
+                    requiresUserConfirmation: true,
+                    targetUser: {
+                        id: targetUser.id,
+                        username: targetUser.username,
+                        full_name: targetUser.full_name,
+                        role: targetUser.role
+                    }
+                });
+            } else {
+                // PULL (REQ-027): quem não está com a chave a solicita ao portador.
+                // Espelha o push: `user_id` = solicitante (destino, já confirmado ao iniciar);
+                // `porteiro_id` = portador atual (contraparte que precisa aceitar).
+                const txResult = db.prepare(`
+                    INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, justification)
+                    VALUES (?, ?, 'transfer', ?, NULL, ?, 'pending', ?, ?)
+                `).run(keyId, resolvedUserId, key.user_id, now, now, obs?.trim() || null);
+
+                const transactionId = txResult.lastInsertRowid;
+
+                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
+                    `Solicitação de chave iniciada por ${session.username} ao portador. Observação: ${obs?.trim() || 'Nenhuma'}`);
+
+                return NextResponse.json({
+                    success: true,
+                    transactionId,
+                    status: 'pending',
+                    message: 'Solicitação enviada. Aguardando o portador aceitar.',
                     requiresUserConfirmation: true,
                     targetUser: {
                         id: targetUser.id,
