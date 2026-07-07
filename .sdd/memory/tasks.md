@@ -1,84 +1,53 @@
-# tasks.md — Micro-spec da Sprint Ativa (Sprint 12 · 🔴 crítica)
+# tasks.md — Micro-spec da Sprint Ativa (Sprint 13 · 🔴 crítica)
 
-> REQ-027 (ADR-008) — Solicitação de chave em uso ao portador (fluxo "pull").
-> Reutiliza a máquina de `transfer` com papéis invertidos: `user_id` = solicitante
-> (já confirmado ao iniciar) · `porteiro_id` = portador atual (pendente de aceite).
-> Sem migration (nenhuma alteração de schema). Fatias verticais, TDD atômico.
+> REQ-028 (ADR-009) — Devolução forçada ampla + clareza do fluxo de chaves no mobile.
+> Sem migration (coluna `justification` já existe). Aproveita o WIP de responsividade
+> CSS-driven (`.mobile-only`/`.desktop-only`). Fatias verticais, TDD atômico.
 
-## TASK-043: API — solicitação de chave em uso e aceite pela contraparte (REQ-027)
-**Contexto**: Um usuário comum (FUNCIONARIO/ALUNO) que NÃO está com a chave pode solicitá-la
-diretamente ao portador atual. A solicitação nasce como transação `transfer` pendente onde o
-solicitante já consentiu (iniciou) e o portador precisa aceitar. O aceite reusa
-`POST /api/transactions/[id]/user-confirm`, que deve reconhecer o portador comum como a
-contraparte válida (`tx.porteiro_id === session.id`) — sem conceder esse poder por papel.
+## TASK-046: API — devolução forçada de qualquer chave em uso (REQ-028)
+**Contexto**: Hoje a devolução forçada (bypass) só é permitida quando a *retirada* teve
+justificativa — ou seja, só para chaves atribuídas via bypass. A portaria não consegue devolver
+chaves de funcionários sem celular retiradas no fluxo normal. A justificativa passa a ser
+informada no ato da devolução (obrigatória), desacoplada da retirada, com log de auditoria.
 
 **Critérios BDD**:
-- [x] **Cenário**: Criação da solicitação pull
-      Dado que a chave X está `in_use` com o usuário A (portador)
-      E que o usuário B (comum) não está com a chave
-      Quando B envia `action: 'transfer'` para a chave X com destino a si mesmo
-      Então o sistema cria uma `key_transactions` `transfer` com status `pending`,
-        `user_id` = B, `porteiro_id` = A, `user_confirmed_at` preenchido e `porteiro_confirmed_at` NULL
-      E a chave permanece `in_use` com A até o aceite.
-- [x] **Cenário**: Portador aceita e a chave muda de mãos
-      Dado uma solicitação pull pendente (B solicitou a chave de A)
-      Quando A confirma via `user-confirm`
-      Então a transação passa a `completed`, `keys.user_id` passa a B, a chave segue `in_use`
-      E um registro `transfer` é gravado no histórico.
-- [x] **Cenário**: Autorização estrita do aceite (anti-escalação)
-      Dado uma solicitação pull pendente (B solicitou a chave de A)
-      Quando um terceiro usuário comum C (que não é A nem B) chama `user-confirm`
-      Então a API retorna 403 e a transação permanece `pending`.
-- [x] **Cenário**: Recusa = cancelamento pelo portador
-      Dado uma solicitação pull pendente (B solicitou a chave de A)
-      Quando A cancela a transação via `/cancel`
-      Então o status vira `cancelled`, a chave continua `in_use` com A e B não pode mais aceitá-la.
-- [x] **Cenário**: Bloqueio por pendência existente
-      Dado que já existe uma transação pendente para a chave X
-      Quando outro usuário tenta solicitar a mesma chave
-      Então a API rejeita (400) sem criar segunda transação.
-- [x] **Cenário** (regressão preservada): solicitante deve ser o destino
-      Dado um usuário comum B iniciando a solicitação
-      Quando o destino informado não é o próprio B
-      Então a API rejeita (403) — usuário comum só solicita a chave para si mesmo.
+- [ ] **Cenário**: Portaria força a devolução de chave retirada normalmente
+      Dado que a chave X está `in_use` (retirada sem justificativa/bypass)
+      Quando um porteiro/gestor/admin envia `return` com `bypassConfirmation` e uma justificativa
+      Então a devolução é concluída imediatamente, a chave volta a `available` (user_id nulo)
+      E o histórico e o log de auditoria registram a devolução forçada com a justificativa.
+- [ ] **Cenário**: Justificativa é obrigatória na devolução forçada
+      Dado uma chave `in_use`
+      Quando a portaria envia `return` com `bypassConfirmation` sem justificativa (ou vazia)
+      Então a API rejeita (400) e a chave permanece `in_use`.
+- [ ] **Cenário**: Apenas a portaria força a devolução
+      Dado uma chave `in_use` com o próprio usuário comum
+      Quando esse usuário comum envia `return` com `bypassConfirmation`
+      Então a API rejeita (403) — força é exclusiva de porteiro/gestor/admin.
+- [ ] **Cenário** (regressão): devolução forçada de chave atribuída via bypass continua funcionando
+      Dado uma chave atribuída via bypass (com justificativa na retirada)
+      Quando a portaria força a devolução informando uma justificativa
+      Então a devolução conclui normalmente.
 
-## TASK-044: UI — solicitar a chave e aceitar/recusar (REQ-027)
-**Contexto**: No Dashboard, todo usuário já vê quem é o portador da chave em uso. Falta ao
-não-portador a ação de solicitar. No mobile, o toque no card em uso (hoje inerte para o
-não-portador) passa a oferecer "Solicitar esta chave"; no desktop, um botão na linha. O
-portador aceita ou recusa em `/confirm`, com texto contextual de quem pediu.
+## TASK-047: UI mobile — botão "Devolver", devolução forçada e estados claros (REQ-028)
+**Contexto**: No card mobile falta o botão "Devolver" e a devolução forçada não tem campo de
+justificativa; os estados pendentes são genéricos. Consolida o refactor CSS-responsivo (WIP) e
+expõe `withdraw_justification`/`in_use_since` no SSR para o modal não depender de refresh.
 
 **Critérios BDD**:
-- [x] **Cenário**: Ação de solicitar no card mobile / linha desktop
-      Dado que a chave X está `in_use` com A e o usuário B (comum) não é o portador
-      Quando B abre o Dashboard
-      Então B vê o portador A e uma ação "Solicitar" para a chave X
-      E ao confirmar, uma solicitação pull é enviada (toast de sucesso).
-- [x] **Cenário**: Estado "já solicitada"
-      Dado que existe uma solicitação pendente para a chave X
-      Quando qualquer usuário visualiza o card/linha de X
-      Então o estado exibido é "Aguardando"/"já solicitada" e a ação de solicitar não se repete
-      E o solicitante e o portador têm a opção de cancelar.
-- [x] **Cenário**: Aceite/recusa pelo portador em /confirm
-      Dado que B solicitou a chave que está com A
-      Quando A acessa `/confirm`
-      Então A vê um card contextual ("B solicitou a chave X que está com você") com aceitar e recusar
-      E aceitar completa a transferência; recusar cancela a pendência.
-- [x] **Cenário**: Não-portador não vê Devolver para chave alheia
-      Dado que a chave X está com A
-      Quando B (comum, não portador) visualiza X
-      Então B não vê "Devolver" nem "Transferir" — apenas "Solicitar" (regressão do quick-fix preservada).
-
-## TASK-045: E2E smoke do fluxo pull (REQ-027) — ✅ consolidada na TASK-044
-**Contexto**: Cobrir o fluxo pull ponta a ponta pela UI real em desktop e mobile (Playwright),
-já que a task toca o fluxo crítico de troca de posse de chave (spec §4).
-**Resolução**: cumprida pelo `tests/e2e/pull-flow.spec.ts` (escrito test-first na TASK-044).
-O Playwright roda cada spec nos projects `desktop` (1280×800) e `mobile` (375×812), então o
-smoke nos dois viewports é automático. Sem commit `feat(TASK-045)` — task de teste apenas.
-
-**Critérios BDD**:
-- [x] **Cenário**: Ciclo pull completo em desktop e mobile
-      Dado o aluno A com a chave em uso e o aluno B sem a chave
-      Quando B solicita a chave pela UI e A aceita em `/confirm`
-      Então a chave aparece como em uso por B ao fim do fluxo, nos dois viewports (375×812 e 1280×800)
-      E nenhuma tela gera scroll horizontal (REQ-016).
+- [ ] **Cenário**: Botão "Devolver" no card mobile
+      Dado que a chave X está `in_use` e o usuário logado é o portador OU a portaria
+      Quando visualiza o card no mobile
+      Então há um botão "Devolver" explícito (além de Transferir/Solicitar conforme o papel).
+- [ ] **Cenário**: Devolução forçada com justificativa pela portaria no mobile
+      Dado que o porteiro abre a devolução de uma chave em uso
+      Quando marca "confirmar sem o portador" e informa a justificativa
+      Então a devolução é enviada com `bypassConfirmation` + justificativa e conclui na hora.
+- [ ] **Cenário**: Estados claros no card
+      Dado uma chave com retirada/devolução/transferência/solicitação pendente
+      Quando visualiza o card
+      Então o card diz o que está pendente e quem está com a chave / quem solicitou / quem deve confirmar.
+- [ ] **Cenário** (e2e): porteiro força devolução de chave em uso pelo mobile
+      Dado uma chave seedada em uso por um usuário comum
+      Quando o porteiro força a devolução pelo card mobile com justificativa
+      Então a chave volta a `available` — verificado no viewport mobile.
