@@ -118,6 +118,12 @@
 - ~~TASK-044 → REQ-027: UI — ação "Solicitar esta chave" no card mobile e na linha desktop para não-portadores; estado "já solicitada"; aceite/recusa pelo portador em `/confirm` com texto contextual.~~
 - ~~TASK-045 → REQ-027: e2e smoke desktop/mobile.~~ *Consolidada na TASK-044: o `tests/e2e/pull-flow.spec.ts` (test-first) roda nos dois viewports via projects do Playwright, cumprindo o smoke. Os testes unitários do fluxo pull vivem em `tests/transactions.test.ts` (TASK-043).*
 
+### Sprint 13 — Devolução Forçada Ampla e Clareza Mobile (CR 2026-07-07, Tipo C — REQ-028, ADR-009)
+> Mudança em feature entregue (mobile/bypass). Sem migration (coluna `justification` já existe).
+> Aproveita o WIP de responsividade CSS-driven (`.mobile-only`/`.desktop-only`) já iniciado.
+- TASK-046 → REQ-028: API — devolução forçada de qualquer chave em uso por porteiro/admin, com justificativa obrigatória informada no ato (não herdada) e log de auditoria; test→feat.
+- TASK-047 → REQ-028: UI mobile — botão "Devolver" no card (portador/portaria) + campo de justificativa na devolução forçada + estados claros (portador/solicitante/ação pendente); consolida o refactor CSS-responsivo; `withdraw_justification`/`in_use_since` no SSR; test (e2e) → feat.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 
