@@ -45,9 +45,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Nenhuma task ativa (Quick-Fix de UI concluído).
-- Última Ação: Correção da visibilidade do botão 'Devolver' para usuários normais e correção da exibição do botão 'Transferir' para porteiros/admins no mobile (`DashboardClient.tsx`).
-- Próxima Ação: Aguardar nova task do usuário (Sprint 12 ou novas requests).
+- Sprint/Task Ativa: Nenhuma. Quick-fix pós-análise de fluxo commitado (9fe0005) + CR REQ-027 registrado (1b0b721).
+- Última Ação: (1) Quick-fix: restaurada visibilidade Devolver/Transferir do portador (regressão employee_id→user_id do commit 2306193), API return agora exige posse, qualquer porteiro cancela pendências, e2e key-flows reescrito para a UI atual — vitest 67/67, e2e 6/6. (2) CR Tipo C: REQ-027 (solicitação de chave em uso ao portador, fluxo pull) em spec.md v1.7 + ADR-008 + Sprint 12 (TASK-043..045) no plan.md.
+- Próxima Ação: Executar Sprint 12 (REQ-027) via ciclo TDD quando o usuário autorizar.
 - Decisões em aberto: Nenhuma
 - Arquivos não commitados: Nenhum
 - Branch atual: feature/sprint-10-transferencia-logs
