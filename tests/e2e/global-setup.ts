@@ -30,7 +30,10 @@ export default async function globalSetup() {
     );
     insertUser.run('e2e_admin', hash, 'ADMIN', 'Admin E2E');
     insertUser.run('e2e_porteiro', hash, 'PORTEIRO', 'Porteiro E2E');
-    insertUser.run('e2e_aluno', hash, 'ALUNO', 'Aluno E2E');
+    const alunoId = insertUser.run('e2e_aluno', hash, 'ALUNO', 'Aluno E2E').lastInsertRowid;
+    insertUser.run('e2e_aluno2', hash, 'ALUNO', 'Aluno Dois E2E');
     db.prepare("INSERT INTO keys (name, room, status, active) VALUES ('Chave E2E', 'Sala 101', 'available', 1)").run();
+    // Chave já em uso pelo Aluno E2E — base do fluxo pull (REQ-027).
+    db.prepare("INSERT INTO keys (name, room, status, user_id, active) VALUES ('Chave Pull E2E', 'Sala 202', 'in_use', ?, 1)").run(alunoId);
     db.close();
 }
