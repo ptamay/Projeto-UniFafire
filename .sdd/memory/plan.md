@@ -111,6 +111,13 @@
 - ~~TASK-042: Transferência no Mobile (REQ-026)~~
       *Adaptar a view de cards (mobile) no DashboardClient para incluir o botão/ação de Transferir chaves.*
 
+### Sprint 12 — Solicitação de Chave em Uso (CR 2026-07-06, Tipo C — REQ-027, ADR-008)
+> Fluxo "pull": não-portador solicita a chave diretamente ao portador. Reutiliza a máquina
+> de `transfer` (papéis invertidos) — sem migration. Detalhes de modelagem no ADR-008.
+- TASK-043 → REQ-027: API — criação da solicitação (transfer com `user_id` = solicitante já confirmado e `porteiro_id` = portador pendente) + `user-confirm` aceitando a contraparte por `tx.porteiro_id === session.id` (autorização estrita, com teste de regressão).
+- TASK-044 → REQ-027: UI — ação "Solicitar esta chave" no card mobile e na linha desktop para não-portadores; estado "já solicitada"; aceite/recusa pelo portador em `/confirm` com texto contextual.
+- TASK-045 → REQ-027: testes — unitários do fluxo pull (solicita → portador aceita → chave muda de mãos; recusa; bloqueio por pendência existente) + e2e smoke desktop/mobile.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 

@@ -14,6 +14,7 @@
 | 2026-07-06 | 1.4 | REQ-022 e REQ-023 — Transferência direta de chaves e consolidação das abas de logs (CR Tipo C, ADR-004) | Otimizar processo de repasse de chaves e melhorar UX da auditoria. |
 | 2026-07-06 | 1.5 | REQ-024 — Transferência de chaves entre usuários sem privilégios (CR Tipo C, ADR-005) | Extensão do REQ-022 para permitir que Funcionários e Alunos transfiram as próprias chaves entre si. |
 | 2026-07-06 | 1.6 | REQ-025 — Cancelamento e visualização de transferências pendentes (CR Tipo C, ADR-006) | Corrigir gap do REQ-024: o iniciador não conseguia ver ou cancelar a transferência pendente. |
+| 2026-07-06 | 1.7 | REQ-027 — Solicitação de chave em uso ao portador (CR Tipo C, ADR-008) | Regra de negócio: qualquer usuário vê quem está com a chave e pode solicitá-la diretamente ao portador (fluxo "pull", prioridade mobile), sem passar pela portaria. |
 
 ---
 
@@ -74,6 +75,7 @@ Papéis totalmente isolados (sem herança). Fonte única: `ROLE_PERMISSIONS`.
 - **REQ-024 — Transferência entre Usuários Comuns (CR 2026-07-06, Tipo C):** Extensão do REQ-022. Permite que funcionários e alunos em posse de uma chave iniciem uma transferência para outro usuário comum. Diferente do bypass da portaria, essa operação gera uma transação *pendente* que exige a confirmação pelo usuário de destino.
 - **REQ-025 — Cancelamento de Transferências (CR 2026-07-06, Tipo C):** Correção de gap operacional do REQ-024. Garante que o usuário que iniciou uma transferência pendente consiga visualizá-la na aba de Confirmações e cancelá-la a qualquer momento, antes de o destinatário aceitar.
 - **REQ-026 — Transferência de chaves na interface mobile (CR 2026-07-06, Tipo C):** Extensão do REQ-022 e REQ-024 para o layout mobile. Na visualização em card (mobile) do Dashboard, incluir a ação de transferir a chave diretamente para outro usuário.
+- **REQ-027 — Solicitação de chave em uso ao portador (CR 2026-07-06, Tipo C):** Complemento "pull" do REQ-024. Todo usuário vê no Dashboard quem é o portador de uma chave em uso; funcionários e alunos podem, a partir do card (mobile) ou da linha (desktop), *solicitar* a chave diretamente ao portador atual. A solicitação gera uma transação pendente que o portador aceita (a chave muda de mãos, sem passar pela portaria) ou recusa/cancela. Solicitante, portador e portaria podem cancelar a pendência. Vale a regra existente de uma pendência por chave — o card exibe o estado "já solicitada".
 
 ## 4. Fluxos que não podem falhar
 1. Login → dashboard.
