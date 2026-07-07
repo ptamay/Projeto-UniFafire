@@ -35,5 +35,7 @@ export default async function globalSetup() {
     db.prepare("INSERT INTO keys (name, room, status, active) VALUES ('Chave E2E', 'Sala 101', 'available', 1)").run();
     // Chave já em uso pelo Aluno E2E — base do fluxo pull (REQ-027).
     db.prepare("INSERT INTO keys (name, room, status, user_id, active) VALUES ('Chave Pull E2E', 'Sala 202', 'in_use', ?, 1)").run(alunoId);
+    // Chave em uso pelo Aluno E2E — base da devolução forçada pela portaria (REQ-028).
+    db.prepare("INSERT INTO keys (name, room, status, user_id, active) VALUES ('Chave Devolver E2E', 'Sala 303', 'in_use', ?, 1)").run(alunoId);
     db.close();
 }
