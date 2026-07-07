@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="pt-BR" className={inter.variable}>
-            <body>
+            <body suppressHydrationWarning>
                 {children}
                 <Toaster
                     position="top-right"
