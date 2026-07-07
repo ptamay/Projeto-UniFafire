@@ -139,22 +139,19 @@ export async function POST(request: Request) {
 
             if (bypassConfirmation) {
                 if (!isPorteiroOrAdmin) return NextResponse.json({ error: 'Apenas porteiros ou gestores podem devolver chaves sem confirmação.' }, { status: 403 });
-                
-                const lastWithdraw = db.prepare(`
-                    SELECT justification FROM key_transactions 
-                    WHERE key_id = ? AND action = 'withdraw' AND status = 'completed'
-                    ORDER BY completed_at DESC LIMIT 1
-                `).get(keyId) as { justification: string | null } | undefined;
 
-                if (!lastWithdraw?.justification) {
-                    return NextResponse.json({ error: 'Não é possível forçar a devolução de uma chave que foi retirada normalmente (sem justificativa).' }, { status: 400 });
+                // REQ-028/ADR-009: a portaria pode forçar a devolução de QUALQUER chave em uso.
+                // A justificativa é informada no ato (não mais herdada da retirada) e é obrigatória.
+                if (!justification || justification.trim() === '') {
+                    return NextResponse.json({ error: 'Justificativa é obrigatória para forçar a devolução.' }, { status: 400 });
                 }
+                const returnJustification = justification.trim();
 
                 // Devolução direta
                 const txResult = db.prepare(`
                     INSERT INTO key_transactions (key_id, user_id, action, porteiro_id, porteiro_confirmed_at, user_confirmed_at, status, initiated_at, completed_at, justification)
                     VALUES (?, ?, 'return', ?, ?, ?, 'completed', ?, ?, ?)
-                `).run(keyId, currentUserId || resolvedUserId, session.id, now, now, now, now, lastWithdraw.justification);
+                `).run(keyId, currentUserId || resolvedUserId, session.id, now, now, now, now, returnJustification);
 
                 const transactionId = txResult.lastInsertRowid;
 
@@ -167,8 +164,8 @@ export async function POST(request: Request) {
                     VALUES (?, 'return', ?, ?, ?)
                 `).run(keyId, currentUserId || resolvedUserId, targetUser?.username || 'Unknown', transactionId);
 
-                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name, 
-                    `Devolvida diretamente de ${targetUser?.username || 'Unknown'}. Justificativa herdada: ${lastWithdraw.justification}`);
+                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name,
+                    `Devolução forçada de ${targetUser?.username || 'Unknown'}. Justificativa: ${returnJustification}`);
 
                 return NextResponse.json({ 
                     success: true, 
