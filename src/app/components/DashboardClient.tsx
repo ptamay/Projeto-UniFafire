@@ -168,6 +168,21 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
 
 const normalize = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+// Descreve, em uma linha, o que est\u00e1 pendente na chave \u2014 para o card comunicar
+// claramente a situa\u00e7\u00e3o (REQ-028): quem est\u00e1 com ela, quem pediu, o que falta confirmar.
+const describePending = (pi: NonNullable<Key['pending_info']>): string => {
+    const who = pi.user_name || 'Usu\u00e1rio';
+    if (pi.action === 'withdraw') return 'Retirada \u2014 aguardando confirma\u00e7\u00e3o';
+    if (pi.action === 'return') return 'Devolu\u00e7\u00e3o \u2014 aguardando confirma\u00e7\u00e3o';
+    if (pi.action === 'transfer') {
+        // Pull (solicita\u00e7\u00e3o): o solicitante j\u00e1 confirmou; falta o portador aceitar.
+        return pi.user_confirmed && !pi.porteiro_confirmed
+            ? `${who} solicitou esta chave`
+            : `Transfer\u00eancia para ${who}`;
+    }
+    return 'Aguardando confirma\u00e7\u00e3o';
+};
+
 export default function DashboardClient({ initialKeys, initialUsers, userRole, userId, username }: Props) {
     const router = useRouter();
     const [keys, setKeys] = useState<Key[]>(initialKeys || []);
@@ -178,16 +193,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'available' | 'in_use'>('all');
-    const [isDesktop, setIsDesktop] = useState(true);
-    
-    useEffect(() => {
-        const handleResize = () => setIsDesktop(window.innerWidth > 768);
-        handleResize(); // Executa na montagem
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-    
-    const effectiveViewMode = isDesktop ? 'list' : 'grid';
+    // O layout responsivo agora é tratado puramente por CSS (.mobile-only e .desktop-only)
 
     // Explicação da dupla confirmação — contextual e dispensável (não é tour forçado).
     const [showIntro, setShowIntro] = useState(false);
@@ -441,6 +447,14 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         if (confirmModal.type === 'transfer' && !empId) {
             toast.error('Selecione o usuário de destino.');
             return;
+        }
+        // Força (bypass) exige justificativa antes de enviar — evita 400 do servidor.
+        if (bypassConfirmation && (confirmModal.type === 'withdraw' || confirmModal.type === 'return')) {
+            const effective = justification === 'Outro' ? customJustification : justification;
+            if (!effective || effective.trim() === '') {
+                toast.error('Selecione uma justificativa.');
+                return;
+            }
         }
         handleTransaction(confirmModal.keyId, confirmModal.type, empId);
         // Limpa a barra de Ação Rápida via estado (o render cuida do resto).
@@ -1010,101 +1024,117 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             )}
                         </div>
                     )
-                ) : effectiveViewMode === 'grid' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {filtered.map(key => (
-                            <div 
-                                key={key.id} 
-                                className={`key-card ${key.pending_info ? 'pending' : key.status === 'in_use' ? 'inuse' : 'available'}`}
-                                onClick={() => selectQaKey(key)}
-                            >
-                                <div className="key-card-icon-wrapper">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                                </div>
-                                
-                                <div className="key-card-content-wrapper">
-                                    <div className="key-card-header-row">
-                                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'flex-start', width: '100%' }}>
-                                            <div className="key-card-title">{key.name}</div>
-                                            {key.room && <div className="key-card-room">{key.room}</div>}
-                                            
-                                            {key.status === 'in_use' && key.employee_name && !key.pending_info && (
-                                                <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
-                                                    <div className="key-card-avatar">
-                                                        {key.employee_name[0].toUpperCase()}
-                                                    </div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                        {key.employee_role && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            
-                                            {key.pending_info && (
-                                                <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
-                                                    <div className="key-card-avatar">
-                                                        {(key.pending_info.user_name || 'U')[0].toUpperCase()}
-                                                    </div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
-                                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.pending_info.user_role || 'Aluno'}</div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) && (
-                                                <button
-                                                    className="key-card-action-btn"
-                                                    disabled={cancelLoading === key.pending_info.transaction_id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleCancel(key.pending_info!.transaction_id, key.name);
-                                                    }}
-                                                >
-                                                    {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
-                                                </button>
-                                            )}
-                                            {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
-                                                <button
-                                                    className="key-card-action-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setConfirmModal({
-                                                            open: true,
-                                                            keyId: key.id,
-                                                            keyName: key.name,
-                                                            type: 'transfer'
-                                                        });
-                                                    }}
-                                                    style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                >
-                                                    Transferir
-                                                </button>
-                                            )}
-                                            {key.status === 'in_use' && !key.pending_info && !isPorteiroOrAdmin && key.user_id !== userId && (
-                                                <button
-                                                    className="key-card-action-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openRequestModal(key);
-                                                    }}
-                                                    style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                >
-                                                    Solicitar
-                                                </button>
-                                            )}
-                                        </div>
-                                        <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
-                                            {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 ) : (
-                    /* Modo Lista */
-                    effectiveViewMode === 'list' && (
+                    <>
+                        {/* Modo Mobile (Grid Cards) */}
+                        <div className="mobile-only">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {filtered.map(key => (
+                                    <div 
+                                        key={key.id} 
+                                        className={`key-card ${key.pending_info ? 'pending' : key.status === 'in_use' ? 'inuse' : 'available'}`}
+                                        onClick={() => selectQaKey(key)}
+                                    >
+                                        <div className="key-card-icon-wrapper">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                                        </div>
+                                        
+                                        <div className="key-card-content-wrapper">
+                                            <div className="key-card-header-row">
+                                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'flex-start', width: '100%' }}>
+                                                    <div className="key-card-title">{key.name}</div>
+                                                    {key.room && <div className="key-card-room">{key.room}</div>}
+                                                    
+                                                    {key.status === 'in_use' && key.employee_name && !key.pending_info && (
+                                                        <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
+                                                            <div className="key-card-avatar">
+                                                                {key.employee_name[0].toUpperCase()}
+                                                            </div>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
+                                                                {key.employee_role && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {key.pending_info && (
+                                                        <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
+                                                            <div className="key-card-avatar">
+                                                                {(key.pending_info.user_name || 'U')[0].toUpperCase()}
+                                                            </div>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
+                                                                <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) && (
+                                                        <button
+                                                            className="key-card-action-btn"
+                                                            disabled={cancelLoading === key.pending_info.transaction_id}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleCancel(key.pending_info!.transaction_id, key.name);
+                                                            }}
+                                                        >
+                                                            {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
+                                                        </button>
+                                                    )}
+                                                    {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                                                            <button
+                                                                className="key-card-action-btn"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    requestTransaction(key.id, 'return');
+                                                                }}
+                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                            >
+                                                                Devolver
+                                                            </button>
+                                                            <button
+                                                                className="key-card-action-btn"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setConfirmModal({
+                                                                        open: true,
+                                                                        keyId: key.id,
+                                                                        keyName: key.name,
+                                                                        type: 'transfer'
+                                                                    });
+                                                                }}
+                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                            >
+                                                                Transferir
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {key.status === 'in_use' && !key.pending_info && !isPorteiroOrAdmin && key.user_id !== userId && (
+                                                        <button
+                                                            className="key-card-action-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openRequestModal(key);
+                                                            }}
+                                                            style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                        >
+                                                            Solicitar
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Modo Desktop (Lista) */}
+                        <div className="desktop-only">
                         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
                             <div className="dashboard-list-header" style={{
                                 display: 'grid',
@@ -1249,8 +1279,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     </div>
                                 ))
                             )}
-</div>
-                    )
+                        </div>
+                        </div>
+                    </>
                 )}
             </main>
 
@@ -1382,9 +1413,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
                                     </p>
                                     
-                                    {/* Bypass UI */}
-                                    {((confirmModal.type === 'withdraw' && isPorteiroOrAdmin) || 
-                                      (confirmModal.type === 'return' && isPorteiroOrAdmin && confirmModal.withdrawJustification)) && (
+                                    {/* Bypass UI — força a atribuição (withdraw) ou a devolução (return) de qualquer chave em uso (REQ-028) */}
+                                    {((confirmModal.type === 'withdraw' || confirmModal.type === 'return') && isPorteiroOrAdmin) && (
                                         <div style={{ marginTop: '1rem', textAlign: 'left', background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
 
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
@@ -1400,7 +1430,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         {confirmModal.type === 'withdraw' ? 'Atribuir chave imediatamente sem confirmação' : 'Confirmar devolução imediatamente (sem celular)'}
                                     </label>
                                     
-                                    {bypassConfirmation && confirmModal.type === 'withdraw' && (
+                                    {bypassConfirmation && (confirmModal.type === 'withdraw' || confirmModal.type === 'return') && (
                                         <div className="animate-fade" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Justificativa Obrigatória</label>
                                             <select 
@@ -1445,7 +1475,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 className={`btn ${confirmModal.type === 'withdraw' ? 'btn-green' : 'btn-blue'}`}
                                 onClick={confirmAction}
                             >
-                                Enviar solicitação
+                                {bypassConfirmation ? 'Confirmar agora' : 'Enviar solicitação'}
                             </button>
                         </div>
                     </div>

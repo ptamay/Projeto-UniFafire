@@ -803,6 +803,11 @@ h3 { font-size: 1.125rem; }
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
   .main-content { margin-left: 0; padding: calc(var(--navbar-h) + 1rem) 1rem 1rem 1rem; }
+  .desktop-only { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
 }
 
 /* ── Overlay for mobile sidebar ────────────────────────── */
