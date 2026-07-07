@@ -111,12 +111,12 @@
 - ~~TASK-042: Transferência no Mobile (REQ-026)~~
       *Adaptar a view de cards (mobile) no DashboardClient para incluir o botão/ação de Transferir chaves.*
 
-### Sprint 12 — Solicitação de Chave em Uso (CR 2026-07-06, Tipo C — REQ-027, ADR-008)
+### Sprint 12 ✅ — Solicitação de Chave em Uso (CR 2026-07-06, Tipo C — REQ-027, ADR-008)
 > Fluxo "pull": não-portador solicita a chave diretamente ao portador. Reutiliza a máquina
 > de `transfer` (papéis invertidos) — sem migration. Detalhes de modelagem no ADR-008.
-- TASK-043 → REQ-027: API — criação da solicitação (transfer com `user_id` = solicitante já confirmado e `porteiro_id` = portador pendente) + `user-confirm` aceitando a contraparte por `tx.porteiro_id === session.id` (autorização estrita, com teste de regressão).
-- TASK-044 → REQ-027: UI — ação "Solicitar esta chave" no card mobile e na linha desktop para não-portadores; estado "já solicitada"; aceite/recusa pelo portador em `/confirm` com texto contextual.
-- TASK-045 → REQ-027: testes — unitários do fluxo pull (solicita → portador aceita → chave muda de mãos; recusa; bloqueio por pendência existente) + e2e smoke desktop/mobile.
+- ~~TASK-043 → REQ-027: API — criação da solicitação (transfer com `user_id` = solicitante já confirmado e `porteiro_id` = portador pendente) + `user-confirm` aceitando a contraparte por `tx.porteiro_id === session.id` (autorização estrita, com teste de regressão).~~
+- ~~TASK-044 → REQ-027: UI — ação "Solicitar esta chave" no card mobile e na linha desktop para não-portadores; estado "já solicitada"; aceite/recusa pelo portador em `/confirm` com texto contextual.~~
+- ~~TASK-045 → REQ-027: e2e smoke desktop/mobile.~~ *Consolidada na TASK-044: o `tests/e2e/pull-flow.spec.ts` (test-first) roda nos dois viewports via projects do Playwright, cumprindo o smoke. Os testes unitários do fluxo pull vivem em `tests/transactions.test.ts` (TASK-043).*
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
@@ -140,3 +140,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 7 (dívida) | 2026-07-02 | 2026-07-02 | 1 | 15 | 15 | 0 | 1 (pre-commit lint bloqueado por débito legado — quitado na própria sprint) | — | — |
 | 8 (mobile) | 2026-07-02 | 2026-07-02 | 1 | 14 | 14 | 0 | 1 (boot Edge Runtime quebrado por regressão da Sprint 7 — corrigido; detectado pelo E2E) | — | — |
 | 10 (transfer) | 2026-07-06 | 2026-07-06 | 1 | 15 | 15 | 0 | 1 (lint type checking) | — | — |
+| 12 (pull REQ-027) | 2026-07-07 | 2026-07-07 | 1 | 3 tasks | 3 (045 consolidada em 044) | 0 | 1 (Gate 4 falha por débito herdado da Sprint 11 — TASK-042 feat sem test; não introduzido nesta sprint) | — | — |

@@ -45,13 +45,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Nenhuma. Quick-fix pós-análise de fluxo commitado (9fe0005) + CR REQ-027 registrado (1b0b721).
-- Última Ação: (1) Quick-fix: restaurada visibilidade Devolver/Transferir do portador (regressão employee_id→user_id do commit 2306193), API return agora exige posse, qualquer porteiro cancela pendências, e2e key-flows reescrito para a UI atual — vitest 67/67, e2e 6/6. (2) CR Tipo C: REQ-027 (solicitação de chave em uso ao portador, fluxo pull) em spec.md v1.7 + ADR-008 + Sprint 12 (TASK-043..045) no plan.md.
-- Próxima Ação: Executar Sprint 12 (REQ-027) via ciclo TDD quando o usuário autorizar.
-- Decisões em aberto: Nenhuma
-- Arquivos não commitados: Nenhum
-- Branch atual: feature/sprint-10-transferencia-logs
-- Atualizado em: 2026-07-06
+- Sprint/Task Ativa: Sprint 12 (REQ-027) implementada — TDD completo. Aguardando decisão sobre Gate 4 (débito herdado) antes de push/merge.
+- Última Ação: Sprint 12 (fluxo pull, REQ-027/ADR-008) na branch feature/sprint-12-solicitacao-chave. TASK-043 (API: solicitação pull + aceite estrito da contraparte) e TASK-044 (UI: 'Solicitar' no card/linha + aceite em /confirm) com ciclo test→feat. TASK-045 (e2e smoke) consolidada no pull-flow.spec.ts (desktop+mobile). Gates: vitest 74/74, e2e 8/8, tsc limpo, eslint 0 erros, npm audit 0. Semgrep não instalado nesta máquina.
+- Próxima Ação: Resolver Gate 4 — falha por TASK-042 (Sprint 11) commitada feat sem test (débito herdado, anterior a esta sprint). Decidir com o usuário: avançar o tdd-baseline (grandfather) ou não. Depois, push/PR.
+- Decisões em aberto: Como tratar o débito herdado da TASK-042 no Gate 4 (não introduzido pela Sprint 12).
+- Arquivos não commitados: Memory sync (este commit).
+- Branch atual: feature/sprint-12-solicitacao-chave
+- Atualizado em: 2026-07-07
 ```
 
 ---
