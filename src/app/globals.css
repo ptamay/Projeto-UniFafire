@@ -209,6 +209,13 @@ h3 { font-size: 1.125rem; }
   padding: 2rem;
   min-height: 100vh;
   transition: margin 0.3s ease;
+  /* REQ-016: nenhuma tela pode gerar scroll horizontal. Os tooltips decorativos
+     ([data-tooltip]::after, nowrap + opacity:0) permanecem no layout mesmo
+     invisíveis; junto à borda direita (ex.: o "X" da dica de dupla confirmação
+     na visão porteiro) vazavam ~6px além da viewport e geravam scroll horizontal.
+     overflow-x: clip corta apenas o eixo X sem transformar o main em container de
+     rolagem vertical (ao contrário de overflow-x: hidden). */
+  overflow-x: clip;
 }
 
 @media (max-width: 768px) {

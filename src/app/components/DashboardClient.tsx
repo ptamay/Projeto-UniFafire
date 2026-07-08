@@ -1235,7 +1235,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     Solicitar
                                                 </button>
                                             ) : (
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                // A coluna "Ações" tem largura fixa (120px). Com dois botões
+                                                // (Devolver + Transferir), a linha ultrapassava a coluna e gerava
+                                                // scroll horizontal na visão porteiro (REQ-016). flexWrap permite
+                                                // que os botões empilhem quando não cabem lado a lado, sem estourar.
+                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                                                     {(isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <>
                                                             <button
