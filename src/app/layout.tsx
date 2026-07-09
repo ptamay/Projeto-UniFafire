@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             background: 'var(--bg-elevated)',
                             color: 'var(--text-primary)',
                             border: '1px solid var(--border-strong)',
-                            fontFamily: 'Inter, sans-serif',
+                            fontFamily: 'var(--font-inter), system-ui, sans-serif',
                             fontSize: '0.875rem',
                         },
                         success: { iconTheme: { primary: '#3dbf70', secondary: '#0f1d57' } },

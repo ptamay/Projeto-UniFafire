@@ -14,8 +14,34 @@ colors:
   danger: "#ef4444"
   danger-text: "#f87171"
   warning: "#f59e0b"
+  warning-text: "#fbbf24"
   status-available-text: "#34d399"
-  status-inuse-text: "#fb7185"
+  status-inuse-text: "#fda4af"
+  status-available-light: "#047857"
+  status-inuse-light: "#be123c"
+  action-withdraw: "#fbbf24"
+  action-withdraw-light: "#b45309"
+  action-return: "#34d399"
+  action-return-light: "#047857"
+  action-transfer: "#c084fc"
+  action-transfer-light: "#7e22ce"
+  chip-blue: "#8a9deb"
+  chip-purple-light: "#f3e8ff"
+  bg-page-light: "#f1f5f9"
+  bg-elevated-light: "#f8fafc"
+  border-light: "#e2e8f0"
+  nav-muted: "#a8bbd8"
+  badge-admin: "#a78bfa"
+  badge-porteiro: "#60a5fa"
+  badge-gestor: "#2dd4bf"
+  badge-funcionario: "#38bdf8"
+  badge-aluno: "#fbbf24"
+  badge-admin-light: "#7e22ce"
+  badge-porteiro-light: "#1d4ed8"
+  badge-gestor-light: "#0f766e"
+  badge-funcionario-light: "#0369a1"
+  badge-aluno-light: "#b45309"
+  badge-user-light: "#475569"
 typography:
   display:
     fontFamily: "'Inter', system-ui, sans-serif"
@@ -98,9 +124,13 @@ Cores de estado têm papéis semânticos fixos — use os tokens, nunca literais
 
 - **Danger** (`--danger` `#ef4444`, `--danger-hover`, `--danger-text` `#f87171`, `--danger-bg`): ações destrutivas (excluir), logout, badges de pendência crítica, ícones de alerta. `--danger` é fundo; `--danger-text` é texto/ícone sobre fundo escuro.
 - **Warning** (`--warning` `#f59e0b`, `--warning-text`, `--warning-bg`): atenção/pendência não crítica (status "Aguardando").
-- **Status: disponível** (`--status-available-text` `#34d399`, `--status-available-bg`) e **em uso** (`--status-inuse-text` `#fb7185`, `--status-inuse-bg`): indicadores de estado da chave; também usados no alerta de "chaves em atraso".
+- **Status: disponível** (`--status-available-text` `#34d399`, `--status-available-bg`) e **em uso** (`--status-inuse-text` `#fda4af`, `--status-inuse-bg`): indicadores de estado da chave; também usados no alerta de "chaves em atraso". Os pares foram calibrados contra o fundo TINTADO das tags (não contra a superfície pura) — AA nos dois temas.
+- **Ações de registro** (`--action-withdraw-*` âmbar, `--action-return-*` verde, `--action-transfer-*` roxo): badges e acentos que nomeiam um MOVIMENTO (retirada/devolução/transferência) em qualquer tela — Confirmações, Histórico, Dashboard. Nunca reutilize cores de *estado* (em uso/disponível) para nomear uma *ação*.
+- **Chips de ícone de modal** (`--chip-green/blue/purple-bg/-fg`): par fundo+traço dos círculos de ícone nos modais de confirmação; casam com a linguagem dos botões (`btn-green` retirada, `btn-blue` devolução, roxo transferência) e têm override completo no `.light-mode`.
 
-**The Token Rule.** Vermelhos e âmbares nunca entram como hex literal em componentes — sempre `var(--danger*)` / `var(--warning*)` / `var(--status-*)`. Isso mantém o modo claro correto e evita drift de paleta.
+**The Token Rule.** Vermelhos, âmbares e roxos nunca entram como hex literal em componentes — sempre `var(--danger*)` / `var(--warning*)` / `var(--status-*)` / `var(--action-*)` / `var(--chip-*)`. Isso mantém o modo claro correto e evita drift de paleta.
+
+**The Action Language Rule.** O idioma ação→cor é fixo e vale em todas as telas: **retirada = âmbar · devolução = verde · transferência = roxo**. Botões continuam na linguagem de CTA (`btn-green` primário, `btn-blue` devolução); o idioma de ação vale para badges, tags e acentos de registro.
 
 ## 3. Typography
 

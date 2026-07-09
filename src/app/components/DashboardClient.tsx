@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import toast from 'react-hot-toast';
@@ -38,26 +38,51 @@ interface Props {
 const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..." }: { users: User[], selectedId?: number, onSelect: (id: number) => void, placeholder?: string }) => {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
+    // Navegação por teclado (padrão combobox WAI-ARIA): índice da opção ativa,
+    // ids únicos por instância (o seletor repete por linha na tabela) e retorno
+    // de foco ao gatilho ao fechar — antes as opções eram inalcançáveis por teclado.
+    const [highlight, setHighlight] = useState(-1);
+    const listboxId = useId();
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
     const selectedUser = users.find(u => u.id === selectedId);
 
-    const filtered = users.filter(u => 
-        normalize(u.name).includes(normalize(search)) || 
+    const filtered = users.filter(u =>
+        normalize(u.name).includes(normalize(search)) ||
         normalize(u.username || '').includes(normalize(search))
     ).slice(0, 10);
 
+    const closeAndRefocus = () => {
+        setOpen(false);
+        setSearch('');
+        setHighlight(-1);
+        triggerRef.current?.focus();
+    };
+    const selectAndClose = (id: number) => {
+        onSelect(id);
+        closeAndRefocus();
+    };
+
+    useEffect(() => {
+        if (highlight >= 0 && listRef.current) {
+            (listRef.current.children[highlight] as HTMLElement | undefined)?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [highlight]);
+
     return (
         <div style={{ position: 'relative', width: '100%', maxWidth: '240px', minWidth: '160px' }}>
-            <div 
-                role="combobox"
+            <div
+                ref={triggerRef}
+                role="button"
                 aria-expanded={open}
                 aria-haspopup="listbox"
-                aria-controls="user-listbox"
+                aria-controls={listboxId}
                 tabIndex={0}
                 onClick={() => setOpen(!open)}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                         e.preventDefault();
-                        setOpen(!open);
+                        setOpen(true);
                     } else if (e.key === 'Escape') {
                         setOpen(false);
                     }
@@ -89,7 +114,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
 
             {open && (
                 <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setOpen(false)} />
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 'calc(var(--z-dropdown) - 1)' }} onClick={() => setOpen(false)} />
                     <div className="animate-fade" style={{ 
                         position: 'absolute', 
                         top: 'calc(100% + 5px)', 
@@ -98,52 +123,64 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                         background: 'var(--bg-card)', 
                         border: '1px solid var(--border-strong)', 
                         borderRadius: 'var(--radius-md)', 
-                        boxShadow: 'var(--shadow-lg)', 
-                        zIndex: 999,
+                        boxShadow: 'var(--shadow-lg)',
+                        zIndex: 'var(--z-dropdown)',
                         overflow: 'hidden',
                         animation: 'slideUp 0.2s ease-out'
                     }}>
                         <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>
-                            <input 
+                            <input
                                 autoFocus
-                                role="searchbox"
+                                role="combobox"
                                 aria-label="Filtrar usuário"
+                                aria-expanded={open}
+                                aria-controls={listboxId}
+                                aria-autocomplete="list"
+                                aria-activedescendant={highlight >= 0 && filtered[highlight] ? `${listboxId}-opt-${filtered[highlight].id}` : undefined}
                                 style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.6rem', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none', minHeight: '44px' }}
                                 placeholder="Filtrar usuário..."
                                 value={search}
-                                onChange={e => setSearch(e.target.value)}
+                                onChange={e => { setSearch(e.target.value); setHighlight(-1); }}
                                 onClick={e => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        setHighlight(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        setHighlight(prev => (prev > 0 ? prev - 1 : 0));
+                                    } else if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const pick = highlight >= 0 ? filtered[highlight] : filtered[0];
+                                        if (pick) selectAndClose(pick.id);
+                                    } else if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        closeAndRefocus();
+                                    }
+                                }}
                             />
                         </div>
-                        <div role="listbox" id="user-listbox" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                            {filtered.length > 0 ? filtered.map(u => (
-                                <div 
+                        <div role="listbox" id={listboxId} ref={listRef} aria-label="Usuários" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {filtered.length > 0 ? filtered.map((u, index) => (
+                                <div
                                     key={u.id}
+                                    id={`${listboxId}-opt-${u.id}`}
                                     role="option"
                                     aria-selected={selectedId === u.id}
-                                    style={{ 
-                                        padding: '0.6rem 0.75rem', 
+                                    style={{
+                                        padding: '0.6rem 0.75rem',
                                         minHeight: '44px',
-                                        fontSize: '0.8rem', 
+                                        fontSize: '0.8rem',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        background: selectedId === u.id ? 'var(--bg-selection)' : 'transparent',
-                                        color: selectedId === u.id ? 'var(--text-primary)' : 'var(--text-primary)',
-                                        transition: 'all 0.1s'
+                                        background: selectedId === u.id ? 'var(--bg-selection)' : highlight === index ? 'var(--bg-selection-light)' : 'transparent',
+                                        color: 'var(--text-primary)',
+                                        transition: 'background 0.1s'
                                     }}
-                                    onClick={() => { onSelect(u.id); setOpen(false); setSearch(''); }}
-                                    onMouseEnter={e => {
-                                        if (selectedId !== u.id) {
-                                            e.currentTarget.style.background = 'var(--bg-selection-light)';
-                                        }
-                                    }}
-                                    onMouseLeave={e => {
-                                        if (selectedId !== u.id) {
-                                            e.currentTarget.style.background = 'transparent';
-                                        }
-                                    }}
+                                    onClick={() => selectAndClose(u.id)}
+                                    onMouseEnter={() => setHighlight(index)}
                                 >
                                     <div>
                                         <div style={{ fontWeight: selectedId === u.id ? 700 : 500 }}>{u.name}</div>
@@ -279,7 +316,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const [empIndex, setEmpIndex] = useState(-1);
     const keyScrollRef = useRef<HTMLDivElement>(null);
     const empScrollRef = useRef<HTMLDivElement>(null);
-    const modalOpenTime = useRef<number>(0);
 
     // ── Ação Rápida: estado React (antes: DOM imperativo via getElementById) ──
     // qaKey/qaEmp são a fonte da verdade dos campos; o passo (withdraw/return),
@@ -427,7 +463,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             employeeName: emp?.name,
             withdrawJustification: key.withdraw_justification
         });
-        modalOpenTime.current = Date.now();
     };
 
     // Abre o modal de solicitação (pull, REQ-027): um não-portador pede a chave ao portador atual.
@@ -439,7 +474,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             type: 'request',
             holderName: k.employee_name,
         });
-        modalOpenTime.current = Date.now();
     };
 
     const confirmAction = () => {
@@ -524,34 +558,47 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         if (key) requestTransaction(key.id, 'withdraw', emp.id);
     };
 
+    // Foco gerenciado do modal (antes: listener GLOBAL de Enter que confirmava a
+    // partir de qualquer campo, contido por uma guarda de 150ms). Agora o botão
+    // primário recebe o foco ao abrir — Enter confirma porque o botão está focado,
+    // não porque a tecla foi sequestrada. Escape fecha e Tab circula dentro do modal.
+    const confirmBtnRef = useRef<HTMLButtonElement>(null);
+    const modalBoxRef = useRef<HTMLDivElement>(null);
+    // Guarda quem abriu o modal e devolve o foco ao fechar (padrão APG) —
+    // sem isso o foco morria no <body> e a sequência de registros do porteiro
+    // exigia voltar ao mouse a cada operação.
+    const lastFocusRef = useRef<HTMLElement | null>(null);
     useEffect(() => {
-        if (!confirmModal.open) return;
+        if (confirmModal.open) {
+            lastFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            confirmBtnRef.current?.focus();
+        } else {
+            lastFocusRef.current?.focus();
+            lastFocusRef.current = null;
+        }
+    }, [confirmModal.open]);
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter') {
-                if (Date.now() - modalOpenTime.current < 150) return;
-                // Prevenir Enter em textarea ou inputs quando estamos apenas navegando
-                if (e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLInputElement && e.target.type !== 'checkbox' && e.target.type !== 'radio')) {
-                    // Mas se o formulário for válido e não for shift+enter no textarea...
-                    if (!(e.target instanceof HTMLTextAreaElement && e.shiftKey)) {
-                        e.preventDefault();
-                        confirmAction();
-                    }
-                    return;
-                }
+    const handleModalKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            setConfirmModal(prev => ({ ...prev, open: false }));
+            return;
+        }
+        if (e.key === 'Tab' && modalBoxRef.current) {
+            const focusables = Array.from(
+                modalBoxRef.current.querySelectorAll<HTMLElement>('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+            ).filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null);
+            if (focusables.length === 0) return;
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
                 e.preventDefault();
-                confirmAction();
-            } else if (e.key === 'Escape') {
-                setConfirmModal(prev => ({ ...prev, open: false }));
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
             }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-        // confirmAction é recriada a cada render e já reflete o confirmModal atual —
-        // os campos abaixo são o que de fato determina quando o efeito precisa rodar de novo.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [confirmModal.open, confirmModal.keyId, confirmModal.type, confirmModal.employeeId]);
+        }
+    };
 
     useEffect(() => {
         // Mostra a explicação só até o usuário dispensá-la (uma vez por navegador).
@@ -1030,10 +1077,25 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <div className="mobile-only">
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {filtered.map(key => (
-                                    <div 
-                                        key={key.id} 
+                                    <div
+                                        key={key.id}
                                         className={`key-card ${key.pending_info ? 'pending' : key.status === 'in_use' ? 'inuse' : 'available'}`}
                                         onClick={() => selectQaKey(key)}
+                                        // Chave disponível não tem botão interno: o card É o alvo — então
+                                        // precisa de semântica e teclado (role=button + Enter/Espaço). Nos
+                                        // demais estados os botões internos já dão o acesso, e um role=button
+                                        // com botões aninhados violaria o ARIA.
+                                        {...(key.status === 'available' && !key.pending_info ? {
+                                            role: 'button' as const,
+                                            tabIndex: 0,
+                                            'aria-label': `Retirar chave ${key.name}${key.room ? `, ${key.room}` : ''}`,
+                                            onKeyDown: (e: React.KeyboardEvent) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    selectQaKey(key);
+                                                }
+                                            }
+                                        } : {})}
                                     >
                                         <div className="key-card-icon-wrapper">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
@@ -1042,9 +1104,19 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         <div className="key-card-content-wrapper">
                                             <div className="key-card-header-row">
                                                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'flex-start', width: '100%' }}>
-                                                    <div className="key-card-title">{key.name}</div>
-                                                    {key.room && <div className="key-card-room">{key.room}</div>}
-                                                    
+                                                    {/* Slot FIXO do estado: título + tag na primeira linha, sempre —
+                                                        antes a tag caía depois dos botões no card "em uso" (flex-wrap),
+                                                        e o dado mais escaneável do produto virava rodapé. */}
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <div className="key-card-title">{key.name}</div>
+                                                            {key.room && <div className="key-card-room">{key.room}</div>}
+                                                        </div>
+                                                        <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
+                                                        </span>
+                                                    </div>
+
                                                     {key.status === 'in_use' && key.employee_name && !key.pending_info && (
                                                         <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
                                                             <div className="key-card-avatar">
@@ -1069,34 +1141,33 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         </div>
                                                     )}
 
+                                                    {/* Cada grupo de ações é uma faixa full-width que absorve o toque
+                                                        (stopPropagation no wrapper): errar o botão por poucos px não
+                                                        dispara a ação do card — os alvos têm 44px (REQ-016). */}
                                                     {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) && (
-                                                        <button
-                                                            className="key-card-action-btn"
-                                                            disabled={cancelLoading === key.pending_info.transaction_id}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleCancel(key.pending_info!.transaction_id, key.name);
-                                                            }}
-                                                        >
-                                                            {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
-                                                        </button>
-                                                    )}
-                                                    {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
-                                                        <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                                                        <div style={{ display: 'flex', width: '100%' }} onClick={(e) => e.stopPropagation()}>
                                                             <button
                                                                 className="key-card-action-btn"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    requestTransaction(key.id, 'return');
-                                                                }}
+                                                                disabled={cancelLoading === key.pending_info.transaction_id}
+                                                                style={{ flex: 1 }}
+                                                                onClick={() => handleCancel(key.pending_info!.transaction_id, key.name)}
+                                                            >
+                                                                {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
+                                                        <div style={{ display: 'flex', gap: '0.625rem', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                                                            <button
+                                                                className="key-card-action-btn"
+                                                                onClick={() => requestTransaction(key.id, 'return')}
                                                                 style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
                                                             >
                                                                 Devolver
                                                             </button>
                                                             <button
                                                                 className="key-card-action-btn"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
+                                                                onClick={() => {
                                                                     setConfirmModal({
                                                                         open: true,
                                                                         keyId: key.id,
@@ -1111,21 +1182,17 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         </div>
                                                     )}
                                                     {key.status === 'in_use' && !key.pending_info && !isPorteiroOrAdmin && key.user_id !== userId && (
-                                                        <button
-                                                            className="key-card-action-btn"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openRequestModal(key);
-                                                            }}
-                                                            style={{ border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                        >
-                                                            Solicitar
-                                                        </button>
+                                                        <div style={{ display: 'flex', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                                                            <button
+                                                                className="key-card-action-btn"
+                                                                onClick={() => openRequestModal(key)}
+                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                            >
+                                                                Solicitar
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
-                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1315,7 +1382,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </div>
                         
                         <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', margin: '0 -1.25rem', padding: '0 0.5rem' }}>
-                            {touchSelectModal.suggestions.filter(u => normalize(u.name).includes(normalize(touchSelectModal.searchStr))).map((u, i) => (
+                            {touchSelectModal.suggestions.filter(u => normalize(u.name).includes(normalize(touchSelectModal.searchStr))).map(u => (
                                 <div 
                                     key={u.id}
                                     className="touch-contact-item"
@@ -1344,20 +1411,22 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             {/* Modal de Confirmação Premium */}
             {confirmModal.open && (
                 <div className="modal-overlay" onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
+                    <div ref={modalBoxRef} role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={e => e.stopPropagation()} onKeyDown={handleModalKeyDown} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
                         <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--green-100)' : (confirmModal.type === 'transfer' || confirmModal.type === 'request') ? 'var(--purple-100)' : 'var(--blue-100)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                            {/* Chips de ícone: tokens --chip-* (par fundo+traço com override light) —
+                                antes usavam pastéis claros fixos e --purple-* inexistentes (ícone invisível). */}
+                            <div style={{ width: '48px', height: '48px', background: confirmModal.type === 'withdraw' ? 'var(--chip-green-bg)' : (confirmModal.type === 'transfer' || confirmModal.type === 'request') ? 'var(--chip-purple-bg)' : 'var(--chip-blue-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                                 {confirmModal.type === 'withdraw' ? (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--chip-green-fg)" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                                 ) : confirmModal.type === 'transfer' ? (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-600)" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--chip-purple-fg)" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
                                 ) : confirmModal.type === 'request' ? (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-600)" strokeWidth="2.5"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--chip-purple-fg)" strokeWidth="2.5"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                                 ) : (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--chip-blue-fg)" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>
                                 )}
                             </div>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                            <h3 id="confirm-modal-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                 {confirmModal.type === 'transfer' ? 'Transferir Chave?'
                                     : confirmModal.type === 'request' ? 'Solicitar esta Chave?'
                                     : `Solicitar ${confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?`}
@@ -1367,7 +1436,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 <div style={{ textAlign: 'left', marginTop: '1rem' }}>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                                         Solicitar a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
-                                        {confirmModal.holderName && <span> que está com <strong style={{ color: 'var(--purple-400)' }}>{confirmModal.holderName}</strong></span>}.
+                                        {confirmModal.holderName && <span> que está com <strong style={{ color: 'var(--chip-purple-fg)' }}>{confirmModal.holderName}</strong></span>}.
                                         <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>O portador precisa aceitar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para a chave passar para você.</span>
                                     </p>
                                     <div>
@@ -1376,6 +1445,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             type="text"
                                             value={customJustification}
                                             onChange={e => setCustomJustification(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                             placeholder="Ex: Preciso usar a sala agora"
                                             className="input"
                                             style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
@@ -1397,10 +1467,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Observação (opcional)</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             value={customJustification}
                                             onChange={e => setCustomJustification(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                             placeholder="Ex: Passando a chave no corredor"
                                             className="input"
                                             style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
@@ -1421,15 +1492,17 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     {((confirmModal.type === 'withdraw' || confirmModal.type === 'return') && isPorteiroOrAdmin) && (
                                         <div style={{ marginTop: '1rem', textAlign: 'left', background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
 
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                                        <input 
-                                            type="checkbox" 
+                                    {/* minHeight 44: o label inteiro é o alvo de toque do controle mais
+                                        sensível do modal (o checkbox sozinho tinha ~16px). */}
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: 'var(--touch-target)' }}>
+                                        <input
+                                            type="checkbox"
                                             checked={bypassConfirmation}
                                             onChange={(e) => {
                                                 setBypassConfirmation(e.target.checked);
                                                 if (!e.target.checked) setJustification('');
                                             }}
-                                            style={{ accentColor: confirmModal.type === 'withdraw' ? 'var(--green-500)' : 'var(--blue-500)', width: '16px', height: '16px' }}
+                                            style={{ accentColor: confirmModal.type === 'withdraw' ? 'var(--green-500)' : 'var(--blue-500)', width: '18px', height: '18px', flexShrink: 0 }}
                                         />
                                         {confirmModal.type === 'withdraw' ? 'Atribuir chave imediatamente sem confirmação' : 'Confirmar devolução imediatamente (sem celular)'}
                                     </label>
@@ -1450,10 +1523,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             </select>
                                             
                                             {justification === 'Outro' && (
-                                                <input 
+                                                <input
                                                     type="text"
                                                     value={customJustification}
                                                     onChange={e => setCustomJustification(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                                     placeholder="Descreva o motivo..."
                                                     className="input"
                                                     style={{ padding: '0.5rem', fontSize: '0.8rem', border: '1px solid var(--border-strong)' }}
@@ -1476,6 +1550,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 Voltar
                             </button>
                             <button
+                                ref={confirmBtnRef}
                                 className={`btn ${confirmModal.type === 'withdraw' ? 'btn-green' : 'btn-blue'}`}
                                 onClick={confirmAction}
                             >

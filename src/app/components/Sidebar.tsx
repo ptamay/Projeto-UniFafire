@@ -213,7 +213,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                         onClick={toggleCollapse}
                         aria-label={isCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
                         aria-expanded={!isCollapsed}
-                        style={{ background: 'transparent', border: 'none', color: '#5b7ab8', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>
                             <polyline points="15 18 9 12 15 6"/>

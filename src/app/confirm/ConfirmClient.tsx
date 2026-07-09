@@ -27,6 +27,18 @@ interface Props {
     userId: number;
 }
 
+// Ícones do vocabulário SVG do app (stroke) — substituem os glifos unicode
+// ✓/✕/⏳ que destoavam do resto da interface nos botões mais críticos.
+const IconCheck = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+);
+const IconX = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+);
+const IconClock = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+
 export default function ConfirmClient({ userRole, username, userId }: Props) {
     const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -138,8 +150,10 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                             // é uma solicitação (pull, REQ-027): quem tem a chave é que precisa aceitar.
                             const isPull = isTransfer && !tx.porteiro_confirmed_at;
                             const isHolderViewer = tx.porteiro_id === userId;
-                            const accentColor = isWithdraw ? '#b45309' : isTransfer ? '#7e22ce' : '#1d8046';
-                            const accentBg = isWithdraw ? 'rgba(180,83,9,0.08)' : isTransfer ? 'rgba(126,34,206,0.08)' : 'rgba(29,128,70,0.08)';
+                            // Idioma único ação→cor (tokens com par dark/light):
+                            // retirada = âmbar · transferência = roxo · devolução = verde.
+                            const accentColor = isWithdraw ? 'var(--action-withdraw-fg)' : isTransfer ? 'var(--action-transfer-fg)' : 'var(--action-return-fg)';
+                            const accentBg = isWithdraw ? 'var(--action-withdraw-bg)' : isTransfer ? 'var(--action-transfer-bg)' : 'var(--action-return-bg)';
 
                             return (
                                 <div key={tx.id} style={{
@@ -159,7 +173,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                             <span style={{
                                                 fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
                                                 letterSpacing: '0.05em', color: accentColor,
-                                                background: accentBg, padding: '2px 8px', borderRadius: '99px', display: 'inline-block', marginBottom: '0.4rem'
+                                                background: accentBg, padding: '2px 8px', borderRadius: 'var(--radius-full)', display: 'inline-block', marginBottom: '0.4rem'
                                             }}>
                                                 {isWithdraw ? 'Retirada de Chave' : isPull ? 'Solicitação de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
                                             </span>
@@ -209,8 +223,8 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                     {isPorteiroOrAdmin && (
                                         <div style={{ fontSize: '0.75rem', fontWeight: 600, marginTop: '-0.5rem' }}>
                                             {!tx.user_confirmed_at
-                                                ? <span style={{ color: '#ef4444' }}>● Aguardando o usuário confirmar</span>
-                                                : <span style={{ color: '#10b981' }}>● Usuário confirmou</span>}
+                                                ? <span style={{ color: 'var(--danger-text)' }}>● Aguardando o usuário confirmar</span>
+                                                : <span style={{ color: 'var(--status-available-text)' }}>● Usuário confirmou</span>}
                                         </div>
                                     )}
 
@@ -225,7 +239,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
-                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : '✓ Confirmar'}
+                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Confirmar</>}
                                                 </button>
                                             )}
 
@@ -238,7 +252,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
-                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : '✓ Confirmar'}
+                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Confirmar</>}
                                                 </button>
                                             )}
 
@@ -250,14 +264,14 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
-                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : '✓ Aceitar'}
+                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Aceitar</>}
                                                 </button>
                                             )}
 
                                             {/* Mensagem de espera para quem iniciou e aguarda a outra parte */}
                                             {!isPorteiroOrAdmin && tx.user_id === userId && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
-                                                <div style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontWeight: 700, borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', border: '1px solid rgba(217,119,6,0.2)', flex: 1 }}>
-                                                    ⏳ Aguardando {isPull ? 'o portador' : 'porteiro'}
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: 'var(--warning-bg)', color: 'var(--warning-text)', fontWeight: 700, borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', flex: 1 }}>
+                                                    <IconClock /> Aguardando {isPull ? 'o portador' : 'porteiro'}
                                                 </div>
                                             )}
 
@@ -265,11 +279,11 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                                             {(isPorteiroOrAdmin || tx.user_id === userId || tx.porteiro_id === userId) && (
                                                 <button
                                                     className="btn btn-ghost"
-                                                    style={{ flex: '0 1 auto', minWidth: '100px', minHeight: 44, fontSize: '0.9rem', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+                                                    style={{ flex: '0 1 auto', minWidth: '100px', minHeight: 44, fontSize: '0.9rem', color: 'var(--danger-text)', border: '1px solid var(--danger-bg)' }}
                                                     onClick={() => cancelTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
-                                                    ✕ Cancelar
+                                                    <IconX /> Cancelar
                                                 </button>
                                             )}
                                         </div>

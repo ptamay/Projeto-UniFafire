@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+/* Inter é servida pelo next/font (layout.tsx) via --font-inter — sem @import
+   bloqueante e sem FOUT; o fallback system-ui cobre o primeiro paint. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -64,7 +64,7 @@
   --status-available-bg:  rgba(34, 197, 94, 0.12);
   --status-inuse-bg:      rgba(251, 146, 60, 0.12);
   --status-available-text: #34d399; /* verde legível sobre fundo escuro */
-  --status-inuse-text:     #fb7185; /* rosa/vermelho legível sobre fundo escuro */
+  --status-inuse-text:     #fda4af; /* rose-300 — AA sobre o fundo TINTADO da tag (o #fb7185 media 4,45:1 no composto) */
 
   /* Semânticos — perigo/alerta (antes espalhados como literais #ef4444/#f87171/#f59e0b) */
   --danger:        #ef4444; /* fundo de ações destrutivas (excluir) */
@@ -74,6 +74,28 @@
   --warning:       #f59e0b; /* pendências/atenção */
   --warning-text:  #fbbf24;
   --warning-bg:    rgba(245, 158, 11, 0.12);
+
+  /* Idioma único ação→cor (badges/acentos de REGISTRO, não de botão):
+     retirada = âmbar · devolução = verde · transferência = roxo.
+     O mesmo significado em TODAS as telas (Dashboard, Confirmações, Histórico) —
+     antes "retirada" era verde numa tela, âmbar noutra e rosa na terceira. */
+  --action-withdraw-fg: #fbbf24;
+  --action-withdraw-bg: rgba(245, 158, 11, 0.12);
+  --action-return-fg:   #34d399;
+  --action-return-bg:   rgba(34, 197, 94, 0.12);
+  --action-transfer-fg: #c084fc;
+  --action-transfer-bg: rgba(168, 85, 247, 0.12);
+
+  /* Chips de ícone de modal (linguagem de CONTROLE — casa com btn-green/btn-blue):
+     par fundo+traço legível nos dois temas. Substitui os pastéis claros fixos
+     (--green-100/--blue-100 sobre modal escuro) e os tokens --purple-* que não
+     existiam — o ícone do modal de transferência renderizava invisível. */
+  --chip-green-bg:  rgba(40, 163, 92, 0.18);
+  --chip-green-fg:  var(--green-300);
+  --chip-blue-bg:   rgba(98, 121, 216, 0.18);
+  --chip-blue-fg:   var(--blue-300);
+  --chip-purple-bg: rgba(168, 85, 247, 0.18);
+  --chip-purple-fg: #c084fc;
 
   /* Layout */
   --sidebar-w: 260px;
@@ -120,8 +142,8 @@
 
   --status-available-bg:  rgba(16, 185, 129, 0.12);
   --status-inuse-bg:      rgba(244, 63, 94, 0.12);
-  --status-available-text: #059669; /* emerald-600 — contraste AA sobre fundo claro */
-  --status-inuse-text:     #e11d48; /* rose-600 — contraste AA sobre fundo claro */
+  --status-available-text: #047857; /* emerald-700 — 5,4:1 sobre branco (o #059669 anterior media 3,77:1) */
+  --status-inuse-text:     #be123c; /* rose-700 — AA sobre o fundo TINTADO da tag (o #e11d48 media 4,01:1 no composto) */
 
   --danger:        #dc2626;
   --danger-hover:  #b91c1c;
@@ -130,6 +152,22 @@
   --warning:       #d97706;
   --warning-text:  #b45309;
   --warning-bg:    rgba(217, 119, 6, 0.1);
+
+  /* Idioma ação→cor — pares AA sobre fundo claro */
+  --action-withdraw-fg: #b45309;
+  --action-withdraw-bg: rgba(217, 119, 6, 0.1);
+  --action-return-fg:   #047857;
+  --action-return-bg:   rgba(16, 185, 129, 0.12);
+  --action-transfer-fg: #7e22ce;
+  --action-transfer-bg: rgba(168, 85, 247, 0.12);
+
+  /* Chips de ícone de modal — pastéis sobre fundo claro */
+  --chip-green-bg:  var(--green-100);
+  --chip-green-fg:  var(--green-600);
+  --chip-blue-bg:   var(--blue-100);
+  --chip-blue-fg:   var(--blue-600);
+  --chip-purple-bg: #f3e8ff;
+  --chip-purple-fg: #7e22ce;
 }
 
 /* Força menus nativos a ficarem brancos no Windows/Chrome */
@@ -147,22 +185,8 @@
   border-color: #cbd5e1 !important;
 }
 
-.light-mode .status-available {
-  color: #059669; /* emerald-600 */
-  background: rgba(16, 185, 129, 0.15);
-}
-.light-mode .status-inuse, .light-mode .status-in_use {
-  color: #e11d48; /* rose-600 */
-  background: rgba(244, 63, 94, 0.15);
-}
-.light-mode .status-transfer {
-  color: #9333ea; /* purple-600 */
-  background: rgba(168, 85, 247, 0.15);
-}
-.light-mode .status-pending {
-  color: #d97706; /* amber-600 */
-  background: rgba(245, 158, 11, 0.15);
-}
+/* (.light-mode .status-* removidos: as tags usam tokens que já têm override
+   no bloco .light-mode acima — uma fonte de verdade por cor.) */
 
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -170,7 +194,7 @@
 html { font-size: 16px; scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   background: var(--bg-page);
   color: var(--text-primary);
   min-height: 100vh;
@@ -190,8 +214,8 @@ body {
 }
 
 /* ── Typography ────────────────────────────────────────── */
-.font-display { font-family: 'Inter', sans-serif; }
-h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: 'Inter', sans-serif; }
+.font-display { font-family: var(--font-inter), system-ui, sans-serif; }
+h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: var(--font-inter), system-ui, sans-serif; }
 h1 { font-size: 1.875rem; line-height: 1.2; }
 h2 { font-size: 1.375rem; }
 h3 { font-size: 1.125rem; }
@@ -232,34 +256,6 @@ h3 { font-size: 1.125rem; }
 }
 .card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
 
-.card-glass {
-  background: rgba(15, 29, 87, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-/* ── Stat Cards ─────────────────────────────────────────── */
-.stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #5cb884, #23824d);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
-.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); }
-
 /* ── Buttons ──────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -270,7 +266,7 @@ h3 { font-size: 1.125rem; }
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   cursor: pointer;
   border: none;
   outline: none;
@@ -282,15 +278,18 @@ h3 { font-size: 1.125rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 .btn-green {
-  background: linear-gradient(135deg, #5cb884, #23824d);
+  /* Gradiente na faixa green-500→600 da rampa: branco passa AA em toda a
+     superfície (o par anterior #5cb884→#23824d media 2,43:1 no canto claro). */
+  background: linear-gradient(135deg, var(--green-500), var(--green-600));
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 12px rgba(29, 128, 70, 0.25);
 }
 .btn-green:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7ec9a0, #2d965d);
+  /* Lift and Glow (DESIGN.md): o hover sobe e ilumina a sombra — sem clarear
+     o fundo, que derrubaria o contraste do texto. */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(29, 128, 70, 0.35);
+  box-shadow: 0 6px 20px rgba(29, 128, 70, 0.45);
 }
 .btn-green:active { transform: translateY(0); }
 
@@ -340,7 +339,7 @@ h3 { font-size: 1.125rem; }
   border: 2px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   font-size: 0.9375rem;
   padding: 0.875rem 1rem;
   min-height: 44px;
@@ -455,33 +454,43 @@ h3 { font-size: 1.125rem; }
   border-radius: 50%;
 }
 
+/* Tokens + currentColor: cada tag deriva borda e "luz" do próprio texto,
+   e o par dark/light vem dos tokens — sem overrides .light-mode duplicados.
+   (Antes: #f43f5e literal a 3,73:1 no dark; o token --status-inuse-text passa AA.) */
+.status-tag::before,
+.status-tag { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.status-tag::before { border: none; background: currentColor; box-shadow: 0 0 8px currentColor; }
+
 .status-available {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
 }
-.status-available::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
 
 .status-inuse, .status-in_use {
-  background: rgba(244, 63, 94, 0.08);
-  color: #f43f5e;
-  border: 1px solid rgba(244, 63, 94, 0.2);
+  background: var(--status-inuse-bg);
+  color: var(--status-inuse-text);
 }
-.status-inuse::before, .status-in_use::before { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
 
 .status-transfer {
-  background: rgba(168, 85, 247, 0.08);
-  color: #c084fc;
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: var(--action-transfer-bg);
+  color: var(--action-transfer-fg);
 }
-.status-transfer::before { background: #c084fc; box-shadow: 0 0 8px #c084fc; }
 
 .status-pending {
-  background: rgba(245, 158, 11, 0.08);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
-.status-pending::before { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+/* Ações de registro (Histórico): retirada=âmbar, devolução=verde —
+   o mesmo idioma das Confirmações, nunca mais rosa de "em uso". */
+.status-withdraw {
+  background: var(--action-withdraw-bg);
+  color: var(--action-withdraw-fg);
+}
+.status-return {
+  background: var(--action-return-bg);
+  color: var(--action-return-fg);
+}
 
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
@@ -744,7 +753,7 @@ h3 { font-size: 1.125rem; }
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    min-height: 40px;
+    min-height: var(--touch-target);
     padding: 0 0.875rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -784,6 +793,28 @@ h3 { font-size: 1.125rem; }
 .badge-porteiro { background: rgba(96,165,250,0.15); color: #60a5fa; }
 .badge-user   { background: rgba(148,163,184,0.12); color: #94a3b8; }
 .badge-gestor { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
+/* FUNCIONARIO e ALUNO — os dois maiores grupos: eram classes referenciadas
+   no Sidebar e em /users mas nunca definidas (badge sem cor). */
+.badge-funcionario { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.badge-aluno  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+
+/* Modo claro: os tons -300/-400 acima não passam AA sobre branco */
+.light-mode .badge-admin  { background: rgba(126, 34, 206, 0.1); color: #7e22ce; }
+.light-mode .badge-porteiro { background: rgba(29, 78, 216, 0.1); color: #1d4ed8; }
+.light-mode .badge-user   { background: rgba(71, 85, 105, 0.1); color: #475569; }
+.light-mode .badge-gestor { background: rgba(15, 118, 110, 0.1); color: #0f766e; }
+.light-mode .badge-funcionario { background: rgba(3, 105, 161, 0.1); color: #0369a1; }
+.light-mode .badge-aluno  { background: rgba(180, 83, 9, 0.1); color: #b45309; }
+
+/* A sidebar permanece ESCURA no modo claro (identidade) — dentro dela os badges
+   mantêm a paleta dark: os overrides claros acima tornavam "PORTEIRO" ilegível
+   (2,2:1) sobre a superfície escura da sidebar. */
+.light-mode .sidebar .badge-admin  { background: rgba(167,139,250,0.15); color: #a78bfa; }
+.light-mode .sidebar .badge-porteiro { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.light-mode .sidebar .badge-user   { background: rgba(148,163,184,0.12); color: #94a3b8; }
+.light-mode .sidebar .badge-gestor { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
+.light-mode .sidebar .badge-funcionario { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.light-mode .sidebar .badge-aluno  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
 
 /* ── Action Row ─────────────────────────────────────────── */
 .action-row {
@@ -869,7 +900,7 @@ h3 { font-size: 1.125rem; }
 .key-card-icon-wrapper {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
@@ -923,20 +954,22 @@ h3 { font-size: 1.125rem; }
 }
 
 .key-card-action-btn {
-  margin-top: 0.6rem;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-primary);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, border-color 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
+  /* REQ-016/spec §6: alvo de toque ≥44px no fluxo crítico — os botões do card
+     mobile (Devolver/Transferir/Cancelar/Solicitar) tinham 28px. */
+  min-height: var(--touch-target);
 }
 .key-card-action-btn:hover {
   background: var(--bg-elevated);
@@ -1002,7 +1035,7 @@ h3 { font-size: 1.125rem; }
 .empty-state p { font-size: 0.95rem; }
 
 /* ── Toast override ─────────────────────────────────────── */
-.react-hot-toast > div { font-family: 'Inter', sans-serif !important; }
+.react-hot-toast > div { font-family: var(--font-inter), system-ui, sans-serif !important; }
 
 /* ── Animations ─────────────────────────────────────────── */
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
@@ -1402,7 +1435,7 @@ textarea:focus-visible,
   /* Alvos de toque ≥ 44px (spec §6) */
   .btn { min-height: var(--touch-target); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }
-  .btn-sm { min-height: 40px; }
+  .btn-sm { min-height: var(--touch-target); }
   .input { min-height: var(--touch-target); font-size: 16px; } /* 16px evita zoom automático no iOS */
   .form-input { min-height: var(--touch-target); font-size: 16px; } /* inputs das telas de conta (TASK-027) */
   .nav-item { min-height: var(--touch-target); }

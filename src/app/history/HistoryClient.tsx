@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import toast from 'react-hot-toast';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 
@@ -65,13 +66,13 @@ export default function HistoryClient({ history, userRole, username, initialFilt
             if (res.ok) {
                 setShowClearConfirm(false);
                 router.refresh();
-                alert('Histórico limpo com sucesso.');
+                toast.success('Histórico limpo com sucesso.');
             } else {
-                alert('Erro ao limpar histórico.');
+                toast.error('Erro ao limpar histórico.');
             }
         } catch (error) {
             console.error('Failed to clear history', error);
-            alert('Erro ao limpar histórico.');
+            toast.error('Erro ao limpar histórico.');
         }
     };
 
@@ -287,7 +288,9 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                     <tr key={item.id}>
                                         <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
                                         <td data-label="Ação">
-                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : item.action === 'transfer' ? 'status-transfer' : 'status-available'}`}>
+                                            {/* Idioma ação→cor: retirada=âmbar, transferência=roxo, devolução=verde —
+                                                o mesmo das Confirmações (antes: rosa de "em uso", outro significado). */}
+                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-withdraw' : item.action === 'transfer' ? 'status-transfer' : 'status-return'}`}>
                                                 {item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução'}
                                             </span>
                                         </td>
@@ -305,7 +308,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                         </td>
                                     </tr>
                                 ))}
-                                {history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum histórico registrado.</td></tr>}
+                                {history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Nenhum histórico registrado.</td></tr>}
                             </tbody>
                         </table>
                     </div>

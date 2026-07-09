@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import './login.css';
 
@@ -12,6 +12,14 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
     const [showForgotPopup, setShowForgotPopup] = useState(false);
+
+    // Respeita o tema salvo (dark-first, PRODUCT.md): mesmo mecanismo do Sidebar.
+    // Antes o cartão forçava light-mode — a tela mais brilhante do balcão às 22h.
+    useEffect(() => {
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,7 +54,7 @@ export default function LoginPage() {
             <div className="login-bg-orb login-bg-orb-1" />
             <div className="login-bg-orb login-bg-orb-2" />
 
-            <div className="login-container animate-slide light-mode">
+            <div className="login-container animate-slide">
                 <div className="login-brand">
                     <div className="login-logo-wrap">
                         <Image
