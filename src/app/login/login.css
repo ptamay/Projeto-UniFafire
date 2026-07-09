@@ -85,7 +85,7 @@
 .input-action-btn:hover { color: var(--accent-primary); }
 .login-submit { width: 100%; margin-top: 0.25rem; min-height: 48px; }
 .login-footer-text {
-    text-align: center; font-size: 0.7rem;
+    text-align: center; font-size: 0.75rem;
     color: var(--text-muted); margin-top: 1.5rem; letter-spacing: 0.03em;
 }
 /* TASK-024 (REQ-016): mobile-first — 100dvh acomoda o teclado virtual

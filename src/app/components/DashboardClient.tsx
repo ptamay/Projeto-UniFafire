@@ -184,7 +184,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                 >
                                     <div>
                                         <div style={{ fontWeight: selectedId === u.id ? 700 : 500 }}>{u.name}</div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '1px' }}>{u.role || 'Usuário'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1px' }}>{u.role || 'Usuário'}</div>
                                     </div>
                                     {selectedId === u.id && (
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -683,15 +683,15 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 <header className="page-header">
                     <div>
                         <h1 className="page-title">Monitoramento de Chaves</h1>
-                        <p className="page-subtitle">Sistema Administrativo</p>
+                        <p className="page-subtitle">Retiradas, devoluções e transferências em tempo real</p>
                     </div>
                     <div className="dashboard-stats" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-available-text)' }}>{stats.available}</span>
                         </div>
                         <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Em Uso</span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Em Uso</span>
                             <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
                         </div>
                     </div>
@@ -846,7 +846,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     aria-label="Chaves"
                                     style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '300px', overflowY: 'auto', marginTop: '1px' }}
                                 >
-                                    <div style={{ padding: '0.4rem 1rem', fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                                    <div style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
                                         Use as setas e Enter para selecionar
                                     </div>
                                     {keySuggestions.map((k, index) => (
@@ -923,7 +923,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 aria-label="Usuários"
                                                 style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '200px', overflowY: 'auto', marginTop: '1px' }}
                                             >
-                                                <div style={{ padding: '0.4rem 1rem', fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                                                <div style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
                                                     Use as setas e Enter para selecionar
                                                 </div>
                                                 {empSuggestions.map((emp, index) => (
@@ -1124,7 +1124,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                                {key.employee_role && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
+                                                                {key.employee_role && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
                                                             </div>
                                                         </div>
                                                     )}
@@ -1158,10 +1158,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     )}
                                                     {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <div style={{ display: 'flex', gap: '0.625rem', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                                                            {/* Devolver carrega a identidade azul da devolução (btn-blue no
+                                                                desktop) — antes era ghost neutro só no mobile. */}
                                                             <button
                                                                 className="key-card-action-btn"
                                                                 onClick={() => requestTransaction(key.id, 'return')}
-                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                                style={{ flex: 1, border: '1px solid var(--blue-500)', background: 'var(--blue-700)', color: '#fff' }}
                                                             >
                                                                 Devolver
                                                             </button>
@@ -1210,7 +1212,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 gap: '1rem',
                                 background: 'var(--bg-elevated)',
                                 borderBottom: '1px solid var(--border)',
-                                fontSize: '0.65rem',
+                                fontSize: '0.75rem',
                                 fontWeight: 800,
                                 color: 'var(--text-secondary)',
                                 letterSpacing: '0.05em',

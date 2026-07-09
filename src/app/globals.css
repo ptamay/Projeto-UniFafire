@@ -202,6 +202,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Form controls NÃO herdam fonte por padrão (UA stylesheet) — sem isso,
+   botões/inputs sem regra explícita (ex.: .nav-item) renderizavam em Arial. */
+button, input, select, textarea { font-family: inherit; }
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-page); }
@@ -440,7 +444,9 @@ h3 { font-size: 1.125rem; }
   gap: 0.5rem;
   padding: 0.4rem 0.875rem;
   border-radius: var(--radius-full);
-  font-size: 0.65rem;
+  /* Piso de legibilidade 12px — o estado da chave é O dado do produto e era
+     o menor texto da tela (10,4px), hostil à leitura "a 1 metro" (DESIGN.md). */
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1253,7 +1259,7 @@ textarea:focus-visible,
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-size: 0.625rem;
+    font-size: 0.75rem; /* piso 12px (era 10px) */
     font-weight: 700;
     letter-spacing: 0.01em;
     cursor: pointer;
