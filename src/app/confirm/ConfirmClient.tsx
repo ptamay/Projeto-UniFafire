@@ -131,8 +131,27 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
 
                 {/* ── CONTEÚDO ── */}
                 {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                        <div className="spinner" style={{ width: 32, height: 32 }} />
+                    // Skeleton com a MESMA anatomia dos cards reais (badge, título,
+                    // contexto, ações) — o conteúdo chega sem salto de layout,
+                    // no lugar do spinner central (registro de produto).
+                    <div aria-hidden="true" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
+                        {[0, 1, 2].map(i => (
+                            <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                                        <div className="skeleton" style={{ width: 120, height: 18, borderRadius: 'var(--radius-full)' }} />
+                                        <div className="skeleton" style={{ width: '60%', height: 22 }} />
+                                        <div className="skeleton" style={{ width: '35%', height: 14 }} />
+                                    </div>
+                                    <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />
+                                </div>
+                                <div className="skeleton" style={{ width: '100%', height: 64 }} />
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <div className="skeleton" style={{ flex: 1, height: 44 }} />
+                                    <div className="skeleton" style={{ width: 100, height: 44 }} />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : displayTxs.length === 0 ? (
                     <div className="empty-state">

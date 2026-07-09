@@ -236,7 +236,9 @@ h3 { font-size: 1.125rem; }
   margin-left: var(--sidebar-w);
   padding: 2rem;
   min-height: 100vh;
-  transition: margin 0.3s ease;
+  /* Sem transition de margin: animar propriedade de layout re-flow-a a página
+     inteira a cada frame do colapso da sidebar (detector: layout-transition).
+     O colapso é instantâneo — snappy > coreografia (registro de produto). */
   /* REQ-016: nenhuma tela pode gerar scroll horizontal. Os tooltips decorativos
      ([data-tooltip]::after, nowrap + opacity:0) permanecem no layout mesmo
      invisíveis; junto à borda direita (ex.: o "X" da dica de dupla confirmação
@@ -498,6 +500,91 @@ h3 { font-size: 1.125rem; }
   color: var(--action-return-fg);
 }
 
+/* ── Dashboard: lista desktop ─────────────────────────────────
+   Grid definido UMA vez para cabeçalho e linhas (antes: template mágico
+   duplicado em dois objetos inline — dessincronizava no primeiro ajuste).
+   No mobile o media query abaixo re-molda as linhas em card (flex). */
+.dashboard-list-header,
+.dashboard-list-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 180px 1.8fr 120px;
+  padding: 1rem 1rem 1rem 2.5rem;
+  gap: 1rem;
+}
+.dashboard-list-header {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.dashboard-list-row {
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+/* ── Stat chips (header do Dashboard) ─────────────────────── */
+.stat-chip {
+  background: var(--bg-card);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stat-chip-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.stat-chip-value { font-size: 1.125rem; font-weight: 800; }
+
+/* ── Rótulo de campo em modais/formulários ────────────────── */
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Linha de dica no topo de dropdowns ───────────────────── */
+.dropdown-hint {
+  padding: 0.4rem 1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+/* ── Skeleton (carregamento) ──────────────────────────────────
+   Placeholder com shimmer no lugar de spinner central (registro de produto).
+   Reduced-motion: fica estático, sem animação. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-card)) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-shimmer {
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
@@ -574,7 +661,8 @@ h3 { font-size: 1.125rem; }
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Sem transition de width (layout thrash) — colapso desktop instantâneo.
+     O drawer mobile anima por transform (media query abaixo), que é barato. */
   overflow: hidden;
 }
 .sidebar-logo {

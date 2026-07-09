@@ -686,13 +686,13 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <p className="page-subtitle">Retiradas, devoluções e transferências em tempo real</p>
                     </div>
                     <div className="dashboard-stats" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Disponíveis</span>
-                            <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-available-text)' }}>{stats.available}</span>
+                        <div className="stat-chip">
+                            <span className="stat-chip-label">Disponíveis</span>
+                            <span className="stat-chip-value" style={{ color: 'var(--status-available-text)' }}>{stats.available}</span>
                         </div>
-                        <div style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Em Uso</span>
-                            <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
+                        <div className="stat-chip">
+                            <span className="stat-chip-label">Em Uso</span>
+                            <span className="stat-chip-value" style={{ color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
                         </div>
                     </div>
                 </header>
@@ -846,7 +846,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     aria-label="Chaves"
                                     style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '300px', overflowY: 'auto', marginTop: '1px' }}
                                 >
-                                    <div style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                                    <div className="dropdown-hint">
                                         Use as setas e Enter para selecionar
                                     </div>
                                     {keySuggestions.map((k, index) => (
@@ -923,7 +923,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 aria-label="Usuários"
                                                 style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '200px', overflowY: 'auto', marginTop: '1px' }}
                                             >
-                                                <div style={{ padding: '0.4rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                                                <div className="dropdown-hint">
                                                     Use as setas e Enter para selecionar
                                                 </div>
                                                 {empSuggestions.map((emp, index) => (
@@ -1205,19 +1205,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         {/* Modo Desktop (Lista) */}
                         <div className="desktop-only">
                         <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-                            <div className="dashboard-list-header" style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px',
-                                padding: '1rem 1rem 1rem 2.5rem',
-                                gap: '1rem',
-                                background: 'var(--bg-elevated)',
-                                borderBottom: '1px solid var(--border)',
-                                fontSize: '0.75rem',
-                                fontWeight: 800,
-                                color: 'var(--text-secondary)',
-                                letterSpacing: '0.05em',
-                                textTransform: 'uppercase'
-                            }}>
+                            {/* Grid do cabeçalho e das linhas vem da classe (globals) — uma definição só */}
+                            <div className="dashboard-list-header">
                                 <div style={{ textAlign: 'left' }}>Nome</div>
                                 <div style={{ textAlign: 'left' }}>Sala / Local</div>
                                 <div style={{ textAlign: 'center' }}>Status</div>
@@ -1231,15 +1220,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 </div>
                             ) : (
                                 filtered.map(key => (
-                                    <div key={key.id} style={{ 
-                                        display: 'grid', 
-                                        gridTemplateColumns: '1.5fr 1fr 180px 1.8fr 120px', 
-                                        padding: '1rem 1rem 1rem 2.5rem', 
-                                        gap: '1rem',
-                                        borderBottom: '1px solid var(--border)',
-                                        alignItems: 'center',
-                                        transition: 'background 0.2s ease'
-                                    }} className={`list-row-hover dashboard-list-row ${key.pending_info ? 'row-pending' : key.status === 'available' ? 'row-available' : 'row-inuse'}`}>
+                                    <div key={key.id} className={`list-row-hover dashboard-list-row ${key.pending_info ? 'row-pending' : key.status === 'available' ? 'row-available' : 'row-inuse'}`}>
                                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', textAlign: 'left' }}>
                                             {key.name}
                                         </div>
@@ -1442,7 +1423,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>O portador precisa aceitar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para a chave passar para você.</span>
                                     </p>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Observação (opcional)</label>
+                                        <label className="field-label">Observação (opcional)</label>
                                         <input
                                             type="text"
                                             value={customJustification}
@@ -1460,7 +1441,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         Transferir a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong> diretamente para outro usuário.
                                     </p>
                                     <div style={{ marginBottom: '1.25rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Para quem?</label>
+                                        <label className="field-label">Para quem?</label>
                                         <UserSelector 
                                             users={employees} 
                                             selectedId={transferTargetId} 
@@ -1468,7 +1449,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.5rem' }}>Observação (opcional)</label>
+                                        <label className="field-label">Observação (opcional)</label>
                                         <input
                                             type="text"
                                             value={customJustification}
