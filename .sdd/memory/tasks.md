@@ -43,22 +43,22 @@ todas) com ações de confirmar/aceitar/cancelar, reutilizando os endpoints exis
 como visão completa e destino da bottom-nav (badge continua).
 
 **Critérios BDD**:
-- [ ] **Cenário**: Pendência aparece no Dashboard sem trocar de tela
+- [x] **Cenário**: Pendência aparece no Dashboard sem trocar de tela
       Dado que uma retirada pendente foi criada para o usuário X
       Quando X abre (ou já está com) o Dashboard
       Então um painel de pendências exibe a transação (chave, tipo no idioma ação→cor, quem falta confirmar).
-- [ ] **Cenário**: Confirmar pelo painel conclui a transação
+- [x] **Cenário**: Confirmar pelo painel conclui a transação
       Dado uma pendência de retirada aguardando a confirmação do usuário logado
       Quando ele confirma pelo painel inline
       Então a transação usa o endpoint `user-confirm` existente e a chave muda de estado na lista — sem navegar.
-- [ ] **Cenário**: Cancelar pelo painel remove a pendência
+- [x] **Cenário**: Cancelar pelo painel remove a pendência
       Dado uma pendência do usuário logado
       Quando ele cancela pelo painel inline
       Então o endpoint `cancel` é usado e o painel/lista atualizam.
-- [ ] **Cenário**: Sem pendências, sem painel
+- [x] **Cenário**: Sem pendências, sem painel
       Dado que não há pendências visíveis ao usuário
       Então o painel não ocupa espaço no Dashboard.
-- [ ] **Cenário** (regressão): `/confirm` e o badge da bottom-nav continuam funcionando
+- [x] **Cenário** (regressão): `/confirm` e o badge da bottom-nav continuam funcionando
       Dado uma pendência criada
       Então `/confirm` a exibe como hoje e o badge conta corretamente.
 
