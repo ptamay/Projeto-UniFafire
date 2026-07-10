@@ -4,6 +4,10 @@
 > ameaças do sistema em produção na intranet, incluindo a exceção consciente do
 > REQ-014 à imutabilidade do REQ-005. Atualizar a cada mudança de superfície de
 > ataque (nova rota pública, novo perfil, mudança de auth).
+>
+> **Fonte canônica.** Existe uma cópia em `.sdd/memory/threat_model_stride.md`
+> para carregamento rápido pelo agente de execução — ao editar este arquivo,
+> sincronize a cópia também (sincronizadas em 2026-07-10).
 
 ## Contexto de implantação
 - Instância única (PM2) em servidor local; acesso apenas pela rede interna da instituição.

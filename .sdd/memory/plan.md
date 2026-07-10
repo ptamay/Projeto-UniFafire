@@ -144,6 +144,7 @@
 - ~~**Lint**~~ — **quitado (Sprint 9 — higiene, 2026-07-03):** os 64 warnings restantes (33 `no-explicit-any`, 28 `no-unused-vars`, 3 `exhaustive-deps`) foram zerados. `no-explicit-any` voltou de *warn* para *error* no `eslint.config.mjs` — nenhuma exceção residual. `npx eslint src` limpo (0 erros, 0 warnings).
 - ~~**Testes desativados na Sprint 6**~~ — **quitado (TASK-035, Sprint 7):** os 4 `.test.old` viraram suíte Vitest real (session-policy, password-policy, security-profile) com cobertura extra do strict pwd_hash check.
 - ~~**Next 16 — convenção `middleware` deprecada**~~ — **quitado (Sprint 9, 2026-07-03):** `src/middleware.ts` renomeado para `src/proxy.ts` (função `middleware` → `proxy`), conforme codemod oficial `middleware-to-proxy`.
+- **`docs/tasks-sprint-N.md` sem arquivamento desde a Sprint 8** (2026-07-02) — as Sprints 9–14 não geraram o snapshot correspondente em `docs/`. Fonte de verdade permanece íntegra em `.sdd/memory/tasks.md` (sobrescrito por sprint) + histórico de commits (`test`/`feat`/`refactor(TASK-NNN)`) + ADRs. Não reconstruído retroativamente para evitar fabricar detalhe BDD sem fonte confiável — se precisar do arquivo formal de uma sprint passada, gerar sob demanda a partir do `tasks.md` daquele commit + `git log`.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
