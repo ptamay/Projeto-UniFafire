@@ -126,7 +126,16 @@
 
 > **Achados fora de escopo (registrados, não corrigidos nesta sprint):**
 > - `keys.db` está rastreado no git (viola constitution §4.5) — deveria ser `git rm --cached` + `.gitignore`.
-> - Visão porteiro/desktop do Dashboard gera scroll horizontal (viola REQ-016) — detectado pelo e2e da força-devolução; provavelmente pré-existente na lista com seletores de usuário.
+> - ~~Visão porteiro/desktop do Dashboard gera scroll horizontal (viola REQ-016)~~ — **quitado (2026-07-08, branch claude/keen-yonath-349772):** causa real era o tooltip decorativo invisível vazando além da viewport + botões estourando a coluna de Ações; corrigido com `overflow-x: clip` + flex-wrap e coberto por e2e de regressão (`no-horizontal-scroll.spec.ts`).
+
+### Sprint 14 (candidata) — Fluxo Unificado do Dashboard (CR 2026-07-09, Tipo C — REQ-029, ADR-010)
+> Mudança em features entregues (REQ-021, REQ-016 e UI de REQ-003/004). Sem migration.
+> Origem: re-crítica UI/UX dual-agent (snapshots `.impeccable/critique/` de 2026-07-08/09).
+> Somente UI — endpoints e máquina de dupla confirmação intocados.
+- TASK-048 → REQ-029a: campo único busca+ação no desktop — filtra a lista em tempo real e age no Enter (setas navegam sugestões); remove o input de busca duplicado; seletor por linha permanece como caminho de mouse; test (e2e do fluxo de balcão por teclado) → feat.
+- TASK-049 → REQ-029b: painel de pendências inline no topo do Dashboard (confirmar/cancelar reutilizando endpoints e componentes de `/confirm`); `/confirm` permanece como visão completa; test → feat.
+- TASK-050 → REQ-029c: chips de chaves frequentes para o papel PORTEIRO no mobile (frequência da portaria) integrados ao fluxo de toque existente; test → feat.
+- TASK-051 → REQ-029d: light mode integral — sidebar tematizada no modo claro (ou decisão de mantê-la escura assumida e documentada no DESIGN.md, com teste visual dos dois temas); comportamento do login documentado.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
