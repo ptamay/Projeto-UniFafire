@@ -69,15 +69,15 @@ Pequena extensão do endpoint `/api/metrics/frequent-keys` (sessão validada, pr
 statement, sem schema novo) + remoção do gate de papel na UI.
 
 **Critérios BDD**:
-- [ ] **Cenário** (API): frequência da portaria para papéis da portaria
+- [x] **Cenário** (API): frequência da portaria para papéis da portaria
       Dado um porteiro autenticado e histórico de retiradas de vários usuários
       Quando chama `/api/metrics/frequent-keys`
       Então recebe as chaves mais retiradas GLOBALMENTE (portaria), não as próprias.
-- [ ] **Cenário** (API, regressão): usuário comum segue recebendo as próprias frequentes
+- [x] **Cenário** (API, regressão): usuário comum segue recebendo as próprias frequentes
       Dado um aluno autenticado com retiradas próprias
       Quando chama o endpoint
       Então recebe apenas as chaves que ELE mais retira.
-- [ ] **Cenário**: Chips visíveis para o porteiro no mobile
+- [x] **Cenário**: Chips visíveis para o porteiro no mobile
       Dado o porteiro no Dashboard mobile com histórico de movimentação
       Então os chips de chaves frequentes aparecem e o toque dispara o fluxo existente do card (retirada/devolução).
 
