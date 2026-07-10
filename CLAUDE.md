@@ -45,13 +45,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Nenhuma. Sprint 13 (REQ-028) concluída — todos os gates verdes.
-- Última Ação: Sprint 13 (devolução forçada ampla + clareza mobile, REQ-028/ADR-009) na branch feature/sprint-13-devolucao-mobile. TASK-046 (API: portaria força devolução de qualquer chave em uso com justificativa obrigatória + auditoria; supersede acoplamento do ADR-003) e TASK-047 (UI: botão Devolver no card mobile, campo de justificativa na força, estados claros, SSR expõe withdraw_justification/in_use_since, incorpora refactor CSS-responsivo do usuário) via test→feat. ci-gates 100% verde, vitest 78/78, e2e força-devolução 2/2 (desktop+mobile) + suíte existente intacta, tsc/eslint limpos.
-- Próxima Ação: Push da branch e abrir PR quando o usuário pedir. 2 achados fora de escopo pendentes (ver plan.md Sprint 13): keys.db rastreado (§4.5) e scroll horizontal na visão porteiro/desktop (REQ-016).
-- Decisões em aberto: Nenhuma
+- Sprint/Task Ativa: Nenhuma. Reformulação UI/UX concluída na branch claude/keen-yonath-349772 (6 commits, pushed).
+- Última Ação: (1) fix REQ-016 scroll horizontal + e2e de regressão; (2) reformulação UI/UX via impeccable (critique 22/40 → polish/adapt/harden → re-critique 30/40): tokens ação→cor, contrastes AA nos 2 temas, touch targets 44px, combobox WAI-ARIA, foco gerenciado no modal, skeleton no /confirm, herança de fonte (fim do Arial em form controls), One Voice Rule (azul p/ pessoas); detector 59→9 findings (só FPs); vitest 78/78 e e2e 12/12 em todos os commits; (3) CR Tipo C registrado: REQ-029/ADR-010 (busca=Ação Rápida, pendências inline, chips p/ porteiro mobile, light mode integral) — TASK-048..051 na Sprint 14 candidata do plan.md.
+- Próxima Ação: Usuário abrir o PR da branch (https://github.com/ptamay/Projeto-UniFafire/pull/new/claude/keen-yonath-349772). Depois: executar Sprint 14 (REQ-029) via ciclo TDD. Pendências menores: keys.db ainda rastreado (§4.5); rodar /impeccable document p/ atualizar o sidecar design.json (DESIGN.md ganhou tokens novos).
+- Decisões em aberto: REQ-029d — sidebar tematizada no light mode OU decisão de mantê-la escura documentada (resolver na Sprint 14 com teste visual).
 - Arquivos não commitados: keys.db (runtime do dev server; rastreado indevidamente — não commitar).
-- Branch atual: feature/sprint-13-devolucao-mobile
-- Atualizado em: 2026-07-07
+- Branch atual: claude/keen-yonath-349772
+- Atualizado em: 2026-07-09
 ```
 
 ---
