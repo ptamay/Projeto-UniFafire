@@ -491,11 +491,13 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             }
         }
         handleTransaction(confirmModal.keyId, confirmModal.type, empId);
-        // Limpa a barra de Ação Rápida via estado (o render cuida do resto).
+        // Limpa a barra unificada via estado (o render cuida do resto) —
+        // inclusive o filtro da lista, que volta a mostrar todas as chaves.
         setKeySuggestions([]);
         setEmpSuggestions([]);
         setQaKey('');
         setQaEmp('');
+        setSearch('');
         setShowKeyDrops(false);
         setShowEmpDrops(false);
     };
@@ -672,7 +674,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             ? `Chave ${qaResolvedKey!.name} está com ${qaResolvedKey!.employee_name || 'usuário'}. Pronto para solicitar a devolução.`
             : '';
     // Mantém o ref de "interagindo" atualizado a cada render (lido pelo polling).
-    interactingRef.current = showKeyDrops || showEmpDrops || confirmModal.open || qaKey.trim() !== '' || actionLoading !== null;
+    // REQ-029a: texto no campo unificado é FILTRO (a lista deve continuar viva);
+    // o polling só pausa durante interação ativa — dropdown aberto, passo 2
+    // visível, modal ou ação em andamento.
+    interactingRef.current = showKeyDrops || showEmpDrops || confirmModal.open || qaStep !== null || actionLoading !== null;
 
     return (
         <div className="page-wrapper">
@@ -737,21 +742,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     </div>
                 )}
 
-                {/* Unified Control Bar */}
+                {/* Unified Control Bar — REQ-029a: a busca É a Ação Rápida. Um único
+                    campo filtra a lista em tempo real (setSearch no onChange) e age no
+                    Enter (sugestões + fluxo de retirada/devolução). O input de busca
+                    separado foi removido. */}
                 <div className="unified-control-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
-                    <div className="search-bar" style={{ flex: '1', minWidth: '200px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', position: 'relative' }}>
-                        <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input
-                            className="input"
-                            aria-label="Buscar chave ou usuário"
-                            style={{ paddingLeft: '2.75rem', minHeight: '44px', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%' }}
-                            placeholder="Buscar chave ou usuário..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="control-actions" style={{ flex: '2', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', paddingLeft: '1rem' }}>
+                    <div className="control-actions" style={{ flex: '1', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', paddingLeft: '1rem' }}>
                         <div style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </div>
@@ -760,11 +756,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <div style={{ position: 'relative', flex: 1 }}>
                             <input
                                 className="input"
-                                placeholder="Ação Rápida: Qual a chave?"
+                                placeholder="Buscar ou registrar: qual a chave?"
                                 id="unified-key-input"
                                 autoComplete="off"
                                 role="combobox"
-                                aria-label="Ação rápida: qual a chave?"
+                                aria-label="Buscar ou registrar chave"
                                 aria-expanded={showKeyDrops}
                                 aria-controls="key-dropdown"
                                 value={qaKey}
@@ -811,6 +807,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 onChange={(e) => {
                                     const raw = e.target.value;
                                     setQaKey(raw);
+                                    // REQ-029a: o mesmo campo filtra a lista abaixo em tempo real
+                                    // (sincroniza só na digitação — selecionar uma sugestão não
+                                    // deve estreitar a lista para a chave escolhida).
+                                    setSearch(raw);
                                     const val = normalize(raw.trim());
                                     const filtered = keys
                                         .filter(k => normalize(k.name).includes(val))
@@ -1065,7 +1065,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.375rem' }}>Nenhuma chave encontrada</p>
                             <p>Nenhuma chave corresponde à busca ou ao filtro atual.</p>
                             {(search !== '' || filter !== 'all') && (
-                                <button className="btn btn-ghost btn-sm" style={{ marginTop: '1.25rem' }} onClick={() => { setSearch(''); setFilter('all'); }}>
+                                <button className="btn btn-ghost btn-sm" style={{ marginTop: '1.25rem' }} onClick={() => { setSearch(''); setQaKey(''); setFilter('all'); }}>
                                     Limpar busca e filtros
                                 </button>
                             )}

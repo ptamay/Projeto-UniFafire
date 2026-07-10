@@ -20,8 +20,19 @@ test.describe('Campo único busca+ação no Dashboard desktop (REQ-029a)', () =>
         await expect(bar.locator('input')).toHaveCount(1);
         const field = bar.locator('input').first();
 
+        // Sonda de hidratação: o dropdown de sugestões só abre quando os handlers
+        // React estão anexados — num load frio, um clique pré-hidratação deixa o
+        // campo focado sem que o onFocus do React exista, e cliques repetidos não
+        // re-disparam focus. Por isso cada tentativa DESFOCA (clica no título)
+        // antes de clicar no campo de novo, até a hidratação concluir.
+        await expect(page.locator('.dashboard-list-row')).toHaveCount(3);
+        await expect(async () => {
+            await page.locator('.page-title').click();
+            await field.click();
+            await expect(page.locator('#key-dropdown')).toBeVisible({ timeout: 1500 });
+        }).toPass({ timeout: 30_000 });
+
         // 2) Digitar filtra a lista desktop em tempo real (comportamento da busca antiga)
-        await field.click();
         await field.fill('Devolver');
         await expect(page.locator('.dashboard-list-row')).toHaveCount(1);
         await expect(page.locator('.dashboard-list-row').first()).toContainText('Chave Devolver E2E');
