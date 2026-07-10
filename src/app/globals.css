@@ -787,11 +787,7 @@ h3 { font-size: 1.125rem; }
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
 }
-.control-divider {
-  width: 1px;
-  height: 24px;
-  background: var(--border);
-}
+/* (.control-divider removido — separava a busca da Ação Rápida; REQ-029a as unificou) */
 .control-actions {
   display: flex;
   align-items: center;
