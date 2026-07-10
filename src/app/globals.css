@@ -1090,13 +1090,15 @@ h3 { font-size: 1.125rem; }
   height: 32px;
   border-radius: 50%;
   background: transparent;
-  border: 1.5px solid var(--green-400);
+  /* Azul institucional para "pessoa" — One Voice Rule: o verde é reservado
+     a CTA/status positivo, não a decoração (e o green-400 media ~2,5:1 aqui). */
+  border: 1.5px solid var(--blue-400);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--green-400);
+  color: var(--blue-300);
   flex-shrink: 0;
 }
 

@@ -717,7 +717,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 {/* Explicação da dupla confirmação (dispensável, contextual) */}
                 {showIntro && (
                     <div className="animate-fade" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-300)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>Como funciona a dupla confirmação</div>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
@@ -1136,7 +1136,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
-                                                                <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
+                                                                <div style={{ fontSize: '0.7rem', color: 'var(--warning-text)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1235,12 +1235,13 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
                                             {key.status === 'in_use' ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', textAlign: 'center', minWidth: 0 }}>
-                                                    <div style={{ width: '32px', height: '32px', background: 'var(--accent-primary)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                                    {/* Azul institucional p/ "pessoa" (One Voice Rule) — o verde sólido media 3,2:1 com o branco */}
+                                                    <div style={{ width: '32px', height: '32px', background: 'var(--blue-700)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                                                         {key.employee_name?.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div style={{ minWidth: 0 }}>
                                                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
                                                     </div>
                                                 </div>
                                             ) : (
