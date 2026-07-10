@@ -88,15 +88,15 @@ light mode** com contraste AA; se o teste visual reprovar a identidade, reverter
 "dark documentado no DESIGN.md" (fallback aceito pelo ADR). O login já respeita o tema salvo.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Sidebar clara no light mode com AA
+- [x] **Cenário**: Sidebar clara no light mode com AA
       Dado o tema claro ativo
       Quando a sidebar renderiza (desktop e drawer mobile)
       Então usa superfícies claras e nav items/badges/logo passam contraste AA (medido), sem override `.light-mode .sidebar .badge-*` remanescente.
-- [ ] **Cenário**: Dark mode intocado
+- [x] **Cenário**: Dark mode intocado
       Dado o tema escuro (padrão)
       Então a sidebar permanece exatamente como hoje (regressão visual zero no dark).
-- [ ] **Cenário**: Persistência e alternância
+- [x] **Cenário**: Persistência e alternância
       Dado o usuário alterna o tema pelo toggle
       Então a sidebar acompanha imediatamente e a escolha persiste (localStorage `theme`).
-- [ ] **Cenário** (doc): DESIGN.md registra a decisão
+- [x] **Cenário** (doc): DESIGN.md registra a decisão
       Então o DESIGN.md documenta a sidebar tematizada (ou o fallback dark, se revertido) — fim das "três decisões convivendo".
