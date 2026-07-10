@@ -242,16 +242,16 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
     const [frequentKeys, setFrequentKeys] = useState<number[]>([]);
     
-    // Fetch frequent keys for normal users
+    // Chaves frequentes (REQ-029c): o endpoint decide a semântica por papel —
+    // portaria recebe as mais movimentadas globalmente, usuário comum as próprias.
     useEffect(() => {
-        if (isPorteiroOrAdmin) return;
         fetch('/api/metrics/frequent-keys')
             .then(r => r.ok ? r.json() : [])
             .then(ids => {
                 if (Array.isArray(ids)) setFrequentKeys(ids);
             })
             .catch(() => {});
-    }, [isPorteiroOrAdmin]);
+    }, []);
 
     const refreshData = useCallback(async () => {
         try {
@@ -1006,8 +1006,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         />
                     </div>
 
-                    {!isPorteiroOrAdmin && frequentKeys.length > 0 && (
-                        <div className="mobile-quick-chips" role="list" aria-label="Chaves que você usa com frequência">
+                    {frequentKeys.length > 0 && (
+                        <div className="mobile-quick-chips" role="list" aria-label={isPorteiroOrAdmin ? 'Chaves mais movimentadas' : 'Chaves que você usa com frequência'}>
                             {frequentKeys
                                 .map(id => keys.find(k => k.id === id))
                                 .filter((k): k is Key => Boolean(k))

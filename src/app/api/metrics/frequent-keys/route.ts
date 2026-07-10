@@ -10,16 +10,29 @@ export async function GET() {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Conta a frequência de retiradas de chaves pelo usuário atual
-        const frequentKeys = db.prepare(`
-            SELECT k.id, COUNT(h.id) as frequency
-            FROM keys k
-            JOIN history h ON k.id = h.key_id
-            WHERE h.user_id = ? AND h.action = 'withdraw' AND k.active = 1
-            GROUP BY k.id
-            ORDER BY frequency DESC
-            LIMIT 5
-        `).all(session.id) as { id: number, frequency: number }[];
+        // REQ-029c: a portaria (ADMIN/GESTOR/PORTEIRO) opera para todos, então
+        // "frequente" = chaves mais movimentadas GLOBALMENTE. O usuário comum
+        // recebe as próprias. Prepared statements em ambos os ramos.
+        const isPortaria = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role);
+        const frequentKeys = (isPortaria
+            ? db.prepare(`
+                SELECT k.id, COUNT(h.id) as frequency
+                FROM keys k
+                JOIN history h ON k.id = h.key_id
+                WHERE h.action = 'withdraw' AND k.active = 1
+                GROUP BY k.id
+                ORDER BY frequency DESC
+                LIMIT 5
+            `).all()
+            : db.prepare(`
+                SELECT k.id, COUNT(h.id) as frequency
+                FROM keys k
+                JOIN history h ON k.id = h.key_id
+                WHERE h.user_id = ? AND h.action = 'withdraw' AND k.active = 1
+                GROUP BY k.id
+                ORDER BY frequency DESC
+                LIMIT 5
+            `).all(session.id)) as { id: number, frequency: number }[];
 
         return NextResponse.json(frequentKeys.map(k => k.id));
     } catch (error) {
