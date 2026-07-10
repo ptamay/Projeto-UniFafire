@@ -128,14 +128,14 @@
 > - `keys.db` está rastreado no git (viola constitution §4.5) — deveria ser `git rm --cached` + `.gitignore`.
 > - ~~Visão porteiro/desktop do Dashboard gera scroll horizontal (viola REQ-016)~~ — **quitado (2026-07-08, branch claude/keen-yonath-349772):** causa real era o tooltip decorativo invisível vazando além da viewport + botões estourando a coluna de Ações; corrigido com `overflow-x: clip` + flex-wrap e coberto por e2e de regressão (`no-horizontal-scroll.spec.ts`).
 
-### Sprint 14 (candidata) — Fluxo Unificado do Dashboard (CR 2026-07-09, Tipo C — REQ-029, ADR-010)
+### Sprint 14 ✅ — Fluxo Unificado do Dashboard (CR 2026-07-09, Tipo C — REQ-029, ADR-010)
 > Mudança em features entregues (REQ-021, REQ-016 e UI de REQ-003/004). Sem migration.
 > Origem: re-crítica UI/UX dual-agent (snapshots `.impeccable/critique/` de 2026-07-08/09).
-> Somente UI — endpoints e máquina de dupla confirmação intocados.
-- TASK-048 → REQ-029a: campo único busca+ação no desktop — filtra a lista em tempo real e age no Enter (setas navegam sugestões); remove o input de busca duplicado; seletor por linha permanece como caminho de mouse; test (e2e do fluxo de balcão por teclado) → feat.
-- TASK-049 → REQ-029b: painel de pendências inline no topo do Dashboard (confirmar/cancelar reutilizando endpoints e componentes de `/confirm`); `/confirm` permanece como visão completa; test → feat.
-- TASK-050 → REQ-029c: chips de chaves frequentes para o papel PORTEIRO no mobile (frequência da portaria) integrados ao fluxo de toque existente; test → feat.
-- TASK-051 → REQ-029d: light mode integral — sidebar tematizada no modo claro (ou decisão de mantê-la escura assumida e documentada no DESIGN.md, com teste visual dos dois temas); comportamento do login documentado.
+> Somente UI + 1 query de métrica — endpoints de transação e máquina de dupla confirmação intocados.
+- ~~TASK-048 → REQ-029a: campo único busca+ação no desktop — filtra a lista em tempo real e age no Enter; remove o input de busca duplicado; seletor por linha permanece como caminho de mouse. test (e2e teclado)→feat.~~
+- ~~TASK-049 → REQ-029b: painel de pendências inline (PendingInline) no topo do Dashboard, confirmar/cancelar reutilizando os endpoints de `/confirm` (pending/user-confirm/cancel); `/confirm` permanece como visão completa. test→feat.~~
+- ~~TASK-050 → REQ-029c: `/api/metrics/frequent-keys` ramifica por papel (portaria = frequência global, comum = própria); UI mostra chips para o porteiro no mobile. test (vitest)→feat.~~
+- ~~TASK-051 → REQ-029d: light mode integral — sidebar tematizada no modo claro (AA/AAA medido; fallback dark do ADR não foi necessário); login respeita o tema salvo; decisão documentada no DESIGN.md. test (e2e)→feat.~~
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
@@ -161,3 +161,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 10 (transfer) | 2026-07-06 | 2026-07-06 | 1 | 15 | 15 | 0 | 1 (lint type checking) | — | — |
 | 12 (pull REQ-027) | 2026-07-07 | 2026-07-07 | 1 | 3 tasks | 3 (045 consolidada em 044) | 0 | 1 (Gate 4 falha por débito herdado da Sprint 11 — TASK-042 feat sem test; não introduzido nesta sprint) | — | — |
 | 13 (devolução REQ-028) | 2026-07-07 | 2026-07-07 | 1 | 2 tasks | 2 | 1 (TASK-047: seletor e2e ambíguo + stash interrompido pelo lock do keys.db do dev server — recuperado sem perda) | 0 | — | — |
+| 14 (fluxo unificado REQ-029) | 2026-07-10 | 2026-07-10 | 1 | 4 tasks | 4 | 0 | 0 (todos os gates verdes em cada task) | — | — |

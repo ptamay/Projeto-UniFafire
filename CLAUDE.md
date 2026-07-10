@@ -45,13 +45,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 10 (Sprints agentic em andamento — MODO EXPRESSO)
-- Sprint/Task Ativa: Nenhuma. Reformulação UI/UX concluída na branch claude/keen-yonath-349772 (6 commits, pushed).
-- Última Ação: (1) fix REQ-016 scroll horizontal + e2e de regressão; (2) reformulação UI/UX via impeccable (critique 22/40 → polish/adapt/harden → re-critique 30/40): tokens ação→cor, contrastes AA nos 2 temas, touch targets 44px, combobox WAI-ARIA, foco gerenciado no modal, skeleton no /confirm, herança de fonte (fim do Arial em form controls), One Voice Rule (azul p/ pessoas); detector 59→9 findings (só FPs); vitest 78/78 e e2e 12/12 em todos os commits; (3) CR Tipo C registrado: REQ-029/ADR-010 (busca=Ação Rápida, pendências inline, chips p/ porteiro mobile, light mode integral) — TASK-048..051 na Sprint 14 candidata do plan.md.
-- Próxima Ação: Usuário abrir o PR da branch (https://github.com/ptamay/Projeto-UniFafire/pull/new/claude/keen-yonath-349772). Depois: executar Sprint 14 (REQ-029) via ciclo TDD. Pendências menores: keys.db ainda rastreado (§4.5); rodar /impeccable document p/ atualizar o sidecar design.json (DESIGN.md ganhou tokens novos).
-- Decisões em aberto: REQ-029d — sidebar tematizada no light mode OU decisão de mantê-la escura documentada (resolver na Sprint 14 com teste visual).
+- Sprint/Task Ativa: Nenhuma. Sprint 14 (REQ-029/ADR-010) CONCLUÍDA na branch feature/sprint-14-fluxo-unificado — todos os gates verdes.
+- Última Ação: Sprint 14 (fluxo unificado do Dashboard) via TDD atômico, 4 tasks: TASK-048 (campo único busca+ação no desktop), TASK-049 (painel PendingInline de pendências inline reusando endpoints de /confirm), TASK-050 (frequent-keys ramifica por papel — portaria=global, comum=própria; chips p/ porteiro mobile), TASK-051 (light mode integral — sidebar tematizada AA/AAA, login respeita tema salvo). Só UI + 1 query; endpoints e dupla confirmação intocados. vitest 80/80, e2e 16/16, ci-gates 6/6, npm audit 0. Antes disso, na mesma sequência de branches: fix REQ-016 (scroll horizontal) + reformulação UI/UX impeccable (Nielsen 22→30/40).
+- Próxima Ação: Push da branch feature/sprint-14-fluxo-unificado e abrir PR (ou consolidar com a branch anterior claude/keen-yonath-349772). Pendências menores: keys.db ainda rastreado (§4.5); rodar /impeccable document p/ atualizar o sidecar design.json (DESIGN.md ganhou tokens + regras de light mode).
+- Decisões em aberto: Nenhuma (REQ-029d resolvido — sidebar tematizada no light, fallback dark do ADR não foi necessário).
 - Arquivos não commitados: keys.db (runtime do dev server; rastreado indevidamente — não commitar).
-- Branch atual: claude/keen-yonath-349772
-- Atualizado em: 2026-07-09
+- Branch atual: feature/sprint-14-fluxo-unificado
+- Atualizado em: 2026-07-10
 ```
 
 ---
@@ -100,11 +100,11 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : 1
-Última sprint     : —
-Fase atual        : 7
+Sprint atual      : — (nenhuma ativa)
+Última sprint     : 14 ✅ (Fluxo Unificado do Dashboard — REQ-029/ADR-010)
+Fase atual        : 10 (sprints agentic)
 Último commit     : (ver git log -1)
-Próxima ação      : Fase 8 — geração de tasks da Sprint 1
+Próxima ação      : Push da branch feature/sprint-14-fluxo-unificado + abrir PR
 ```
 
 ---
