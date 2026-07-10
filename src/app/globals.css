@@ -526,6 +526,76 @@ h3 { font-size: 1.125rem; }
   transition: background 0.2s ease;
 }
 
+/* ── Pendências inline no Dashboard (REQ-029b) ──────────────
+   Painel compacto: a operação inteira acontece sem trocar de tela.
+   Some quando não há pendências (o componente retorna null). */
+.pending-inline {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.pending-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.pending-inline-count {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-radius: var(--radius-full);
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.pending-inline-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+}
+.pending-inline-item + .pending-inline-item {
+  border-top: 1px solid var(--border);
+}
+.pending-inline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.pending-inline-key {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pending-inline-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.pending-inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  /* No mobile o item empilha: tag+info em cima, ações em faixa própria de 44px */
+  .pending-inline-item { flex-wrap: wrap; }
+  .pending-inline-actions { width: 100%; }
+  .pending-inline-actions .btn { flex: 1; }
+}
+
 /* ── Stat chips (header do Dashboard) ─────────────────────── */
 .stat-chip {
   background: var(--bg-card);

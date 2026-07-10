@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
+import PendingInline from './PendingInline';
 import toast from 'react-hot-toast';
 import { OVERDUE_HOURS } from '@/lib/business-rules';
 
@@ -718,6 +719,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </div>
                     </div>
                 )}
+
+                {/* Pendências inline (REQ-029b): a operação inicia E conclui aqui,
+                    sem trocar para /confirm — que permanece como visão completa. */}
+                <PendingInline userRole={userRole} userId={userId} />
 
                 {/* Explicação da dupla confirmação (dispensável, contextual) */}
                 {showIntro && (

@@ -26,10 +26,18 @@ test.describe('Pendências inline no Dashboard (REQ-029b)', () => {
         // ── Sem pendências: sem painel ──
         await login(page, 'e2e_porteiro');
         // Auto-saneamento: um run anterior falho pode ter deixado pendência órfã
-        // da chave (regra "uma pendência por chave" rejeitaria a criação abaixo).
+        // da chave (regra "uma pendência por chave") ou a própria chave em uso
+        // (retirada completada sem o restore rodar).
         const leftovers = await (await page.request.get('/api/transactions/pending')).json();
         for (const t of leftovers.filter((t: { key_name: string }) => t.key_name === KEY)) {
             await page.request.post(`/api/transactions/${t.id}/cancel`);
+        }
+        const keysStart = await (await page.request.get('/api/keys')).json();
+        const dirty = keysStart.find((k: { name: string; status: string; id: number; user_id?: number }) => k.name === KEY);
+        if (dirty?.status === 'in_use') {
+            await page.request.post('/api/transactions', {
+                data: { action: 'return', key_id: dirty.id, user_id: dirty.user_id, bypassConfirmation: true, justification: 'Saneamento do estado de teste' },
+            });
         }
         await page.reload();
         await expect(page.locator('.pending-inline')).toHaveCount(0);
@@ -60,19 +68,22 @@ test.describe('Pendências inline no Dashboard (REQ-029b)', () => {
         const alunoItem = page.locator('.pending-inline .pending-inline-item', { hasText: KEY });
         await expect(alunoItem).toBeVisible({ timeout: 10_000 });
         await alunoItem.getByRole('button', { name: /confirmar/i }).click();
-        // some do painel do aluno...
+        // A retirada foi iniciada pelo porteiro (lado da portaria já confirmado na
+        // criação): a confirmação do aluno COMPLETA a transação — o item some do
+        // painel e a chave muda de estado, tudo sem navegar.
         await expect(page.locator('.pending-inline .pending-inline-item', { hasText: KEY })).toHaveCount(0, { timeout: 10_000 });
-        // ...e a retirada foi confirmada pelo lado do usuário (user_confirmed_at preenchido)
-        const stillPending = await (await page.request.get('/api/transactions/pending')).json();
-        const tx = stillPending.find((t: { key_name: string }) => t.key_name === KEY);
-        expect(tx?.user_confirmed_at).toBeTruthy();
+        const keysAfter = await (await page.request.get('/api/keys')).json();
+        const keyAfter = keysAfter.find((k: { name: string; status: string; id: number; user_id?: number }) => k.name === KEY);
+        expect(keyAfter?.status).toBe('in_use');
 
-        // ── Restaura o estado: porteiro cancela a pendência restante via API ──
+        // ── Restaura o estado: porteiro força a devolução (bypass + justificativa) ──
         await logout(page);
         await login(page, 'e2e_porteiro');
-        const cancel = await page.request.post(`/api/transactions/${tx.id}/cancel`);
-        expect(cancel.ok()).toBeTruthy();
-        const finalPending = await (await page.request.get('/api/transactions/pending')).json();
-        expect(finalPending.find((t: { key_name: string }) => t.key_name === KEY)).toBeFalsy();
+        const restore = await page.request.post('/api/transactions', {
+            data: { action: 'return', key_id: keyAfter.id, user_id: keyAfter.user_id, bypassConfirmation: true, justification: 'Restauração do estado de teste' },
+        });
+        expect(restore.ok()).toBeTruthy();
+        const finalKeys = await (await page.request.get('/api/keys')).json();
+        expect(finalKeys.find((k: { name: string }) => k.name === KEY)?.status).toBe('available');
     });
 });
