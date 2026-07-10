@@ -132,6 +132,8 @@ Cores de estado têm papéis semânticos fixos — use os tokens, nunca literais
 
 **The Action Language Rule.** O idioma ação→cor é fixo e vale em todas as telas: **retirada = âmbar · devolução = verde · transferência = roxo**. Botões continuam na linguagem de CTA (`btn-green` primário, `btn-blue` devolução); o idioma de ação vale para badges, tags e acentos de registro.
 
+**Light mode integral (REQ-029d, ADR-010).** O tema claro é cidadão de primeira classe: a **sidebar acompanha o tema** (superfície branca no light, texto institucional AA — nav slate-700 10:1, ativo verde-600 8,4:1, títulos azul-700 9,8:1, badge de papel azul-700 6,7:1) em vez de permanecer escura. Regra em `.light-mode .sidebar …`; o dropdown do menu do usuário troca via `.sidebar-user-menu`. O `/login` respeita o tema salvo (`localStorage.theme`). Fim das "três decisões convivendo" (sidebar dark + login light + badges quebrados) que a re-crítica apontou.
+
 ## 3. Typography
 
 **Display Font:** 'Inter', sans-serif (com system-ui fallback)

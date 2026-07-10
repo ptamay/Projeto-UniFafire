@@ -14,10 +14,6 @@ function luminance(rgb: string): number {
     });
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
-function contrast(a: string, b: string): number {
-    const la = luminance(a), lb = luminance(b);
-    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
 
 async function setTheme(page: Page, theme: 'light' | 'dark') {
     await page.evaluate((t) => {
@@ -34,7 +30,9 @@ test.describe('Light mode integral — sidebar tematizada (REQ-029d)', () => {
 
     test('sidebar clara com AA no light; escura intocada no dark', async ({ page }) => {
         const sidebar = page.locator('.sidebar');
-        const navItem = page.locator('.sidebar .nav-item').first();
+        // Item de nav NÃO-ativo: representa a legibilidade do menu (o ativo usa o
+        // verde-acento, deliberadamente de outra natureza).
+        const navItem = page.locator('.sidebar .nav-item:not(.active)').first();
 
         // ── Dark (padrão): sidebar escura ──
         await setTheme(page, 'dark');
@@ -43,11 +41,29 @@ test.describe('Light mode integral — sidebar tematizada (REQ-029d)', () => {
 
         // ── Light: sidebar clara, texto AA ──
         await setTheme(page, 'light');
-        const lightBg = await sidebar.evaluate(el => getComputedStyle(el).backgroundColor);
-        expect(luminance(lightBg)).toBeGreaterThan(0.5); // superfície clara
-
-        const navColor = await navItem.evaluate(el => getComputedStyle(el).color);
-        // texto do item de nav contrasta AA (≥4.5:1) com o fundo claro da sidebar
-        expect(contrast(navColor, lightBg)).toBeGreaterThanOrEqual(4.5);
+        // Superfície clara.
+        await expect.poll(
+            async () => luminance(await sidebar.evaluate(el => getComputedStyle(el).backgroundColor)),
+            { timeout: 10_000 }
+        ).toBeGreaterThan(0.5);
+        // Texto do nav contrasta AA (≥4.5:1) com o fundo da PRÓPRIA sidebar. Poll
+        // pois no dev server o CSS aplica em streaming na 1ª compilação — se o tema
+        // realmente não aplicasse (bug de cascade), o poll estouraria (red legítimo).
+        // Medido num único evaluate (cor e bg do mesmo elemento) — sem corrida entre chamadas.
+        await expect.poll(
+            async () => navItem.evaluate((el) => {
+                const c = getComputedStyle(el).color;
+                const bg = getComputedStyle(el.closest('.sidebar')!).backgroundColor;
+                const lum = (rgb: string) => {
+                    const [r, g, b] = rgb.match(/\d+/g)!.slice(0, 3).map(Number).map(v => {
+                        const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+                    });
+                    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                };
+                const la = lum(c), lb = lum(bg);
+                return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+            }),
+            { timeout: 10_000 }
+        ).toBeGreaterThanOrEqual(4.5);
     });
 });

@@ -310,8 +310,8 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
                         {/* Dropdown Menu */}
                         {isUserMenuOpen && (
-                            <div style={{ 
-                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', 
+                            <div className="sidebar-user-menu" style={{
+                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)',
                                 padding: '0.5rem', marginBottom: '0.5rem',
                                 position: isCollapsed ? 'absolute' : 'static',
                                 bottom: isCollapsed ? '100%' : 'auto',
