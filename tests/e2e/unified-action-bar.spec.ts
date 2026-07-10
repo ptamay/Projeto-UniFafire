@@ -66,5 +66,14 @@ test.describe('Campo único busca+ação no Dashboard desktop (REQ-029a)', () =>
         expect(tx).toBeTruthy();
         const cancel = await page.request.post(`/api/transactions/${tx.id}/cancel`);
         expect(cancel.ok()).toBeTruthy();
+
+        // 4) Enter em chave EM USO abre a devolução (comportamento da Ação Rápida preservado)
+        await field.fill('Chave Pull E2E');
+        await field.press('Enter');
+        const returnDialog = page.getByRole('dialog');
+        await expect(returnDialog).toBeVisible();
+        await expect(returnDialog).toContainText(/Solicitar Devolução/i);
+        await page.keyboard.press('Escape');
+        await expect(returnDialog).toBeHidden();
     });
 });
