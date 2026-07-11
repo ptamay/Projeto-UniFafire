@@ -103,7 +103,8 @@ export async function POST(request: Request) {
                 return NextResponse.json({
                     id: existing.id, username: finalUsername, role,
                     message: 'Usuário reativado com sucesso',
-                    reactivated: true
+                    reactivated: true,
+                    generatedPassword: finalPassword
                 });
             }
         }
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
 
         logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
 
-        return NextResponse.json({ id: info.lastInsertRowid, username: finalUsername, role, full_name, matricula });
+        return NextResponse.json({ id: info.lastInsertRowid, username: finalUsername, role, full_name, matricula, generatedPassword: finalPassword });
     } catch (error) {
         console.error('Create user error:', error);
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
@@ -151,6 +152,11 @@ export async function DELETE(request: Request) {
             if (result.count <= 1) {
                 return NextResponse.json({ error: 'Não é possível excluir o único administrador.' }, { status: 403 });
             }
+        }
+
+        const keysInPossession = db.prepare("SELECT COUNT(*) as count FROM keys WHERE user_id = ? AND status = 'in_use'").get(id) as { count: number };
+        if (keysInPossession.count > 0) {
+            return NextResponse.json({ error: 'Não é possível excluir: o usuário possui chaves em sua posse.' }, { status: 400 });
         }
 
         const info = db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(id);

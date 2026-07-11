@@ -82,7 +82,8 @@ beforeAll(() => {
             porteiro_confirmed_at DATETIME,
             cancelled_at DATETIME,
             completed_at DATETIME,
-            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            justification TEXT
         );
     `);
 
@@ -97,6 +98,7 @@ beforeAll(() => {
     insertUser.run('test_porteiro', hash, 'PORTEIRO');
     insertUser.run('test_funcionario', hash, 'FUNCIONARIO');
     insertUser.run('test_aluno', hash, 'ALUNO');
+    insertUser.run('test_aluno2', hash, 'ALUNO');
 
     // 3. Semear uma chave disponível
     const insertKey = db.prepare("INSERT INTO keys (name, room, status) VALUES (?, ?, 'available')");

@@ -14,6 +14,7 @@ interface KeyRow {
     employee_role?: string | null;
     pending_info: string | null;
     in_use_since: string | null;
+    withdraw_justification: string | null;
 }
 
 async function getUser() {
@@ -35,11 +36,14 @@ export async function GET() {
         const rawKeys = db.prepare(`
             SELECT k.*, u.full_name as employee_name, u.role as employee_role,
                    (SELECT json_object(
+                       'transaction_id', kt.id,
                        'action', kt.action,
                        'user_confirmed', kt.user_confirmed_at IS NOT NULL,
                        'porteiro_confirmed', kt.porteiro_confirmed_at IS NOT NULL,
                        'user_name', u_kt.full_name,
-                       'user_role', u_kt.role
+                       'user_role', u_kt.role,
+                       'user_id', kt.user_id,
+                       'porteiro_id', kt.porteiro_id
                    )
                     FROM key_transactions kt
                     LEFT JOIN users u_kt ON kt.user_id = u_kt.id
@@ -48,7 +52,11 @@ export async function GET() {
                    (SELECT completed_at 
                     FROM key_transactions 
                     WHERE key_id = k.id AND action = 'withdraw' AND status = 'completed' 
-                    ORDER BY completed_at DESC LIMIT 1) as in_use_since
+                    ORDER BY completed_at DESC LIMIT 1) as in_use_since,
+                   (SELECT justification 
+                    FROM key_transactions 
+                    WHERE key_id = k.id AND action = 'withdraw' AND status = 'completed' 
+                    ORDER BY completed_at DESC LIMIT 1) as withdraw_justification
             FROM keys k 
             LEFT JOIN users u ON k.user_id = u.id
             WHERE k.active = 1

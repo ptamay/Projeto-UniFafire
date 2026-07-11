@@ -23,6 +23,7 @@ export async function POST(request: Request) {
         // Pega IP do client. Em ambiente local pode vir do cabeçalho ou fallback genérico.
         // O header 'x-forwarded-for' é o padrão se houver reverse proxy (Nginx).
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
         
         if (!checkRateLimit(ip)) {
             logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
         (await cookies()).set('session', sessionToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24 // 24 hours idle expiration

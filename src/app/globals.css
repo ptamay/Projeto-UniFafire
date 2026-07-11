@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+/* Inter é servida pelo next/font (layout.tsx) via --font-inter — sem @import
+   bloqueante e sem FOUT; o fallback system-ui cobre o primeiro paint. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,6 +34,9 @@
   --green-200: #77de9e;
   --green-100: #b8f0cf;
 
+  --blue-200: #b8c6f5;
+  --blue-100: #dbe3ff;
+
   /* --- MODO ESCURO (Padrão) --- */
   --bg-page:        #060B19; /* Azul bem escuro, quase preto para conforto visual */
   --bg-surface:     #0F172A; /* Azul acinzedado (Slate 900) para superfícies */
@@ -50,6 +53,8 @@
 
   --accent-primary: var(--green-400);
   --accent-hover:   var(--green-300);
+  --bg-selection:   rgba(29, 128, 70, 0.15);
+  --bg-selection-light: rgba(29, 128, 70, 0.05);
 
   --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
   --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
@@ -58,6 +63,39 @@
 
   --status-available-bg:  rgba(34, 197, 94, 0.12);
   --status-inuse-bg:      rgba(251, 146, 60, 0.12);
+  --status-available-text: #34d399; /* verde legível sobre fundo escuro */
+  --status-inuse-text:     #fda4af; /* rose-300 — AA sobre o fundo TINTADO da tag (o #fb7185 media 4,45:1 no composto) */
+
+  /* Semânticos — perigo/alerta (antes espalhados como literais #ef4444/#f87171/#f59e0b) */
+  --danger:        #ef4444; /* fundo de ações destrutivas (excluir) */
+  --danger-hover:  #dc2626;
+  --danger-text:   #f87171; /* texto/ícone de perigo sobre fundo escuro */
+  --danger-bg:     rgba(239, 68, 68, 0.12);
+  --warning:       #f59e0b; /* pendências/atenção */
+  --warning-text:  #fbbf24;
+  --warning-bg:    rgba(245, 158, 11, 0.12);
+
+  /* Idioma único ação→cor (badges/acentos de REGISTRO, não de botão):
+     retirada = âmbar · devolução = verde · transferência = roxo.
+     O mesmo significado em TODAS as telas (Dashboard, Confirmações, Histórico) —
+     antes "retirada" era verde numa tela, âmbar noutra e rosa na terceira. */
+  --action-withdraw-fg: #fbbf24;
+  --action-withdraw-bg: rgba(245, 158, 11, 0.12);
+  --action-return-fg:   #34d399;
+  --action-return-bg:   rgba(34, 197, 94, 0.12);
+  --action-transfer-fg: #c084fc;
+  --action-transfer-bg: rgba(168, 85, 247, 0.12);
+
+  /* Chips de ícone de modal (linguagem de CONTROLE — casa com btn-green/btn-blue):
+     par fundo+traço legível nos dois temas. Substitui os pastéis claros fixos
+     (--green-100/--blue-100 sobre modal escuro) e os tokens --purple-* que não
+     existiam — o ícone do modal de transferência renderizava invisível. */
+  --chip-green-bg:  rgba(40, 163, 92, 0.18);
+  --chip-green-fg:  var(--green-300);
+  --chip-blue-bg:   rgba(98, 121, 216, 0.18);
+  --chip-blue-fg:   var(--blue-300);
+  --chip-purple-bg: rgba(168, 85, 247, 0.18);
+  --chip-purple-fg: #c084fc;
 
   /* Layout */
   --sidebar-w: 260px;
@@ -85,7 +123,7 @@
   --bg-elevated:    #f8fafc;
   --bg-input:       #ffffff;
   --border:         rgba(15, 29, 87, 0.15); /* #0F1D57 rgba */
-  --border-strong:  rgba(29, 128, 70, 0.7);
+  --border-strong:  rgba(15, 29, 87, 0.3);
 
   --text-primary:   #0F1D57;
   --text-secondary: #414d61;
@@ -94,6 +132,8 @@
 
   --accent-primary: #1D8046;
   --accent-hover:   #125930;
+  --bg-selection:   rgba(29, 128, 70, 0.10);
+  --bg-selection-light: rgba(29, 128, 70, 0.03);
 
   --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
   --shadow-md:  0 4px 10px rgba(0,0,0,0.08);
@@ -102,6 +142,32 @@
 
   --status-available-bg:  rgba(16, 185, 129, 0.12);
   --status-inuse-bg:      rgba(244, 63, 94, 0.12);
+  --status-available-text: #047857; /* emerald-700 — 5,4:1 sobre branco (o #059669 anterior media 3,77:1) */
+  --status-inuse-text:     #be123c; /* rose-700 — AA sobre o fundo TINTADO da tag (o #e11d48 media 4,01:1 no composto) */
+
+  --danger:        #dc2626;
+  --danger-hover:  #b91c1c;
+  --danger-text:   #dc2626; /* contraste AA sobre fundo claro */
+  --danger-bg:     rgba(220, 38, 38, 0.1);
+  --warning:       #d97706;
+  --warning-text:  #b45309;
+  --warning-bg:    rgba(217, 119, 6, 0.1);
+
+  /* Idioma ação→cor — pares AA sobre fundo claro */
+  --action-withdraw-fg: #b45309;
+  --action-withdraw-bg: rgba(217, 119, 6, 0.1);
+  --action-return-fg:   #047857;
+  --action-return-bg:   rgba(16, 185, 129, 0.12);
+  --action-transfer-fg: #7e22ce;
+  --action-transfer-bg: rgba(168, 85, 247, 0.12);
+
+  /* Chips de ícone de modal — pastéis sobre fundo claro */
+  --chip-green-bg:  var(--green-100);
+  --chip-green-fg:  var(--green-600);
+  --chip-blue-bg:   var(--blue-100);
+  --chip-blue-fg:   var(--blue-600);
+  --chip-purple-bg: #f3e8ff;
+  --chip-purple-fg: #7e22ce;
 }
 
 /* Força menus nativos a ficarem brancos no Windows/Chrome */
@@ -112,11 +178,15 @@
 }
 
 /* Melhora contraste do botão desabilitado e texto no modo claro */
-.light-mode .btn-green:disabled {
-  background: #e2e8f0 !important;
-  color: #94a3b8 !important;
+.light-mode .btn-green:disabled,
+.light-mode .btn:disabled {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
   border-color: #cbd5e1 !important;
 }
+
+/* (.light-mode .status-* removidos: as tags usam tokens que já têm override
+   no bloco .light-mode acima — uma fonte de verdade por cor.) */
 
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -124,7 +194,7 @@
 html { font-size: 16px; scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   background: var(--bg-page);
   color: var(--text-primary);
   min-height: 100vh;
@@ -132,15 +202,24 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Form controls NÃO herdam fonte por padrão (UA stylesheet) — sem isso,
+   botões/inputs sem regra explícita (ex.: .nav-item) renderizavam em Arial. */
+button, input, select, textarea { font-family: inherit; }
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-page); }
 ::-webkit-scrollbar-thumb { background: var(--blue-600); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--green-500); }
 
+/* No mobile, preferimos ocultar a customização forte do scroll */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar { display: none; }
+}
+
 /* ── Typography ────────────────────────────────────────── */
-.font-display { font-family: 'Inter', sans-serif; }
-h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: 'Inter', sans-serif; }
+.font-display { font-family: var(--font-inter), system-ui, sans-serif; }
+h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: var(--font-inter), system-ui, sans-serif; }
 h1 { font-size: 1.875rem; line-height: 1.2; }
 h2 { font-size: 1.375rem; }
 h3 { font-size: 1.125rem; }
@@ -157,7 +236,16 @@ h3 { font-size: 1.125rem; }
   margin-left: var(--sidebar-w);
   padding: 2rem;
   min-height: 100vh;
-  transition: margin 0.3s ease;
+  /* Sem transition de margin: animar propriedade de layout re-flow-a a página
+     inteira a cada frame do colapso da sidebar (detector: layout-transition).
+     O colapso é instantâneo — snappy > coreografia (registro de produto). */
+  /* REQ-016: nenhuma tela pode gerar scroll horizontal. Os tooltips decorativos
+     ([data-tooltip]::after, nowrap + opacity:0) permanecem no layout mesmo
+     invisíveis; junto à borda direita (ex.: o "X" da dica de dupla confirmação
+     na visão porteiro) vazavam ~6px além da viewport e geravam scroll horizontal.
+     overflow-x: clip corta apenas o eixo X sem transformar o main em container de
+     rolagem vertical (ao contrário de overflow-x: hidden). */
+  overflow-x: clip;
 }
 
 @media (max-width: 768px) {
@@ -174,34 +262,6 @@ h3 { font-size: 1.125rem; }
 }
 .card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
 
-.card-glass {
-  background: rgba(15, 29, 87, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-/* ── Stat Cards ─────────────────────────────────────────── */
-.stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #5cb884, #23824d);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
-.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-accent); }
-
 /* ── Buttons ──────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -212,7 +272,7 @@ h3 { font-size: 1.125rem; }
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   cursor: pointer;
   border: none;
   outline: none;
@@ -224,15 +284,18 @@ h3 { font-size: 1.125rem; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
 .btn-green {
-  background: linear-gradient(135deg, #5cb884, #23824d);
+  /* Gradiente na faixa green-500→600 da rampa: branco passa AA em toda a
+     superfície (o par anterior #5cb884→#23824d media 2,43:1 no canto claro). */
+  background: linear-gradient(135deg, var(--green-500), var(--green-600));
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 12px rgba(29, 128, 70, 0.25);
 }
 .btn-green:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7ec9a0, #2d965d);
+  /* Lift and Glow (DESIGN.md): o hover sobe e ilumina a sombra — sem clarear
+     o fundo, que derrubaria o contraste do texto. */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(29, 128, 70, 0.35);
+  box-shadow: 0 6px 20px rgba(29, 128, 70, 0.45);
 }
 .btn-green:active { transform: translateY(0); }
 
@@ -250,8 +313,8 @@ h3 { font-size: 1.125rem; }
 
 .btn-ghost {
   background: var(--bg-input);
-  color: var(--text-primary);
-  border: 2px solid var(--border-strong);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 .btn-ghost:hover:not(:disabled) {
   background: var(--bg-elevated);
@@ -261,19 +324,19 @@ h3 { font-size: 1.125rem; }
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: var(--danger);
   color: white;
   border: 1px solid rgba(0,0,0,0.1);
 }
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  background: var(--danger-hover);
+  box-shadow: 0 4px 12px var(--danger-bg);
   transform: translateY(-2px);
 }
 
 .btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
 .btn-lg { padding: 1rem 2.5rem; font-size: 1rem; }
-.btn-icon { padding: 0.5rem; width: 40px; height: 40px; }
+.btn-icon { padding: 0.5rem; width: 44px; height: 44px; }
 
 /* ── Inputs ───────────────────────────────────────────────── */
 .input {
@@ -282,9 +345,10 @@ h3 { font-size: 1.125rem; }
   border: 2px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   font-size: 0.9375rem;
   padding: 0.875rem 1rem;
+  min-height: 44px;
   outline: none;
   transition: all 0.2s;
 }
@@ -382,7 +446,9 @@ h3 { font-size: 1.125rem; }
   gap: 0.5rem;
   padding: 0.4rem 0.875rem;
   border-radius: var(--radius-full);
-  font-size: 0.65rem;
+  /* Piso de legibilidade 12px — o estado da chave é O dado do produto e era
+     o menor texto da tela (10,4px), hostil à leitura "a 1 metro" (DESIGN.md). */
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -396,26 +462,198 @@ h3 { font-size: 1.125rem; }
   border-radius: 50%;
 }
 
+/* Tokens + currentColor: cada tag deriva borda e "luz" do próprio texto,
+   e o par dark/light vem dos tokens — sem overrides .light-mode duplicados.
+   (Antes: #f43f5e literal a 3,73:1 no dark; o token --status-inuse-text passa AA.) */
+.status-tag::before,
+.status-tag { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+.status-tag::before { border: none; background: currentColor; box-shadow: 0 0 8px currentColor; }
+
 .status-available {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: var(--status-available-bg);
+  color: var(--status-available-text);
 }
-.status-available::before { background: #10b981; box-shadow: 0 0 8px #10b981; }
 
 .status-inuse, .status-in_use {
-  background: rgba(244, 63, 94, 0.08);
-  color: #f43f5e;
-  border: 1px solid rgba(244, 63, 94, 0.2);
+  background: var(--status-inuse-bg);
+  color: var(--status-inuse-text);
 }
-.status-inuse::before, .status-in_use::before { background: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
+
+.status-transfer {
+  background: var(--action-transfer-bg);
+  color: var(--action-transfer-fg);
+}
 
 .status-pending {
-  background: rgba(245, 158, 11, 0.08);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
-.status-pending::before { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+/* Ações de registro (Histórico): retirada=âmbar, devolução=verde —
+   o mesmo idioma das Confirmações, nunca mais rosa de "em uso". */
+.status-withdraw {
+  background: var(--action-withdraw-bg);
+  color: var(--action-withdraw-fg);
+}
+.status-return {
+  background: var(--action-return-bg);
+  color: var(--action-return-fg);
+}
+
+/* ── Dashboard: lista desktop ─────────────────────────────────
+   Grid definido UMA vez para cabeçalho e linhas (antes: template mágico
+   duplicado em dois objetos inline — dessincronizava no primeiro ajuste).
+   No mobile o media query abaixo re-molda as linhas em card (flex). */
+.dashboard-list-header,
+.dashboard-list-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 180px 1.8fr 120px;
+  padding: 1rem 1rem 1rem 2.5rem;
+  gap: 1rem;
+}
+.dashboard-list-header {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.dashboard-list-row {
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+/* ── Pendências inline no Dashboard (REQ-029b) ──────────────
+   Painel compacto: a operação inteira acontece sem trocar de tela.
+   Some quando não há pendências (o componente retorna null). */
+.pending-inline {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.pending-inline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.pending-inline-count {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-radius: var(--radius-full);
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.pending-inline-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+}
+.pending-inline-item + .pending-inline-item {
+  border-top: 1px solid var(--border);
+}
+.pending-inline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.pending-inline-key {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pending-inline-status {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.pending-inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  /* No mobile o item empilha: tag+info em cima, ações em faixa própria de 44px */
+  .pending-inline-item { flex-wrap: wrap; }
+  .pending-inline-actions { width: 100%; }
+  .pending-inline-actions .btn { flex: 1; }
+}
+
+/* ── Stat chips (header do Dashboard) ─────────────────────── */
+.stat-chip {
+  background: var(--bg-card);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stat-chip-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.stat-chip-value { font-size: 1.125rem; font-weight: 800; }
+
+/* ── Rótulo de campo em modais/formulários ────────────────── */
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Linha de dica no topo de dropdowns ───────────────────── */
+.dropdown-hint {
+  padding: 0.4rem 1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+/* ── Skeleton (carregamento) ──────────────────────────────────
+   Placeholder com shimmer no lugar de spinner central (registro de produto).
+   Reduced-motion: fica estático, sem animação. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-card)) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-shimmer {
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
 
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
@@ -426,8 +664,9 @@ h3 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: var(--z-modal);
   animation: fadeIn 0.2s ease;
+  padding: 1rem;
 }
 .modal-box {
   background: var(--bg-card);
@@ -492,7 +731,8 @@ h3 { font-size: 1.125rem; }
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Sem transition de width (layout thrash) — colapso desktop instantâneo.
+     O drawer mobile anima por transform (media query abaixo), que é barato. */
   overflow: hidden;
 }
 .sidebar-logo {
@@ -604,6 +844,100 @@ h3 { font-size: 1.125rem; }
   padding-left: 2.5rem;
 }
 
+/* ── Unified Control Bar ────────────────────────────────── */
+.unified-control-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+/* (.control-divider removido — separava a busca da Ação Rápida; REQ-029a as unificou) */
+.control-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* No mobile, a meta é digitar o mínimo possível: a Ação Rápida em 2 passos
+   (chave + pessoa, ambos por digitação) sai de cena — tocar direto no card
+   da chave (na lista abaixo) já dispara o mesmo fluxo de retirar/devolver.
+   O .mobile-touch-bar a substitui por uma busca compacta de 1 campo (só
+   para filtrar, sem autocomplete/dropdown) e, quando existem, atalhos de
+   1 toque para as chaves mais usadas por quem está logado — a parte
+   "inteligente" que a Ação Rápida original já tinha (chaves frequentes). */
+@media (max-width: 768px) {
+  .unified-control-bar { display: none !important; }
+
+  .mobile-touch-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+  }
+  .mobile-touch-search {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .mobile-touch-search svg { flex-shrink: 0; color: var(--text-muted); }
+  .mobile-touch-search input {
+    flex: 1;
+    min-height: var(--touch-target);
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 16px; /* evita zoom automático no iOS */
+  }
+  .mobile-touch-search input::placeholder { color: var(--text-muted); }
+
+  .mobile-quick-chips {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .mobile-quick-chip {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: var(--touch-target);
+    padding: 0 0.875rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .mobile-quick-chip::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .mobile-quick-chip.is-available::before { background: var(--status-available-text); }
+  .mobile-quick-chip.is-inuse::before { background: var(--status-inuse-text); }
+  .mobile-quick-chip:active { background: var(--bg-elevated); border-color: var(--accent-primary); }
+}
+@media (min-width: 769px) {
+  .mobile-touch-bar { display: none !important; }
+}
+
 /* ── Badges ─────────────────────────────────────────────────── */
 .badge {
   display: inline-flex;
@@ -619,6 +953,38 @@ h3 { font-size: 1.125rem; }
 .badge-porteiro { background: rgba(96,165,250,0.15); color: #60a5fa; }
 .badge-user   { background: rgba(148,163,184,0.12); color: #94a3b8; }
 .badge-gestor { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
+/* FUNCIONARIO e ALUNO — os dois maiores grupos: eram classes referenciadas
+   no Sidebar e em /users mas nunca definidas (badge sem cor). */
+.badge-funcionario { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+.badge-aluno  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+
+/* Modo claro: os tons -300/-400 acima não passam AA sobre branco */
+.light-mode .badge-admin  { background: rgba(126, 34, 206, 0.1); color: #7e22ce; }
+.light-mode .badge-porteiro { background: rgba(29, 78, 216, 0.1); color: #1d4ed8; }
+.light-mode .badge-user   { background: rgba(71, 85, 105, 0.1); color: #475569; }
+.light-mode .badge-gestor { background: rgba(15, 118, 110, 0.1); color: #0f766e; }
+.light-mode .badge-funcionario { background: rgba(3, 105, 161, 0.1); color: #0369a1; }
+.light-mode .badge-aluno  { background: rgba(180, 83, 9, 0.1); color: #b45309; }
+
+/* ── Sidebar no modo claro (REQ-029d) ─────────────────────────
+   A sidebar acompanha o tema: superfície clara, texto institucional AA, acento
+   verde preservado no item ativo. Os badges usam as regras .light-mode .badge-*
+   acima (AA sobre claro) — sem override dark aqui. */
+.light-mode .sidebar {
+  background: #ffffff;
+  border-right: 1px solid rgba(15, 29, 87, 0.12);
+}
+.light-mode .sidebar .sidebar-logo { border-bottom-color: rgba(15, 29, 87, 0.1); }
+.light-mode .sidebar .sidebar-logo-text { color: var(--green-600); }        /* #125930 — 7,7:1 */
+.light-mode .sidebar .sidebar-logo-text div:last-child { color: var(--blue-700); }
+.light-mode .sidebar .nav-section-title { color: var(--blue-700); opacity: 1; } /* #1e3a9c — 8,3:1 */
+.light-mode .sidebar .nav-item { color: #334155; }                          /* slate-700 — 8,9:1 */
+.light-mode .sidebar .nav-item:hover { background: rgba(15, 29, 87, 0.06); color: var(--blue-900); }
+.light-mode .sidebar .nav-item.active { background: rgba(29, 128, 70, 0.12); color: var(--green-600); } /* 7,7:1 */
+.light-mode .sidebar .nav-item.active .nav-icon { color: var(--green-600); }
+.light-mode .sidebar .sidebar-footer { border-top-color: rgba(15, 29, 87, 0.1); }
+/* Dropdown do menu do usuário (bg inline escuro no TSX) → claro no light */
+.light-mode .sidebar-user-menu { background: #ffffff !important; border-color: rgba(15, 29, 87, 0.12) !important; }
 
 /* ── Action Row ─────────────────────────────────────────── */
 .action-row {
@@ -644,7 +1010,12 @@ h3 { font-size: 1.125rem; }
   .mobile-topbar { display: flex; }
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
-  .main-content { margin-left: 0; padding-top: calc(var(--navbar-h) + 1rem); }
+  .main-content { margin-left: 0; padding: calc(var(--navbar-h) + 1rem) 1rem 1rem 1rem; }
+  .desktop-only { display: none !important; }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
 }
 
 /* ── Overlay for mobile sidebar ────────────────────────── */
@@ -664,42 +1035,72 @@ h3 { font-size: 1.125rem; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: default;
+  cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .key-card::after {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  opacity: 0.6;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  height: 100%;
+  opacity: 1;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
   transition: opacity 0.3s;
 }
 
-.key-card.available::after { background: linear-gradient(90deg, #10b981, transparent); }
-.key-card.inuse::after { background: linear-gradient(90deg, #f43f5e, transparent); }
+.key-card.available::after { background: var(--status-available-text); }
+.key-card.inuse::after { background: var(--status-inuse-text); }
+.key-card.pending::after { background: var(--warning); }
 
 .key-card:hover { 
   border-color: var(--border-strong); 
-  transform: translateY(-4px); 
-  box-shadow: var(--shadow-lg);
+  background: var(--bg-elevated);
 }
-.key-card:hover::after { opacity: 1; }
+
+.key-card-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.key-card.pending .key-card-icon-wrapper { color: var(--warning); }
+.key-card.available .key-card-icon-wrapper { color: var(--status-available-text); }
+.key-card.inuse .key-card-icon-wrapper { color: var(--status-inuse-text); }
+
+.key-card-content-wrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.key-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
 
 .key-card-title {
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
-  letter-spacing: -0.01em;
 }
 
 .key-card-room {
@@ -707,54 +1108,79 @@ h3 { font-size: 1.125rem; }
   color: var(--text-muted);
   font-weight: 500;
   margin-top: 0.25rem;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
 }
 
-.key-card-header-content {
-  min-height: 4.8rem;
-  display: flex;
-  flex-direction: column;
+.key-card-user-info {
+  font-size: 0.8125rem;
+  color: var(--blue-300);
+  font-weight: 500;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.key-card-dynamic-area {
-  min-height: 64px;
-  display: flex;
+.key-card-action-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  display: inline-flex;
   align-items: center;
-  margin-top: 0.5rem;
+  justify-content: center;
+  /* REQ-016/spec §6: alvo de toque ≥44px no fluxo crítico — os botões do card
+     mobile (Devolver/Transferir/Cancelar/Solicitar) tinham 28px. */
+  min-height: var(--touch-target);
+}
+.key-card-action-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+.light-mode .key-card-icon-wrapper {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .key-card-holder {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(29, 128, 70, 0.05);
-  border: 1px solid rgba(29, 128, 70, 0.12);
-  border-radius: var(--radius-sm);
-  margin-top: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  margin-top: 0.75rem;
 }
 
 .key-card-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--blue-900);
-  border: 2px solid var(--green-400);
+  background: transparent;
+  /* Azul institucional para "pessoa" — One Voice Rule: o verde é reservado
+     a CTA/status positivo, não a decoração (e o green-400 media ~2,5:1 aqui). */
+  border: 1.5px solid var(--blue-400);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 800;
-  color: var(--green-400);
+  color: var(--blue-300);
   flex-shrink: 0;
 }
 
 .light-mode .key-card-holder {
-  background: rgba(15, 29, 87, 0.03);
-  border-color: rgba(15, 29, 87, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
 /* ── Form Groups ────────────────────────────────────────── */
@@ -781,7 +1207,7 @@ h3 { font-size: 1.125rem; }
 .empty-state p { font-size: 0.95rem; }
 
 /* ── Toast override ─────────────────────────────────────── */
-.react-hot-toast > div { font-family: 'Inter', sans-serif !important; }
+.react-hot-toast > div { font-family: var(--font-inter), system-ui, sans-serif !important; }
 
 /* ── Animations ─────────────────────────────────────────── */
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
@@ -845,14 +1271,6 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Green Gradient Text ──────────────────────────────────────── */
-.text-gradient-green {
-  background: linear-gradient(135deg, var(--green-300), var(--green-500));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* Tailwind utility fallbacks */
 .hidden { display: none !important; }
 @media (min-width: 768px) {
@@ -863,6 +1281,293 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .flex-row { flex-direction: row; }
+
+/* ============================================================
+   ACESSIBILIDADE, TOOLTIPS E NAV MOBILE — Melhoria de UI
+   Bloco ADITIVO e por último no arquivo (last-wins): adiciona
+   comportamento novo (foco de teclado, dicas, barra inferior)
+   sem reescrever regras de layout desktop existentes.
+   ============================================================ */
+:root {
+  --bottom-nav-h: 60px;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-drawer-overlay: 900;
+  --z-drawer: 950;
+  --z-bottom-nav: 850;
+  --z-modal: 1000;
+  --z-toast: 1100;
+  --z-tooltip: 1200;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Foco acessível por teclado (WCAG 2.4.7) ──────────────
+   Anel visível apenas na navegação por teclado (:focus-visible),
+   sem poluir cliques de mouse. Cobre botões, links, inputs e os
+   comboboxes/opções customizados do dashboard. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="combobox"]:focus-visible,
+[role="option"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Inputs já têm anel próprio verde no :focus — não duplicar */
+.input:focus-visible { outline: none; }
+
+/* Botão de ícone transparente reutilizável (dismiss, ações discretas) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+}
+.icon-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.06); }
+.light-mode .icon-btn:hover { background: rgba(15,29,87,0.06); }
+
+/* Leitores de tela: conteúdo visualmente oculto porém anunciado */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Tooltips ("dicas") ───────────────────────────────────
+   Uso: adicione data-tooltip="texto" (e opcional data-tooltip-pos).
+   Aparece no hover E no foco de teclado (acessível). Em telas de
+   toque não atrapalha: o toque aciona a ação, não a dica. */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  padding: 0.4rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  max-width: min(260px, 80vw);
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--z-tooltip);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* Em telas realmente touch (sem hover), esconder — evita dica presa após toque */
+@media (hover: none) {
+  [data-tooltip]:hover::after { opacity: 0; }
+}
+
+/* ── Barra de navegação inferior (mobile) ─────────────────
+   Substitui a dependência do drawer para as ações mais usadas
+   da portaria. Sempre visível, alvos ≥ 56px, alcance do polegar. */
+.mobile-bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: var(--z-bottom-nav);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.25);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.75rem; /* piso 12px (era 10px) */
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease;
+    position: relative;
+  }
+  .bottom-nav-item svg { width: 22px; height: 22px; }
+  .bottom-nav-item .bottom-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bottom-nav-item:active { color: var(--text-secondary); }
+  .bottom-nav-item.active { color: var(--accent-hover); }
+  .bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px; height: 3px;
+    background: var(--accent-primary);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 0 8px rgba(29,128,70,0.5);
+  }
+  .bottom-nav-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 8px);
+    min-width: 16px; height: 16px;
+    padding: 0 4px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    line-height: 16px;
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--bg-surface);
+  }
+
+  /* Espaço para a barra inferior não cobrir conteúdo/rodapé */
+  .main-content {
+    padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 1rem);
+  }
+
+  /* Modo lista do dashboard → cartões rotulados no mobile.
+     O cabeçalho de colunas some (.dashboard-list-header) e cada célula
+     com data-label exibe seu rótulo acima do valor (mesmo padrão que
+     as tabelas .table-cards das outras telas, adaptado ao grid de divs). */
+  .dashboard-list-row { 
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md) !important;
+    padding: 0.75rem !important; 
+    gap: 0.25rem !important; 
+    margin-bottom: 0.75rem !important;
+    position: relative;
+  }
+  .dashboard-list-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--border-strong);
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+  }
+  .dashboard-list-row.row-available::before { background: var(--accent-primary); }
+  .dashboard-list-row.row-inuse::before { background: var(--danger); }
+  .dashboard-list-row.row-pending::before { background: var(--warning); }
+  .dashboard-list-row > div:first-child { 
+    font-size: 1.15rem !important; 
+    font-weight: 800 !important; 
+    color: var(--text-primary); 
+    text-align: center !important;
+    letter-spacing: -0.02em;
+    margin-bottom: 0 !important;
+  }
+  .dashboard-list-row > div[data-label] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.2rem;
+  }
+  .dashboard-list-row > div[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .dashboard-list-row > div:last-child { 
+    width: 100%; 
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: 0.25rem;
+    padding-top: 0.75rem !important;
+  }
+  .dashboard-list-row > div:last-child .btn { 
+    width: auto !important; 
+    min-width: 140px; 
+  }
+
+  /* ── Safe-area: topbar e drawer respeitam notch/home-bar ── */
+  .mobile-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--navbar-h) + var(--safe-top));
+    padding-top: var(--safe-top);
+    padding-left: max(0.5rem, var(--safe-left));
+    padding-right: max(0.5rem, var(--safe-right));
+    z-index: var(--z-sticky);
+  }
+  .main-content { padding-top: calc(var(--navbar-h) + var(--safe-top) + 1rem); }
+
+  .sidebar {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    z-index: var(--z-drawer);
+  }
+  .sidebar-overlay { z-index: var(--z-drawer-overlay); }
+}
+
+/* ── Movimento reduzido (WCAG 2.3.3) ──────────────────────
+   Respeita usuários com sensibilidade a movimento: mantém o
+   feedback essencial via transição instantânea, sem choreografia. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ============================================================
    MOBILE — Sprint 8 (REQ-016 · ADR-001 · TASK-023 a 027)
@@ -902,7 +1607,7 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   /* Alvos de toque ≥ 44px (spec §6) */
   .btn { min-height: var(--touch-target); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }
-  .btn-sm { min-height: 40px; }
+  .btn-sm { min-height: var(--touch-target); }
   .input { min-height: var(--touch-target); font-size: 16px; } /* 16px evita zoom automático no iOS */
   .form-input { min-height: var(--touch-target); font-size: 16px; } /* inputs das telas de conta (TASK-027) */
   .nav-item { min-height: var(--touch-target); }
@@ -946,36 +1651,49 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   .table-cards .table tbody td { display: block; width: 100%; }
   .table-cards .table thead { display: none; }
   .table-cards .table tbody tr {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 0.75rem;
-    padding: 0.5rem 0.875rem;
-    box-shadow: var(--shadow-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    box-shadow: var(--shadow-md);
   }
   .table-cards .table tbody td {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 0;
+    padding: 0.625rem 0;
     border-bottom: 1px solid var(--border);
     text-align: right;
   }
-  .table-cards .table tbody td:last-child { border-bottom: none; }
+  .table-cards .table tbody td:last-child { border-bottom: none; padding-bottom: 0; }
   .table-cards .table tbody td::before {
     content: attr(data-label);
-    font-size: 0.68rem;
-    font-weight: 700;
+    font-size: 0.65rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: var(--text-muted);
     text-align: left;
     flex-shrink: 0;
   }
   .table-cards .table tbody td[data-label=''],
   .table-cards .table tbody td:not([data-label])::before { content: none; }
-  .table-cards .table tbody td.td-actions { justify-content: flex-end; }
+  
+  .table-cards .table tbody td.td-actions,
+  .table-cards .table tbody td:last-child:has(.btn) { 
+    justify-content: flex-end; 
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+  }
+  .table-cards .table tbody td.td-actions .btn,
+  .table-cards .table tbody td:last-child:has(.btn) .btn {
+    width: auto;
+    flex: 0 1 auto;
+  }
 
   /* ── TASK-025: dashboard ──
      Componentes usam estilo inline; !important é necessário para o override
@@ -990,11 +1708,71 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
   .dashboard-list-row {
     display: flex !important;
     flex-direction: column;
-    align-items: stretch !important;
+    align-items: center !important;
     gap: 0.5rem !important;
-    padding: 1rem !important;
   }
-  .dashboard-list-row > div { text-align: left !important; }
+  .dashboard-list-row > div {
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  /* Card "grid" da dashboard (modo mobile): título/sala/portador de um lado e o
+     status-tag do outro, lado a lado no desktop, mas o par title-column + badge
+     não cabe em ~340px úteis quando há nome de funcionário longo — o cálculo de
+     min-content da linha (soma dos dois) força a página inteira a ficar mais
+     larga que a viewport (conteúdo cortado, sem scroll). Permitir quebra resolve
+     sem !important: o badge cai para a linha de baixo só quando necessário. */
+  .key-card-header-row { flex-wrap: wrap; }
+
+  /* ── Mobile Sidebar Drawer & Topbar ── */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    /* height, padding, position, top e z-index são herdados da definição de safe-area acima */
+  }
+  .mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .mobile-topbar-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .mobile-topbar-badge {
+    background: var(--accent-primary);
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    font-weight: 800;
+  }
+}
+@media (min-width: 769px) {
+  .mobile-topbar { display: none; }
 }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 0.75rem; }
@@ -1009,3 +1787,44 @@ select.input option { background: var(--blue-900); color: var(--text-primary); }
 .mx-auto { margin-left: auto; margin-right: auto; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
+
+/* ── Touch Contact List (Mobile User Selection) ──────────── */
+.touch-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.touch-contact-item:active {
+  background: var(--bg-selection);
+}
+.touch-contact-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.touch-contact-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.touch-contact-role {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}

@@ -118,6 +118,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         const checkAutoLogout = async () => {
             try {
                 const res = await fetch('/api/settings');
+                if (!res.ok) return;
                 const data = await res.json();
                 if (data.autoLogoutTime) {
                     const checkInterval = setInterval(() => {
@@ -130,7 +131,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     return () => clearInterval(checkInterval);
                 }
             } catch {
-                console.error('Failed to initialize auto logout check');
+                // Silently ignore if settings fetch fails or is blocked (e.g. USER role without permission)
             }
         };
         checkAutoLogout();
@@ -171,7 +172,10 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         fetchPendingCount();
         const handleUpdate = () => fetchPendingCount();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        const interval = setInterval(fetchPendingCount, 15000);
+        // Mesmo ritmo do Dashboard/Confirmações (3s) — o evento cobre a mesma aba,
+        // mas o badge também precisa refletir rápido pedidos/devoluções feitos
+        // por OUTRO dispositivo, que só chegam via polling.
+        const interval = setInterval(fetchPendingCount, 3000);
         return () => {
             clearInterval(interval);
             window.removeEventListener('pending-transactions-updated', handleUpdate);
@@ -180,6 +184,9 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
     // Itens visíveis por papel
     const allVisibleItems = navItems.flatMap(s => s.items).filter(i => i.roles.includes(userRole));
+
+    // Barra inferior mobile: as 3 ações mais usadas + botão "Mais" (abre o drawer completo).
+    const primaryItems = allVisibleItems.slice(0, 3);
 
     const currentPageTitle = allVisibleItems.find(i => i.href === pathname)?.label || 'Sistema de Gestão de Chaves';
 
@@ -204,7 +211,9 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     <button
                         className="btn-toggle-sidebar"
                         onClick={toggleCollapse}
-                        style={{ background: 'transparent', border: 'none', color: '#5b7ab8', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        aria-label={isCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+                        aria-expanded={!isCollapsed}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>
                             <polyline points="15 18 9 12 15 6"/>
@@ -233,16 +242,16 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                                 <span style={{
                                                     position: 'absolute', top: -2, right: -2,
                                                     width: 10, height: 10,
-                                                    background: '#ef4444', borderRadius: '50%',
+                                                    background: 'var(--danger)', borderRadius: '50%',
                                                     border: '2px solid var(--blue-900)',
-                                                    boxShadow: '0 0 8px rgba(239,68,68,0.4)'
+                                                    boxShadow: '0 0 8px var(--danger-bg)'
                                                 }} />
                                             )}
                                         </span>
                                         <span className="nav-item-text" style={{ marginLeft: '0.125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
                                             {item.label}
                                             {item.href === '/confirm' && pendingCount > 0 && !isCollapsed && (
-                                                <span style={{ background: '#ef4444', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
+                                                <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
                                                     {pendingCount}
                                                 </span>
                                             )}
@@ -301,8 +310,8 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
                         {/* Dropdown Menu */}
                         {isUserMenuOpen && (
-                            <div style={{ 
-                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', 
+                            <div className="sidebar-user-menu" style={{
+                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)',
                                 padding: '0.5rem', marginBottom: '0.5rem',
                                 position: isCollapsed ? 'absolute' : 'static',
                                 bottom: isCollapsed ? '100%' : 'auto',
@@ -319,7 +328,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
                                 </button>
                                 <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
+                                <button className="nav-item" onClick={handleLogout} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
                                     <span className="nav-icon"><Icon name="log-out" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Sair</span>
                                 </button>
@@ -328,7 +337,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     </div>
                     
                     {!isUserMenuOpen && (
-                        <button className="nav-item" onClick={handleLogout} style={{ color: '#f87171', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
+                        <button className="nav-item" onClick={handleLogout} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
                             <span className="nav-icon"><Icon name="log-out" size={18} /></span>
                             <span className="nav-item-text">Sair</span>
                         </button>
@@ -353,17 +362,55 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
 
                 <div className="mobile-topbar-brand">
                     <span className="mobile-topbar-title">{currentPageTitle}</span>
-                    <span className="mobile-topbar-badge">SGC</span>
                 </div>
 
                 <button
                     onClick={toggleTheme}
+                    data-tooltip={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                    data-tooltip-pos="bottom"
                     style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)', minWidth: 44, minHeight: 44, WebkitTapHighlightColor: 'transparent' }}
-                    aria-label={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+                    aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 >
                     {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
                 </button>
             </div>
+
+            {/* ── BARRA DE NAVEGAÇÃO INFERIOR (Mobile) ──
+                Acesso 1-toque às ações mais usadas da portaria, sem abrir o drawer.
+                O botão "Mais" abre o drawer com o menu completo (perfil, admin, sair). */}
+            <nav className="mobile-bottom-nav" aria-label="Navegação rápida">
+                {primaryItems.map(item => {
+                    const isActive = pathname === item.href;
+                    const showBadge = item.href === '/confirm' && pendingCount > 0;
+                    return (
+                        <button
+                            key={item.href}
+                            className={`bottom-nav-item${isActive ? ' active' : ''}`}
+                            onClick={() => navigate(item.href)}
+                            aria-current={isActive ? 'page' : undefined}
+                            aria-label={showBadge ? `${item.label}, ${pendingCount} pendente${pendingCount > 1 ? 's' : ''}` : item.label}
+                        >
+                            <Icon name={item.icon} size={22} />
+                            {showBadge && (
+                                <span className="bottom-nav-badge" aria-hidden="true">
+                                    {pendingCount > 9 ? '9+' : pendingCount}
+                                </span>
+                            )}
+                            <span className="bottom-nav-label">{item.label}</span>
+                        </button>
+                    );
+                })}
+                <button
+                    className={`bottom-nav-item${drawerOpen ? ' active' : ''}`}
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="Abrir menu completo"
+                    aria-haspopup="menu"
+                    aria-expanded={drawerOpen}
+                >
+                    <Icon name="more" size={22} />
+                    <span className="bottom-nav-label">Mais</span>
+                </button>
+            </nav>
 
         </>
     );

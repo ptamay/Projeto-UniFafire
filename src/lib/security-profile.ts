@@ -57,6 +57,7 @@ export function recordLoginAttempt(username: string, ip: string, success: boolea
 export function checkLockout(username: string, ip: string): boolean {
     ensureLoginAttemptsTable();
     // Check failed attempts for this username OR this IP in the last 15 minutes
+    // ONLY count failures that happened AFTER the most recent successful login.
     const stmt = db.prepare(`
         SELECT COUNT(*) as failures 
         FROM login_attempts 
@@ -70,6 +71,8 @@ export function checkLockout(username: string, ip: string): boolean {
 }
 
 export function clearLoginAttempts(username: string, ip: string) {
-    ensureLoginAttemptsTable();
+    // Como a auditoria agora é 100% concentrada na tabela action_logs,
+    // a tabela login_attempts pode ser efêmera (apenas para bloqueio temporário).
+    // Podemos deletar os registros para limpar o bloqueio sem perder auditoria.
     db.prepare('DELETE FROM login_attempts WHERE username = ? OR ip = ?').run(username, ip);
 }

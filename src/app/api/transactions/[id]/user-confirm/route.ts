@@ -34,11 +34,19 @@ export async function POST(request: Request, { params }: RouteParams) {
 
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
-        // Verificar autorização: apenas o usuário da transação, porteiro ou admin pode confirmar
+        // Autorização. Dois lados podem confirmar:
+        //  • o usuário-alvo (user_id) confirma o "lado do usuário";
+        //  • a contraparte confirma o "lado do porteiro".
+        // A contraparte é estrita quando já designada (transferências push/pull: o remetente
+        // ou o portador exato, nunca por papel — ADR-008). Quando `porteiro_id` ainda é null
+        // (retirada/devolução iniciada pelo usuário), qualquer porteiro/admin pode assumi-la.
         const isTargetUser = tx.user_id === session.id;
-        const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role);
+        const isStaff = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role);
+        const canActAsCounterparty = tx.porteiro_id != null
+            ? tx.porteiro_id === session.id
+            : isStaff;
 
-        if (!isTargetUser && !isPorteiroOrAdmin) {
+        if (!isTargetUser && !canActAsCounterparty) {
             return NextResponse.json({ error: 'Você não tem permissão para confirmar esta transação.' }, { status: 403 });
         }
 
@@ -49,9 +57,11 @@ export async function POST(request: Request, { params }: RouteParams) {
         const now = new Date().toISOString();
 
         // Processar confirmação baseado em quem está confirmando
-        if (isPorteiroOrAdmin && !isTargetUser) {
+        if (!isTargetUser && canActAsCounterparty) {
             if (tx.porteiro_confirmed_at) return NextResponse.json({ error: 'O porteiro já confirmou esta transação.' }, { status: 400 });
-            db.prepare(`UPDATE key_transactions SET porteiro_confirmed_at = ?, porteiro_id = ? WHERE id = ?`).run(now, session.id, transactionId);
+            // Se a contraparte já estava designada, preserva-a; senão, o porteiro que assume vira o dono do lado.
+            const counterpartyId = tx.porteiro_id ?? session.id;
+            db.prepare(`UPDATE key_transactions SET porteiro_confirmed_at = ?, porteiro_id = ? WHERE id = ?`).run(now, counterpartyId, transactionId);
         } else {
             if (tx.user_confirmed_at) return NextResponse.json({ error: 'Você já confirmou esta transação.' }, { status: 400 });
             db.prepare(`UPDATE key_transactions SET user_confirmed_at = ? WHERE id = ?`).run(now, transactionId);
@@ -71,10 +81,17 @@ export async function POST(request: Request, { params }: RouteParams) {
                         .run(tx.user_id, tx.key_id);
                     db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'withdraw', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
-                } else {
+                } else if (tx.action === 'return') {
                     db.prepare("UPDATE keys SET status = 'available', user_id = NULL, employee_id = NULL WHERE id = ?")
                         .run(tx.key_id);
                     db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'return', ?, ?)`)
+                        .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
+                } else if (tx.action === 'transfer') {
+                    // Na transferência por usuário comum, o alvo é o user_id da transação.
+                    // A chave continua in_use, mas agora com o novo usuário.
+                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ?, employee_id = NULL WHERE id = ?")
+                        .run(tx.user_id, tx.key_id);
+                    db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'transfer', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
                 }
             });
@@ -82,8 +99,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             completeTransaction();
 
             logAction(session.id, session.username,
-                tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : 'KEY_RETURNED',
-                tx.key_name || 'Chave removida',
+                tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : (tx.action === 'return' ? 'KEY_RETURNED' : 'KEY_TRANSFERRED'),
+                tx.key_name || 'Chave manipulada',
                 `Transação #${transactionId} completada com dupla confirmação`
             );
 
@@ -93,7 +110,7 @@ export async function POST(request: Request, { params }: RouteParams) {
                 action: tx.action,
                 message: tx.action === 'withdraw' 
                     ? 'Chave retirada com sucesso! Ambas as partes confirmaram.' 
-                    : 'Chave devolvida com sucesso! Ambas as partes confirmaram.'
+                    : (tx.action === 'return' ? 'Chave devolvida com sucesso! Ambas as partes confirmaram.' : 'Chave transferida com sucesso! Ambas as partes confirmaram.')
             });
         }
 

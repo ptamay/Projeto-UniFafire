@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import toast from 'react-hot-toast';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
+
+interface BusinessMetrics {
+    totalTransactions: number;
+    doubleConfirmationRate: number | null;
+    medianCounterMinutes: number | null;
+}
 
 export interface HistoryItem {
     id: number;
@@ -15,6 +22,7 @@ export interface HistoryItem {
     room: string;
     employee_name: string;
     confirmed_by?: string;
+    justification?: string;
 }
 
 interface HistoryClientProps {
@@ -33,11 +41,24 @@ interface HistoryClientProps {
 export default function HistoryClient({ history, userRole, username, initialFilters }: HistoryClientProps) {
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const router = useRouter();
-    
+
     // Initialize filters from props
     const [dateFilter, setDateFilter] = useState(initialFilters?.date || '');
     const [monthFilter, setMonthFilter] = useState(initialFilters?.month || '');
     const [hourFilter, setHourFilter] = useState(initialFilters?.hour || '');
+
+    const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
+    const [bizMetrics, setBizMetrics] = useState<BusinessMetrics | null>(null);
+
+    // TASK-034: métricas de negócio (spec §5) — movidas do Dashboard para cá
+    // (relatório consolidado, não informação operacional do balcão).
+    useEffect(() => {
+        if (!isPorteiroOrAdmin) return;
+        fetch('/api/metrics/business')
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => { if (d) setBizMetrics(d); })
+            .catch(() => {});
+    }, [isPorteiroOrAdmin]);
 
     const handleClearHistory = async () => {
         try {
@@ -45,13 +66,13 @@ export default function HistoryClient({ history, userRole, username, initialFilt
             if (res.ok) {
                 setShowClearConfirm(false);
                 router.refresh();
-                alert('Histórico limpo com sucesso.');
+                toast.success('Histórico limpo com sucesso.');
             } else {
-                alert('Erro ao limpar histórico.');
+                toast.error('Erro ao limpar histórico.');
             }
         } catch (error) {
             console.error('Failed to clear history', error);
-            alert('Erro ao limpar histórico.');
+            toast.error('Erro ao limpar histórico.');
         }
     };
 
@@ -87,7 +108,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
         const tableColumn = ["Data/Hora", "Ação", "Chave", "Funcionário", "Confirmado por"];
         const tableRows = history.map(item => [
             new Date(item.timestamp).toLocaleString('pt-BR'),
-            item.action === 'withdraw' ? 'Retirada' : 'Devolução',
+            item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução',
             `${item.key_name} (${item.room})`,
             item.employee_name || '-',
             item.confirmed_by || 'Sistêmico'
@@ -146,21 +167,20 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                 border-collapse: collapse;
                             }
                             th, td {
-                                border: 1px solid #ddd;
+                                border: 1px solid var(--border);
                                 padding: 8px;
                             }
                         }
                     `}</style>
 
                     <div className="page-header mb-6 no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
                             <h2 className="page-title m-0">Histórico de Movimentações</h2>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                                 {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
                                     <button
                                         className="btn btn-danger"
                                         onClick={() => setShowClearConfirm(true)}
-                                        style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', fontSize: '0.9rem' }}
                                     >
                                         Limpar Histórico
                                     </button>
@@ -172,9 +192,26 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                             </div>
                         </div>
 
-                        <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
+                        {isPorteiroOrAdmin && bizMetrics && (
+                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
+                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
+                                        {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
+                                    </span>
+                                </div>
+                                <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
+                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                        {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                             gap: '0.75rem', 
                             width: '100%',
                             background: 'rgba(255,255,255,0.02)',
@@ -242,6 +279,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                     <th>Ação</th>
                                     <th>Chave</th>
                                     <th>Funcionário</th>
+                                    <th>Justificativa</th>
                                     <th>Confirmado por</th>
                                 </tr>
                             </thead>
@@ -250,12 +288,15 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                     <tr key={item.id}>
                                         <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
                                         <td data-label="Ação">
-                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-inuse' : 'status-available'}`}>
-                                                {item.action === 'withdraw' ? 'Retirada' : 'Devolução'}
+                                            {/* Idioma ação→cor: retirada=âmbar, transferência=roxo, devolução=verde —
+                                                o mesmo das Confirmações (antes: rosa de "em uso", outro significado). */}
+                                            <span className={`status-tag ${item.action === 'withdraw' ? 'status-withdraw' : item.action === 'transfer' ? 'status-transfer' : 'status-return'}`}>
+                                                {item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução'}
                                             </span>
                                         </td>
                                         <td data-label="Chave"><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>
                                         <td data-label="Funcionário">{item.employee_name || '-'}</td>
+                                        <td data-label="Justificativa" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.justification || '-'}</td>
                                         <td data-label="Confirmado por">
                                             {item.confirmed_by ? (
                                                 <span className="badge badge-porteiro" style={{ fontSize: '0.7rem' }}>
@@ -267,7 +308,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                         </td>
                                     </tr>
                                 ))}
-                                {history.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Nenhum histórico registrado.</td></tr>}
+                                {history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Nenhum histórico registrado.</td></tr>}
                             </tbody>
                         </table>
                     </div>

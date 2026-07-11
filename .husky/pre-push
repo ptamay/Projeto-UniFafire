@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Rodando CI Gates antes do push..."
+bash scripts/ci-gates.sh
+if [ $? -ne 0 ]; then
+  echo "❌ Push bloqueado pelos Gates de CI. O Agente ou o Dev quebrou regras!"
+  exit 1
+fi

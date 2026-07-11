@@ -55,10 +55,13 @@ export async function PUT(request: Request) {
         const newPayload = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const newSessionToken = await signSession(newPayload);
 
-        // Atualiza o cookie da requisição atual para não deslogar ESTE navegador
+        // Atualiza o cookie da requisição
+        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
+
+        // Refresh session cookie since they just proved identity
         (await cookies()).set('session', newSessionToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24
