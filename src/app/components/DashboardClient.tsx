@@ -234,7 +234,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState<'all' | 'available' | 'in_use'>('all');
+    const [filter, setFilter] = useState<'all' | 'available' | 'in_use' | 'mine'>('all');
     // O layout responsivo agora é tratado puramente por CSS (.mobile-only e .desktop-only)
 
     // Explicação da dupla confirmação — contextual e dispensável (não é tour forçado).
@@ -624,7 +624,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
         total: keys.length,
         available: keys.filter(k => k.status === 'available').length,
         inUse: keys.filter(k => k.status === 'in_use').length,
-    }), [keys]);
+        mine: keys.filter(k => k.status === 'in_use' && k.user_id === userId).length,
+    }), [keys, userId]);
 
     const filtered = useMemo(() => {
         const s = normalize(search);
@@ -633,7 +634,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 const matchSearch = normalize(k.name).includes(s) ||
                     normalize(k.room || '').includes(s) ||
                     normalize(k.employee_name || '').includes(s);
-                const matchFilter = filter === 'all' || k.status === filter;
+                const matchFilter = filter === 'all' ? true
+                    : filter === 'mine' ? (k.status === 'in_use' && k.user_id === userId)
+                    : k.status === filter;
                 return matchSearch && matchFilter;
             })
             .sort((a, b) => {
@@ -651,7 +654,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 
                 return a.name.localeCompare(b.name);
             });
-    }, [keys, search, filter, isPorteiroOrAdmin, frequentKeys]);
+    }, [keys, search, filter, isPorteiroOrAdmin, frequentKeys, userId]);
 
     // Calcular atrasos — threshold do spec §5 (TASK-034), centralizado em business-rules
     const delayedKeys = useMemo(() => {
@@ -1045,16 +1048,17 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     )}
                 </div>
 
-                {/* Filters */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', width: '100%' }}>
-                    {(['all','available','in_use'] as const).map(f => (
-                        <button 
-                            key={f} 
-                            className={`btn ${filter === f ? 'btn-green' : 'btn-ghost'} btn-sm`} 
+                {/* Filters — "mine" só faz sentido para quem porta chave pessoalmente
+                    (funcionário/aluno); porteiro/gestor/admin gerenciam chaves de terceiros. */}
+                <div className="dashboard-filter-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', width: '100%' }}>
+                    {((isPorteiroOrAdmin ? ['all','available','in_use'] : ['all','available','in_use','mine']) as const).map(f => (
+                        <button
+                            key={f}
+                            className={`btn ${filter === f ? 'btn-green' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
                             onClick={() => setFilter(f)}
                             style={{ borderRadius: '10px', flex: 1 }}
                         >
-                            {f === 'all' ? 'Todas' : f === 'available' ? 'Disponíveis' : 'Em Uso'}
+                            {f === 'all' ? 'Todas' : f === 'available' ? 'Disponíveis' : f === 'in_use' ? 'Em Uso' : `Minhas Chaves${stats.mine > 0 ? ` (${stats.mine})` : ''}`}
                         </button>
                     ))}
 
