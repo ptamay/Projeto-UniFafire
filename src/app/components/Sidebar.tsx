@@ -348,30 +348,33 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
             {/* ── MOBILE TOP BAR ── */}
             <div className="mobile-topbar">
                 <button
-                    onClick={() => setMobileOpen(true)}
+                    onClick={() => (drawerOpen ? closeMobile() : setMobileOpen(true))}
                     id="mobile-menu-btn"
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)', minWidth: 44, minHeight: 44, WebkitTapHighlightColor: 'transparent' }}
-                    aria-label="Abrir menu"
+                    className="mobile-topbar-icon-btn"
+                    aria-label={drawerOpen ? 'Fechar menu' : 'Abrir menu'}
+                    aria-expanded={drawerOpen}
                 >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <line x1="3" y1="12" x2="21" y2="12"/>
-                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    <svg className={`hamburger-icon${drawerOpen ? ' is-open' : ''}`} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <line className="line line-1" x1="3" y1="6" x2="21" y2="6"/>
+                        <line className="line line-2" x1="3" y1="12" x2="21" y2="12"/>
+                        <line className="line line-3" x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
                 </button>
 
                 <div className="mobile-topbar-brand">
-                    <span className="mobile-topbar-title">{currentPageTitle}</span>
+                    <span key={currentPageTitle} className="mobile-topbar-title">{currentPageTitle}</span>
                 </div>
 
                 <button
                     onClick={toggleTheme}
+                    className="mobile-topbar-icon-btn"
                     data-tooltip={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
                     data-tooltip-pos="bottom"
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-sm)', minWidth: 44, minHeight: 44, WebkitTapHighlightColor: 'transparent' }}
                     aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
                 >
-                    {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
+                    <span key={theme} className="theme-icon-swap">
+                        {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
+                    </span>
                 </button>
             </div>
 

@@ -107,6 +107,11 @@
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-full: 9999px;
+
+  /* Curvas de easing — decelaração natural, sem bounce/elastic (spec de motion) */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Estado Colapsado */
@@ -1716,6 +1721,20 @@ textarea:focus-visible,
     justify-content: center !important;
   }
 
+  /* Barra de filtros (Todas/Disponíveis/Em Uso/Minhas Chaves): 4 chips com
+     flex:1 cada não cabem em ~340px úteis com "Minhas Chaves (N)" — em vez de
+     espremer/cortar texto, vira rolagem horizontal (mesmo padrão já usado nos
+     chips de chaves frequentes logo acima). */
+  .dashboard-filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .dashboard-filter-chip {
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+  }
+
   /* Card "grid" da dashboard (modo mobile): título/sala/portador de um lado e o
      status-tag do outro, lado a lado no desktop, mas o par title-column + badge
      não cabe em ~340px úteis quando há nome de funcionário longo — o cálculo de
@@ -1751,16 +1770,22 @@ textarea:focus-visible,
     justify-content: space-between;
     background: var(--bg-surface);
     border-bottom: 1px solid var(--border);
+    /* Elevação tangível (mesma linguagem de cards/modais): a barra fixa
+       precisa se destacar do conteúdo que desliza por baixo dela ao rolar. */
+    box-shadow: var(--shadow-sm);
     /* height, padding, position, top e z-index são herdados da definição de safe-area acima */
   }
   .mobile-topbar-brand {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-width: 0;
   }
   .mobile-topbar-title {
     font-weight: 700;
     font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    animation: fadeIn 0.2s var(--ease-out-quart);
   }
   .mobile-topbar-badge {
     background: var(--accent-primary);
@@ -1769,6 +1794,47 @@ textarea:focus-visible,
     padding: 2px 6px;
     border-radius: var(--radius-full);
     font-weight: 800;
+  }
+
+  /* ── Botões de ícone da topbar (menu + tema) ──
+     Antes eram só estilo inline sem transition nem estado — os únicos dois
+     botões do app sem feedback de toque. */
+  .mobile-topbar-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    border-radius: var(--radius-sm);
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s var(--ease-out-quart), color 0.15s var(--ease-out-quart), transform 0.1s var(--ease-out-quart);
+  }
+  .mobile-topbar-icon-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
+  .mobile-topbar-icon-btn:active { transform: scale(0.92); }
+  .mobile-topbar-icon-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+
+  /* Hamburger → X: comunica o estado do drawer em vez de ficar estático */
+  .hamburger-icon .line {
+    transition: transform 0.25s var(--ease-out-quart), opacity 0.2s var(--ease-out-quart);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .hamburger-icon.is-open .line-1 { transform: translateY(6px) rotate(45deg); }
+  .hamburger-icon.is-open .line-2 { opacity: 0; }
+  .hamburger-icon.is-open .line-3 { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Troca de ícone sol/lua: crossfade + leve giro em vez de troca instantânea */
+  .theme-icon-swap {
+    display: inline-flex;
+    animation: theme-icon-in 0.25s var(--ease-out-quart);
+  }
+  @keyframes theme-icon-in {
+    from { opacity: 0; transform: scale(0.5) rotate(-45deg); }
+    to   { opacity: 1; transform: scale(1) rotate(0); }
   }
 }
 @media (min-width: 769px) {
