@@ -145,8 +145,34 @@
 - ~~**Testes desativados na Sprint 6**~~ — **quitado (TASK-035, Sprint 7):** os 4 `.test.old` viraram suíte Vitest real (session-policy, password-policy, security-profile) com cobertura extra do strict pwd_hash check.
 - ~~**Next 16 — convenção `middleware` deprecada**~~ — **quitado (Sprint 9, 2026-07-03):** `src/middleware.ts` renomeado para `src/proxy.ts` (função `middleware` → `proxy`), conforme codemod oficial `middleware-to-proxy`.
 - **`docs/tasks-sprint-N.md` sem arquivamento desde a Sprint 8** (2026-07-02) — as Sprints 9–14 não geraram o snapshot correspondente em `docs/`. Fonte de verdade permanece íntegra em `.sdd/memory/tasks.md` (sobrescrito por sprint) + histórico de commits (`test`/`feat`/`refactor(TASK-NNN)`) + ADRs. Não reconstruído retroativamente para evitar fabricar detalhe BDD sem fonte confiável — se precisar do arquivo formal de uma sprint passada, gerar sob demanda a partir do `tasks.md` daquele commit + `git log`.
+- **TASK-042 (REQ-026, Sprint 11) entregue sem teste** — feat commit (`13f623c`) sem commit `test` correspondente e sem commit de CR (`docs: change request`) próprio; débito herdado já causou 1 falha de gate na Sprint 12 (ver métricas abaixo). Não corrigido retroativamente nesta rodada (Fase 11 é revisão/documentação, não implementação) — próxima sprint que tocar o fluxo de transferência mobile deve cobrir com teste antes de qualquer outra mudança no mesmo arquivo.
+- **`keys.db` segue rastreado no git** (viola constitution §4.5) — registrado desde a Sprint 13, ainda não corrigido; requer `git rm --cached keys.db` + entrada em `.gitignore`.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
+
+## 7. Encerramento do Roadmap Inicial (Fase 11 — 2026-07-10)
+
+O backlog de sprints planejadas está vazio — Sprint 14 foi a última entregue e não há
+próxima sprint definida. Revisão de estado real antes de qualquer merge/deploy:
+
+- **`main` está travado em `e873796` (2026-07-03, fim da Sprint 9)** — 72 commits das
+  Sprints 10–14 (mais o CR do REQ-021/bypass e a reformulação de UI/UX) existem apenas em
+  branches de feature (`feature/sprint-10-*` … `feature/sprint-14-fluxo-unificado`) e na
+  branch de trabalho atual, nunca mergeados nem deployados. `docs/releases/` nunca existiu.
+- **Release consolidado gerado**: `docs/releases/release-v0.2.0.md` — cobre REQ-021 a
+  REQ-029 como uma única entrega (nada disso foi deployado separadamente até aqui).
+  Risco 🟡 (uma migration real no lote: `202607041500_add_justification`, UP/DOWN pareados).
+- **Aceite do Cliente**: registrado retroativamente como N/A (exceção MODO EXPRESSO/uso
+  interno) para as Sprints 7–14 — ver changelog do `spec.md`. Protocolo passa a valer de
+  fato a partir do próximo ciclo.
+- **Threat model**: revisado — `docs/threat_model_stride.md` e a cópia em `.sdd/memory/`
+  já estavam sincronizadas (2026-07-10) e cobrem a superfície atual; Sprint 14 foi só UI,
+  sem rota/integração/schema novos, então nenhuma atualização adicional foi necessária.
+- **Cross-tenant**: N/A — projeto de cliente único, sem `tenant_id` (constitution §0).
+- **Pendente (ação manual, fora do escopo desta revisão)**: push da branch + PR + merge em
+  `main` + deploy PM2 real. Antes de mergear, considerar consolidar as branches de feature
+  soltas (`feature/sprint-10-*` a `feature/sprint-13-*`) na branch atual ou confirmar que já
+  estão todas presentes nela (ver `git log main..HEAD`).
 
 ## 5. AI Cost Budget
 Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas via API paga, definir cap mensal antes da Sprint 1.

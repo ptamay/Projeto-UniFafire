@@ -14,9 +14,26 @@
 | 2026-07-06 | 1.4 | REQ-022 e REQ-023 — Transferência direta de chaves e consolidação das abas de logs (CR Tipo C, ADR-004) | Otimizar processo de repasse de chaves e melhorar UX da auditoria. |
 | 2026-07-06 | 1.5 | REQ-024 — Transferência de chaves entre usuários sem privilégios (CR Tipo C, ADR-005) | Extensão do REQ-022 para permitir que Funcionários e Alunos transfiram as próprias chaves entre si. |
 | 2026-07-06 | 1.6 | REQ-025 — Cancelamento e visualização de transferências pendentes (CR Tipo C, ADR-006) | Corrigir gap do REQ-024: o iniciador não conseguia ver ou cancelar a transferência pendente. |
+| 2026-07-06 | 1.6.1 | REQ-026 — Transferência de chaves na interface mobile (CR Tipo C) | Extensão do REQ-022/024 ao layout mobile (card). *Registro retroativo (2026-07-10, Fase 11): a linha deste CR nunca havia sido lançada no changelog, apesar do requisito já constar em §3 — TASK-042 entregue sem passar por commit de CR nem teste (débito registrado em `plan.md`).* |
 | 2026-07-06 | 1.7 | REQ-027 — Solicitação de chave em uso ao portador (CR Tipo C, ADR-008) | Regra de negócio: qualquer usuário vê quem está com a chave e pode solicitá-la diretamente ao portador (fluxo "pull", prioridade mobile), sem passar pela portaria. |
 | 2026-07-07 | 1.8 | REQ-028 — Devolução forçada ampla e clareza do fluxo de chaves no mobile (CR Tipo C, ADR-009) | Feedback de uso: portaria não conseguia devolver chaves de funcionários sem celular a menos que a chave tivesse sido atribuída via bypass; mobile sem botão "Devolver" e com estados pouco claros. |
 | 2026-07-09 | 1.9 | REQ-029 — Fluxo de registro unificado e clareza de pendências no Dashboard + light mode integral (CR Tipo C, ADR-010) | Re-crítica UI/UX dual-agent (Nielsen 30/40, snapshots em `.impeccable/critique/`): dois caminhos concorrentes para o mesmo registro no desktop, concluir a operação exige trocar de tela, porteiro mobile sem acelerador e tema claro meio-aplicado. |
+
+### Aceite do Cliente (registro retroativo — Fase 11, 2026-07-10)
+> O protocolo de Aceite do Cliente (`sprint-governance.md` Fase 11) nunca foi executado nas
+> Sprints 7–14 — nenhuma demo formal a stakeholder foi registrada. Aplicando a exceção
+> documentada do próprio framework (MODO EXPRESSO + uso interno, cliente único): registrado
+> como N/A, não como aprovação fabricada. A partir do próximo ciclo, o protocolo passa a valer
+> de fato (demo real antes de qualquer merge em `main`).
+
+| Sprint(s) | Aceite | Data | Observação |
+|---|---|---|---|
+| 7–9 | N/A | 2026-07-10 | Dívida técnica/higiene — sem entrega visível ao usuário final. |
+| 10 (REQ-022/023) | N/A — uso interno | 2026-07-10 | MODO EXPRESSO, cliente único; sem demo formal registrada. |
+| 11 (REQ-026) | N/A — uso interno | 2026-07-10 | Idem. Débito conhecido: TASK-042 entregue sem teste (ver `plan.md` §Débitos). |
+| 12 (REQ-027) | N/A — uso interno | 2026-07-10 | Idem. |
+| 13 (REQ-028) | N/A — uso interno | 2026-07-10 | Idem. |
+| 14 (REQ-029) | N/A — uso interno | 2026-07-10 | Idem. |
 
 ---
 
