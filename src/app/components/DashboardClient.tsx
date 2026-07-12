@@ -129,7 +129,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                         overflow: 'hidden',
                         animation: 'slideUp 0.2s ease-out'
                     }}>
-                        <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }} suppressHydrationWarning>
                             <input
                                 autoFocus
                                 role="combobox"
@@ -159,6 +159,10 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                         closeAndRefocus();
                                     }
                                 }}
+                                data-lpignore="true"
+                                data-1p-ignore="true"
+                                autoComplete="off"
+                                type="search"
                             />
                         </div>
                         <div role="listbox" id={listboxId} ref={listRef} aria-label="Usuários" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -289,7 +293,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             }
             router.refresh();
         } catch (e) {
-            console.error('Refresh error:', e);
+            // Silencia 'Failed to fetch' no polling (ex: quando o dev server reinicia)
+            if (e instanceof Error && e.message !== 'Failed to fetch') {
+                console.error('Refresh error:', e);
+            }
         }
     }, [isPorteiroOrAdmin, username, router]);
 
@@ -752,13 +759,16 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     Enter (sugestões + fluxo de retirada/devolução). O input de busca
                     separado foi removido. */}
                 <div className="unified-control-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
+                    {/* REQ-029a: campo de busca separado removido (unificado com a Ação Rápida
+                        abaixo, id="unified-key-input"). Os atributos anti-autofill que existiam
+                        aqui (data-lpignore/data-1p-ignore/type=search) já vivem naquele campo. */}
                     <div className="control-actions" style={{ flex: '1', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', paddingLeft: '1rem' }}>
                         <div style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </div>
 
                         {/* Passo 1 — qual a chave */}
-                        <div style={{ position: 'relative', flex: 1 }}>
+                        <div style={{ position: 'relative', flex: 1 }} suppressHydrationWarning>
                             <input
                                 className="input"
                                 placeholder="Buscar ou registrar: qual a chave?"
@@ -769,6 +779,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 aria-expanded={showKeyDrops}
                                 aria-controls="key-dropdown"
                                 value={qaKey}
+                                data-lpignore="true"
+                                data-1p-ignore="true"
+                                type="search"
+                                name="qaKey"
                                 style={{ minHeight: '44px', fontSize: '0.8rem', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%', paddingLeft: '0.5rem' }}
                                 onFocus={() => {
                                     setShowKeyDrops(true);
@@ -875,7 +889,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
                         {/* Passo 2 — revelado por estado derivado (qaStep), não por style.display */}
                         {qaStep === 'withdraw' && (
-                            <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'relative' }} suppressHydrationWarning>
                                 {isPorteiroOrAdmin ? (
                                     <>
                                         <input
@@ -889,6 +903,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             aria-expanded={showEmpDrops}
                                             aria-controls="emp-dropdown"
                                             value={qaEmp}
+                                            data-lpignore="true"
+                                            data-1p-ignore="true"
+                                            type="search"
+                                            name="qaEmp"
                                             style={{ minHeight: '44px', fontSize: '0.8rem', width: '220px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)' }}
                                             onFocus={() => {
                                                 setShowEmpDrops(true);
