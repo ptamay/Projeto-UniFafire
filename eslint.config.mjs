@@ -19,6 +19,10 @@ const eslintConfig = defineConfig([
     "tmp/**",
     "patch.js",
     "**/*.test.old",
+    // Worktrees git aninhadas (.claude/worktrees/*) são cópias de trabalho de
+    // outras sessões/branches — não são código deste repositório e não devem
+    // bloquear o pre-commit daqui (cada worktree lida com seu próprio lint).
+    ".claude/worktrees/**",
   ]),
 ]);
 
