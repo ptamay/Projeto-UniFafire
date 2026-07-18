@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRole } from './helpers';
+import { login } from './helpers';
 
 test.describe('Dashboard Priority Tabs', () => {
-  test('User with "Minhas chaves" tab (FUNC) should see it as default', async ({ page }) => {
-    // Role FUNCIONARIO sees "Minhas chaves"
-    await loginAsRole(page, 'FUNCIONARIO');
+  test('User with "Minhas chaves" tab (ALUNO) should see it as default', async ({ page }) => {
+    // Role ALUNO sees "Minhas chaves"
+    await login(page, 'e2e_aluno');
 
     // Wait for dashboard to load
     await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('Dashboard Priority Tabs', () => {
   });
 
   test('Porteiro should see standard tabs without "Minhas chaves"', async ({ page }) => {
-    await loginAsRole(page, 'PORTEIRO');
+    await login(page, 'e2e_porteiro');
 
     // Wait for dashboard to load
     await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
@@ -39,5 +39,21 @@ test.describe('Dashboard Priority Tabs', () => {
     // Let's just check that 'Todas' is first. We can skip checking active class for Porteiro here or check nth(1).
     const secondTabClass = await tabButtons.nth(1).getAttribute('class');
     expect(secondTabClass).toContain('bg-white');
+  });
+
+  test('Admin should see "Todas" as active by default', async ({ page }) => {
+    await login(page, 'e2e_admin');
+
+    // Wait for dashboard to load
+    await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
+
+    const tabButtons = page.locator('.flex.space-x-1.rounded-xl.bg-surface-elevated button');
+    
+    // First tab should be "Todas"
+    await expect(tabButtons.nth(0)).toHaveText(/Todas/i);
+
+    // Verify it is active by default
+    const firstTabClass = await tabButtons.nth(0).getAttribute('class');
+    expect(firstTabClass).toContain('bg-white');
   });
 });
