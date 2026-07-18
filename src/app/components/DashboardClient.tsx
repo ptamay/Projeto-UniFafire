@@ -234,9 +234,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState('');
-    // O filter inicial depende do papel: portaria -> 'available', outros -> 'mine'
+    // O filter inicial depende do papel: ADMIN/GESTOR -> 'all', PORTEIRO -> 'available', outros -> 'mine'
     const [filter, setFilter] = useState<'all' | 'available' | 'in_use' | 'mine'>(
-        ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole) ? 'available' : 'mine'
+        ['ADMIN', 'GESTOR'].includes(userRole) ? 'all' : (userRole === 'PORTEIRO' ? 'available' : 'mine')
     );
     // O layout responsivo agora é tratado puramente por CSS (.mobile-only e .desktop-only)
 
