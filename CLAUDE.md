@@ -45,10 +45,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ```
 - Fase: 11 (Revisão de Sprint, Release Governance e Atualização de Artefatos)
-- Sprint/Task Ativa: Nenhuma ativa. Backlog atualizado com TASK-052 para Sprint 15.
-- Última Ação: Processado CR Tipo C (REQ-030) definindo a nova ordem prioritária das abas no Dashboard. Artefatos atualizados: spec.md, plan.md e docs/adr/ADR-011-ordem-abas-prioritarias.md. 
-- Próxima Ação: Executar sprint (TDD) da TASK-052 para implementar a nova ordem das abas na UI no `DashboardClient.tsx`.
-- Decisões em aberto: Nenhuma nova.
+- Sprint/Task Ativa: Nenhuma ativa. Sprint 15 concluída.
+- Última Ação: Executada sprint (TDD) da TASK-052 para implementar a nova ordem das abas na UI no `DashboardClient.tsx`. Commitado e testado.
+- Próxima Ação: Aguardando nova task ou sprint do usuário, ou a abertura de Pull Request para a branch `feature/sprint-15-ordem-abas`.
+- Decisões em aberto: Nenhuma.
 - Arquivos não commitados: N/A
 - Branch atual: feature/sprint-15-ordem-abas (a criar/mover)
 - Atualizado em: 2026-07-18

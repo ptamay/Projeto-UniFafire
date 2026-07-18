@@ -1,8 +1,5 @@
 /* Inter é servida pelo next/font (layout.tsx) via --font-inter — sem @import
    bloqueante e sem FOUT; o fallback system-ui cobre o primeiro paint. */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* ============================================================
    DESIGN SYSTEM — UniFAFIRE
@@ -747,7 +744,15 @@ h3 { font-size: 1.125rem; }
   align-items: center;
   gap: 1rem;
 }
-.sidebar-logo img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
+.sidebar-logo img { 
+  width: 44px; 
+  height: 44px; 
+  object-fit: contain; 
+  background-color: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 .sidebar-logo-text { font-size: 0.8rem; font-weight: 700; color: var(--green-300); line-height: 1.3; }
 
 .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; overflow-y: auto; }
@@ -867,6 +872,13 @@ h3 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: box-shadow 0.2s, outline 0.2s;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+}
+.control-actions:focus-within {
+  outline: 1px solid var(--green-400);
+  box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15);
 }
 
 /* No mobile, a meta é digitar o mínimo possível: a Ação Rápida em 2 passos
@@ -893,6 +905,11 @@ h3 { font-size: 1.125rem; }
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .mobile-touch-search:focus-within {
+    border-color: var(--green-400);
+    box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15);
   }
   .mobile-touch-search svg { flex-shrink: 0; color: var(--text-muted); }
   .mobile-touch-search input {
@@ -903,6 +920,10 @@ h3 { font-size: 1.125rem; }
     outline: none;
     color: var(--text-primary);
     font-size: 16px; /* evita zoom automático no iOS */
+  }
+  .mobile-touch-search input:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
   .mobile-touch-search input::placeholder { color: var(--text-muted); }
 

@@ -138,7 +138,7 @@
 - ~~TASK-051 → REQ-029d: light mode integral — sidebar tematizada no modo claro (AA/AAA medido; fallback dark do ADR não foi necessário); login respeita o tema salvo; decisão documentada no DESIGN.md. test (e2e)→feat.~~
 
 ### Sprint 15 🏃‍♂️ — Melhorias de Dashboard UX (CR 2026-07-18, Tipo C — REQ-030, ADR-011)
-- TASK-052 → REQ-030: Reordenar as abas no `DashboardClient.tsx`. Definir "Minhas chaves" como primeira aba (e ativa por padrão) caso o usuário tenha esse acesso; seguida por "Disponíveis", "Em uso" e "Todas".
+- [x] TASK-052 → REQ-030: Reordenar as abas no `DashboardClient.tsx`. Definir "Minhas chaves" como primeira aba (e ativa por padrão) caso o usuário tenha esse acesso; seguida por "Disponíveis", "Em uso" e "Todas".
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
