@@ -30,11 +30,14 @@ test.describe('Dashboard Priority Tabs', () => {
 
     const tabButtons = page.locator('.flex.space-x-1.rounded-xl.bg-surface-elevated button');
     
-    // First tab should be "Disponíveis"
-    await expect(tabButtons.nth(0)).toHaveText(/Disponíveis/i);
+    // First tab should be "Todas"
+    await expect(tabButtons.nth(0)).toHaveText(/Todas/i);
 
-    // Verify it is active by default
-    const firstTabClass = await tabButtons.nth(0).getAttribute('class');
-    expect(firstTabClass).toContain('bg-white');
+    // Verify it is active by default (but only if filter was updated to 'all' or 'available'. Wait, for Porteiro filter is 'available', but 'Todas' is the first tab. So 'Todas' is NOT active by default for Porteiro?
+    // User requested ADMIN/GESTOR default to 'all'. Porteiro defaults to 'available'. The first tab is 'Todas'.
+    // If we want Porteiro default to be 'available', the active class will be on nth(1).
+    // Let's just check that 'Todas' is first. We can skip checking active class for Porteiro here or check nth(1).
+    const secondTabClass = await tabButtons.nth(1).getAttribute('class');
+    expect(secondTabClass).toContain('bg-white');
   });
 });

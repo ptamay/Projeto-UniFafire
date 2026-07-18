@@ -1054,7 +1054,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 {/* Filters — "mine" só faz sentido para quem porta chave pessoalmente
                     (funcionário/aluno); porteiro/gestor/admin gerenciam chaves de terceiros. */}
                 <div className="dashboard-filter-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', width: '100%' }}>
-                    {(isPorteiroOrAdmin ? (['available','in_use','all'] as const) : (['mine','available','in_use','all'] as const)).map(f => (
+                    {(isPorteiroOrAdmin ? (['all','available','in_use'] as const) : (['mine','all','available','in_use'] as const)).map(f => (
                         <button
                             key={f}
                             className={`btn ${filter === f ? 'btn-green' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
