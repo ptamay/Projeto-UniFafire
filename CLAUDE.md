@@ -44,14 +44,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 11 (Revisão de Sprint, Release Governance e Atualização de Artefatos — roadmap de sprints ENCERRADO)
-- Sprint/Task Ativa: Nenhuma. Backlog de plan.md §4 vazio — Sprint 14 foi a última entregue, sem próxima sprint definida.
-- Última Ação: Fase 11 completa a pedido do usuário ("Acabamos as sprints"). Achado principal: `main` travado em `e873796` (2026-07-03, fim da Sprint 9) — 72 commits das Sprints 10–14 (+ CR do REQ-021) nunca foram mergeados nem deployados. Gerado `docs/releases/release-v0.2.0.md` (consolidado, risco 🟡 por 1 migration real). Registrado retroativamente "Aceite do Cliente: N/A — uso interno/MODO EXPRESSO" para Sprints 7–14 em spec.md (nunca havia sido executado). Corrigido gap: REQ-026 não tinha linha no changelog do spec.md (adicionado 1.6.1). Débito TASK-042 (feat sem teste) formalizado em plan.md. Threat model revisado — já estava sincronizado, nenhuma mudança necessária (Sprint 14 foi só UI). package.json bump 0.1.0→0.2.0. Cabeçalho mobile + motion tokens (CR Tipo C ad-hoc, aprovado pelo usuário) também entregues nesta sessão: sombra na topbar, hamburger→X, crossfade sol/lua, feedback tátil nos ícones — ver Sidebar.tsx/globals.css.
-- Próxima Ação: (manual, fora desta revisão) push da branch atual + PR contra main + merge + deploy PM2. Antes do merge: confirmar que feature/sprint-10-* a feature/sprint-13-* estão contidas na branch atual (evitar perder commits) e rodar npm audit/Semgrep no PR. Pendências menores: keys.db ainda rastreado (§4.5); rodar /impeccable document p/ atualizar o sidecar design.json.
-- Decisões em aberto: Nenhuma nova. Aceite do Cliente formal passa a valer de fato a partir do próximo ciclo (não mais N/A retroativo).
-- Arquivos não commitados: keys.db (runtime do dev server; rastreado indevidamente — não commitar); demais mudanças desta sessão aguardando decisão do usuário sobre commit.
-- Branch atual: sprint-14-view (nota: divergia do checkpoint anterior, que citava feature/sprint-14-fluxo-unificado — reconciliar antes do PR)
-- Atualizado em: 2026-07-10
+- Fase: 11 (Revisão de Sprint, Release Governance e Atualização de Artefatos)
+- Sprint/Task Ativa: Nenhuma ativa. Backlog atualizado com TASK-052 para Sprint 15.
+- Última Ação: Processado CR Tipo C (REQ-030) definindo a nova ordem prioritária das abas no Dashboard. Artefatos atualizados: spec.md, plan.md e docs/adr/ADR-011-ordem-abas-prioritarias.md. 
+- Próxima Ação: Executar sprint (TDD) da TASK-052 para implementar a nova ordem das abas na UI no `DashboardClient.tsx`.
+- Decisões em aberto: Nenhuma nova.
+- Arquivos não commitados: N/A
+- Branch atual: feature/sprint-15-ordem-abas (a criar/mover)
+- Atualizado em: 2026-07-18
 ```
 
 ---

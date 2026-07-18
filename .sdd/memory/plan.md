@@ -133,9 +133,12 @@
 > Origem: re-crítica UI/UX dual-agent (snapshots `.impeccable/critique/` de 2026-07-08/09).
 > Somente UI + 1 query de métrica — endpoints de transação e máquina de dupla confirmação intocados.
 - ~~TASK-048 → REQ-029a: campo único busca+ação no desktop — filtra a lista em tempo real e age no Enter; remove o input de busca duplicado; seletor por linha permanece como caminho de mouse. test (e2e teclado)→feat.~~
-- ~~TASK-049 → REQ-029b: painel de pendências inline (PendingInline) no topo do Dashboard, confirmar/cancelar reutilizando os endpoints de `/confirm` (pending/user-confirm/cancel); `/confirm` permanece como visão completa. test→feat.~~
+- ~~TASK-049 → REQ-029b: painel de pendências inline no topo do Dashboard, confirmar/cancelar reutilizando os endpoints de `/confirm` (pending/user-confirm/cancel); `/confirm` permanece como visão completa. test→feat.~~
 - ~~TASK-050 → REQ-029c: `/api/metrics/frequent-keys` ramifica por papel (portaria = frequência global, comum = própria); UI mostra chips para o porteiro no mobile. test (vitest)→feat.~~
 - ~~TASK-051 → REQ-029d: light mode integral — sidebar tematizada no modo claro (AA/AAA medido; fallback dark do ADR não foi necessário); login respeita o tema salvo; decisão documentada no DESIGN.md. test (e2e)→feat.~~
+
+### Sprint 15 🏃‍♂️ — Melhorias de Dashboard UX (CR 2026-07-18, Tipo C — REQ-030, ADR-011)
+- TASK-052 → REQ-030: Reordenar as abas no `DashboardClient.tsx`. Definir "Minhas chaves" como primeira aba (e ativa por padrão) caso o usuário tenha esse acesso; seguida por "Disponíveis", "Em uso" e "Todas".
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
