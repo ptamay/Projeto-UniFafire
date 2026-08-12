@@ -35,7 +35,7 @@
     "flatted": "^3.4.2",
     "lodash": "^4.18.1",
     "picomatch": "^4.0.4",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.26",
     "serialize-javascript": "^7.0.5"
   },
   "devDependencies": {
