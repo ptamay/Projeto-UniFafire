@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 import { formatTimestamp } from '@/lib/time-filters';
+import { HISTORY_ACTIONS } from '@/lib/history-query';
 
 interface BusinessMetrics {
     totalTransactions: number;
@@ -26,20 +27,34 @@ export interface HistoryItem {
     justification?: string;
 }
 
+export interface HistoryFilterOptions {
+    users: { id: number; name: string }[];
+    keys: { id: number; name: string; room: string | null }[];
+}
+
 interface HistoryClientProps {
     history: HistoryItem[];
     userRole: string;
     username: string;
     currentPage?: number;
     totalPages?: number;
+    totalRecords?: number;
+    filterOptions?: HistoryFilterOptions;
     initialFilters?: {
         date?: string;
         month?: string;
         hour?: string;
+        userId?: string;
+        keyId?: string;
+        action?: string;
     };
 }
 
-export default function HistoryClient({ history, userRole, username, initialFilters }: HistoryClientProps) {
+export default function HistoryClient({
+    history, userRole, username, initialFilters,
+    currentPage = 1, totalPages = 1, totalRecords = 0,
+    filterOptions = { users: [], keys: [] },
+}: HistoryClientProps) {
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const router = useRouter();
 
@@ -47,6 +62,13 @@ export default function HistoryClient({ history, userRole, username, initialFilt
     const [dateFilter, setDateFilter] = useState(initialFilters?.date || '');
     const [monthFilter, setMonthFilter] = useState(initialFilters?.month || '');
     const [hourFilter, setHourFilter] = useState(initialFilters?.hour || '');
+    const [userFilter, setUserFilter] = useState(initialFilters?.userId || '');
+    const [keyFilter, setKeyFilter] = useState(initialFilters?.keyId || '');
+    const [actionFilter, setActionFilter] = useState(initialFilters?.action || '');
+
+    const hasActiveFilter = Boolean(
+        dateFilter || monthFilter || hourFilter || userFilter || keyFilter || actionFilter
+    );
 
     const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
     const [bizMetrics, setBizMetrics] = useState<BusinessMetrics | null>(null);
@@ -77,7 +99,16 @@ export default function HistoryClient({ history, userRole, username, initialFilt
         }
     };
 
-    const updateFilters = (newFilters: { date?: string, month?: string, hour?: string }) => {
+    const goToPage = (page: number) => {
+        const params = new URLSearchParams(window.location.search);
+        params.set('page', String(page));
+        router.push(`/history?${params.toString()}`);
+    };
+
+    const updateFilters = (newFilters: {
+        date?: string, month?: string, hour?: string,
+        userId?: string, keyId?: string, action?: string,
+    }) => {
         const params = new URLSearchParams(window.location.search);
         if (newFilters.date !== undefined) {
             if (newFilters.date) params.set('date', newFilters.date); else params.delete('date');
@@ -95,6 +126,20 @@ export default function HistoryClient({ history, userRole, username, initialFilt
             if (newFilters.hour) params.set('hour', newFilters.hour); else params.delete('hour');
             setHourFilter(newFilters.hour);
         }
+        if (newFilters.userId !== undefined) {
+            if (newFilters.userId) params.set('userId', newFilters.userId); else params.delete('userId');
+            setUserFilter(newFilters.userId);
+        }
+        if (newFilters.keyId !== undefined) {
+            if (newFilters.keyId) params.set('keyId', newFilters.keyId); else params.delete('keyId');
+            setKeyFilter(newFilters.keyId);
+        }
+        if (newFilters.action !== undefined) {
+            if (newFilters.action) params.set('action', newFilters.action); else params.delete('action');
+            setActionFilter(newFilters.action);
+        }
+        // Qualquer mudança de filtro volta à primeira página: manter o offset
+        // antigo sobre um conjunto menor mostraria uma tela vazia sem explicação.
         params.set('page', '1');
         router.push(`/history?${params.toString()}`);
     };
@@ -256,13 +301,61 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                 </select>
                             </div>
 
+                            <div className="input-group">
+                                <label className="input-label">Portador</label>
+                                <select
+                                    className="input"
+                                    value={userFilter}
+                                    onChange={(e) => updateFilters({ userId: e.target.value })}
+                                >
+                                    <option value="">Todos</option>
+                                    {filterOptions.users.map(u => (
+                                        <option key={u.id} value={String(u.id)}>{u.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Chave</label>
+                                <select
+                                    className="input"
+                                    value={keyFilter}
+                                    onChange={(e) => updateFilters({ keyId: e.target.value })}
+                                >
+                                    <option value="">Todas</option>
+                                    {filterOptions.keys.map(k => (
+                                        <option key={k.id} value={String(k.id)}>
+                                            {k.name}{k.room ? ` (${k.room})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Movimentação</label>
+                                <select
+                                    className="input"
+                                    value={actionFilter}
+                                    onChange={(e) => updateFilters({ action: e.target.value })}
+                                >
+                                    <option value="">Todas</option>
+                                    {HISTORY_ACTIONS.map(a => (
+                                        <option key={a.value} value={a.value}>{a.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                <button 
-                                    className="btn btn-ghost btn-sm w-full" 
+                                <button
+                                    className="btn btn-ghost btn-sm w-full"
+                                    disabled={!hasActiveFilter}
                                     onClick={() => {
                                         setDateFilter('');
                                         setMonthFilter('');
                                         setHourFilter('');
+                                        setUserFilter('');
+                                        setKeyFilter('');
+                                        setActionFilter('');
                                         router.push('/history');
                                     }}
                                 >
@@ -309,10 +402,52 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                                         </td>
                                     </tr>
                                 ))}
-                                {history.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Nenhum histórico registrado.</td></tr>}
+                                {history.length === 0 && (
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                        {hasActiveFilter
+                                            ? 'Nenhuma movimentação encontrada para os filtros selecionados.'
+                                            : 'Nenhum histórico registrado.'}
+                                    </td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
+
+                    {/* TASK-057: o servidor sempre paginou (LIMIT 50), mas a tela não
+                        oferecia navegação — o histórico ficava preso aos 50 registros
+                        mais recentes, sem sinal de que havia mais. */}
+                    {totalRecords > 0 && (
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            gap: '1rem', flexWrap: 'wrap', marginTop: '1rem',
+                        }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                {totalRecords} {totalRecords === 1 ? 'movimentação' : 'movimentações'}
+                                {totalPages > 1 && ` · página ${currentPage} de ${totalPages}`}
+                            </span>
+
+                            {totalPages > 1 && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        className="btn btn-ghost btn-sm"
+                                        disabled={currentPage <= 1}
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        aria-label="Página anterior"
+                                    >
+                                        ← Anterior
+                                    </button>
+                                    <button
+                                        className="btn btn-ghost btn-sm"
+                                        disabled={currentPage >= totalPages}
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        aria-label="Próxima página"
+                                    >
+                                        Próxima →
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
 
