@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import PendingInline from './PendingInline';
 import toast from 'react-hot-toast';
-import { OVERDUE_HOURS } from '@/lib/business-rules';
+import { findDelayedKeys } from '@/lib/business-rules';
+import { useClientClock } from '@/lib/use-client-clock';
 
 export interface Key {
     id: number;
@@ -659,17 +660,19 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             });
     }, [keys, search, filter, isPorteiroOrAdmin, frequentKeys, userId]);
 
-    // Calcular atrasos — threshold do spec §5 (TASK-034), centralizado em business-rules
-    const delayedKeys = useMemo(() => {
-        return keys.filter(k => {
-            if (k.status !== 'in_use' || !k.in_use_since) return false;
-            const diffHours = (new Date().getTime() - new Date(k.in_use_since).getTime()) / (1000 * 60 * 60);
-            return diffHours > OVERDUE_HOURS;
-        }).map(k => ({
-            ...k,
-            diffHours: Math.floor((new Date().getTime() - new Date(k.in_use_since!).getTime()) / (1000 * 60 * 60))
-        }));
-    }, [keys]);
+    // Calcular atrasos — threshold do spec §5 (TASK-034), centralizado em business-rules.
+    // TASK-058: o instante vem do estado, não do relógio lido durante o render.
+    // Lido no render, o servidor decidia com o relógio dele e o cliente decidia de
+    // novo na hidratação; discordando sobre exibir o aviso, o React descartava a
+    // árvore renderizada. Nulo até a montagem — servidor e primeiro render do
+    // cliente concordam em não mostrar nada — e atualizado a cada minuto para o
+    // aviso não congelar no instante em que a página abriu.
+    const now = useClientClock();
+
+    const delayedKeys = useMemo(
+        () => (now === null ? [] : findDelayedKeys(keys, now)),
+        [keys, now]
+    );
 
     // ── Ação Rápida: valores derivados do estado (fonte única de verdade) ──
     const qaResolvedKey = keys.find(k => normalize(k.name) === normalize(qaKey.trim())) || null;

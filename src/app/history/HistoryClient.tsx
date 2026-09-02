@@ -9,6 +9,7 @@ import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
 import { formatTimestamp } from '@/lib/time-filters';
 import { HISTORY_ACTIONS } from '@/lib/history-query';
+import { useClientClock } from '@/lib/use-client-clock';
 
 interface BusinessMetrics {
     totalTransactions: number;
@@ -56,6 +57,12 @@ export default function HistoryClient({
     filterOptions = { users: [], keys: [] },
 }: HistoryClientProps) {
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+    // TASK-058: vazio no servidor e na hidratação, preenchido depois. Renderizar
+    // o relógio direto no JSX fazia SSR e cliente caírem em segundos diferentes,
+    // e o React descartava a árvore vinda do servidor.
+    const agora = useClientClock();
+    const geradoEm = agora === null ? '' : formatTimestamp(new Date(agora).toISOString());
     const router = useRouter();
 
     // Initialize filters from props
@@ -149,7 +156,7 @@ export default function HistoryClient({
         const doc = new jsPDF();
         doc.text('Relatório de Movimentações de Chaves', 14, 15);
         doc.setFontSize(10);
-        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 22);
+        doc.text(`Gerado em: ${formatTimestamp(new Date().toISOString())}`, 14, 22);
 
         const tableColumn = ["Data/Hora", "Ação", "Chave", "Funcionário", "Confirmado por"];
         const tableRows = history.map(item => [
@@ -180,7 +187,7 @@ export default function HistoryClient({
                 {/* Print Header (Only visible when printing) */}
                 <div className="print-header" style={{ display: 'none', marginBottom: '2rem', textAlign: 'center' }}>
                     <h2>Relatório de Movimentações de Chaves</h2>
-                    <p>Gerado em: {new Date().toLocaleString('pt-BR')}</p>
+                    <p>Gerado em: {geradoEm}</p>
                 </div>
 
                 <div className="card full-width-print w-full">
