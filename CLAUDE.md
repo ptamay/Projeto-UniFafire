@@ -44,18 +44,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — Etapa 2 de 7 da migração Supabase/Vercel concluída
-- Sprint/Task Ativa: Sprint 17 concluída (TASK-056, TASK-057). Etapas 1 e 2 fechadas.
-- Última Ação: Filtros por portador/chave/movimentação no histórico + paginação renderizada
-  (não existia na UI). Query extraída para src/lib/history-query.ts. 118 testes passando
-  (eram 103), tsc e lint limpos, verificado no navegador em desktop e mobile.
+- Fase: 8-10 (execução de sprint) — Etapas 1 e 2 de 7 da migração concluídas
+- Sprint/Task Ativa: Nenhuma. Sprints 16, 17 e 18 concluídas.
+- Última Ação: TASK-058 — corrigido erro de hidratação pré-existente (render dependente do
+  relógio no HistoryClient e no DashboardClient). 125 testes passando, tsc e lint limpos,
+  todos os 6 gates de CI verdes, verificado no navegador.
 - Próxima Ação: Etapa 3 — schema Postgres com índices e timestamptz. BLOQUEADA até o ADR do
   Change Request Tipo D (mudança de stack) ser redigido e aprovado. Depois: Etapa 4 (camada
   de dados async), 5 (Realtime no lugar dos 4 pollings de 3s), 6 (logs estruturados em
   tabela), 7 (deploy Vercel + ping GitHub Actions).
 - Decisões em aberto: ADR do CR Tipo D — obrigatório antes da Etapa 3.
-- Arquivos não commitados: plan.md e CLAUDE.md (este checkpoint)
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; contém Sprints 16 e 17)
+- Arquivos não commitados: nenhum
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; contém Sprints 16, 17 e 18)
 - Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
 - Atualizado em: 2026-09-02
 ```
