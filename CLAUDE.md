@@ -44,18 +44,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — Sprint 16, Etapa 1 de 7 da migração Supabase/Vercel
-- Sprint/Task Ativa: Sprint 16 concluída (TASK-053, TASK-054, TASK-055). Etapa 1 de 7 fechada.
-- Última Ação: Corrigidos os 3 defeitos bloqueadores para exposição pública, ainda em SQLite,
-  via TDD (red→green comprovado em cada task). 103 testes passando (eram 80), tsc e lint limpos.
-  Migration de normalização validada contra cópia do backup de produção.
-- Próxima Ação: Etapa 2 — filtros de usuário/chave/ação no histórico. Depois: Etapa 3 (schema
-  Postgres com índices e timestamptz), 4 (camada de dados async), 5 (Realtime no lugar dos
-  4 pollings de 3s), 6 (logs estruturados em tabela), 7 (deploy Vercel + ping GitHub Actions).
-- Decisões em aberto: ADR do Change Request Tipo D (mudança de stack) ainda não redigido —
-  obrigatório antes da Etapa 3, que é a primeira a tocar a stack.
+- Fase: 8-10 (execução de sprint) — Etapa 2 de 7 da migração Supabase/Vercel concluída
+- Sprint/Task Ativa: Sprint 17 concluída (TASK-056, TASK-057). Etapas 1 e 2 fechadas.
+- Última Ação: Filtros por portador/chave/movimentação no histórico + paginação renderizada
+  (não existia na UI). Query extraída para src/lib/history-query.ts. 118 testes passando
+  (eram 103), tsc e lint limpos, verificado no navegador em desktop e mobile.
+- Próxima Ação: Etapa 3 — schema Postgres com índices e timestamptz. BLOQUEADA até o ADR do
+  Change Request Tipo D (mudança de stack) ser redigido e aprovado. Depois: Etapa 4 (camada
+  de dados async), 5 (Realtime no lugar dos 4 pollings de 3s), 6 (logs estruturados em
+  tabela), 7 (deploy Vercel + ping GitHub Actions).
+- Decisões em aberto: ADR do CR Tipo D — obrigatório antes da Etapa 3.
 - Arquivos não commitados: plan.md e CLAUDE.md (este checkpoint)
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada)
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; contém Sprints 16 e 17)
 - Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
 - Atualizado em: 2026-09-02
 ```
