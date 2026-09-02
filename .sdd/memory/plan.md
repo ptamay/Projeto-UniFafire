@@ -140,6 +140,20 @@
 ### Sprint 15 🏃‍♂️ — Melhorias de Dashboard UX (CR 2026-07-18, Tipo C — REQ-030, ADR-011)
 - [x] TASK-052 → REQ-030: Reordenar as abas no `DashboardClient.tsx`. Definir "Minhas chaves" como primeira aba (e ativa por padrão) caso o usuário tenha esse acesso; seguida por "Disponíveis", "Em uso" e "Todas".
 
+### Sprint 16 🏃‍♂️ — Correções Críticas Pré-Nuvem (Etapa 1 da migração Supabase/Vercel)
+> Origem: análise de viabilidade da migração para Supabase + Vercel (2026-09-02).
+> Defeitos que hoje não aparecem porque o sistema roda em rede local, e que se
+> tornam bloqueadores ao publicar na internet. Executada ANTES da mudança de stack,
+> de propósito: valem por si mesmas mesmo que a migração não avance.
+- [x] TASK-053 → lockout por conta, não por endereço de rede. `checkLockout` contava falhas com `username = ? OR ip = ?` no mesmo limiar de 5; no NAT do campus todos compartilham um IP público e cinco erros de senha de uma pessoa trancariam todos por 15 min. Limiar separado por IP (50) preserva defesa contra varredura de usernames. `clearLoginAttempts` deixa de apagar por IP. test→fix.
+- [x] TASK-054 → rate limit sai do `Map` em memória para a tabela `rate_limit_hits`. Em serverless cada instância tinha o seu contador, zerado a cada cold start. `hit_at` em epoch ms — comparável por faixa em SQLite e Postgres. Migration UP/DOWN pareada. test→fix.
+- [x] TASK-055 → fuso na auditoria. Filtros de dia/mês/hora comparavam o valor cru em UTC contra a hora exibida ao operador; movimentações entre 21h e a meia-noite local caíam no dia seguinte. Passam a faixa `[início, fim)` UTC (também sargável, preparando a Etapa 3). Normaliza as 6 linhas de `history` gravadas no formato do `CURRENT_TIMESTAMP`, que o JavaScript lia como hora local e exibia 3h adiantadas. Exibição presa a `America/Recife` via `APP_TIMEZONE`. test→fix.
+
+> **Ação de deploy pendente:** aplicar `node db/migrate.mjs up` no `keys.db` de produção
+> (migrations `202609021700_rate_limit_hits` e `202609021800_normalize_history_timestamps`).
+> A segunda foi validada em cópia do backup de 2026-07-06: 30/30 timestamps em ISO,
+> triggers de imutabilidade intactos, `integrity_check` ok.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 
@@ -149,6 +163,7 @@
 - ~~**Next 16 — convenção `middleware` deprecada**~~ — **quitado (Sprint 9, 2026-07-03):** `src/middleware.ts` renomeado para `src/proxy.ts` (função `middleware` → `proxy`), conforme codemod oficial `middleware-to-proxy`.
 - **`docs/tasks-sprint-N.md` sem arquivamento desde a Sprint 8** (2026-07-02) — as Sprints 9–14 não geraram o snapshot correspondente em `docs/`. Fonte de verdade permanece íntegra em `.sdd/memory/tasks.md` (sobrescrito por sprint) + histórico de commits (`test`/`feat`/`refactor(TASK-NNN)`) + ADRs. Não reconstruído retroativamente para evitar fabricar detalhe BDD sem fonte confiável — se precisar do arquivo formal de uma sprint passada, gerar sob demanda a partir do `tasks.md` daquele commit + `git log`.
 - **TASK-042 (REQ-026, Sprint 11) entregue sem teste** — feat commit (`13f623c`) sem commit `test` correspondente e sem commit de CR (`docs: change request`) próprio; débito herdado já causou 1 falha de gate na Sprint 12 (ver métricas abaixo). Não corrigido retroativamente nesta rodada (Fase 11 é revisão/documentação, não implementação) — próxima sprint que tocar o fluxo de transferência mobile deve cobrir com teste antes de qualquer outra mudança no mesmo arquivo.
+- **Autorização sem defesa em profundidade** — `src/proxy.ts` (ex-`middleware.ts`, convenção Next 16) só renova a expiração do cookie e limpa JWT inválido; requisição sem sessão segue adiante (`NextResponse.next()`). A verificação de papel é feita manualmente em cada handler, então uma rota nova esquecida nasce aberta. Tolerável em rede local; endereçar antes da exposição pública (Etapa 7).
 - **`keys.db` segue rastreado no git** (viola constitution §4.5) — registrado desde a Sprint 13, ainda não corrigido; requer `git rm --cached keys.db` + entrada em `.gitignore`.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*

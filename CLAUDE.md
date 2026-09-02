@@ -44,14 +44,20 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 11 (Revisão de Sprint, Release Governance e Atualização de Artefatos)
-- Sprint/Task Ativa: Nenhuma ativa. Sprint 15 concluída.
-- Última Ação: Executada sprint (TDD) da TASK-052 para implementar a nova ordem das abas na UI no `DashboardClient.tsx`. Commitado e testado.
-- Próxima Ação: Aguardando nova task ou sprint do usuário, ou a abertura de Pull Request para a branch `feature/sprint-15-ordem-abas`.
-- Decisões em aberto: Nenhuma.
-- Arquivos não commitados: N/A
-- Branch atual: feature/sprint-15-ordem-abas (a criar/mover)
-- Atualizado em: 2026-07-18
+- Fase: 8-10 (execução de sprint) — Sprint 16, Etapa 1 de 7 da migração Supabase/Vercel
+- Sprint/Task Ativa: Sprint 16 concluída (TASK-053, TASK-054, TASK-055). Etapa 1 de 7 fechada.
+- Última Ação: Corrigidos os 3 defeitos bloqueadores para exposição pública, ainda em SQLite,
+  via TDD (red→green comprovado em cada task). 103 testes passando (eram 80), tsc e lint limpos.
+  Migration de normalização validada contra cópia do backup de produção.
+- Próxima Ação: Etapa 2 — filtros de usuário/chave/ação no histórico. Depois: Etapa 3 (schema
+  Postgres com índices e timestamptz), 4 (camada de dados async), 5 (Realtime no lugar dos
+  4 pollings de 3s), 6 (logs estruturados em tabela), 7 (deploy Vercel + ping GitHub Actions).
+- Decisões em aberto: ADR do Change Request Tipo D (mudança de stack) ainda não redigido —
+  obrigatório antes da Etapa 3, que é a primeira a tocar a stack.
+- Arquivos não commitados: plan.md e CLAUDE.md (este checkpoint)
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada)
+- Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
+- Atualizado em: 2026-09-02
 ```
 
 ---
