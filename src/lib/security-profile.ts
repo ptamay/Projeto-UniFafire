@@ -25,8 +25,14 @@ export function checkRateLimit(ip: string): boolean {
 }
 
 // ACCOUNT LOCKOUT (SQLite)
-// Limite: 5 tentativas falhas em 15 minutos
+// TASK-053 (Sprint 16) — o bloqueio é por CONTA, não por endereço de rede.
+// Contar falhas por IP com o mesmo limiar da conta transborda em rede
+// institucional: no NAT do campus todos os usuários compartilham um único IP
+// público, e cinco erros de senha de uma pessoa trancariam todo mundo por 15
+// minutos. O IP mantém um limiar próprio, muito mais alto, apenas para conter
+// força bruta distribuída (varredura de vários usernames a partir de um host).
 const LOCKOUT_MAX_ATTEMPTS = 5;
+export const IP_LOCKOUT_MAX_ATTEMPTS = 50;
 const LOCKOUT_WINDOW_MINUTES = 15;
 
 export function ensureLoginAttemptsTable() {
@@ -45,34 +51,55 @@ export function ensureLoginAttemptsTable() {
     }
 }
 
+/** Início da janela de lockout, em ISO UTC — mesmo formato gravado por recordLoginAttempt. */
+function windowStartIso(): string {
+    return new Date(Date.now() - LOCKOUT_WINDOW_MINUTES * 60 * 1000).toISOString();
+}
+
 export function recordLoginAttempt(username: string, ip: string, success: boolean) {
     ensureLoginAttemptsTable();
-    db.prepare('INSERT INTO login_attempts (username, ip, success) VALUES (?, ?, ?)').run(
+    // Timestamp explícito em ISO UTC (e não o CURRENT_TIMESTAMP do SQLite): mesmo
+    // formato do resto das tabelas e comparável por faixa sem função de dialeto.
+    db.prepare('INSERT INTO login_attempts (username, ip, success, timestamp) VALUES (?, ?, ?, ?)').run(
         username,
         ip,
-        success ? 1 : 0
+        success ? 1 : 0,
+        new Date().toISOString()
     );
 }
 
-export function checkLockout(username: string, ip: string): boolean {
-    ensureLoginAttemptsTable();
-    // Check failed attempts for this username OR this IP in the last 15 minutes
-    // ONLY count failures that happened AFTER the most recent successful login.
-    const stmt = db.prepare(`
-        SELECT COUNT(*) as failures 
-        FROM login_attempts 
-        WHERE (username = ? OR ip = ?) 
-          AND success = 0 
-          AND timestamp > datetime('now', '-${LOCKOUT_WINDOW_MINUTES} minutes')
-    `);
-    const result = stmt.get(username, ip) as { failures: number };
-    
-    return result.failures >= LOCKOUT_MAX_ATTEMPTS;
+function countFailures(column: 'username' | 'ip', value: string): number {
+    const row = db.prepare(`
+        SELECT COUNT(*) as failures
+        FROM login_attempts
+        WHERE ${column} = ?
+          AND success = 0
+          AND timestamp > ?
+    `).get(value, windowStartIso()) as { failures: number };
+    return row.failures;
 }
 
-export function clearLoginAttempts(username: string, ip: string) {
-    // Como a auditoria agora é 100% concentrada na tabela action_logs,
-    // a tabela login_attempts pode ser efêmera (apenas para bloqueio temporário).
-    // Podemos deletar os registros para limpar o bloqueio sem perder auditoria.
-    db.prepare('DELETE FROM login_attempts WHERE username = ? OR ip = ?').run(username, ip);
+/**
+ * Bloqueio temporário. Retorna true se a CONTA excedeu o limite de falhas, ou se
+ * o IP apresenta volume anômalo de falhas (força bruta distribuída) — este último
+ * com limiar alto o bastante para não penalizar uma rede compartilhada legítima.
+ */
+export function checkLockout(username: string | undefined | null, ip: string): boolean {
+    ensureLoginAttemptsTable();
+
+    if (username && countFailures('username', username) >= LOCKOUT_MAX_ATTEMPTS) {
+        return true;
+    }
+
+    return countFailures('ip', ip) >= IP_LOCKOUT_MAX_ATTEMPTS;
+}
+
+/**
+ * Limpa as tentativas falhas da CONTA após login bem-sucedido.
+ * TASK-053: não apaga por IP — em rede compartilhada isso zeraria o contador de
+ * outras contas sob ataque sempre que qualquer pessoa do campus logasse.
+ * A auditoria permanece integral em action_logs (REQ-010).
+ */
+export function clearLoginAttempts(username: string) {
+    db.prepare('DELETE FROM login_attempts WHERE username = ?').run(username);
 }

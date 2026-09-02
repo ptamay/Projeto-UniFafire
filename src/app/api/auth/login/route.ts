@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         }
 
         // --- Fluxo de sucesso ---
-        clearLoginAttempts(user.username, ip); // Reseta as falhas
+        clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
 
         let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova
