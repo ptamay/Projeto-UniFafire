@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
+import { formatTimestamp } from '@/lib/time-filters';
 
 interface BusinessMetrics {
     totalTransactions: number;
@@ -107,7 +108,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
 
         const tableColumn = ["Data/Hora", "Ação", "Chave", "Funcionário", "Confirmado por"];
         const tableRows = history.map(item => [
-            new Date(item.timestamp).toLocaleString('pt-BR'),
+            formatTimestamp(item.timestamp),
             item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução',
             `${item.key_name} (${item.room})`,
             item.employee_name || '-',
@@ -286,7 +287,7 @@ export default function HistoryClient({ history, userRole, username, initialFilt
                             <tbody>
                                 {history.map((item) => (
                                     <tr key={item.id}>
-                                        <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(item.timestamp).toLocaleString('pt-BR')}</td>
+                                        <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{formatTimestamp(item.timestamp)}</td>
                                         <td data-label="Ação">
                                             {/* Idioma ação→cor: retirada=âmbar, transferência=roxo, devolução=verde —
                                                 o mesmo das Confirmações (antes: rosa de "em uso", outro significado). */}

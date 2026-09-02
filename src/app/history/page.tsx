@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import db from '@/lib/db';
+import { localDayRangeUtc, localMonthRangeUtc, localHourToUtcHour } from '@/lib/time-filters';
 import HistoryClient, { type HistoryItem } from './HistoryClient';
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ page?: string, date?: string, month?: string, hour?: string }> }) {
@@ -40,17 +41,23 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     const conditions: string[] = [];
     const params: (string | number)[] = [];
 
+    // TASK-055: os filtros chegam no fuso de quem opera (Recife) e a coluna está
+    // em UTC. Comparar por faixa [início, fim) converte corretamente e mantém a
+    // condição sargável — DATE()/strftime() sobre a coluna impedem uso de índice.
     if (date) {
-        conditions.push('DATE(h.timestamp) = DATE(?)');
-        params.push(date);
+        const { startIso, endIso } = localDayRangeUtc(date);
+        conditions.push('h.timestamp >= ? AND h.timestamp < ?');
+        params.push(startIso, endIso);
     }
     if (month) {
-        conditions.push("strftime('%Y-%m', h.timestamp) = ?");
-        params.push(month);
+        const { startIso, endIso } = localMonthRangeUtc(month);
+        conditions.push('h.timestamp >= ? AND h.timestamp < ?');
+        params.push(startIso, endIso);
     }
     if (hour) {
+        // Hora-do-dia é cíclica: não delimita faixa, compara o campo hora em UTC.
         conditions.push("strftime('%H', h.timestamp) = ?");
-        params.push(hour.padStart(2, '0'));
+        params.push(localHourToUtcHour(hour));
     }
 
     if (conditions.length > 0) {

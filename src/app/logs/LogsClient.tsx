@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
+import { formatTimestamp } from '@/lib/time-filters';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
 
@@ -168,7 +169,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                     onClick={() => {
                                         if (logs.length === 0) return;
                                         const csv = 'Data/Hora,Usuário,Ação Realizada,Alvo,Endereço IP,Detalhes\n' + 
-                                            logs.map(l => `"${new Date(l.timestamp).toLocaleString('pt-BR')}","${l.username || ''}","${l.action || ''}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
+                                            logs.map(l => `"${formatTimestamp(l.timestamp)}","${l.username || ''}","${l.action || ''}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
                                         
                                         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                                         const url = URL.createObjectURL(blob);
@@ -204,7 +205,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                                         const isSecurityEvent = ['LOGIN_FAILED', 'RATE_LIMIT_EXCEEDED', 'ACCOUNT_LOCKOUT', 'CHANGE_PASSWORD', 'PASSWORD_RESET', 'TRANSACTION_BYPASS', 'CLEAR_DATABASE', 'CLEAR_HISTORY'].includes(log.action || '');
                                         return (
                                         <tr key={log.id}>
-                                            <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{new Date(log.timestamp).toLocaleString('pt-BR')}</td>
+                                            <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{formatTimestamp(log.timestamp)}</td>
                                             <td data-label="Usuário"><strong>{log.username}</strong></td>
                                             <td data-label="Ação">
                                                 <span style={{

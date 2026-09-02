@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { localDayRangeUtc, localMonthRangeUtc, localHourToUtcHour } from '@/lib/time-filters';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 
@@ -50,19 +51,22 @@ export async function GET(request: Request) {
             params.push(searchParam, searchParam, searchParam, searchParam);
         }
 
+        // TASK-055: filtros no fuso do operador contra coluna em UTC — ver history/page.tsx.
         if (date) {
-            conditions.push('DATE(timestamp) = DATE(?)');
-            params.push(date);
+            const { startIso, endIso } = localDayRangeUtc(date);
+            conditions.push('timestamp >= ? AND timestamp < ?');
+            params.push(startIso, endIso);
         }
 
         if (month) {
-            conditions.push("strftime('%Y-%m', timestamp) = ?");
-            params.push(month);
+            const { startIso, endIso } = localMonthRangeUtc(month);
+            conditions.push('timestamp >= ? AND timestamp < ?');
+            params.push(startIso, endIso);
         }
 
         if (hour) {
             conditions.push("strftime('%H', timestamp) = ?");
-            params.push(hour.padStart(2, '0'));
+            params.push(localHourToUtcHour(hour));
         }
 
         if (conditions.length > 0) {
