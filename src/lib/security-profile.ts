@@ -1,26 +1,58 @@
 import db from './db';
 
-// RATE LIMITER (In-Memory para servidor PM2 local)
-// Limite: 30 requests por minuto por IP
-const RATE_LIMIT_MAX = 30;
+// RATE LIMITER (persistente em banco)
+// TASK-054 (Sprint 16) — o contador vivia num Map do processo. Sob PM2, com uma
+// instância única e longeva, isso funcionava; em serverless cada invocação pode
+// cair numa instância diferente e o Map zera a cada cold start, de modo que o
+// limite efetivo vira "30 × número de lambdas ativas" e reseta sem previsão.
+// O estado passa a viver no banco, único ponto compartilhado por todas as
+// instâncias. Janela deslizante de 1 minuto por (escopo, identificador).
+export const RATE_LIMIT_MAX = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const rateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
-export function checkRateLimit(ip: string): boolean {
+export function ensureRateLimitTable() {
+    try {
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS rate_limit_hits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scope TEXT NOT NULL,
+                identifier TEXT NOT NULL,
+                hit_at INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup
+                ON rate_limit_hits (scope, identifier, hit_at);
+        `);
+    } catch (error) {
+        console.error('Error ensuring rate_limit_hits table:', error);
+    }
+}
+
+/**
+ * Consome uma unidade da cota de `identifier` no `scope`. Retorna false quando a
+ * cota da janela já se esgotou — nesse caso nada é gravado, para que um cliente
+ * já bloqueado não consiga estender o próprio bloqueio indefinidamente.
+ *
+ * `hit_at` é epoch em milissegundos (INTEGER): comparação por faixa sem depender
+ * de formato de data ou de função específica do dialeto, o que mantém o mesmo
+ * código válido em SQLite e Postgres.
+ */
+export function checkRateLimit(identifier: string, scope = 'login'): boolean {
+    ensureRateLimitTable();
+
     const now = Date.now();
-    let record = rateLimitMap.get(ip);
+    const cutoff = now - RATE_LIMIT_WINDOW_MS;
 
-    if (!record || now > record.expiresAt) {
-        record = { count: 1, expiresAt: now + RATE_LIMIT_WINDOW_MS };
-        rateLimitMap.set(ip, record);
-        return true;
-    }
+    // Poda global: mantém a tabela pequena sem precisar de job dedicado.
+    db.prepare('DELETE FROM rate_limit_hits WHERE hit_at < ?').run(cutoff);
 
-    if (record.count >= RATE_LIMIT_MAX) {
-        return false;
-    }
+    const { hits } = db.prepare(
+        'SELECT COUNT(*) as hits FROM rate_limit_hits WHERE scope = ? AND identifier = ? AND hit_at >= ?'
+    ).get(scope, identifier, cutoff) as { hits: number };
 
-    record.count++;
+    if (hits >= RATE_LIMIT_MAX) return false;
+
+    db.prepare('INSERT INTO rate_limit_hits (scope, identifier, hit_at) VALUES (?, ?, ?)')
+        .run(scope, identifier, now);
     return true;
 }
 
