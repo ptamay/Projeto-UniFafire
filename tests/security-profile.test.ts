@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts, IP_LOCKOUT_MAX_ATTEMPTS } from '@/lib/security-profile';
+import { describe, it, expect, vi } from 'vitest';
+import db from '@/lib/db';
+import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts, IP_LOCKOUT_MAX_ATTEMPTS, RATE_LIMIT_MAX } from '@/lib/security-profile';
 
 // TASK-035 — reativação (ex src/lib/security-profile.test.old): rate limit 30 req/min
 // e lockout 5 falhas/15min (REQ-012).
@@ -69,5 +70,46 @@ describe('TASK-053 — lockout em IP compartilhado (NAT do campus)', () => {
         clearLoginAttempts('outra_conta_qualquer');
 
         expect(checkLockout('conta_atacada', sharedIp), 'bloqueio da conta atacada deve permanecer').toBe(true);
+    });
+});
+
+// TASK-054 (Sprint 16) — o rate limit não pode viver na memória do processo.
+// Em serverless cada instância tem o seu Map e ele zera a cada cold start: o
+// limite efetivo vira "30 × número de lambdas", resetando de forma imprevisível.
+describe('TASK-054 — rate limit persistente (serverless)', () => {
+    it('o contador sobrevive a uma nova instância do módulo (cold start)', async () => {
+        const ip = '198.51.100.9';
+        for (let i = 0; i < RATE_LIMIT_MAX; i++) {
+            expect(checkRateLimit(ip), `req ${i + 1} deveria passar`).toBe(true);
+        }
+        expect(checkRateLimit(ip)).toBe(false);
+
+        // Simula outra instância da função: registro de módulos zerado, banco intacto.
+        vi.resetModules();
+        const fresh = await import('@/lib/security-profile');
+
+        expect(fresh.checkRateLimit(ip), 'nova instância deve manter o bloqueio').toBe(false);
+    });
+
+    it('registra os hits no banco, não em memória', () => {
+        const ip = '198.51.100.10';
+        checkRateLimit(ip);
+        checkRateLimit(ip);
+
+        const row = db.prepare(
+            "SELECT COUNT(*) as n FROM rate_limit_hits WHERE scope = 'login' AND identifier = ?"
+        ).get(ip) as { n: number };
+        expect(row.n).toBe(2);
+    });
+
+    it('libera novamente quando a janela expira', () => {
+        const ip = '198.51.100.11';
+        for (let i = 0; i < RATE_LIMIT_MAX; i++) checkRateLimit(ip);
+        expect(checkRateLimit(ip)).toBe(false);
+
+        // Envelhece os hits para fora da janela de 1 minuto
+        db.prepare("UPDATE rate_limit_hits SET hit_at = hit_at - 120000 WHERE identifier = ?").run(ip);
+
+        expect(checkRateLimit(ip), 'após a janela deve liberar').toBe(true);
     });
 });
