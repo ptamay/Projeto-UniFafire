@@ -44,18 +44,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — Etapas 1 e 2 de 7 da migração concluídas
-- Sprint/Task Ativa: Nenhuma. Sprints 16, 17 e 18 concluídas.
-- Última Ação: TASK-058 — corrigido erro de hidratação pré-existente (render dependente do
-  relógio no HistoryClient e no DashboardClient). 125 testes passando, tsc e lint limpos,
-  todos os 6 gates de CI verdes, verificado no navegador.
-- Próxima Ação: Etapa 3 — schema Postgres com índices e timestamptz. BLOQUEADA até o ADR do
-  Change Request Tipo D (mudança de stack) ser redigido e aprovado. Depois: Etapa 4 (camada
-  de dados async), 5 (Realtime no lugar dos 4 pollings de 3s), 6 (logs estruturados em
-  tabela), 7 (deploy Vercel + ping GitHub Actions).
-- Decisões em aberto: ADR do CR Tipo D — obrigatório antes da Etapa 3.
-- Arquivos não commitados: nenhum
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; contém Sprints 16, 17 e 18)
+- Fase: 11 (Change Request) — ADR-012 redigido, aguardando aprovação
+- Sprint/Task Ativa: Nenhuma. Sprints 16, 17 e 18 concluídas (Etapas 1 e 2 de 7).
+- Última Ação: Redigido docs/adr/ADR-012-migracao-supabase-vercel.md (CR Tipo D, status
+  Proposto). Nenhum artefato constitucional tocado — Tipo D exige aprovação antes.
+- Próxima Ação: AGUARDANDO APROVAÇÃO do usuário sobre o ADR-012. Se aprovado, na ordem:
+  (1) atualizar constitution.md §0, §1.3, §2.3, §2.6, §4.3, §7; (2) changelog do spec.md;
+  (3) lançar Etapas 3–7 como sprints no plan.md; (4) só então iniciar a Etapa 3 por TDD.
+- Decisões em aberto: aprovação do ADR-012. Também pendentes de decisão as três
+  divergências pré-existentes que ele documenta (Gate 2 de migrations é no-op, APP_ENV
+  citado na constitution mas ausente do código, keys.db rastreado no git).
+- Arquivos não commitados: CLAUDE.md (este checkpoint)
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16, 17 e 18)
 - Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
 - Atualizado em: 2026-09-02
 ```
