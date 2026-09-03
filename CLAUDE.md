@@ -44,20 +44,21 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 11 (Change Request) — ADR-012 redigido, aguardando aprovação
-- Sprint/Task Ativa: Nenhuma. Sprints 16, 17 e 18 concluídas (Etapas 1 e 2 de 7).
-- Última Ação: Redigido docs/adr/ADR-012-migracao-supabase-vercel.md (CR Tipo D, status
-  Proposto). Nenhum artefato constitucional tocado — Tipo D exige aprovação antes.
-- Próxima Ação: AGUARDANDO APROVAÇÃO do usuário sobre o ADR-012. Se aprovado, na ordem:
-  (1) atualizar constitution.md §0, §1.3, §2.3, §2.6, §4.3, §7; (2) changelog do spec.md;
-  (3) lançar Etapas 3–7 como sprints no plan.md; (4) só então iniciar a Etapa 3 por TDD.
-- Decisões em aberto: aprovação do ADR-012. Também pendentes de decisão as três
-  divergências pré-existentes que ele documenta (Gate 2 de migrations é no-op, APP_ENV
-  citado na constitution mas ausente do código, keys.db rastreado no git).
+- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 19 concluída
+- Sprint/Task Ativa: Nenhuma. Sprints 16, 17, 18 e 19 concluídas.
+- Última Ação: CR Tipo D aprovado e executado (constitution §0/§1.3/§2.3/§2.5/§2.6/§4.3/§7,
+  spec REQ-031 e REQ-032, plan Sprints 19–24). Sprint 19 fechada: Gate 2 de migrations passa
+  a reprovar de fato, APP_ENV implementado (§8), Retry-After em 429/423. 140 testes, 6 gates
+  verdes. TASK-062 revelou que o débito do keys.db estava obsoleto — nada a corrigir.
+- Próxima Ação: Sprint 20 — Etapa 3 (schema Postgres): TASK-063 a TASK-067. Está DESBLOQUEADA.
+  Primeira decisão da sprint: criar projeto Supabase (região São Paulo) — precisa do usuário.
+- Decisões em aberto: (1) banco dos testes na Etapa 4 — recomendação do ADR é Postgres em
+  container, decidir ao iniciar a Sprint 21; (2) expurgar keys.db do histórico antigo do git
+  exige reescrever história — baixo risco, o banco não tem secret.
 - Arquivos não commitados: CLAUDE.md (este checkpoint)
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16, 17 e 18)
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16–19)
 - Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
-- Atualizado em: 2026-09-02
+- Atualizado em: 2026-09-03
 ```
 
 ---
