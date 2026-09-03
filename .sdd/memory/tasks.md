@@ -75,34 +75,34 @@ booleano (`users.active`, `users.requires_password_change`, `keys.active`,
 (epoch em ms — a TASK-054 já o escolheu por ser comparável nos dois dialetos).
 
 **Critérios BDD**:
-- [ ] **Cenário**: Par UP/DOWN existe antes de qualquer aplicação
+- [x] **Cenário**: Par UP/DOWN existe antes de qualquer aplicação
       Dado o diretório de migrations Postgres definido em D1
       Quando a migration de baseline é criada
       Então o arquivo `.down.sql` existe **antes** de o `.up.sql` ser aplicado em qualquer banco
       E `node scripts/check-migrations.mjs <dir>` sai com código 0.
-- [ ] **Cenário**: Nenhum resíduo de dialeto SQLite no UP
+- [x] **Cenário**: Nenhum resíduo de dialeto SQLite no UP
       Dado o UP de baseline Postgres
       Quando ele é inspecionado pelo teste
       Então não contém `AUTOINCREMENT`, `DATETIME`, `INTEGER PRIMARY KEY` nem `RAISE(ABORT`
       E toda coluna de instante é `timestamptz`
       E toda chave primária de tabela nova é `GENERATED ALWAYS AS IDENTITY`.
-- [ ] **Cenário**: Colunas booleanas deixam de ser inteiros
+- [x] **Cenário**: Colunas booleanas deixam de ser inteiros
       Dado que `users.active`, `users.requires_password_change`, `keys.active` e
       `login_attempts.success` guardam 0/1 no SQLite
       Quando o schema Postgres é criado
       Então as quatro são `boolean`, com `DEFAULT true` onde o SQLite tinha `DEFAULT 1`.
-- [ ] **Cenário**: Aplicação real no Supabase
+- [x] **Cenário**: Aplicação real no Supabase
       Dado o projeto `nkhoyvgnevtwlkheknxu` com `public` vazio
       Quando o UP é aplicado
       Então `list_tables` retorna as 9 tabelas de negócio (`users`, `keys`,
       `key_transactions`, `history`, `action_logs`, `audit_logs`, `login_attempts`,
       `settings`, `rate_limit_hits`)
       E as chaves estrangeiras equivalentes às do `keys.db` estão declaradas.
-- [ ] **Cenário**: DOWN devolve o schema ao estado anterior
+- [x] **Cenário**: DOWN devolve o schema ao estado anterior
       Dado o UP aplicado
       Quando o DOWN é aplicado
       Então `public` volta a não ter nenhuma das tabelas criadas pelo UP.
-- [ ] **Cenário**: Mapeamento de dialeto fica registrado para a Sprint 21
+- [x] **Cenário**: Mapeamento de dialeto fica registrado para a Sprint 21
       Dado que `json_build_object`, `RETURNING id` e `ON CONFLICT DO NOTHING` são
       conversões de consulta, não de schema
       Quando a task fecha
