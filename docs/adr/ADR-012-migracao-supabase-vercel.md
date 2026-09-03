@@ -222,9 +222,14 @@ exatamente na área que ela toca, e corrigi-las antes evita carregá-las para a 
    mecanismo que nunca foi implementado. Relevante agora porque §8 é justamente o que
    deveria impedir relaxamento de segurança em produção.
 
-3. **`keys.db` ainda rastreado no git** (viola §4.5) — débito já registrado no `plan.md`
-   desde a Sprint 13. A migração o torna irrelevante, mas o arquivo continuaria no
-   histórico do repositório.
+3. ~~**`keys.db` ainda rastreado no git**~~ — **este item estava errado.** Verificado na
+   Sprint 19 (TASK-062): `git ls-files` não retorna nenhum `.db`/`.sqlite`, e a remoção já
+   havia sido feita em `23c6bcd`, `2e83857` e `5874d62`. O ADR repetiu um débito obsoleto
+   do `plan.md` sem reverificá-lo contra o repositório. Resta apenas o arquivo nos commits
+   antigos do histórico, cujo expurgo é decisão à parte.
+
+4. **429 sem `Retry-After`** — encontrada ao reescrever §2.6: `login/route.ts:30` devolvia
+   o status sem o header que a cláusula exige. Corrigida na TASK-061.
 
 ---
 

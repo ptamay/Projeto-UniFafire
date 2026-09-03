@@ -165,15 +165,15 @@
 > migração — é defeito pré-existente que a verificação expôs.
 - [x] TASK-058 → eliminar render dependente do relógio no SSR. O componente é renderizado no servidor e de novo na hidratação; onde a saída dependia do relógio, o React acusava "Hydration failed" e descartava a árvore vinda do servidor. Corrida por natureza: sumia quando SSR e hidratação caíam no mesmo segundo, o que fazia o erro parecer ruído. Guard estático no fonte + regra de atraso tornada pura (`findDelayedKeys`). test→fix.
 
-### Sprint 19 — Higiene Constitucional (pré-requisito das Etapas 3–7)
+### Sprint 19 ✅ — Higiene Constitucional (pré-requisito das Etapas 3–7)
 > Divergências entre a `constitution.md` e o código, achadas ao levantar o impacto do
 > ADR-012. Não são causadas pela migração, mas todas caem na área que ela toca — e são
 > justamente os mecanismos que deveriam proteger a virada. Ir para a internet com eles
 > inertes é o pior momento possível, então vêm ANTES da Etapa 3.
-- [ ] TASK-059 → **Gate 2 de migrations passa a rodar de fato.** `scripts/ci-gates.sh` procura UPs em `supabase/migrations/*.sql` e `migrations/*.sql`; as migrações reais vivem em `db/migrations/`. Nenhum dos dois existe, então o gate imprime "Nenhuma migration encontrada — pulando" e passa sempre — nunca reprovou nada. O pareamento está coberto por `tests/migrations.test.ts`, não pelo gate. Corrigir o caminho e provar que o gate REPROVA um UP sem DOWN. test→fix.
-- [ ] TASK-060 → **`APP_ENV` implementado** conforme constitution §8. A cláusula manda todo controle ler o perfil de ambiente de `src/lib/security-profile.ts`; não há uma ocorrência de `APP_ENV` no projeto e os controles usam constantes fixas. Implementar o perfil (`dev` | `production`) com o que §8 declara relaxável (lockout, rate limit) e o que nunca é. Default seguro: ausência de `APP_ENV` = `production`. test→feat.
-- [ ] TASK-061 → **`Retry-After` na resposta 429** (constitution §2.6). `login/route.ts:30` devolve 429 sem o header que a cláusula exige. Divergência de mesma classe que as anteriores, encontrada ao reescrever §2.6. test→fix.
-- [ ] TASK-062 → **`keys.db` removido do rastreamento do git** (constitution §4.5). Débito registrado desde a Sprint 13. `git rm --cached keys.db`; o `.gitignore` já cobre o padrão. Nota: o arquivo permanece no histórico do repositório — remover de lá exige reescrita de história, decisão à parte.
+- [x] TASK-059 → **Gate 2 de migrations passa a rodar de fato.** `scripts/ci-gates.sh` procura UPs em `supabase/migrations/*.sql` e `migrations/*.sql`; as migrações reais vivem em `db/migrations/`. Nenhum dos dois existe, então o gate imprime "Nenhuma migration encontrada — pulando" e passa sempre — nunca reprovou nada. O pareamento está coberto por `tests/migrations.test.ts`, não pelo gate. Corrigir o caminho e provar que o gate REPROVA um UP sem DOWN. test→fix.
+- [x] TASK-060 → **`APP_ENV` implementado** conforme constitution §8. A cláusula manda todo controle ler o perfil de ambiente de `src/lib/security-profile.ts`; não há uma ocorrência de `APP_ENV` no projeto e os controles usam constantes fixas. Implementar o perfil (`dev` | `production`) com o que §8 declara relaxável (lockout, rate limit) e o que nunca é. Default seguro: ausência de `APP_ENV` = `production`. test→feat.
+- [x] TASK-061 → **`Retry-After` na resposta 429** (constitution §2.6). `login/route.ts:30` devolve 429 sem o header que a cláusula exige. Divergência de mesma classe que as anteriores, encontrada ao reescrever §2.6. test→fix.
+- [x] TASK-062 → **nada a fazer no código — o registro é que estava errado.** Verificado com `git ls-files`: nenhum `.db`/`.sqlite` é rastreado hoje, e `git log --all -- keys.db` mostra a remoção já feita em `23c6bcd`, `2e83857` e `5874d62`. O débito no `plan.md` (e a divergência #3 do ADR-012, que o repetiu por confiar no registro em vez de verificar) estava obsoleto. **Pendência real remanescente:** o arquivo continua nos commits antigos do histórico; expurgá-lo exige reescrever história — decisão à parte, registrada abaixo.
 
 ### Sprint 20 — Etapa 3: Schema Postgres (ADR-012)
 > Primeira sprint que toca a stack. Só começa com a Sprint 19 fechada.
@@ -209,7 +209,7 @@
 
 ### Decisões pendentes das Etapas 3–7
 - **Banco dos testes (Etapa 4).** Os 125 testes usam SQLite em memória (`MOCK_DB_IN_MEMORY`). Recomendação do ADR-012: Postgres real em container — testar contra dialeto diferente do de produção anula boa parte da garantia. Decidir ao iniciar a Sprint 21.
-- **`keys.db` no histórico do git.** A TASK-062 tira do rastreamento, mas o arquivo continua nos commits antigos. Remover exige reescrever história da branch — decisão do usuário.
+- **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
@@ -222,7 +222,7 @@
 - **TASK-042 (REQ-026, Sprint 11) entregue sem teste** — feat commit (`13f623c`) sem commit `test` correspondente e sem commit de CR (`docs: change request`) próprio; débito herdado já causou 1 falha de gate na Sprint 12 (ver métricas abaixo). Não corrigido retroativamente nesta rodada (Fase 11 é revisão/documentação, não implementação) — próxima sprint que tocar o fluxo de transferência mobile deve cobrir com teste antes de qualquer outra mudança no mesmo arquivo.
 - **Autorização sem defesa em profundidade** — `src/proxy.ts` (ex-`middleware.ts`, convenção Next 16) só renova a expiração do cookie e limpa JWT inválido; requisição sem sessão segue adiante (`NextResponse.next()`). A verificação de papel é feita manualmente em cada handler, então uma rota nova esquecida nasce aberta. Tolerável em rede local; endereçar antes da exposição pública (Etapa 7).
 - ~~**Erro de hidratação pré-existente**~~ — **quitado (TASK-058, 2026-09-02):** dois pontos, ambos anteriores ao ciclo de migração. `HistoryClient` renderizava `new Date().toLocaleString()` direto no JSX (commit original `95af5ac`); `DashboardClient` calculava as chaves em atraso dentro de `useMemo` a partir de `new Date().getTime()`, e o `useMemo` roda no SSR. A regra de atraso saiu para `business-rules.findDelayedKeys(keys, now)` — pura, recebe o instante como argumento — e os dois componentes passaram a usar `useClientClock` (`useSyncExternalStore`), que devolve nulo no SSR e na hidratação. Medido antes do fix: três renders do servidor devolviam `14:01:38`, `:41` e `:43` contra `14:01:08` no cliente.
-- **`keys.db` segue rastreado no git** (viola constitution §4.5) — registrado desde a Sprint 13, ainda não corrigido; requer `git rm --cached keys.db` + entrada em `.gitignore`.
+- ~~**`keys.db` segue rastreado no git**~~ — **registro obsoleto, corrigido na TASK-062 (2026-09-03):** a remoção já havia sido feita em `23c6bcd`/`2e83857`/`5874d62` e nenhum `.db` é rastreado hoje. O débito permaneceu no `plan.md` por várias sprints descrevendo um problema inexistente — e chegou a ser propagado para o ADR-012. **Lição:** débito herdado deve ser reverificado antes de ser repetido em documento novo. Resta apenas o arquivo no histórico antigo de commits (ver decisão pendente).
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
