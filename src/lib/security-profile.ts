@@ -1,5 +1,24 @@
 import db from './db';
 
+// PERFIL DE AMBIENTE (constitution §8)
+// TASK-060 (Sprint 19) — §8 determina um perfil único dirigido por APP_ENV, do
+// qual todo controle lê: "nunca checa ambiente por conta própria". A cláusula
+// existia desde a Fase 6 mas nunca foi implementada — não havia uma única
+// ocorrência de APP_ENV no projeto e os controles usavam constantes fixas.
+//
+// O default é `production`: ausência ou erro de configuração nunca pode relaxar
+// um controle de segurança. Só o literal exato 'dev' seleciona o perfil frouxo.
+export type AppEnv = 'dev' | 'production';
+
+export function appEnv(): AppEnv {
+    return process.env.APP_ENV === 'dev' ? 'dev' : 'production';
+}
+
+/** §8 — relaxável apenas em dev: lockout e rate limit. */
+function controlesRelaxados(): boolean {
+    return appEnv() === 'dev';
+}
+
 // RATE LIMITER (persistente em banco)
 // TASK-054 (Sprint 16) — o contador vivia num Map do processo. Sob PM2, com uma
 // instância única e longeva, isso funcionava; em serverless cada invocação pode
@@ -8,7 +27,7 @@ import db from './db';
 // O estado passa a viver no banco, único ponto compartilhado por todas as
 // instâncias. Janela deslizante de 1 minuto por (escopo, identificador).
 export const RATE_LIMIT_MAX = 30;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+export const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 export function ensureRateLimitTable() {
     try {
@@ -37,6 +56,9 @@ export function ensureRateLimitTable() {
  * código válido em SQLite e Postgres.
  */
 export function checkRateLimit(identifier: string, scope = 'login'): boolean {
+    // §8: desligado em dev. Nunca em production.
+    if (controlesRelaxados()) return true;
+
     ensureRateLimitTable();
 
     const now = Date.now();
@@ -65,7 +87,7 @@ export function checkRateLimit(identifier: string, scope = 'login'): boolean {
 // força bruta distribuída (varredura de vários usernames a partir de um host).
 const LOCKOUT_MAX_ATTEMPTS = 5;
 export const IP_LOCKOUT_MAX_ATTEMPTS = 50;
-const LOCKOUT_WINDOW_MINUTES = 15;
+export const LOCKOUT_WINDOW_MINUTES = 15;
 
 export function ensureLoginAttemptsTable() {
     try {
@@ -117,6 +139,10 @@ function countFailures(column: 'username' | 'ip', value: string): number {
  * com limiar alto o bastante para não penalizar uma rede compartilhada legítima.
  */
 export function checkLockout(username: string | undefined | null, ip: string): boolean {
+    // §8: desligado em dev. O registro das tentativas continua sendo gravado —
+    // relaxar o controle não apaga trilha de auditoria (REQ-010).
+    if (controlesRelaxados()) return false;
+
     ensureLoginAttemptsTable();
 
     if (username && countFailures('username', username) >= LOCKOUT_MAX_ATTEMPTS) {
