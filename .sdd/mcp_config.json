@@ -5,7 +5,8 @@
       "adicionado_em": "2026-09-03",
       "motivo": "ADR-012 — Etapa 3 em diante (Sprints 20 a 24): criação do schema Postgres, aplicação de migrations, verificação de carga de dados e consulta à documentação do provedor.",
       "projeto": "nkhoyvgnevtwlkheknxu",
-      "regiao_esperada": "sa-east-1 (São Paulo) — exigência de §0 por conta da PII de alunos e funcionários. CONFIRMAR na primeira sessão autenticada.",
+      "regiao": "sa-east-1 (São Paulo) — CONFIRMADA em 2026-09-03, conforme exigência de constitution §0 por conta da PII de alunos e funcionários.",
+      "regiao_como_foi_verificada": "db.nkhoyvgnevtwlkheknxu.supabase.co resolve para 2600:1f1e:b2a:a301:aab:b953:933d:33e0, que casa com o prefixo 2600:1f1e::/36 publicado pela AWS em ip-ranges.amazonaws.com como sa-east-1 (serviços AMAZON e EC2). Verificação indireta por DNS: a leitura direta dos metadados do projeto exigiria a feature 'account', recusada no escopo. Cross-check no painel do Supabase (Project Settings → General) é a confirmação autoritativa.",
       "transporte": "http",
       "features_habilitadas": ["docs", "database", "debugging", "development"],
       "features_recusadas": {
