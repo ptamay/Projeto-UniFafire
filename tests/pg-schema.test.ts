@@ -259,3 +259,76 @@ describe('TASK-063 — mapeamento de dialeto registrado para a Sprint 21', () =>
         expect(doc, 'o mapa precisa citar arquivos de src/ para ser acionável').toMatch(/src\/\S+\.ts/);
     });
 });
+
+// ---------------------------------------------------------------------------
+// TASK-064 — índices. O schema não declarava nenhum fora do
+// idx_rate_limit_hits_lookup (TASK-054): com 5 chaves e ~130 linhas na mesma
+// máquina isso não aparecia, mas sob rede cada varredura completa vira latência.
+//
+// O critério de EXPLAIN ("o plano usa o índice, não Seq Scan") não cabe aqui pelo
+// mesmo motivo da decisão D2 — não há conexão em banco nesta sprint. Ele é
+// verificado via MCP contra o Supabase e registrado no Report do Step 9.
+
+const INDICES_ESPERADOS: { nome: string; tabela: string; colunas: string }[] = [
+    { nome: 'idx_history_timestamp', tabela: 'history', colunas: 'timestamp DESC' },
+    { nome: 'idx_history_key_id', tabela: 'history', colunas: 'key_id' },
+    { nome: 'idx_history_user_id', tabela: 'history', colunas: 'user_id' },
+    { nome: 'idx_action_logs_timestamp', tabela: 'action_logs', colunas: 'timestamp DESC' },
+    { nome: 'idx_key_transactions_key_id_status', tabela: 'key_transactions', colunas: 'key_id, status' },
+    { nome: 'idx_key_transactions_user_id', tabela: 'key_transactions', colunas: 'user_id' },
+    { nome: 'idx_rate_limit_hits_lookup', tabela: 'rate_limit_hits', colunas: 'scope, identifier, hit_at' },
+];
+
+function migrationDeIndices() {
+    const m = listMigrations(PG_DIR).find(x => /indices/.test(x.name));
+    if (!m) throw new Error('migration de índices Postgres não encontrada');
+    return {
+        up: fs.readFileSync(m.upPath, 'utf-8'),
+        down: fs.readFileSync(m.downPath, 'utf-8'),
+    };
+}
+
+describe('TASK-064 — índices mínimos do ADR-012', () => {
+    it('BDD 1: os 7 índices são criados, com as colunas e a ordem certas', () => {
+        const up = semComentarios(migrationDeIndices().up);
+        for (const idx of INDICES_ESPERADOS) {
+            const criacao = new RegExp(
+                `CREATE\s+INDEX\s+${idx.nome}\s+ON\s+(?:public\.)?${idx.tabela}\s*\(\s*${
+                    idx.colunas.replace(/,\s*/g, '\s*,\s*').replace(/\s+/g, '\s+')
+                }\s*\)`,
+                'i',
+            );
+            expect(up, `índice ${idx.nome} ausente ou com colunas diferentes`).toMatch(criacao);
+        }
+    });
+
+    it('BDD 1: o índice de data do histórico é DESC', () => {
+        // A tela lista do mais recente para o mais antigo. Um índice ASC serve
+        // para a faixa, mas obriga a ordenação a ser refeita a cada página.
+        const up = semComentarios(migrationDeIndices().up);
+        expect(up).toMatch(/idx_history_timestamp[\s\S]*?timestamp\s+DESC/i);
+        expect(up).toMatch(/idx_action_logs_timestamp[\s\S]*?timestamp\s+DESC/i);
+    });
+
+    it('BDD 1: idx_rate_limit_hits_lookup é preservado da TASK-054', () => {
+        const up = semComentarios(migrationDeIndices().up);
+        expect(up, 'o índice que já existia no SQLite não pode se perder na virada')
+            .toMatch(/idx_rate_limit_hits_lookup/);
+    });
+
+    it('BDD 3: o DOWN remove exatamente os índices que o UP cria — e nada além', () => {
+        const { up, down } = migrationDeIndices();
+        const criados = [...semComentarios(up).matchAll(/CREATE\s+INDEX\s+(\w+)/gi)].map(m => m[1]);
+        const removidos = [...semComentarios(down).matchAll(/DROP\s+INDEX\s+(?:IF\s+EXISTS\s+)?(\w+)/gi)].map(m => m[1]);
+
+        expect(criados.length).toBe(INDICES_ESPERADOS.length);
+        expect(removidos.sort()).toEqual(criados.sort());
+    });
+
+    it('BDD 3: o DOWN não derruba tabela nem índice de constraint', () => {
+        const down = semComentarios(migrationDeIndices().down);
+        expect(down, 'DOWN de índices não mexe em tabela').not.toMatch(/DROP\s+TABLE/i);
+        expect(down, 'índice de PK/UNIQUE pertence à constraint, não a esta migration')
+            .not.toMatch(/DROP\s+INDEX\s+(?:IF\s+EXISTS\s+)?\w*_pkey/i);
+    });
+});
