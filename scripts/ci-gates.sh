@@ -45,29 +45,20 @@ if [ "$HAS_NODE" = 0 ] && [ "$HAS_PY" = 0 ]; then
   echo "  ⚠ Ecossistema não detectado (sem package.json/pyproject/requirements) — pulando"
 fi
 
-echo "▶ Gate 2 — Migrations UP têm DOWN pareado (segurança)"
-GATE2_FAIL=0
-FOUND_MIG=0
-for up in supabase/migrations/*.sql migrations/*.sql; do
-  [ -e "$up" ] || continue
-  FOUND_MIG=1
-  ts=$(basename "$up" | grep -oE '^[0-9]+' || true)
-  if [ -z "$ts" ]; then
-    echo "  ❌ Migration sem prefixo de timestamp: $up"
-    GATE2_FAIL=1
-    continue
+echo "▶ Gate 2 — Migrations UP têm DOWN pareado (segurança — constitution §4.1)"
+# TASK-059: delega a checagem a scripts/check-migrations.mjs, que reusa o
+# listMigrations() do runner. Antes o gate tinha glob próprio apontando para
+# supabase/migrations/ e migrations/ — nenhum dos dois existe neste projeto, e
+# o gate passava sempre sem verificar nada.
+if [ "$HAS_NODE" = 1 ] && [ -f scripts/check-migrations.mjs ]; then
+  if node scripts/check-migrations.mjs db/migrations; then
+    :
+  else
+    echo "  ❌ Migration sem DOWN pareado — BLOQUEADOR (constitution §4.1)"
+    FAIL=1
   fi
-  if ! ls db/migrations/${ts}*.sql >/dev/null 2>&1; then
-    echo "  ❌ Migration sem DOWN pareado: $up (timestamp $ts)"
-    GATE2_FAIL=1
-  fi
-done
-if [ "$FOUND_MIG" = 0 ]; then
-  echo "  ⚠ Nenhuma migration encontrada — pulando"
-elif [ "$GATE2_FAIL" -eq 0 ]; then
-  echo "  ✅ Todas as migrations têm DOWN pareado"
 else
-  FAIL=1
+  echo "  ⚠ node ou check-migrations.mjs indisponível — pulando"
 fi
 
 echo "▶ Gate 3 — Nenhum secret hardcoded (segurança — qualquer stack)"
