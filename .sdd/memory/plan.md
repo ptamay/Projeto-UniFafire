@@ -165,6 +165,52 @@
 > migração — é defeito pré-existente que a verificação expôs.
 - [x] TASK-058 → eliminar render dependente do relógio no SSR. O componente é renderizado no servidor e de novo na hidratação; onde a saída dependia do relógio, o React acusava "Hydration failed" e descartava a árvore vinda do servidor. Corrida por natureza: sumia quando SSR e hidratação caíam no mesmo segundo, o que fazia o erro parecer ruído. Guard estático no fonte + regra de atraso tornada pura (`findDelayedKeys`). test→fix.
 
+### Sprint 19 — Higiene Constitucional (pré-requisito das Etapas 3–7)
+> Divergências entre a `constitution.md` e o código, achadas ao levantar o impacto do
+> ADR-012. Não são causadas pela migração, mas todas caem na área que ela toca — e são
+> justamente os mecanismos que deveriam proteger a virada. Ir para a internet com eles
+> inertes é o pior momento possível, então vêm ANTES da Etapa 3.
+- [ ] TASK-059 → **Gate 2 de migrations passa a rodar de fato.** `scripts/ci-gates.sh` procura UPs em `supabase/migrations/*.sql` e `migrations/*.sql`; as migrações reais vivem em `db/migrations/`. Nenhum dos dois existe, então o gate imprime "Nenhuma migration encontrada — pulando" e passa sempre — nunca reprovou nada. O pareamento está coberto por `tests/migrations.test.ts`, não pelo gate. Corrigir o caminho e provar que o gate REPROVA um UP sem DOWN. test→fix.
+- [ ] TASK-060 → **`APP_ENV` implementado** conforme constitution §8. A cláusula manda todo controle ler o perfil de ambiente de `src/lib/security-profile.ts`; não há uma ocorrência de `APP_ENV` no projeto e os controles usam constantes fixas. Implementar o perfil (`dev` | `production`) com o que §8 declara relaxável (lockout, rate limit) e o que nunca é. Default seguro: ausência de `APP_ENV` = `production`. test→feat.
+- [ ] TASK-061 → **`Retry-After` na resposta 429** (constitution §2.6). `login/route.ts:30` devolve 429 sem o header que a cláusula exige. Divergência de mesma classe que as anteriores, encontrada ao reescrever §2.6. test→fix.
+- [ ] TASK-062 → **`keys.db` removido do rastreamento do git** (constitution §4.5). Débito registrado desde a Sprint 13. `git rm --cached keys.db`; o `.gitignore` já cobre o padrão. Nota: o arquivo permanece no histórico do repositório — remover de lá exige reescrita de história, decisão à parte.
+
+### Sprint 20 — Etapa 3: Schema Postgres (ADR-012)
+> Primeira sprint que toca a stack. Só começa com a Sprint 19 fechada.
+- [ ] TASK-063 → schema Postgres equivalente, com as conversões de dialeto mapeadas no ADR-012: `IDENTITY` no lugar de `AUTOINCREMENT`, `boolean` real, `timestamptz`, `json_build_object`, `RETURNING id` no lugar de `lastInsertRowid`, `ON CONFLICT DO NOTHING`.
+- [ ] TASK-064 → **índices** — o schema atual não declara nenhum. Mínimo: `history(timestamp DESC)`, `history(key_id)`, `history(user_id)`, `action_logs(timestamp DESC)`, `key_transactions(key_id, status)`, `key_transactions(user_id)`. Os filtros já foram tornados sargáveis na TASK-055.
+- [ ] TASK-065 → imutabilidade do histórico em PL/pgSQL + `REVOKE UPDATE, DELETE` (constitution §4.4). No Postgres fica mais forte que o trigger atual: o bypass de manutenção vira `set_config` com escopo transacional, dispensando a tabela-flag `_maintenance_mode`.
+- [ ] TASK-066 → consolidação de legado: `employees` está morta (0 linhas) mas ainda é `LEFT JOIN`ada; `keys` tem `employee_id` e `user_id` convivendo. Decidir e consolidar antes de carregar dados.
+- [ ] TASK-067 → carga dos dados de `keys.db` para o Postgres, com verificação de contagem por tabela. **Cópia, não movimentação** — o `keys.db` permanece íntegro (plano de reversão do ADR-012).
+
+### Sprint 21 — Etapa 4: Camada de Dados Assíncrona (ADR-012)
+> A maior das sete. 158 chamadas síncronas em 31 arquivos: `better-sqlite3` é síncrono
+> por design e qualquer driver Postgres é assíncrono — não há adaptador que evite isso.
+> Rede de segurança: a suíte de testes. Decisão pendente registrada abaixo.
+- [ ] TASK-068 → conexão via pooler (transaction mode). O proxy global e o `resetConnection()` de `src/lib/db.ts` não sobrevivem a instâncias efêmeras.
+- [ ] TASK-069 → conversão das consultas para assíncronas, incluindo os Server Components. `src/lib/history-query.ts` (TASK-056) já concentra a consulta do histórico.
+- [ ] TASK-070 → transações explícitas com client dedicado, no lugar de `db.transaction(() => ...)` (3 usos).
+- [ ] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`.
+
+### Sprint 22 — Etapa 5: Realtime (ADR-012 · REQ-032)
+> Onde o requisito que motivou a migração é efetivamente entregue.
+- [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
+- [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
+
+### Sprint 23 — Etapa 6: Logs Estruturados em Tabela (ADR-012)
+- [ ] TASK-074 → `structured-logger` passa a gravar em `app_logs` (constitution §7), com `REVOKE UPDATE, DELETE`. `app_logs` fora de `tablesToClear` — é o destino que precisa sobreviver ao REQ-014.
+- [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco.
+
+### Sprint 24 — Etapa 7: Deploy e Go-Live (ADR-012 · REQ-031)
+- [ ] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
+- [ ] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão.
+- [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). **Desativar** o endpoint de restore por cópia de arquivo, que deixa de funcionar — não deixar quebrado.
+- [ ] TASK-079 → deploy, ping agendado contra a pausa por inatividade, e remoção do aparato local (PM2, `.bat`, `show-ip.js`) apenas APÓS os 30 dias de retenção do plano de reversão.
+
+### Decisões pendentes das Etapas 3–7
+- **Banco dos testes (Etapa 4).** Os 125 testes usam SQLite em memória (`MOCK_DB_IN_MEMORY`). Recomendação do ADR-012: Postgres real em container — testar contra dialeto diferente do de produção anula boa parte da garantia. Decidir ao iniciar a Sprint 21.
+- **`keys.db` no histórico do git.** A TASK-062 tira do rastreamento, mas o arquivo continua nos commits antigos. Remover exige reescrever história da branch — decisão do usuário.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 

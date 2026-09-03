@@ -1,12 +1,20 @@
 # ADR-012: Migração para Supabase (Postgres) e Vercel
 
 **Data:** 2026-09-02
-**Status:** Proposto — aguardando aprovação explícita (Change Request **Tipo D**)
-**Change Request:** Tipo D — altera `constitution.md` §0, §1.3, §2.3, §2.6, §4.3 e §7
+**Status:** **Aceito** — aprovado pelo usuário em 2026-09-02 (Change Request **Tipo D**)
+**Change Request:** Tipo D — alterou `constitution.md` §0, §1.3, §2.3, **§2.5**, §2.6, §4.3 e §7
 
-> Tipo D exige aprovação **antes** de qualquer alteração em `constitution.md`.
-> Enquanto este ADR estiver como *Proposto*, nenhum artefato constitucional foi tocado
-> e nenhuma task de mudança de stack pode entrar em sprint.
+> **Aprovado em 2026-09-02.** `constitution.md`, `spec.md` (REQ-031, REQ-032) e `plan.md`
+> (Sprints 19–24) foram atualizados na sequência. Decisões registradas na aprovação:
+>
+> - **`/api/*` permanece sem prefixo de versão**, conforme proposto na seção §0 abaixo.
+> - **As divergências pré-existentes serão corrigidas antes da Etapa 3**, na Sprint 19.
+> - **§2.5 (lockout) entrou na lista** durante a execução: a cláusula dizia "por conta e
+>   por IP" com limiar único, exatamente o que a TASK-053 mudou de propósito. Mantê-la
+>   faria a lei máxima contradizer código já entregue.
+> - Uma **quarta divergência** foi encontrada ao reescrever §2.6: `login/route.ts:30`
+>   devolve 429 sem o header `Retry-After` que a cláusula exige. Incluída na Sprint 19
+>   como TASK-061.
 
 ---
 
@@ -72,11 +80,12 @@ dependerem da mudança de stack:
 |---|---|---|
 | 1 | Correções críticas pré-nuvem (Sprint 16) | ✅ entregue |
 | 2 | Filtros e paginação do histórico (Sprint 17) | ✅ entregue |
-| 3 | Schema Postgres — índices, `timestamptz`, consolidação de legado | bloqueada por este ADR |
-| 4 | Camada de dados assíncrona | bloqueada |
-| 5 | Realtime no lugar dos pollings | bloqueada |
-| 6 | Logs estruturados em tabela | bloqueada |
-| 7 | Deploy Vercel + ping GitHub Actions | bloqueada |
+| — | Higiene constitucional (Sprint 19) — pré-requisito acordado na aprovação | liberada |
+| 3 | Schema Postgres — índices, `timestamptz`, consolidação de legado (Sprint 20) | liberada |
+| 4 | Camada de dados assíncrona (Sprint 21) | liberada |
+| 5 | Realtime no lugar dos pollings (Sprint 22) | liberada |
+| 6 | Logs estruturados em tabela (Sprint 23) | liberada |
+| 7 | Deploy Vercel + ping GitHub Actions (Sprint 24) | liberada |
 
 ---
 
@@ -113,8 +122,9 @@ Não endereça nenhuma das três limitações.
 
 ## Impacto Constitucional
 
-Esta é a seção que caracteriza o CR como Tipo D. **Nenhuma destas cláusulas foi alterada
-ainda** — a lista é exatamente o que se pede aprovação para mudar.
+Esta é a seção que caracteriza o CR como Tipo D. **Todas as cláusulas abaixo já foram
+alteradas** na `constitution.md` após a aprovação de 2026-09-02 — o texto permanece aqui
+como registro do antes/depois e da justificativa de cada mudança.
 
 ### §0 — Contexto Constitucional
 
@@ -275,14 +285,14 @@ Aplicável enquanto o SQLite não for descartado.
 
 ---
 
-## Aprovação necessária
+## Aprovação — executada em 2026-09-02
 
-Este ADR não altera nada por si. Aprovar significa autorizar, **nesta ordem**:
+| # | Ação | Estado |
+|---|---|---|
+| 1 | `constitution.md` §0, §1.3, §2.3, §2.5, §2.6, §4.3 e §7 atualizadas | ✅ |
+| 2 | `spec.md` — changelog v2.0 + REQ-031 (operação fora do campus) e REQ-032 (sincronismo ≤ 500 ms) | ✅ |
+| 3 | `plan.md` — Sprints 19 a 24 lançadas | ✅ |
+| 4 | Etapa 3 iniciada pelo ciclo TDD | pendente da Sprint 19 |
 
-1. Atualizar `constitution.md` §0, §1.3, §2.3, §2.6, §4.3 e §7 conforme acima.
-2. Registrar no changelog do `spec.md` o REQ novo para exposição pública e sincronismo.
-3. Lançar as Etapas 3–7 como sprints no `plan.md`.
-4. Só então iniciar a Etapa 3 pelo ciclo TDD normal.
-
-As três divergências pré-existentes são apontamento independente: podem ser corrigidas
-antes, durante ou depois, mas não deveriam atravessar o go-live sem decisão consciente.
+As divergências pré-existentes foram aceitas para correção **antes** da Etapa 3, na
+Sprint 19 (TASK-059 a TASK-062) — decisão do usuário na aprovação.
