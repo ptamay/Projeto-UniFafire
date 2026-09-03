@@ -50,13 +50,19 @@ echo "▶ Gate 2 — Migrations UP têm DOWN pareado (segurança — constitutio
 # listMigrations() do runner. Antes o gate tinha glob próprio apontando para
 # supabase/migrations/ e migrations/ — nenhum dos dois existe neste projeto, e
 # o gate passava sempre sem verificar nada.
+#
+# TASK-063: durante a Etapa 3 do ADR-012 os dois dialetos coexistem. As
+# migrations Postgres vivem em db/migrations-pg/ porque db/migrate.mjs é
+# better-sqlite3 e aplicaria SQL Postgres contra o keys.db se elas dividissem
+# o mesmo diretório. Os DOIS caminhos são verificados: deixar o novo de fora
+# reintroduziria, do lado Postgres, exatamente o buraco que a TASK-059 fechou.
 if [ "$HAS_NODE" = 1 ] && [ -f scripts/check-migrations.mjs ]; then
-  if node scripts/check-migrations.mjs db/migrations; then
-    :
-  else
-    echo "  ❌ Migration sem DOWN pareado — BLOQUEADOR (constitution §4.1)"
-    FAIL=1
-  fi
+  for MIG_DIR in db/migrations db/migrations-pg; do
+    if ! node scripts/check-migrations.mjs "$MIG_DIR"; then
+      echo "  ❌ Migration sem DOWN pareado em $MIG_DIR — BLOQUEADOR (constitution §4.1)"
+      FAIL=1
+    fi
+  done
 else
   echo "  ⚠ node ou check-migrations.mjs indisponível — pulando"
 fi

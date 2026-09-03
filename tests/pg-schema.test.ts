@@ -59,6 +59,13 @@ function lerDown(): string {
     return fs.readFileSync(baseline.downPath, 'utf-8');
 }
 
+/** SQL sem os comentários `--`. As asserções de resíduo de dialeto olham o que o
+ *  banco executa, não a prosa: o cabeçalho da migration cita AUTOINCREMENT e
+ *  IF NOT EXISTS de propósito, para documentar o que cada conversão substituiu. */
+function semComentarios(sql: string): string {
+    return sql.replace(/--.*$/gm, '');
+}
+
 /** Corpo do CREATE TABLE de uma tabela: tudo entre o parêntese de abertura e o
  *  de fechamento correspondente. Contagem de parênteses, não regex guloso. */
 function corpoDaTabela(sql: string, tabela: string): string {
@@ -114,7 +121,7 @@ describe('TASK-063 — migrations Postgres pareadas e cobertas pelo Gate 2', () 
 
 describe('TASK-063 — nenhum resíduo de dialeto SQLite no UP', () => {
     it('BDD 2: não usa AUTOINCREMENT, DATETIME, INTEGER PRIMARY KEY nem RAISE(ABORT', () => {
-        const up = lerUp();
+        const up = semComentarios(lerUp());
         expect(up, 'AUTOINCREMENT é SQLite — use GENERATED ALWAYS AS IDENTITY').not.toMatch(/AUTOINCREMENT/i);
         expect(up, 'DATETIME é SQLite — use timestamptz').not.toMatch(/\bDATETIME\b/i);
         expect(up, 'INTEGER PRIMARY KEY é o rowid do SQLite').not.toMatch(/\bINTEGER\s+PRIMARY\s+KEY\b/i);
@@ -125,7 +132,7 @@ describe('TASK-063 — nenhum resíduo de dialeto SQLite no UP', () => {
         // A baseline SQLite precisava de IF NOT EXISTS porque rodava sobre um banco
         // legado já existente. O schema Postgres nasce vazio: aqui IF NOT EXISTS só
         // esconderia um UP aplicado duas vezes por engano.
-        expect(lerUp()).not.toMatch(/IF\s+NOT\s+EXISTS/i);
+        expect(semComentarios(lerUp())).not.toMatch(/IF\s+NOT\s+EXISTS/i);
     });
 
     it('BDD 2: toda chave primária é GENERATED ALWAYS AS IDENTITY', () => {
