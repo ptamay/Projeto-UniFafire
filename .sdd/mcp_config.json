@@ -1,3 +1,20 @@
 {
-  "mcpServers": {}
+  "_nota": "Governança MCP (constitution §8, sandbox deny-by-default em .sdd/agent_config.py). Todo servidor MCP habilitado no projeto é declarado aqui com escopo e justificativa. A configuração operacional vive em .mcp.json; este arquivo é o registro de por que cada servidor existe e até onde ele pode ir.",
+  "mcpServers": {
+    "supabase": {
+      "adicionado_em": "2026-09-03",
+      "motivo": "ADR-012 — Etapa 3 em diante (Sprints 20 a 24): criação do schema Postgres, aplicação de migrations, verificação de carga de dados e consulta à documentação do provedor.",
+      "projeto": "nkhoyvgnevtwlkheknxu",
+      "regiao_esperada": "sa-east-1 (São Paulo) — exigência de §0 por conta da PII de alunos e funcionários. CONFIRMAR na primeira sessão autenticada.",
+      "transporte": "http",
+      "features_habilitadas": ["docs", "database", "debugging", "development"],
+      "features_recusadas": {
+        "account": "Permite listar, pausar, restaurar e excluir projetos e gerenciar a organização. Autoridade de nível de conta que a migração não precisa; recusada por deny-by-default (decisão do usuário em 2026-09-03).",
+        "functions": "Edge Functions não estão no escopo do ADR-012. Habilitar sob demanda, se e quando entrarem.",
+        "branching": "Branching de banco não está no escopo. Idem."
+      },
+      "secrets": "Nenhum neste arquivo nem em .mcp.json. O project_ref é identificador público; o token OAuth é gerenciado pelo cliente fora do repositório (constitution §6.2).",
+      "revisar_em": "Go-live (Sprint 24) — reavaliar se o servidor ainda precisa estar habilitado após a migração concluir."
+    }
+  }
 }
