@@ -3,7 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { query, queryOne, execute, withTransaction, getPool } from '@/lib/pg';
 import { registrarExecucao, TABELAS_ESPERADAS } from '../db/backup-run.mjs';
-import { reconciliarContagens, DivergenciaDeContagem } from '../db/verify-dump.mjs';
+import {
+    reconciliarContagens, DivergenciaDeContagem,
+    compararEsquema, DivergenciaDeEsquema,
+} from '../db/verify-dump.mjs';
 
 // TASK-078 (Sprint 23 · Etapa 7b do ADR-012) — backup diário verificado, e o
 // registro de cada execução. constitution §4.3 (corrigida no CR Tipo D 7770d2e).
@@ -111,7 +114,11 @@ describe('TASK-078 — toda execução é registrada, inclusive a que falhou', (
         });
         const l = await queryOne<{ error: string }>('SELECT error FROM backup_runs ORDER BY id DESC LIMIT 1');
         expect(l!.error, 'a senha vazou para backup_runs').not.toMatch(/SENHA_SECRETA/);
-        expect(l!.error, 'a string de conexão inteira foi gravada').not.toMatch(/postgresql:\/\/[^\s]*:[^\s]*@/);
+        expect(l!.error, 'o usuário vazou junto').not.toMatch(/usuario/);
+        // A credencial é MASCARADA, não removida: o resto da mensagem (host,
+        // porta, banco) é o que permite diagnosticar a falha, e apagar tudo
+        // deixaria o operador com um erro que não diz nada.
+        expect(l!.error, 'a credencial não foi mascarada').toMatch(/postgresql:\/\/\*\*\*:\*\*\*@host:6543/);
     });
 });
 
@@ -172,6 +179,67 @@ describe('TASK-078 — a verificação é por restauração, não por existênci
             [...TABELAS_ESPERADAS].sort(),
             'a lista de tabelas do backup divergiu do schema real',
         ).toEqual(reais);
+    });
+});
+
+describe('TASK-078 — contar linhas não basta: o esquema também tem de voltar', () => {
+    // Achado no ciclo real, não no teste. Truncar o FIM de um dump não perde
+    // linha nenhuma — as instruções finais são de esquema. No ensaio, o dump
+    // truncado perdeu exatamente `ALTER TABLE public.users ENABLE ROW LEVEL
+    // SECURITY;`, o `psql` restaurou sem erro, as contagens bateram, e a
+    // verificação por linhas APROVOU.
+    //
+    // Medido: origem com 11 tabelas sob RLS, restauração com 10. Um backup que
+    // volta com um controle de segurança a menos passa por idêntico se a única
+    // pergunta for "quantas linhas?".
+
+    const esquemaBase = {
+        tabelas: ['users', 'keys'],
+        indices: ['idx_history_timestamp'],
+        triggers: ['history_no_update'],
+        tabelasComRls: ['users', 'keys'],
+        funcoes: ['history_imutavel'],
+    };
+
+    it('BDD 5b: esquemas iguais aprovam', () => {
+        expect(() => compararEsquema(esquemaBase, { ...esquemaBase })).not.toThrow();
+    });
+
+    it('BDD 5b: RLS a menos REPROVA — foi o caso real do ensaio', () => {
+        const destino = { ...esquemaBase, tabelasComRls: ['keys'] };
+        let erro: unknown;
+        try { compararEsquema(esquemaBase, destino); } catch (e) { erro = e; }
+
+        expect(erro, 'perda de RLS passou despercebida').toBeInstanceOf(DivergenciaDeEsquema);
+        expect(String(erro)).toMatch(/rls/i);
+        expect(String(erro), 'o relatório não diz qual tabela').toMatch(/users/);
+    });
+
+    it('BDD 5b: trigger de imutabilidade a menos REPROVA', () => {
+        // Sem o trigger, `history` deixa de ser imutável na base restaurada.
+        // As linhas estariam todas lá, e a garantia do REQ-005 não.
+        const destino = { ...esquemaBase, triggers: [] };
+        expect(() => compararEsquema(esquemaBase, destino)).toThrow(DivergenciaDeEsquema);
+    });
+
+    it('BDD 5b: índice a menos REPROVA', () => {
+        const destino = { ...esquemaBase, indices: [] };
+        expect(() => compararEsquema(esquemaBase, destino)).toThrow(DivergenciaDeEsquema);
+    });
+
+    it('BDD 5b: objeto A MAIS também reprova — a base de verificação tinha resíduo', () => {
+        const destino = { ...esquemaBase, tabelas: ['users', 'keys', 'sobra_de_execucao_anterior'] };
+        expect(() => compararEsquema(esquemaBase, destino)).toThrow(DivergenciaDeEsquema);
+    });
+
+    it('BDD 5b: o relatório lista TODAS as diferenças, não só a primeira', () => {
+        const destino = { ...esquemaBase, tabelasComRls: [], triggers: [], indices: [] };
+        let erro: unknown;
+        try { compararEsquema(esquemaBase, destino); } catch (e) { erro = e; }
+        const texto = String(erro);
+        expect(texto).toMatch(/rls/i);
+        expect(texto).toMatch(/trigger/i);
+        expect(texto).toMatch(/[íi]ndice/i);
     });
 });
 
