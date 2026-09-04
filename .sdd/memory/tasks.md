@@ -1,328 +1,244 @@
-# tasks.md — Micro-spec da Sprint Ativa (Sprint 20 · 🔴 crítica)
+# tasks.md — Micro-spec da Sprint Ativa (Sprint 21 · 🔴 crítica)
 
-> **Etapa 3 do ADR-012 — Schema Postgres.** Primeira sprint que toca a stack.
-> Entrega o schema no Supabase; **nenhuma linha de código da aplicação passa a falar
-> Postgres nesta sprint** — isso é a Etapa 4 (Sprint 21). O `keys.db` permanece a
-> fonte vigente e íntegra (plano de reversão do ADR-012, item 2).
+> **Etapa 4 do ADR-012 — Camada de Dados Assíncrona.** A maior das sete etapas.
+> `better-sqlite3` é síncrono por design e qualquer driver Postgres é assíncrono: não há
+> adaptador que evite a reescrita. A rede de segurança é a suíte de testes — e é por isso
+> que a primeira decisão da sprint era contra qual banco ela roda.
 >
-> Canal recomendado: Claude Code · Modelo: Opus 5 · Esforço: alto.
-> Criticidade 🔴: mexe em imutabilidade de trilha de auditoria (constitution §4.4) e
-> move PII para provedor terceiro (constitution §0).
+> Canal: Claude Code · Modelo: Opus 5 · Esforço: alto.
+> Criticidade 🔴: toca autenticação, as 3 transações e os 4 fluxos críticos do spec §4.
 >
-> **Projeto Supabase:** `nkhoyvgnevtwlkheknxu` · região `sa-east-1` (São Paulo) ·
-> schema `public` vazio na abertura da sprint (verificado em 2026-09-03).
+> **Inventário medido em 2026-09-03** (o ADR-012 estimava 158 em 31 arquivos):
+> **162 chamadas** `db.prepare(...).get/all/run` em **28 arquivos**, 3 usos de
+> `db.transaction`, 2 usos de `resetConnection`, `bcrypt` em 6 arquivos, e
+> **4 Server Components** consultando o banco durante o render.
 
 ---
 
-## Decisões de execução — **aprovadas pelo usuário em 2026-09-03**
+## Decisões de execução
 
-**D1 — ✅ APROVADA (opção recomendada).** `db/migrations-pg/` + Gate 2 estendido.
-**D2 — ✅ Vigente.** Teste estrutural em Vitest + prova empírica via MCP no Report.
-**D3 — ✅ APROVADA (opção recomendada).** Carga da TASK-067 com dados **sintéticos**;
-a carga de PII real fica para a Etapa 7, junto da ciência formal da direção.
+**D1 — ✅ APROVADA pelo usuário (2026-09-03): Postgres real em container** para os testes.
+Recomendação do próprio ADR-012. Testar contra dialeto diferente do de produção anularia
+boa parte da garantia justamente na sprint que reescreve 162 chamadas — e não exercitaria
+os triggers PL/pgSQL nem o bypass por `set_config` que a TASK-065 entregou.
+Docker está instalado (v29.6.2, Compose v5.3.1); **o daemon precisa estar rodando.**
+
+**D2 — Driver: `pg` (node-postgres).** Não é escolha entre iguais:
+- É o driver de referência do Postgres em Node, e o que a documentação do Supabase assume.
+- Funciona com o **pooler em transaction mode** (Supavisor), que é o modo exigido por
+  execução serverless — cada requisição pega e devolve a conexão.
+- ⚠️ **Transaction mode não suporta prepared statements nomeados.** Toda consulta usa
+  `client.query(texto, valores)` sem `name`. Isso **não afrouxa §1.3**: a regra é
+  *parâmetro vinculado*, e `$1, $2` são exatamente isso — muda o marcador, não o mecanismo.
+
+Alternativa descartada: `postgres` (porsager), mais leve, mas com menos material de
+referência para o modo pooler e uma API de template tags que esconde onde o parâmetro entra
+— o oposto do que se quer numa cláusula anti-injeção auditável.
+
+`pg` entra em `plan.md` → Decisões (D-09), como a constitution §0 exige de qualquer adição
+de stack.
+
+**D3 — `better-sqlite3` permanece como devDependency, não some.**
+`db/migrate.mjs` e `db/load-pg.mjs` continuam precisando dele: são as ferramentas offline
+que aplicam as migrations do `keys.db` e fazem a carga da Etapa 7. O que sai é o uso em
+**runtime** — `src/lib/db.ts` e os 28 arquivos.
+
+**D4 — Como converter 162 chamadas sem um commit gigante nem um estado quebrado.**
+O módulo novo (`src/lib/pg.ts`) nasce **ao lado** de `src/lib/db.ts`, e a conversão anda por
+fatias, cada uma com seu par test→feat. Toda fatia fecha com a suíte inteira verde.
+`src/lib/db.ts` e o `better-sqlite3` de runtime são apagados na última fatia.
+
+O custo dessa escolha é honesto e temporário: durante a TASK-069 o setup de teste sustenta
+os dois bancos — Postgres em container para o que já migrou, SQLite em memória para o que
+falta. É o "duplo dialeto" que o ADR desaconselha, mas **transitório e por arquivo, nunca
+para a mesma consulta**. A alternativa (um único commit com 28 arquivos) trocaria isso por
+uma revisão impossível e um único ponto de falha.
+
+Fatias da TASK-069, na ordem de dependência:
+
+| Fatia | Arquivos | Por que nesta ordem |
+|---|---|---|
+| **a — `src/lib/`** | `session`, `security-profile`, `logger`, `business-metrics`, `db-maintenance`, `backup`, `history-query` | Todo o resto depende deles |
+| **b — auth e conta** | `auth/login`, `account/profile`, `account/security/password`, `users/change-password`, `users/reset-password` | Fluxo crítico nº 1; casa com a TASK-071 |
+| **c — transações** | `transactions/route` (20 chamadas), `[id]/user-confirm` (11), `[id]/cancel`, `pending` | O coração do domínio e a fatia mais pesada |
+| **d — demais rotas** | `keys`, `users`, `users/role`, `logs`, `metrics/*`, `settings`, `history/clear`, `settings/clear-database` | Independentes entre si |
+| **e — Server Components** | `page.tsx`, `history/page.tsx`, `keys/page.tsx`, `account/profile/page.tsx` | Consultam no render; fecham o ciclo e permitem apagar `db.ts` |
 
 ---
 
-**D1 — Onde vivem as migrations Postgres e como o Gate 2 as cobre.**
-As migrations SQLite vivem em `db/migrations/` e são executadas por `db/migrate.mjs`
-(better-sqlite3). SQL Postgres nesse diretório seria aplicado contra o `keys.db` pelo
-runner — inaceitável. **Recomendação:** diretório irmão `db/migrations-pg/`, mesma
-convenção `YYYYMMDDHHMM_descricao.up.sql` / `.down.sql`, e o Gate 2 passa a rodar
-`scripts/check-migrations.mjs` nos **dois** diretórios.
-⚠️ Isso exige editar `scripts/ci-gates.sh`, que está na **zona somente leitura** do
-`00-core.md`. Precedente: a TASK-059 já o editou na Sprint 19 (commit `e4ad352`), com
-a mesma natureza — corrigir o alcance do próprio gate, nunca afrouxá-lo. **Requer
-autorização explícita do usuário.**
+## TASK-068: Conexão via pooler e o módulo de acesso a dados
 
-**D2 — Contra o que os testes desta sprint rodam.**
-A decisão "banco dos testes" está registrada no `plan.md` para o início da Sprint 21, e
-o driver Postgres só entra na TASK-068. Nesta sprint, portanto, o teste automatizado
-**não conecta em banco**: ele valida os arquivos de migration estruturalmente (dialeto,
-pareamento, presença de índice/trigger/REVOKE, ausência do legado). A prova empírica é
-a aplicação real no projeto Supabase via MCP, com inspeção do catálogo (`list_tables`,
-`information_schema`) registrada no Report do Step 9. Quando a Sprint 21 decidir o banco
-de teste, estes testes viram comportamentais.
+**Contexto**: `src/lib/db.ts` guarda a conexão em `global.db`, expõe um `Proxy` que
+redireciona toda propriedade para a instância corrente, e oferece `resetConnection()` para
+fechar o banco, trocar o arquivo no disco e reabrir. Os três pressupostos morrem em execução
+serverless: não há processo longo para guardar o global, não há arquivo para trocar, e a
+instância pode ser destruída entre duas requisições.
 
-**D3 — Quando a PII real cruza para o provedor terceiro.**
-A constitution §0 exige *"ciência formal da direção da instituição ANTES do go-live"*.
-A TASK-067, como está no `plan.md`, carrega os dados reais (19 usuários com nome
-completo, matrícula e telefone) para o Supabase agora — meses antes do go-live. **É
-neste momento que a PII efetivamente sai do campus**, não no go-live.
-Duas saídas: **(a)** obter a ciência formal da direção agora e carregar os dados reais;
-**(b)** ensaiar a TASK-067 com dados sintéticos e deixar a carga real para a Etapa 7,
-onde ela precisa acontecer de novo de qualquer forma (o `keys.db` de produção continua
-recebendo escritas até a virada). **Recomendação: (b)** — o valor técnico da TASK-067 é
-provar o loader e a reconciliação de contagens, o que dados sintéticos provam
-igualmente bem, sem antecipar a exposição de PII nem gerar uma cópia obsoleta.
-
----
-
-## TASK-063: Schema Postgres equivalente (ADR-012 · Etapa 3)
-
-**Contexto**: O schema de produção vive na baseline `202607021900_baseline.up.sql` mais
-quatro migrations incrementais, todas em dialeto SQLite. O Postgres precisa do
-equivalente com as conversões de dialeto mapeadas no ADR-012. Entrega **DDL**: as
-conversões de *consulta* (`json_build_object`, `RETURNING id` no lugar de
-`lastInsertRowid`, `ON CONFLICT DO NOTHING`) tocam código de aplicação e são da Sprint 21
-— aqui elas entram como **tabela de mapeamento documentada**, que é o oráculo daquela
-sprint.
-
-Conversões de tipo aplicadas: `INTEGER PRIMARY KEY AUTOINCREMENT` → `integer GENERATED
-ALWAYS AS IDENTITY PRIMARY KEY`; `BOOLEAN DEFAULT 1` / `INTEGER DEFAULT 1` usados como
-booleano (`users.active`, `users.requires_password_change`, `keys.active`,
-`login_attempts.success`) → `boolean` real; `DATETIME DEFAULT CURRENT_TIMESTAMP` →
-`timestamptz DEFAULT now()`; `rate_limit_hits.hit_at` permanece **inteiro de 64 bits**
-(epoch em ms — a TASK-054 já o escolheu por ser comparável nos dois dialetos).
+`resetConnection()` tem 2 usos, ambos em rotas de backup (`backups/import`,
+`backups/restore`) que fazem cópia de arquivo. **O ADR-012 já classificou essas rotas como
+"desativar, não deixar quebrado" na TASK-078 (Etapa 7).** Esta task não as reescreve: apenas
+as isola atrás de um erro explícito, para que nenhuma delas finja funcionar.
 
 **Critérios BDD**:
-- [x] **Cenário**: Par UP/DOWN existe antes de qualquer aplicação
-      Dado o diretório de migrations Postgres definido em D1
-      Quando a migration de baseline é criada
-      Então o arquivo `.down.sql` existe **antes** de o `.up.sql` ser aplicado em qualquer banco
-      E `node scripts/check-migrations.mjs <dir>` sai com código 0.
-- [x] **Cenário**: Nenhum resíduo de dialeto SQLite no UP
-      Dado o UP de baseline Postgres
-      Quando ele é inspecionado pelo teste
-      Então não contém `AUTOINCREMENT`, `DATETIME`, `INTEGER PRIMARY KEY` nem `RAISE(ABORT`
-      E toda coluna de instante é `timestamptz`
-      E toda chave primária de tabela nova é `GENERATED ALWAYS AS IDENTITY`.
-- [x] **Cenário**: Colunas booleanas deixam de ser inteiros
+- [ ] **Cenário**: O pool conecta pelo pooler em transaction mode
+      Dado `DATABASE_URL` apontando para o pooler
+      Quando o módulo é carregado
+      Então a conexão é obtida de um pool com limite configurável
+      E nenhuma consulta usa prepared statement **nomeado** (incompatível com transaction mode).
+- [ ] **Cenário**: A API de acesso a dados cobre os três formatos de uso do código atual
+      Dado que hoje o código usa `.get()`, `.all()` e `.run()`
+      Quando o módulo novo é usado
+      Então `queryOne` devolve uma linha ou `undefined`, `query` devolve o array de linhas,
+      e `execute` devolve o número de linhas afetadas
+      E todos aceitam parâmetros vinculados, nunca interpolação.
+- [ ] **Cenário**: Parâmetro vinculado, sempre (constitution §1.3)
+      Dado um valor com aspa simples vindo de input
+      Quando ele é passado como parâmetro
+      Então chega ao banco como dado, não como SQL
+      E uma tentativa de montar SQL por concatenação é recusada pelo próprio formato da API.
+- [ ] **Cenário**: O banco de teste é Postgres real, com o schema da Etapa 3
+      Dado o container de teste no ar
+      Quando a suíte inicia
+      Então as migrations de `db/migrations-pg/` são aplicadas
+      E os triggers de imutabilidade da TASK-065 estão ativos no banco de teste.
+- [ ] **Cenário**: Docker parado dá mensagem acionável, não erro de conexão cru
+      Dado que o daemon do Docker não está rodando
+      Quando a suíte é executada
+      Então a falha diz o que fazer (subir o container), em vez de `ECONNREFUSED`.
+- [ ] **Cenário**: Isolamento entre testes
+      Dado que os testes compartilham um banco real
+      Quando um teste grava dados
+      Então o teste seguinte não os enxerga
+      E a ordem de execução não altera o resultado.
+- [ ] **Cenário**: As rotas de backup por cópia de arquivo não fingem funcionar
+      Dado `resetConnection` sem equivalente possível no Postgres
+      Quando `backups/import` ou `backups/restore` é chamada
+      Então a resposta é um erro explícito citando a TASK-078
+      E nenhuma delas altera estado.
+
+---
+
+## TASK-069: Conversão das consultas para assíncronas
+
+**Contexto**: 162 chamadas em 28 arquivos, incluindo os 4 Server Components. Duas conversões
+mecânicas e uma de julgamento. Mecânicas: `?` → `$n` (com a numeração acompanhando a ordem
+de `push` nos dois pontos que montam condição dinamicamente — `history-query.ts` e
+`logs/route.ts`) e `.get/.all/.run` → `await`. De julgamento: as 15 comparações de booleano
+com `0`/`1`, que no Postgres passam a ser **erro de tipo** — o que é ganho, porque falha alto
+em vez de nunca casar em silêncio.
+
+Oráculo completo, levantado na TASK-063: **`docs/migracao-dialeto-sql.md`**.
+
+Entregue em 5 fatias (ver D4), cada uma com par test→feat próprio e a suíte inteira verde ao
+fim. Não há BDD por fatia: os critérios abaixo valem para **todas**, e a última fatia carrega
+os que só podem ser verificados no fim.
+
+**Critérios BDD**:
+- [ ] **Cenário**: Nenhum marcador posicional do SQLite sobrevive
+      Dado o código convertido
+      Quando as consultas são inspecionadas
+      Então não há `?` como marcador de parâmetro
+      E toda consulta usa `$n`, com a numeração batendo com a ordem dos valores.
+- [ ] **Cenário**: Comparação de booleano deixa de usar 0/1
       Dado que `users.active`, `users.requires_password_change`, `keys.active` e
-      `login_attempts.success` guardam 0/1 no SQLite
-      Quando o schema Postgres é criado
-      Então as quatro são `boolean`, com `DEFAULT true` onde o SQLite tinha `DEFAULT 1`.
-- [x] **Cenário**: Aplicação real no Supabase
-      Dado o projeto `nkhoyvgnevtwlkheknxu` com `public` vazio
-      Quando o UP é aplicado
-      Então `list_tables` retorna as 9 tabelas de negócio (`users`, `keys`,
-      `key_transactions`, `history`, `action_logs`, `audit_logs`, `login_attempts`,
-      `settings`, `rate_limit_hits`)
-      E as chaves estrangeiras equivalentes às do `keys.db` estão declaradas.
-- [x] **Cenário**: DOWN devolve o schema ao estado anterior
-      Dado o UP aplicado
-      Quando o DOWN é aplicado
-      Então `public` volta a não ter nenhuma das tabelas criadas pelo UP.
-- [x] **Cenário**: Mapeamento de dialeto fica registrado para a Sprint 21
-      Dado que `json_build_object`, `RETURNING id` e `ON CONFLICT DO NOTHING` são
-      conversões de consulta, não de schema
-      Quando a task fecha
-      Então a tabela de mapeamento SQLite→Postgres está versionada em
-      `docs/migracao-dialeto-sql.md`, citando os pontos do código que cada linha atinge.
+      `login_attempts.success` são `boolean` no Postgres (TASK-063)
+      Quando as 15 ocorrências são convertidas
+      Então nenhuma compara a coluna com `0` ou `1`.
+- [ ] **Cenário**: Os 4 fluxos críticos continuam funcionando (spec §4)
+      Dado login, retirada, confirmação e devolução
+      Quando cada um é exercido pela suíte contra o Postgres de teste
+      Então o comportamento é idêntico ao de antes da conversão
+      E nenhum teste existente precisou ter a expectativa afrouxada para passar.
+- [ ] **Cenário**: `strftime` do filtro de hora vira extração com fuso explícito
+      Dado que a TASK-055 prendeu a exibição a `America/Recife`
+      Quando o filtro de hora é convertido em `history-query.ts` e `logs/route.ts`
+      Então a hora é extraída **convertendo o fuso**, não do valor cru em UTC
+      E o defeito que a TASK-055 corrigiu não volta por outro caminho.
+- [ ] **Cenário**: Os Server Components consultam de forma assíncrona
+      Dado que os 4 consultam o banco durante o render
+      Quando são convertidos
+      Então cada um aguarda a consulta antes de renderizar
+      E a página continua sendo renderizada no servidor, sem virar client component.
+- [ ] **Cenário**: `src/lib/db.ts` deixa de existir e `better-sqlite3` sai do runtime
+      Dado que todas as fatias fecharam
+      Quando o código-fonte é inspecionado
+      Então nenhum arquivo de `src/` importa `better-sqlite3` nem `@/lib/db`
+      E `better-sqlite3` passa a devDependency, porque `db/migrate.mjs` e `db/load-pg.mjs`
+      ainda precisam dele (D3).
 
 ---
 
-## TASK-064: Índices (ADR-012 · Etapa 3)
+## TASK-070: Transações explícitas com client dedicado
 
-**Contexto**: O schema atual **não declara um único índice** fora do
-`idx_rate_limit_hits_lookup` (TASK-054). Em SQLite, com 5 chaves e ~130 linhas de
-histórico na mesma máquina, isso não aparecia; sob rede, cada varredura completa vira
-latência. Os filtros já foram tornados sargáveis na TASK-055 (faixa `[início, fim)` em
-vez de função sobre a coluna), então os índices de data são efetivamente usáveis.
+**Contexto**: `db.transaction(() => ...)` do better-sqlite3 é síncrono e não tem equivalente
+direto: no Postgres a transação vive num **client dedicado** tirado do pool, com
+`BEGIN`/`COMMIT`/`ROLLBACK` explícitos. Usar o pool solto quebraria a garantia — cada
+consulta poderia sair por uma conexão diferente.
+
+Três usos: `settings/route.ts` (gravação de configurações), `[id]/user-confirm/route.ts` (o
+fecho da dupla confirmação — o mais crítico do sistema) e `db-maintenance.ts` (o bypass da
+imutabilidade, que na TASK-065 virou `set_config(..., is_local = true)` e por isso **depende**
+de estar dentro de uma transação de verdade).
 
 **Critérios BDD**:
-- [x] **Cenário**: Índices mínimos do ADR-012 declarados
-      Dado o schema Postgres criado
-      Quando os índices são inspecionados em `pg_indexes`
-      Então existem `history(timestamp DESC)`, `history(key_id)`, `history(user_id)`,
-      `action_logs(timestamp DESC)`, `key_transactions(key_id, status)` e
-      `key_transactions(user_id)`
-      E `rate_limit_hits(scope, identifier, hit_at)` foi preservado da TASK-054.
-- [x] **Cenário**: O índice de data é de fato usado pela consulta do histórico
-      Dado o filtro de faixa que `src/lib/history-query.ts` monta (TASK-056)
-      Quando `EXPLAIN` é executado sobre a consulta equivalente no Postgres
-      Então a faixa aparece como **`Index Cond` em `idx_history_timestamp`**
-      E a forma não-sargável equivalente (função sobre a coluna, como era antes da
-      TASK-055) aparece como `Filter`, sem `Index Cond`.
-
-      > **Critério corrigido durante a execução.** A redação original era *"o plano
-      > usa varredura por índice, não `Seq Scan`"* — e estava errada. Com ~130 linhas
-      > o planejador prefere `Seq Scan` e está **certo** em preferir; forçar o
-      > contrário com `enable_seqscan = off` e declarar vitória não provaria nada
-      > sobre o índice. O que importa medir é se o predicado alcança o índice, e isso
-      > se lê em `Index Cond` (restringe o que é lido) versus `Filter` (lê tudo e
-      > descarta depois). É exatamente a diferença que a TASK-055 comprou ao trocar
-      > função-sobre-coluna por faixa `[início, fim)`.
-- [x] **Cenário**: DOWN pareado remove exatamente os índices criados
-      Dado o UP de índices aplicado
-      Quando o DOWN é aplicado
-      Então nenhum dos índices criados por este UP permanece, e nenhum outro é removido.
+- [ ] **Cenário**: A transação usa um único client, do começo ao fim
+      Dado um bloco transacional
+      Quando várias consultas são executadas dentro dele
+      Então todas passam pelo mesmo client
+      E o client volta ao pool ao final, inclusive quando há erro.
+- [ ] **Cenário**: Erro no meio reverte tudo
+      Dado a confirmação de uma retirada, que grava em `key_transactions`, `keys` e `history`
+      Quando a última gravação falha
+      Então nenhuma das anteriores persiste.
+- [ ] **Cenário**: O bypass de manutenção só vale dentro da transação
+      Dado `withMaintenanceMode`
+      Quando ele executa um `DELETE` em `history`
+      Então o `DELETE` é permitido
+      E, encerrada a transação, um novo `DELETE` volta a ser rejeitado pelo trigger
+      E nada precisou ser limpo explicitamente (TASK-065).
+- [ ] **Cenário**: Vazamento de conexão é detectável
+      Dado a suíte inteira executada
+      Quando ela termina
+      Então o pool não tem client em uso pendente.
 
 ---
 
-## TASK-065: Imutabilidade do histórico + fechamento de escrita (constitution §4.4)
+## TASK-071: `bcrypt` → `bcryptjs`
 
-**Contexto**: No SQLite a imutabilidade é dois triggers com `RAISE(ABORT)` guardados por
-uma tabela-flag `_maintenance_mode`, criada e removida na mesma transação
-(`src/lib/db-maintenance.ts`). No Postgres o bypass vira `set_config('app.maintenance_mode',
-'on', true)` — escopo **transacional por construção**, o que dispensa a tabela-flag e
-elimina a janela em que a flag existe fora de uma transação.
+**Contexto**: `bcrypt` é addon nativo — precisa compilar contra o Node do ambiente. Em
+build serverless isso é fonte de falha por incompatibilidade de ABI e de binário ausente.
+`bcryptjs` é implementação pura em JS, com a mesma API de `hash`/`compare` e **o mesmo
+formato de hash**: os hashes já gravados continuam validando, sem reset de senha para
+ninguém. Custo: é mais lento — aceitável para ~19 usuários e um login por vez.
 
-**Adição ao texto do ADR-012, dentro do mesmo assunto (quem pode escrever):** o Supabase
-expõe as tabelas de `public` pela API de dados (PostgREST) com a chave anônima. A
-autorização deste sistema é sessão própria verificada server-side (constitution §3.2);
-tabela alcançável pela chave anônima passaria ao largo dela inteira. Fechar isso é parte
-de "quem pode escrever no banco" e não pode ficar para depois — o projeto já está de pé
-na internet.
+6 arquivos, 5 chamadas de `hash` e 4 de `compare`.
 
 **Critérios BDD**:
-- [x] **Cenário**: UPDATE em `history` é rejeitado
-      Dado um registro em `history`
-      Quando um `UPDATE` é executado fora do modo manutenção
-      Então a transação é abortada com exceção citando REQ-005
-      E o registro permanece idêntico.
-- [x] **Cenário**: DELETE em `history` é rejeitado
-      Dado um registro em `history`
-      Quando um `DELETE` é executado fora do modo manutenção
-      Então a transação é abortada com exceção citando REQ-005 e o fluxo ADMIN do REQ-014.
-- [x] **Cenário**: O bypass de manutenção funciona e não sobrevive à transação
-      Dado `set_config('app.maintenance_mode', 'on', true)` dentro de uma transação
-      Quando um `DELETE` em `history` é executado na mesma transação
-      Então ele é permitido
-      E, encerrada a transação, um novo `DELETE` volta a ser rejeitado sem qualquer
-      limpeza explícita de estado.
-- [x] **Cenário**: `REVOKE` como defesa em profundidade
-      Dado o schema aplicado
-      Quando as permissões de `history` são inspecionadas
-      Então `UPDATE` e `DELETE` estão revogados de `PUBLIC`, `anon` e `authenticated`
-      E a nota de que o papel de aplicação com menor privilégio é entregue na Etapa 7
-      (TASK-077) está registrada no cabeçalho da migration.
-- [x] **Cenário**: Nenhuma tabela é alcançável pela chave anônima
-      Dado que a autorização do sistema é sessão própria verificada no servidor (§3.2)
-      Quando o acesso pela API de dados do Supabase é verificado
-      Então nenhuma das 9 tabelas responde a leitura ou escrita com a chave anônima
-      E `get_advisors(security)` não reporta tabela exposta sem proteção.
-- [x] **Cenário**: DOWN pareado
-      Dado o UP aplicado
-      Quando o DOWN é aplicado
-      Então triggers, função e GRANTs voltam ao estado anterior ao UP.
-
----
-
-**Achados durante a execução (não previstos na micro-spec):**
-
-1. **`rls_auto_enable` exposta como RPC anônimo.** Função `SECURITY DEFINER` do
-   event trigger do próprio Supabase, publicada em `/rest/v1/rpc/`. Não foi
-   introduzida por nós. `REVOKE EXECUTE` fecha, sem afetar o event trigger, que não
-   passa por esse privilégio. Duas WARN do `get_advisors` zeradas.
-2. **`search_path` mutável em `history_imutavel`** — esta **fomos nós** que
-   introduzimos, detectada ao reconsultar o advisor após aplicar. Função sem
-   `search_path` declarado resolve nomes pela sessão de quem dispara o trigger: o
-   controle que guarda a trilha dependendo de estado do chamador. Corrigida com
-   `SET search_path = pg_catalog`, ciclo test→fix próprio.
-3. **Os 9 INFO `rls_enabled_no_policy` que permanecem são o estado pretendido**, não
-   pendência: RLS ligada sem política nega tudo a quem não é dono. O advisor supõe
-   que se queira políticas; aqui não se quer — a autorização é a sessão da §3.2, e
-   uma política abriria um segundo caminho em paralelo a ela.
-
----
-
-## TASK-066: Consolidação do legado `employees` / `employee_id`
-
-**Contexto**: Levantamento no backup de produção mais recente
-(`backups/keys_backup_2026-07-06.db`): `employees` tem **0 linhas**;
-`keys.employee_id` é NULL em **5/5** linhas; `history.employee_id` é NULL em **30/30**.
-Mesmo assim `src/lib/history-query.ts:53` ainda faz `LEFT JOIN employees`, `keys` carrega
-`employee_id` e `user_id` convivendo, `transactions/route.ts:27` mantém um fallback
-`employee_id` → `user_id`, e `clear-database/route.ts:17` lista `employees` em
-`tablesToClear`. É código morto que só existe porque nunca foi decidido. Carregar dados
-para o Postgres sem decidir isso perpetua o legado na stack nova.
-
-**Decisão a registrar**: `employees` e as colunas `employee_id` são **descartadas** — o
-portador de uma chave é `users.id`, ponto. Contagem zero em produção torna a decisão
-sem custo de dados.
-
-**Escopo do descarte**: o schema Postgres simplesmente **não tem** `employees` nem
-`employee_id`, e o código morto sai agora (é neutro em dialeto). **O `keys.db` não recebe
-migration de DROP** — as colunas ficam órfãs e inertes até o SQLite ser aposentado na
-Etapa 7. Motivo: preservar o plano de reversão do ADR-012, que depende de `git revert`
-devolver um sistema funcional; um DROP em SQLite é a única parte que um revert não desfaz.
-
-**Critérios BDD**:
-- [x] **Cenário**: A consulta do histórico deixa de tocar `employees`
-      Dado `src/lib/history-query.ts`
-      Quando a consulta é montada
-      Então não há `LEFT JOIN employees`
-      E os testes de `tests/history-query.test.ts` continuam passando sem alteração de expectativa.
-- [x] **Cenário**: O fallback de `employee_id` sai da criação de transação
-      Dado um POST em `/api/transactions` sem `user_id` e com `employee_id`
-      Quando a requisição é processada
-      Então ela é rejeitada pela validação Zod, como qualquer requisição sem portador
-      E nenhum caminho do código resolve portador a partir de `employee_id`.
-- [x] **Cenário**: `employees` sai da limpeza destrutiva
-      Dado `clear-database/route.ts`
-      Quando `tablesToClear` é inspecionada
-      Então `employees` não está na lista
-      E os testes de `tests/destructive-trail.test.ts` continuam passando.
-- [x] **Cenário**: O schema Postgres nasce sem o legado
-      Dado o schema aplicado no Supabase
-      Quando `list_tables` e as colunas de `keys` e `history` são inspecionadas
-      Então não existe tabela `employees` nem coluna `employee_id` em nenhuma tabela.
-- [x] **Cenário**: O `keys.db` não é alterado
-      Dado que nenhuma migration SQLite é adicionada por esta task
-      Quando `db/migrations/` é inspecionado
-      Então ele permanece com os 5 pares existentes.
-
----
-
-## TASK-067: Carga de dados para o Postgres, com reconciliação de contagens
-
-**Contexto**: Cópia, **não** movimentação — o `keys.db` permanece íntegro (plano de
-reversão do ADR-012, item 2). O objetivo desta task é provar o loader e a reconciliação,
-não fazer a virada: o `keys.db` de produção continua recebendo escritas até a Etapa 7,
-então a carga definitiva acontece lá de novo, obrigatoriamente.
-
-Depende de **D3**. Sob a recomendação (b), a fonte desta sprint é um conjunto sintético
-com a mesma forma e volume do backup (19 usuários, 5 chaves, 92 transações, 30 linhas de
-histórico, 99 logs de ação, 4 settings) e nenhum dado pessoal real.
-
-O loader não usa driver Postgres (a conexão é a TASK-068, Sprint 21): lê o SQLite e emite
-SQL de carga, aplicado via MCP do Supabase. Como o SQL é **gerado**, e não parametrizado,
-a montagem dos literais é isolada em uma função com teste próprio — a fonte é arquivo
-local confiável, não input externo, o que a coloca fora do alcance de §1.3, mas a
-qualidade do escape precisa ser provada mesmo assim.
-
-**Critérios BDD**:
-- [x] **Cenário**: Escape de literais é correto e recusa o que não sabe tratar
-      Dado um valor com aspa simples, barra invertida, quebra de linha, `NULL`, booleano e número
-      Quando o gerador o converte em literal SQL
-      Então o valor sobrevive intacto ao ir e voltar do banco
-      E qualquer tipo fora dessa lista faz o gerador lançar, nunca emitir SQL adivinhado.
-- [x] **Cenário**: Contagem por tabela reconcilia
-      Dado o banco de origem
-      Quando a carga termina
-      Então `COUNT(*)` no Postgres é igual ao do SQLite **para cada uma das 9 tabelas**
-      E a divergência em qualquer tabela aborta a carga com relatório por tabela.
-- [x] **Cenário**: Sequências de IDENTITY ficam à frente dos IDs carregados
-      Dado que os IDs de origem são preservados na carga
-      Quando um novo registro é inserido depois da carga
-      Então ele recebe um ID livre, sem colidir com nenhum carregado.
-- [x] **Cenário**: Instantes chegam íntegros
-      Dado que `history.timestamp` foi normalizado para ISO com `Z` na TASK-055
-      Quando as linhas são carregadas em `timestamptz`
-      Então o instante lido de volta é igual ao de origem
-      E nenhuma linha desloca por interpretação de fuso.
-- [x] **Cenário**: A carga não escreve no histórico por caminho proibido
-      Dado que `history` tem trigger de imutabilidade (TASK-065)
-      Quando as linhas de histórico são inseridas
-      Então o `INSERT` é permitido normalmente, sem uso do modo manutenção
-      (o trigger cobre UPDATE e DELETE, nunca INSERT).
-- [x] **Cenário**: A origem permanece intacta
-      Dado o arquivo SQLite de origem
-      Quando a carga termina
-      Então o arquivo tem o mesmo conteúdo de antes (aberto somente-leitura)
-      E `PRAGMA integrity_check` retorna `ok`.
-- [x] **Cenário**: A carga é repetível
-      Dado que a carga definitiva acontecerá de novo na Etapa 7
-      Quando o loader é executado sobre um Postgres já carregado
-      Então ele falha de forma explícita ou trunca e recarrega sob flag, nunca duplica em silêncio.
+- [ ] **Cenário**: Hash gerado pelo `bcrypt` antigo continua validando
+      Dado um hash `$2b$` gerado pela implementação nativa
+      Quando `bcryptjs.compare` é usado com a senha correta
+      Então a comparação passa
+      E ninguém precisa trocar de senha por causa da migração.
+- [ ] **Cenário**: Custo mínimo preservado (constitution §1.1)
+      Dado a criação de uma senha nova
+      Quando o hash é gerado
+      Então o custo é ≥ 10.
+- [ ] **Cenário**: Nenhum addon nativo sobra na árvore de runtime
+      Dado o `package.json`
+      Quando as dependências são inspecionadas
+      Então `bcrypt` e `@types/bcrypt` não estão mais em `dependencies`.
 
 ---
 
 ## Fora do escopo desta sprint (registro explícito)
 
-- Qualquer código de aplicação passar a consultar Postgres — Etapa 4 / Sprint 21.
-- Driver, pooler e `DATABASE_URL` no `.env` — TASK-068 (Sprint 21).
-- Papel de aplicação com menor privilégio e rotação do `JWT_SECRET` — TASK-076/077 (Sprint 24).
-- Migration de DROP no `keys.db` — só após a Etapa 7, por reversibilidade (ver TASK-066).
-- Pendência de deploy herdada: `node db/migrate.mjs up` no `keys.db` de produção
-  (migrations `202609021700` e `202609021800`) — ação de operação, não desta sprint.
+- **Realtime** no lugar dos 4 pollings — Sprint 22 (TASK-072/073). Esta sprint mantém os
+  pollings exatamente como estão; só muda o que está atrás deles.
+- **Logs estruturados em tabela** — Sprint 23.
+- **`DATABASE_URL` de produção, rotação do `JWT_SECRET`, papel de menor privilégio e deploy**
+  — Sprint 24. Esta sprint desenvolve e testa contra o container; a senha do banco do
+  Supabase **não é necessária** e não deve ser pedida agora.
+- **Reescrever o backup/restore por cópia de arquivo** — TASK-078 (Sprint 24). Aqui as duas
+  rotas apenas param de fingir que funcionam.
+- **`employees` / `employee_id` no `keys.db`** — as colunas órfãs seguem até a Etapa 7
+  (decisão da TASK-066).
