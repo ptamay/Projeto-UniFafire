@@ -77,37 +77,37 @@ exposição é pública, e uma senha padrão previsível num sistema alcançáve
 uma conta ADMIN entregue a quem chegar primeiro.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Cria o primeiro ADMIN numa base vazia
+- [x] **Cenário**: Cria o primeiro ADMIN numa base vazia
       Dado um banco com o schema aplicado e a tabela `users` vazia
       Quando o script é executado
       Então existe exatamente um usuário com papel `ADMIN`
       E `requires_password_change` é verdadeiro
       E o hash é `bcryptjs` com custo ≥ 10 (constitution §1.1).
-- [ ] **Cenário**: Recusa numa base que já tem usuário
+- [x] **Cenário**: Recusa numa base que já tem usuário
       Dado um banco com pelo menos uma linha em `users`
       Quando o script é executado
       Então ele recusa com mensagem explícita e código de saída diferente de zero
       E **nenhuma linha é criada, alterada ou apagada**.
-- [ ] **Cenário**: A senha inicial nunca é previsível
+- [x] **Cenário**: A senha inicial nunca é previsível
       Dado que nenhuma senha foi informada por ambiente
       Quando o script é executado
       Então ele gera uma senha aleatória de entropia adequada e a imprime **uma vez**
       E não existe valor padrão embutido no código que sirva de senha.
-- [ ] **Cenário**: A senha não vaza para lugar nenhum além da saída única
+- [x] **Cenário**: A senha não vaza para lugar nenhum além da saída única
       Dado o script executado com sucesso
       Quando se inspeciona `audit_logs`, `action_logs` e o log estruturado
       Então a senha em claro não aparece em nenhum deles (constitution §6.1)
       E o hash também não.
-- [ ] **Cenário**: A criação fica registrada
+- [x] **Cenário**: A criação fica registrada
       Dado o script executado com sucesso
       Então há entrada em `audit_logs` identificando a criação do usuário inicial.
-- [ ] **Cenário**: A primeira entrada força a troca
+- [x] **Cenário**: A primeira entrada força a troca
       Dado o ADMIN recém-criado e a senha impressa pelo script
       Quando ele faz login sem enviar `newPassword`
       Então a resposta é 403 `REQUIRE_PASSWORD_CHANGE`
       E, ao enviar uma nova senha de ≥ 8 caracteres, a sessão é criada e
       `requires_password_change` passa a falso.
-- [ ] **Cenário**: O script não é alcançável pela aplicação
+- [x] **Cenário**: O script não é alcançável pela aplicação
       Dado o código de `src/`
       Então nenhuma rota importa ou expõe o bootstrap
       E ele vive em `db/`, fora do bundle.
