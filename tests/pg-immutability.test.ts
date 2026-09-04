@@ -52,6 +52,15 @@ describe('TASK-065 — imutabilidade do histórico em PL/pgSQL', () => {
         expect(up, 'a mensagem de DELETE precisa apontar o caminho autorizado').toMatch(/REQ-014/);
     });
 
+    it('BDD 1/2: a função de guarda tem search_path fixo', () => {
+        // Achado do get_advisors depois de aplicar a primeira versão: função sem
+        // search_path declarado resolve nomes pela variável de sessão de quem a
+        // dispara. Numa função que guarda a trilha de auditoria, isso é o próprio
+        // controle dependendo de estado que o chamador controla. A rls_auto_enable
+        // do Supabase, ao lado, já fixa o dela.
+        expect(semComentarios(migracao().up)).toMatch(/SET\s+search_path\s*(?:=|TO)\s*'?pg_catalog'?/i);
+    });
+
     it('BDD 1/2: existem triggers BEFORE UPDATE e BEFORE DELETE em history', () => {
         const up = semComentarios(migracao().up);
         expect(up).toMatch(/CREATE\s+TRIGGER\s+\w+\s+BEFORE\s+UPDATE\s+ON\s+(?:public\.)?history/i);
