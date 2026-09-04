@@ -3,7 +3,6 @@ import { queryOne, execute } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
-import type { CountRow } from '@/lib/db-rows';
 
 interface RoleRow {
     id: number;
