@@ -44,28 +44,36 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 20 concluída
-- Sprint/Task Ativa: Nenhuma. Sprints 16–20 concluídas.
-- Última Ação: Sprint 20 (Etapa 3 do ADR-012 — schema Postgres) fechada. TASK-063 a 067:
-  schema Postgres equivalente em db/migrations-pg/ (diretório próprio; Gate 2 estendido para
-  cobrir os dois — decisão D1), índices mínimos + timestamptz, imutabilidade do histórico em
-  PL/pgSQL com bypass por set_config transacional e superfície de escrita fechada (RLS nas 9
-  tabelas + REVOKE de anon/authenticated; 2 achados do get_advisors corrigidos), legado
-  employees/employee_id descartado (9 pontos de código; keys.db intacto — TASK-066), e loader
-  SQLite→Postgres com reconciliação de contagens (carga sintética — decisão D3). Tudo provado
-  no Supabase real (projeto nkhoyvgnevtwlkheknxu, sa-east-1). 197 testes, 6 gates verdes.
-- Próxima Ação: Sprint 21 — Etapa 4 (camada de dados assíncrona): TASK-068 a 071. A MAIOR das
-  sete (158 chamadas síncronas em 31 arquivos). Primeira decisão da sprint: banco dos testes
-  (recomendação do ADR: Postgres em container). Oráculo pronto: docs/migracao-dialeto-sql.md.
-- Decisões em aberto: (1) banco dos testes na Etapa 4 — decidir ao iniciar a Sprint 21;
-  (2) expurgar keys.db do histórico antigo do git exige reescrever história — baixo risco.
+- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 21 concluída
+- Sprint/Task Ativa: Nenhuma. Sprints 16–21 concluídas.
+- Última Ação: Sprint 21 (Etapa 4 do ADR-012 — camada de dados assíncrona) fechada.
+  TASK-068 a 071: src/lib/pg.ts (query/queryOne/execute/withTransaction/closePool, pool
+  PREGUIÇOSO, sem prepared statement nomeado), 162 chamadas síncronas em 28 arquivos
+  convertidas em 5 fatias por FRONTEIRA DE EXECUÇÃO, transações explícitas com client
+  dedicado, bypass da imutabilidade por set_config transacional, bcrypt→bcryptjs e
+  postinstall removido. src/lib/db.ts APAGADO — nada em src/ importa better-sqlite3, que
+  virou devDependency. Fora do escopo original: backup.ts e as rotas restore/import
+  NEUTRALIZADOS (503 citando a TASK-078). Verificado: 284 testes / 37 arquivos, 6 gates,
+  tsc 0, eslint 0, npm run build OK, npm audit 0 vulnerabilidades, e o app rodado de ponta
+  a ponta no navegador contra o Postgres do container.
+- Próxima Ação: Sprint 22 — Etapa 5 (Realtime · REQ-032): TASK-072 e 073. Substituir os 4
+  pollings de 3 s por assinatura Realtime; critério de aceite ≤ 500 ms entre dispositivos,
+  com degradação graciosa para polling largo sem WebSocket.
+- Decisões em aberto: expurgar keys.db do histórico antigo do git exige reescrever
+  história — baixo risco (não contém secret; a decisão do banco dos testes foi resolvida
+  como D-11: Postgres em container).
+- Testes: exigem Postgres em container — `npm run test:db:up` ANTES de `npx vitest`.
+  Atenção: a suíte dá TRUNCATE no mesmo banco usado para verificação no navegador.
 - Estado do Supabase: schema das 9 tabelas + índices + triggers de imutabilidade + RLS
   aplicados; dados SINTÉTICOS carregados (20 users, 5 keys, 92 tx, 30 history, 99 logs, 4
   settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
 - Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16–20)
-- Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
-- Atualizado em: 2026-09-03
+- Branch atual: feature/sprint-21-camada-async (Sprints 16–21)
+- Pendências do usuário: (1) merge do PR #14 (release v0.3.0, Sprints 16–20); (2) deploy —
+  backup do keys.db e depois `node db/migrate.mjs up` no keys.db de produção.
+- Bloqueante para o go-live: TASK-078 (Etapa 7) — desde a Sprint 21 NÃO HÁ backup de
+  aplicação; só o gerenciado do provedor, que constitution §4.3 exige verificar.
+- Atualizado em: 2026-09-04
 ```
 
 ---
@@ -114,11 +122,11 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 20 concluída)
-Última sprint     : 20 ✅ (Etapa 3 do ADR-012 — Schema Postgres · TASK-063 a 067)
-Fase atual        : 8-10 (execução da migração ADR-012; Etapas 3–7 = Sprints 20–24, Etapa 3 fechada)
+Sprint atual      : — (nenhuma ativa; Sprint 21 concluída)
+Última sprint     : 21 ✅ (Etapa 4 do ADR-012 — Camada de Dados Assíncrona · TASK-068 a 071)
+Fase atual        : 8-10 (execução da migração ADR-012; Etapas 3–7 = Sprints 20–24, Etapas 3 e 4 fechadas)
 Último commit     : (ver git log -1)
-Próxima ação      : Sprint 21 — Etapa 4 (camada de dados assíncrona · TASK-068 a 071)
+Próxima ação      : Sprint 22 — Etapa 5 (Realtime · REQ-032 · TASK-072 e 073)
 ```
 
 ---
@@ -131,12 +139,16 @@ Próxima ação      : Sprint 21 — Etapa 4 (camada de dados assíncrona · TAS
 | Camada | Ferramenta padrão |
 |--------|------------------|
 | Frontend | Next.js + Tailwind CSS + Custom CSS |
-| Backend / ORM | SQLite (better-sqlite3) |
-| Auth | Baseada em sessão local/JWT |
-| Deploy | PM2 em servidor local |
+| Backend / dados | **Postgres (Supabase, `sa-east-1`) via `pg`** — `src/lib/pg.ts`. Sem ORM, sem prepared statement nomeado, `$n` sempre |
+| Auth | Sessão/JWT (`jose`) em cookie + `bcryptjs` |
+| Deploy | **Vercel** (⏳ Etapa 7 — PM2 local ainda vigente até lá) |
+| Testes | Vitest contra **Postgres real em container** (`npm run test:db:up`) + Playwright |
 | Secrets | .env local |
 | Erros | Sentry |
 | Agente de sprint | Antigravity |
+
+> ⚠️ `better-sqlite3` saiu do runtime na Sprint 21 e é **devDependency** — usado só pelas
+> ferramentas offline `db/migrate.mjs` e `db/load-pg.mjs`. Importá-lo em `src/` reprova a suíte.
 
 ---
 

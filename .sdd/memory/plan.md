@@ -3,18 +3,23 @@
 > Perspectiva de engenharia. Gerado na Fase 6. Toda mudança de escopo passa antes
 > pelo Changelog do `spec.md`. Decisões não-óbvias registradas na §2.
 
-## 1. Stack Aprovada (Fase 5 — legado mantido como baseline)
+## 1. Stack Aprovada
+
+> A tabela nasceu na Fase 5 descrevendo o legado mantido como baseline. O **ADR-012**
+> (aprovado em 2026-09-02) a substitui por etapas; a coluna "Observação" registra em que
+> ponto cada camada está. Camada já virada = a linha vale como está. Camada ainda em
+> transição = o legado continua vigente até a Etapa 7 (constitution §0).
 
 | Camada | Tecnologia | Observação |
 |---|---|---|
 | Full-stack | Next.js (App Router) + React 19 + TypeScript | já em produção local |
-| Banco | SQLite via better-sqlite3 (arquivo `keys.db`) | prepared statements obrigatórios |
-| Auth | JWT (`jose`, HS256) em cookie + `bcrypt` | segredo migra para `.env` (Sprint 1) |
+| Banco | **Postgres (Supabase, `sa-east-1`) via `pg`** — ver D-09 | ✅ virado na Sprint 21 (Etapa 4). `src/lib/db.ts` apagado; nada em `src/` importa `better-sqlite3`, que virou devDependency das ferramentas offline (`db/migrate.mjs`, `db/load-pg.mjs`). Parâmetro vinculado `$n` obrigatório; **sem prepared statement nomeado** (transaction mode) |
+| Auth | JWT (`jose`, HS256) em cookie + **`bcryptjs`** — ver D-10 | ✅ segredo em `.env` desde a Sprint 1; addon nativo trocado na Sprint 21 (TASK-071), mesmo formato de hash |
 | Validação | Zod (`src/lib/schemas.ts`) | fonte única de schemas e RBAC |
-| Jobs | node-cron (`src/lib/backup.ts`) | backup diário |
+| Jobs | ~~node-cron (`src/lib/backup.ts`)~~ | ⛔ **neutralizado na Sprint 21** — processo de longa duração não existe em execução serverless. Substituto é da **TASK-078** (Etapa 7), que é bloqueante para o go-live |
 | UI | CSS nativo estruturado + tokens do `ui-context.md` + react-hot-toast | sem migração para shadcn — ver D-03 |
-| Hospedagem | PM2 em servidor local (scripts `.bat` / `ecosystem.config.js`) | intranet |
-| Testes | Vitest (unit/integração) + Playwright (E2E smoke, recomendado) | a introduzir na Sprint 3 |
+| Hospedagem | **Vercel** (ADR-012) | ⏳ Etapa 7 (Sprint 24). PM2 + `.bat` + `ecosystem.config.js` seguem vigentes e só saem após os 30 dias de retenção do plano de reversão |
+| Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
 
 ## 2. Decisões e Justificativas
@@ -186,14 +191,16 @@
 - [x] TASK-066 → consolidação de legado: `employees` está morta (0 linhas) mas ainda é `LEFT JOIN`ada; `keys` tem `employee_id` e `user_id` convivendo. Decidir e consolidar antes de carregar dados.
 - [x] TASK-067 → carga dos dados de `keys.db` para o Postgres, com verificação de contagem por tabela. **Cópia, não movimentação** — o `keys.db` permanece íntegro (plano de reversão do ADR-012).
 
-### Sprint 21 — Etapa 4: Camada de Dados Assíncrona (ADR-012)
-> A maior das sete. 158 chamadas síncronas em 31 arquivos: `better-sqlite3` é síncrono
-> por design e qualquer driver Postgres é assíncrono — não há adaptador que evite isso.
-> Rede de segurança: a suíte de testes. Decisão pendente registrada abaixo.
-- [ ] TASK-068 → conexão via pooler (transaction mode). O proxy global e o `resetConnection()` de `src/lib/db.ts` não sobrevivem a instâncias efêmeras.
-- [ ] TASK-069 → conversão das consultas para assíncronas, incluindo os Server Components. `src/lib/history-query.ts` (TASK-056) já concentra a consulta do histórico.
-- [ ] TASK-070 → transações explícitas com client dedicado, no lugar de `db.transaction(() => ...)` (3 usos).
-- [ ] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`.
+### Sprint 21 ✅ — Etapa 4: Camada de Dados Assíncrona (ADR-012)
+> A maior das sete. A estimativa de 158 chamadas síncronas em 31 arquivos virou **162 em
+> 28** na execução: `better-sqlite3` é síncrono por design e qualquer driver Postgres é
+> assíncrono — não há adaptador que evite isso. Rede de segurança: a suíte de testes,
+> agora rodando contra Postgres real em container (D-11).
+- [x] TASK-068 → conexão via pooler (transaction mode). O proxy global e o `resetConnection()` de `src/lib/db.ts` não sobrevivem a instâncias efêmeras. Entregue como `src/lib/pg.ts`: `query`/`queryOne`/`execute`/`withTransaction`/`closePool`, tradução um-para-um do `.all()`/`.get()`/`.run()`, com **pool preguiçoso** (ver débito abaixo) e sem `name` em consulta alguma — transaction mode não suporta statement nomeado. Infra de teste junto: `docker-compose.test.yml` + `globalSetup` que reproduz a baseline da plataforma Supabase (papéis `anon`/`authenticated`) para que as migrations de `db/migrations-pg/` rodem no container **identicamente** à produção.
+- [x] TASK-069 → conversão das consultas para assíncronas, incluindo os Server Components. Executada em **5 fatias por fronteira de execução** (não por pasta — ver lição abaixo): (a) módulos de `src/lib`, (b) autenticação e conta, (c) ciclo de vida das chaves, (d) demais rotas de API, (e) Server Components + `src/lib/history-query.ts`.
+- [x] TASK-070 → transações explícitas com client dedicado, no lugar de `db.transaction(() => ...)`. O bypass da imutabilidade (`db-maintenance.ts`) deixou de ser uma linha numa tabela-flag e passou a ser `set_config(..., is_local = true)` — o Postgres o descarta no COMMIT/ROLLBACK, então não há estado que possa vazar. **`src/lib/db.ts` foi apagado** e nenhum arquivo de `src/` importa mais `better-sqlite3`, que virou devDependency (as ferramentas offline `db/migrate.mjs` e `db/load-pg.mjs` continuam usando).
+- [x] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`. `postinstall` (que rodava `npm rebuild better-sqlite3 && node scripts/init-db.js`) removido: quebraria o build da hospedagem.
+- [x] **Fora do escopo original, decidido na execução:** `src/lib/backup.ts` e as rotas `backups/restore` e `backups/import` foram **neutralizados**, não convertidos. Backup por cópia de arquivo SQLite não tem equivalente em Postgres gerenciado, e `node-cron` exige processo de longa duração que não existe em execução serverless. `createBackup()` recusa explicitamente e as rotas devolvem 503, ambos citando a **TASK-078** (Etapa 7), que é a dona do desenho substituto. O 403 de não-ADMIN e a trilha de auditoria continuam antes da recusa. Agendar e nunca rodar seria pior do que não agendar.
 
 ### Sprint 22 — Etapa 5: Realtime (ADR-012 · REQ-032)
 > Onde o requisito que motivou a migração é efetivamente entregue.
@@ -211,7 +218,7 @@
 - [ ] TASK-079 → deploy, ping agendado contra a pausa por inatividade, e remoção do aparato local (PM2, `.bat`, `show-ip.js`) apenas APÓS os 30 dias de retenção do plano de reversão.
 
 ### Decisões pendentes das Etapas 3–7
-- **Banco dos testes (Etapa 4).** Os 125 testes usam SQLite em memória (`MOCK_DB_IN_MEMORY`). Recomendação do ADR-012: Postgres real em container — testar contra dialeto diferente do de produção anula boa parte da garantia. Decidir ao iniciar a Sprint 21.
+- ~~**Banco dos testes (Etapa 4).**~~ — **resolvida em 2026-09-03 (D-11):** Postgres real em container, conforme a recomendação do ADR-012. Implementada na TASK-068.
 - **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt.
 
 ### Itens não bloqueantes
@@ -226,6 +233,10 @@
 - **Autorização sem defesa em profundidade** — `src/proxy.ts` (ex-`middleware.ts`, convenção Next 16) só renova a expiração do cookie e limpa JWT inválido; requisição sem sessão segue adiante (`NextResponse.next()`). A verificação de papel é feita manualmente em cada handler, então uma rota nova esquecida nasce aberta. Tolerável em rede local; endereçar antes da exposição pública (Etapa 7).
 - ~~**Erro de hidratação pré-existente**~~ — **quitado (TASK-058, 2026-09-02):** dois pontos, ambos anteriores ao ciclo de migração. `HistoryClient` renderizava `new Date().toLocaleString()` direto no JSX (commit original `95af5ac`); `DashboardClient` calculava as chaves em atraso dentro de `useMemo` a partir de `new Date().getTime()`, e o `useMemo` roda no SSR. A regra de atraso saiu para `business-rules.findDelayedKeys(keys, now)` — pura, recebe o instante como argumento — e os dois componentes passaram a usar `useClientClock` (`useSyncExternalStore`), que devolve nulo no SSR e na hidratação. Medido antes do fix: três renders do servidor devolviam `14:01:38`, `:41` e `:43` contra `14:01:08` no cliente.
 - ~~**`keys.db` segue rastreado no git**~~ — **registro obsoleto, corrigido na TASK-062 (2026-09-03):** a remoção já havia sido feita em `23c6bcd`/`2e83857`/`5874d62` e nenhum `.db` é rastreado hoje. O débito permaneceu no `plan.md` por várias sprints descrevendo um problema inexistente — e chegou a ser propagado para o ADR-012. **Lição:** débito herdado deve ser reverificado antes de ser repetido em documento novo. Resta apenas o arquivo no histórico antigo de commits (ver decisão pendente).
+
+- **Backup da aplicação sem substituto até a TASK-078 (Sprint 21 → Etapa 7).** `createBackup()` recusa e as rotas de restore/import devolvem 503. Entre o go-live e a TASK-078, a única proteção de dados é o backup gerenciado do provedor — que existe, mas não foi verificado nem tem restauração ensaiada, e constitution §4.3 exige *verificação*, não só existência. **Não é aceitável no go-live:** a TASK-078 é bloqueante para a Etapa 7, não opcional. Enquanto isso, o `keys.db` íntegro segue sendo o plano de reversão (ADR-012).
+- **Lição de execução (Sprint 21) — fatia se desenha por fronteira de execução, não por pasta.** As 5 fatias da TASK-069 foram desenhadas por diretório e isso produziu **4 correções de escopo**: `history-query.ts`, `db-maintenance.ts` e `backup.ts` saíram das fatias em que estavam, e `user-confirm` voltou para a fatia (c) depois de ter saído — o teste provou que a dupla confirmação atravessa `transactions/route.ts` e `user-confirm` **em tempo de execução**, e converter um sem o outro deixa o fluxo pela metade. Converter é uma operação sobre o grafo de chamadas; a árvore de pastas é só uma projeção dele.
+- **Lição de execução (Sprint 21) — a suíte cobre funções, não o sistema.** Dois defeitos passaram por 270+ testes verdes: (1) o pool criado no topo de `src/lib/pg.ts` quebrava `npm run build` (o Next importa cada rota para coletar dados da página, e ali não há `DATABASE_URL`; em teste ela sempre existe); (2) `normalizeTimestamp` recebia `Date` do driver e chamava `.trim()` nele — a página de histórico quebrava no navegador, mas nenhum teste passava valor lido do banco pela formatação que a tela usa. Ambos foram cobertos test-first depois do fato, e **`npm run build` + render no navegador entraram na verificação de cada fatia**. Nota operacional: a verificação no navegador e a suíte compartilham o mesmo container, e `tests/setup.ts` dá `TRUNCATE` — semear para verificação e rodar `vitest` na sequência apaga a semente.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
@@ -269,3 +280,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 13 (devolução REQ-028) | 2026-07-07 | 2026-07-07 | 1 | 2 tasks | 2 | 1 (TASK-047: seletor e2e ambíguo + stash interrompido pelo lock do keys.db do dev server — recuperado sem perda) | 0 | — | — |
 | 14 (fluxo unificado REQ-029) | 2026-07-10 | 2026-07-10 | 1 | 4 tasks | 4 | 0 | 0 (todos os gates verdes em cada task) | — | — |
 | 20 (schema Postgres · Etapa 3 ADR-012) | 2026-09-03 | 2026-09-03 | 1 | 5 tasks | 5 | 1 (TASK-065: search_path mutavel em history_imutavel introduzido pela propria task, achado do get_advisors e corrigido em test->fix; e o criterio de EXPLAIN da TASK-064 reescrito na execucao — Index Cond vs Filter no lugar de Seq Scan) | 1 (Gate 5 type-check: literal BigInt e counts sem tipo em pg-load.test — corrigido com .d.mts) | — | — |
+| 21 (camada async · Etapa 4 ADR-012) | 2026-09-03 | 2026-09-04 | 2 | 4 tasks | 5 (as 4 + neutralizacao do backup, fora do escopo original) | 2 (TASK-068: pool criado no topo do modulo quebrou `npm run build` — refeito preguicoso em fix; TASK-069: 4 correcoes de escopo entre fatias — history-query, db-maintenance e backup sairam, user-confirm voltou — mais o `Date` do driver na formatacao, corrigido em test->fix) | 2 (Gate 5 type-check: `if (checkLockout(...))` com Promise<boolean> sempre verdadeiro em login/route — travaria todo usuario, pego antes do commit; `npm run build`: pool no topo do modulo) | — | — |
