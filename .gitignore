@@ -62,3 +62,12 @@ e2e-backups/
 e2e-logs/
 playwright-report/
 test-results/
+
+# Plugin/skill de terceiros do Claude Code, vendorizado por engano em d4fc3e3 e
+# duplicado em tres lugares (raiz, .agents/skills/, .claude/skills/). Nao faz
+# parte do sistema de chaves, nunca roda em producao, e era a origem de 100% dos
+# achados do CodeQL e de 540 dos 541 warnings do ESLint. Os arquivos permanecem
+# em disco — a skill continua funcionando localmente; o que sai e o rastreamento.
+/impeccable/
+.agents/skills/impeccable/
+.claude/skills/impeccable/
