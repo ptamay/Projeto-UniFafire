@@ -44,19 +44,26 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 19 concluída
-- Sprint/Task Ativa: Nenhuma. Sprints 16, 17, 18 e 19 concluídas.
-- Última Ação: CR Tipo D aprovado e executado (constitution §0/§1.3/§2.3/§2.5/§2.6/§4.3/§7,
-  spec REQ-031 e REQ-032, plan Sprints 19–24). Sprint 19 fechada: Gate 2 de migrations passa
-  a reprovar de fato, APP_ENV implementado (§8), Retry-After em 429/423. 140 testes, 6 gates
-  verdes. TASK-062 revelou que o débito do keys.db estava obsoleto — nada a corrigir.
-- Próxima Ação: Sprint 20 — Etapa 3 (schema Postgres): TASK-063 a TASK-067. Está DESBLOQUEADA.
-  Primeira decisão da sprint: criar projeto Supabase (região São Paulo) — precisa do usuário.
-- Decisões em aberto: (1) banco dos testes na Etapa 4 — recomendação do ADR é Postgres em
-  container, decidir ao iniciar a Sprint 21; (2) expurgar keys.db do histórico antigo do git
-  exige reescrever história — baixo risco, o banco não tem secret.
-- Arquivos não commitados: CLAUDE.md (este checkpoint)
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16–19)
+- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 20 concluída
+- Sprint/Task Ativa: Nenhuma. Sprints 16–20 concluídas.
+- Última Ação: Sprint 20 (Etapa 3 do ADR-012 — schema Postgres) fechada. TASK-063 a 067:
+  schema Postgres equivalente em db/migrations-pg/ (diretório próprio; Gate 2 estendido para
+  cobrir os dois — decisão D1), índices mínimos + timestamptz, imutabilidade do histórico em
+  PL/pgSQL com bypass por set_config transacional e superfície de escrita fechada (RLS nas 9
+  tabelas + REVOKE de anon/authenticated; 2 achados do get_advisors corrigidos), legado
+  employees/employee_id descartado (9 pontos de código; keys.db intacto — TASK-066), e loader
+  SQLite→Postgres com reconciliação de contagens (carga sintética — decisão D3). Tudo provado
+  no Supabase real (projeto nkhoyvgnevtwlkheknxu, sa-east-1). 197 testes, 6 gates verdes.
+- Próxima Ação: Sprint 21 — Etapa 4 (camada de dados assíncrona): TASK-068 a 071. A MAIOR das
+  sete (158 chamadas síncronas em 31 arquivos). Primeira decisão da sprint: banco dos testes
+  (recomendação do ADR: Postgres em container). Oráculo pronto: docs/migracao-dialeto-sql.md.
+- Decisões em aberto: (1) banco dos testes na Etapa 4 — decidir ao iniciar a Sprint 21;
+  (2) expurgar keys.db do histórico antigo do git exige reescrever história — baixo risco.
+- Estado do Supabase: schema das 9 tabelas + índices + triggers de imutabilidade + RLS
+  aplicados; dados SINTÉTICOS carregados (20 users, 5 keys, 92 tx, 30 history, 99 logs, 4
+  settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
+- Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
+- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16–20)
 - Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
 - Atualizado em: 2026-09-03
 ```
@@ -107,11 +114,11 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; roadmap de sprints encerrado, backlog vazio)
-Última sprint     : 14 ✅ (Fluxo Unificado do Dashboard — REQ-029/ADR-010)
-Fase atual        : 11 (release governance concluída — release-v0.2.0.md gerado, pendente merge/deploy)
+Sprint atual      : — (nenhuma ativa; Sprint 20 concluída)
+Última sprint     : 20 ✅ (Etapa 3 do ADR-012 — Schema Postgres · TASK-063 a 067)
+Fase atual        : 8-10 (execução da migração ADR-012; Etapas 3–7 = Sprints 20–24, Etapa 3 fechada)
 Último commit     : (ver git log -1)
-Próxima ação      : Push da branch + abrir PR contra main + merge + deploy PM2 (ação manual)
+Próxima ação      : Sprint 21 — Etapa 4 (camada de dados assíncrona · TASK-068 a 071)
 ```
 
 ---

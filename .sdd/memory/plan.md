@@ -175,13 +175,13 @@
 - [x] TASK-061 → **`Retry-After` na resposta 429** (constitution §2.6). `login/route.ts:30` devolve 429 sem o header que a cláusula exige. Divergência de mesma classe que as anteriores, encontrada ao reescrever §2.6. test→fix.
 - [x] TASK-062 → **nada a fazer no código — o registro é que estava errado.** Verificado com `git ls-files`: nenhum `.db`/`.sqlite` é rastreado hoje, e `git log --all -- keys.db` mostra a remoção já feita em `23c6bcd`, `2e83857` e `5874d62`. O débito no `plan.md` (e a divergência #3 do ADR-012, que o repetiu por confiar no registro em vez de verificar) estava obsoleto. **Pendência real remanescente:** o arquivo continua nos commits antigos do histórico; expurgá-lo exige reescrever história — decisão à parte, registrada abaixo.
 
-### Sprint 20 — Etapa 3: Schema Postgres (ADR-012)
+### Sprint 20 ✅ — Etapa 3: Schema Postgres (ADR-012)
 > Primeira sprint que toca a stack. Só começa com a Sprint 19 fechada.
-- [ ] TASK-063 → schema Postgres equivalente, com as conversões de dialeto mapeadas no ADR-012: `IDENTITY` no lugar de `AUTOINCREMENT`, `boolean` real, `timestamptz`, `json_build_object`, `RETURNING id` no lugar de `lastInsertRowid`, `ON CONFLICT DO NOTHING`.
-- [ ] TASK-064 → **índices** — o schema atual não declara nenhum. Mínimo: `history(timestamp DESC)`, `history(key_id)`, `history(user_id)`, `action_logs(timestamp DESC)`, `key_transactions(key_id, status)`, `key_transactions(user_id)`. Os filtros já foram tornados sargáveis na TASK-055.
-- [ ] TASK-065 → imutabilidade do histórico em PL/pgSQL + `REVOKE UPDATE, DELETE` (constitution §4.4). No Postgres fica mais forte que o trigger atual: o bypass de manutenção vira `set_config` com escopo transacional, dispensando a tabela-flag `_maintenance_mode`.
-- [ ] TASK-066 → consolidação de legado: `employees` está morta (0 linhas) mas ainda é `LEFT JOIN`ada; `keys` tem `employee_id` e `user_id` convivendo. Decidir e consolidar antes de carregar dados.
-- [ ] TASK-067 → carga dos dados de `keys.db` para o Postgres, com verificação de contagem por tabela. **Cópia, não movimentação** — o `keys.db` permanece íntegro (plano de reversão do ADR-012).
+- [x] TASK-063 → schema Postgres equivalente, com as conversões de dialeto mapeadas no ADR-012: `IDENTITY` no lugar de `AUTOINCREMENT`, `boolean` real, `timestamptz`, `json_build_object`, `RETURNING id` no lugar de `lastInsertRowid`, `ON CONFLICT DO NOTHING`.
+- [x] TASK-064 → **índices** — o schema atual não declara nenhum. Mínimo: `history(timestamp DESC)`, `history(key_id)`, `history(user_id)`, `action_logs(timestamp DESC)`, `key_transactions(key_id, status)`, `key_transactions(user_id)`. Os filtros já foram tornados sargáveis na TASK-055.
+- [x] TASK-065 → imutabilidade do histórico em PL/pgSQL + `REVOKE UPDATE, DELETE` (constitution §4.4). No Postgres fica mais forte que o trigger atual: o bypass de manutenção vira `set_config` com escopo transacional, dispensando a tabela-flag `_maintenance_mode`.
+- [x] TASK-066 → consolidação de legado: `employees` está morta (0 linhas) mas ainda é `LEFT JOIN`ada; `keys` tem `employee_id` e `user_id` convivendo. Decidir e consolidar antes de carregar dados.
+- [x] TASK-067 → carga dos dados de `keys.db` para o Postgres, com verificação de contagem por tabela. **Cópia, não movimentação** — o `keys.db` permanece íntegro (plano de reversão do ADR-012).
 
 ### Sprint 21 — Etapa 4: Camada de Dados Assíncrona (ADR-012)
 > A maior das sete. 158 chamadas síncronas em 31 arquivos: `better-sqlite3` é síncrono
@@ -265,3 +265,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 12 (pull REQ-027) | 2026-07-07 | 2026-07-07 | 1 | 3 tasks | 3 (045 consolidada em 044) | 0 | 1 (Gate 4 falha por débito herdado da Sprint 11 — TASK-042 feat sem test; não introduzido nesta sprint) | — | — |
 | 13 (devolução REQ-028) | 2026-07-07 | 2026-07-07 | 1 | 2 tasks | 2 | 1 (TASK-047: seletor e2e ambíguo + stash interrompido pelo lock do keys.db do dev server — recuperado sem perda) | 0 | — | — |
 | 14 (fluxo unificado REQ-029) | 2026-07-10 | 2026-07-10 | 1 | 4 tasks | 4 | 0 | 0 (todos os gates verdes em cada task) | — | — |
+| 20 (schema Postgres · Etapa 3 ADR-012) | 2026-09-03 | 2026-09-03 | 1 | 5 tasks | 5 | 1 (TASK-065: search_path mutavel em history_imutavel introduzido pela propria task, achado do get_advisors e corrigido em test->fix; e o criterio de EXPLAIN da TASK-064 reescrito na execucao — Index Cond vs Filter no lugar de Seq Scan) | 1 (Gate 5 type-check: literal BigInt e counts sem tipo em pg-load.test — corrigido com .d.mts) | — | — |
