@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import db from '@/lib/db';
 import { verifySession, signSession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import type { UserAuthRow } from '@/lib/db-rows';
 

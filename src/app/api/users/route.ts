@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';

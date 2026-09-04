@@ -56,20 +56,29 @@ describe('TASK-071 — custo e árvore de dependências', () => {
         expect(pkg.devDependencies ?? {}).not.toHaveProperty('@types/bcrypt');
     });
 
-    it('BDD 3: nenhum arquivo de src/ importa mais o bcrypt nativo', () => {
+    it('BDD 3: nada mais importa o bcrypt nativo — src, tests e scripts', () => {
+        // A primeira versão deste teste varria só `src/`, e passou verde enquanto
+        // `tests/setup.ts` e três scripts ainda importavam o addon. `scripts/init-db.js`
+        // roda no `postinstall`: teria quebrado o `npm install` do projeto inteiro,
+        // sem nenhum teste notando.
         const alvos: string[] = [];
         const varrer = (dir: string) => {
+            if (!fs.existsSync(dir)) return;
             for (const entrada of fs.readdirSync(dir, { withFileTypes: true })) {
+                if (entrada.name === 'node_modules') continue;
                 const p = path.join(dir, entrada.name);
-                if (entrada.isDirectory()) varrer(p);
-                else if (/\.tsx?$/.test(entrada.name)) {
+                if (entrada.isDirectory()) {
+                    varrer(p);
+                } else if (/\.(tsx?|mjs|js)$/.test(entrada.name) && !p.includes('bcryptjs-migration')) {
                     const conteudo = fs.readFileSync(p, 'utf-8');
-                    // `from 'bcrypt'` exato — `from 'bcryptjs'` não pode casar.
-                    if (/from\s+['"]bcrypt['"]/.test(conteudo)) alvos.push(p);
+                    // `bcrypt` exato — `bcryptjs` não pode casar por prefixo.
+                    if (/(?:from|require\()\s*['"]bcrypt['"]/.test(conteudo)) alvos.push(p);
                 }
             }
         };
-        varrer(path.resolve(process.cwd(), 'src'));
+        for (const raiz of ['src', 'tests', 'scripts', 'db']) {
+            varrer(path.resolve(process.cwd(), raiz));
+        }
         expect(alvos, `ainda importam o addon nativo:\n${alvos.join('\n')}`).toEqual([]);
     });
 });

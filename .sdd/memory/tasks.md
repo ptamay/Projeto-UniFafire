@@ -214,16 +214,16 @@ ninguém. Custo: é mais lento — aceitável para ~19 usuários e um login por 
 6 arquivos, 5 chamadas de `hash` e 4 de `compare`.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Hash gerado pelo `bcrypt` antigo continua validando
+- [x] **Cenário**: Hash gerado pelo `bcrypt` antigo continua validando
       Dado um hash `$2b$` gerado pela implementação nativa
       Quando `bcryptjs.compare` é usado com a senha correta
       Então a comparação passa
       E ninguém precisa trocar de senha por causa da migração.
-- [ ] **Cenário**: Custo mínimo preservado (constitution §1.1)
+- [x] **Cenário**: Custo mínimo preservado (constitution §1.1)
       Dado a criação de uma senha nova
       Quando o hash é gerado
       Então o custo é ≥ 10.
-- [ ] **Cenário**: Nenhum addon nativo sobra na árvore de runtime
+- [x] **Cenário**: Nenhum addon nativo sobra na árvore de runtime
       Dado o `package.json`
       Quando as dependências são inspecionadas
       Então `bcrypt` e `@types/bcrypt` não estão mais em `dependencies`.

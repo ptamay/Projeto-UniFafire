@@ -1,5 +1,5 @@
 import { beforeAll, afterAll } from 'vitest';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Importa a instância global inicializada do banco (já que setamos DB_PATH)
 import db from '@/lib/db';
