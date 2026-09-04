@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid current password' }, { status: 400 });
         }
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as UserAuthRow | undefined;
+        const user = await queryOne<UserAuthRow>('SELECT * FROM users WHERE id = $1', [userId]);
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         }
 
         const newHash = await bcrypt.hash(newPassword, 10);
-        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(newHash, userId);
+        await execute('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
 
         return NextResponse.json({ success: true });
     } catch (error) {

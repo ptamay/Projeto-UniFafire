@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
@@ -25,18 +25,25 @@ export async function POST(request: Request) {
         }
 
         // Get target user username for logging
-        const targetUser = db.prepare('SELECT username FROM users WHERE id = ?').get(targetUserId) as { username: string } | undefined;
+        const targetUser = await queryOne<{ username: string }>(
+            'SELECT username FROM users WHERE id = $1', [targetUserId],
+        );
         if (!targetUser) {
             return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
         }
 
         // Use default from settings
-        const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'default_reset_password'").get() as { value: string } | undefined;
+        const settingsRow = await queryOne<{ value: string }>(
+            "SELECT value FROM settings WHERE key = 'default_reset_password'",
+        );
         const defaultPassword = settingsRow ? settingsRow.value : 'unifafire123';
 
         // Hash and update
         const newHash = await bcrypt.hash(defaultPassword, 10);
-        db.prepare('UPDATE users SET password_hash = ?, requires_password_change = 1 WHERE id = ?').run(newHash, targetUserId);
+        await execute(
+            'UPDATE users SET password_hash = $1, requires_password_change = true WHERE id = $2',
+            [newHash, targetUserId],
+        );
 
         // Action Log
         logAction(session.id, session.username, 'RESET_PASSWORD', targetUser.username, `Alterada senha do usuário ${targetUser.username}`);

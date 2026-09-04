@@ -15,7 +15,7 @@ import { queryOne, execute } from '@/lib/pg';
 
 vi.mock('next/headers', () => ({
     cookies: () => ({
-        get: vi.fn().mockReturnValue(undefined),
+        get: vi.fn().mockReturnValue({ value: 'token-de-teste' }),
         set: vi.fn(),
     }),
     headers: () => Promise.resolve(new Headers()),
@@ -51,6 +51,10 @@ beforeEach(async () => {
     hash = await bcrypt.hash(SENHA, 10);
     await execute('DELETE FROM login_attempts');
     await execute('DELETE FROM rate_limit_hits');
+    // action_logs ANTES de users: o Postgres impõe a chave estrangeira que o
+    // SQLite deixava passar. Não é atrito do teste — é a integridade que a
+    // migração compra, aparecendo na primeira vez que alguém a exercita.
+    await execute('DELETE FROM action_logs WHERE user_id >= 800');
     await execute('DELETE FROM users WHERE id >= 800');
 });
 
@@ -123,13 +127,16 @@ describe('TASK-069(b) — troca de senha obrigatória grava no Postgres', () => 
 describe('TASK-069(b) — rotas de conta gravam no Postgres', () => {
     it('a troca de senha pela página de segurança atualiza o hash no Postgres', async () => {
         await semearNoPostgres(806, 'troca_seguranca_pg');
-        vi.doMock('@/lib/session-edge', async (orig) => ({
+        // A rota usa verifySession (não verifySessionEdge): mockar o módulo
+        // errado deixaria o teste passar por 401 sem nunca tocar a consulta.
+        vi.doMock('@/lib/session', async (orig) => ({
             ...(await orig<Record<string, unknown>>()),
-            verifySessionEdge: () => Promise.resolve({ id: 806, username: 'troca_seguranca_pg', role: 'FUNCIONARIO' }),
+            verifySession: () => Promise.resolve({ id: 806, username: 'troca_seguranca_pg', role: 'FUNCIONARIO' }),
         }));
+        vi.resetModules();
 
-        const { POST } = await import('@/app/api/account/security/password/route');
-        const res = await POST(new Request('http://localhost/api/account/security/password', {
+        const { PUT } = await import("@/app/api/account/security/password/route");
+        const res = await PUT(new Request("http://localhost/api/account/security/password", {
             method: 'POST',
             body: JSON.stringify({ currentPassword: SENHA, newPassword: 'outra-senha-999' }),
         }) as never);
@@ -152,6 +159,7 @@ describe('TASK-069(b) — rotas de conta gravam no Postgres', () => {
             ...(await orig<Record<string, unknown>>()),
             verifySession: () => Promise.resolve({ id: 1, username: 'test_admin', role: 'ADMIN' }),
         }));
+        vi.resetModules();
 
         const { POST } = await import('@/app/api/users/reset-password/route');
         const res = await POST(new Request('http://localhost/api/users/reset-password', {

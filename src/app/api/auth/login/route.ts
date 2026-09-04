@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { logAction } from '@/lib/logger';
 import { signSession } from '@/lib/session';
@@ -51,8 +51,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Usuário e senha são obrigatórios' }, { status: 400 });
         }
 
-        const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1');
-        const user = stmt.get(body.username) as LoginUserRow | undefined;
+        // `active` sem comparacao: boolean de verdade no Postgres (TASK-063).
+        const user = await queryOne<LoginUserRow>(
+            'SELECT * FROM users WHERE username = $1 AND active', [body.username],
+        );
 
         if (!user) {
             await recordLoginAttempt(body.username, ip, false);
@@ -81,7 +83,10 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'A nova senha deve ter no mínimo 8 caracteres' }, { status: 400 });
             }
             const hashedNew = await bcrypt.hash(body.newPassword, 10);
-            db.prepare('UPDATE users SET password_hash = ?, requires_password_change = 0 WHERE id = ?').run(hashedNew, user.id);
+            await execute(
+                'UPDATE users SET password_hash = $1, requires_password_change = false WHERE id = $2',
+                [hashedNew, user.id],
+            );
             logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
             currentHash = hashedNew;
         }

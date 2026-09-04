@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import { verifySession, signSession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
@@ -29,8 +29,9 @@ export async function PUT(request: Request) {
         const { currentPassword, newPassword } = parsed.data;
 
         // Recupera o usuário
-        const stmt = db.prepare('SELECT id, username, password_hash, role FROM users WHERE id = ?');
-        const user = stmt.get(payload.id) as UserAuthRow | undefined;
+        const user = await queryOne<UserAuthRow>(
+            'SELECT id, username, password_hash, role FROM users WHERE id = $1', [payload.id],
+        );
 
         if (!user) {
             return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
@@ -46,7 +47,7 @@ export async function PUT(request: Request) {
         const hashedNew = await bcrypt.hash(newPassword, 10);
 
         // Atualiza no banco
-        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashedNew, user.id);
+        await execute('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedNew, user.id]);
 
         logAction(user.id, user.username, 'CHANGE_PASSWORD', 'Self', 'User changed their password via security page');
 
