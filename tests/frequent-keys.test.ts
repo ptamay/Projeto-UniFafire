@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import db from '@/lib/db';
+import { queryOne, execute, withTransaction } from '@/lib/pg';
 
 // TASK-050 (REQ-029c) — /api/metrics/frequent-keys passa a distinguir o papel:
 // portaria (ADMIN/GESTOR/PORTEIRO) recebe as chaves mais movimentadas GLOBALMENTE
@@ -32,24 +32,33 @@ describe('TASK-050 — frequência de chaves por papel (REQ-029c)', () => {
     let keySala: number;
     let keyPorteiro: number;
 
-    beforeEach(() => {
-        db.prepare('DELETE FROM history').run();
-        db.prepare("DELETE FROM keys WHERE name LIKE 'FreqTest%'").run();
-        const ins = db.prepare("INSERT INTO keys (name, room, status, active) VALUES (?, 'x', 'available', 1)");
-        keyLab = Number(ins.run('FreqTest Lab').lastInsertRowid);
-        keySala = Number(ins.run('FreqTest Sala').lastInsertRowid);
-        keyPorteiro = Number(ins.run('FreqTest Porteiro').lastInsertRowid);
+    beforeEach(async () => {
+        // history e imutavel por trigger (TASK-065): limpeza pelo caminho
+        // autorizado do REQ-014.
+        await withTransaction(async (t) => {
+            await t.execute("SELECT set_config('app.maintenance_mode', 'on', true)");
+            await t.execute('DELETE FROM history');
+        });
+        await execute("DELETE FROM keys WHERE name LIKE 'FreqTest%'");
+        const criarChave = async (nome: string) => (await queryOne<{ id: number }>(
+            "INSERT INTO keys (name, room, status, active) VALUES ($1, 'x', 'available', true) RETURNING id",
+            [nome],
+        ))!.id;
+        keyLab = await criarChave('FreqTest Lab');
+        keySala = await criarChave('FreqTest Sala');
+        keyPorteiro = await criarChave('FreqTest Porteiro');
 
-        const h = db.prepare("INSERT INTO history (key_id, user_id, username, action) VALUES (?, ?, ?, 'withdraw')");
+        const h = { run: (k: number, u: number, n: string) => execute(
+            "INSERT INTO history (key_id, user_id, username, action) VALUES ($1, $2, $3, 'withdraw')", [k, u, n]) };
         // keyLab: muito movimentada pela portaria como um todo (vários usuários), 3×
-        h.run(keyLab, ALUNO, 'test_aluno');
-        h.run(keyLab, ALUNO2, 'test_aluno2');
-        h.run(keyLab, ALUNO, 'test_aluno');
+        await h.run(keyLab, ALUNO, 'test_aluno');
+        await h.run(keyLab, ALUNO2, 'test_aluno2');
+        await h.run(keyLab, ALUNO, 'test_aluno');
         // keySala: movimentada 2× por alunos
-        h.run(keySala, ALUNO2, 'test_aluno2');
-        h.run(keySala, ALUNO2, 'test_aluno2');
+        await h.run(keySala, ALUNO2, 'test_aluno2');
+        await h.run(keySala, ALUNO2, 'test_aluno2');
         // keyPorteiro: retirada só 1× pelo PRÓPRIO porteiro
-        h.run(keyPorteiro, PORTEIRO, 'test_porteiro');
+        await h.run(keyPorteiro, PORTEIRO, 'test_porteiro');
     });
 
     it('BDD: portaria recebe as chaves mais movimentadas GLOBALMENTE (não as próprias)', async () => {

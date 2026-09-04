@@ -122,7 +122,7 @@ describe('TASK-069(d) — rota de usuários', () => {
     it('a troca de papel grava no Postgres', async () => {
         const { POST } = await import('@/app/api/users/role/route');
         const res = await POST(new Request('http://localhost/api/users/role', {
-            method: 'POST', body: JSON.stringify({ userId: USER_ID, role: 'GESTOR' }),
+            method: 'POST', body: JSON.stringify({ targetUserId: USER_ID, newRole: 'GESTOR' }),
         }) as never);
 
         expect(res.status).toBe(200);
@@ -180,9 +180,8 @@ describe('TASK-069(d) — métricas de chaves e usuários frequentes', () => {
         );
 
         const { GET } = await import('@/app/api/metrics/frequent-keys/route');
-        const body = await (await GET(new Request('http://localhost/api/metrics/frequent-keys') as never)).json();
-
-        const lista = (Array.isArray(body) ? body : body.keys) as { id: number }[];
-        expect(lista.some(k => k.id === KEY_ID), 'a retirada gravada no Postgres não contou').toBe(true);
+        // A rota devolve um array de IDs, não de objetos.
+        const ids = await (await GET()).json() as number[];
+        expect(ids.includes(KEY_ID), 'a retirada gravada no Postgres não contou').toBe(true);
     });
 });

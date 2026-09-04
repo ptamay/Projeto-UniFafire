@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 
@@ -21,15 +21,15 @@ export async function GET(request: Request) {
         if (isNaN(keyId)) return NextResponse.json({ error: 'Invalid keyId' }, { status: 400 });
 
         // Conta a frequência de retiradas desta chave por usuário, nos últimos meses ou em todo histórico
-        const frequentUsers = db.prepare(`
+        const frequentUsers = await query(`
             SELECT u.id, u.username as name, u.role, u.username, u.full_name, COUNT(h.id) as frequency
             FROM users u
             JOIN history h ON u.id = h.user_id
-            WHERE h.key_id = ? AND h.action = 'withdraw' AND u.active = 1
+            WHERE h.key_id = $1 AND h.action = 'withdraw' AND u.active
             GROUP BY u.id
             ORDER BY frequency DESC
             LIMIT 5
-        `).all(keyId);
+        `, [keyId]);
 
         const result = frequentUsers.map((u) => {
             const user = u as { id: number, name: string, full_name: string, username: string, role: string, frequency: number };

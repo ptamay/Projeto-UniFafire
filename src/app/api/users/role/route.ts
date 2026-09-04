@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
@@ -34,8 +34,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Você não pode alterar seu próprio cargo.' }, { status: 400 });
         }
 
-        const targetUserStmt = db.prepare('SELECT * FROM users WHERE id = ?');
-        const targetUser = targetUserStmt.get(targetUserId) as RoleRow | undefined;
+        const targetUser = await queryOne<RoleRow>('SELECT * FROM users WHERE id = $1', [targetUserId]);
 
         if (!targetUser) {
             return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
@@ -43,16 +42,16 @@ export async function POST(request: Request) {
 
         // Integrity Check: Do not allow demotion if user is the last ADMIN
         if (targetUser.role === 'ADMIN' && newRole === 'PORTEIRO') {
-            const adminCountStmt = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'");
-            const result = adminCountStmt.get() as CountRow;
-            if (result.count <= 1) {
+            // count(*) volta STRING no Postgres: sem Number(), '1' <= 1 e falso e
+            // o unico admin poderia ser rebaixado.
+            const result = await queryOne<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN' AND active");
+            if (Number(result?.count) <= 1) {
                 return NextResponse.json({ error: 'Ação bloqueada: Não é possível rebaixar o único administrador.' }, { status: 400 });
             }
         }
 
         // Apply Change
-        const updateStmt = db.prepare('UPDATE users SET role = ? WHERE id = ?');
-        updateStmt.run(newRole, targetUserId);
+        await execute('UPDATE users SET role = $1 WHERE id = $2', [newRole, targetUserId]);
 
         // Action Log
         logAction(session.id, session.username, 'CHANGE_ROLE', targetUser.username, `Changed role from ${targetUser.role} to ${newRole}`);
