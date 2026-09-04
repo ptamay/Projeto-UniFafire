@@ -120,18 +120,29 @@ latência. Os filtros já foram tornados sargáveis na TASK-055 (faixa `[início
 vez de função sobre a coluna), então os índices de data são efetivamente usáveis.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Índices mínimos do ADR-012 declarados
+- [x] **Cenário**: Índices mínimos do ADR-012 declarados
       Dado o schema Postgres criado
       Quando os índices são inspecionados em `pg_indexes`
       Então existem `history(timestamp DESC)`, `history(key_id)`, `history(user_id)`,
       `action_logs(timestamp DESC)`, `key_transactions(key_id, status)` e
       `key_transactions(user_id)`
       E `rate_limit_hits(scope, identifier, hit_at)` foi preservado da TASK-054.
-- [ ] **Cenário**: O índice de data é de fato usado pela consulta do histórico
+- [x] **Cenário**: O índice de data é de fato usado pela consulta do histórico
       Dado o filtro de faixa que `src/lib/history-query.ts` monta (TASK-056)
       Quando `EXPLAIN` é executado sobre a consulta equivalente no Postgres
-      Então o plano usa varredura por índice em `history(timestamp DESC)`, não `Seq Scan`.
-- [ ] **Cenário**: DOWN pareado remove exatamente os índices criados
+      Então a faixa aparece como **`Index Cond` em `idx_history_timestamp`**
+      E a forma não-sargável equivalente (função sobre a coluna, como era antes da
+      TASK-055) aparece como `Filter`, sem `Index Cond`.
+
+      > **Critério corrigido durante a execução.** A redação original era *"o plano
+      > usa varredura por índice, não `Seq Scan`"* — e estava errada. Com ~130 linhas
+      > o planejador prefere `Seq Scan` e está **certo** em preferir; forçar o
+      > contrário com `enable_seqscan = off` e declarar vitória não provaria nada
+      > sobre o índice. O que importa medir é se o predicado alcança o índice, e isso
+      > se lê em `Index Cond` (restringe o que é lido) versus `Filter` (lê tudo e
+      > descarta depois). É exatamente a diferença que a TASK-055 comprou ao trocar
+      > função-sobre-coluna por faixa `[início, fim)`.
+- [x] **Cenário**: DOWN pareado remove exatamente os índices criados
       Dado o UP de índices aplicado
       Quando o DOWN é aplicado
       Então nenhum dos índices criados por este UP permanece, e nenhum outro é removido.

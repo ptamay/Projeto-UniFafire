@@ -292,10 +292,12 @@ describe('TASK-064 — índices mínimos do ADR-012', () => {
     it('BDD 1: os 7 índices são criados, com as colunas e a ordem certas', () => {
         const up = semComentarios(migrationDeIndices().up);
         for (const idx of INDICES_ESPERADOS) {
+            const colunas = idx.colunas
+                .split(',')
+                .map(c => c.trim().replace(/\s+/g, '\\s+'))
+                .join('\\s*,\\s*');
             const criacao = new RegExp(
-                `CREATE\s+INDEX\s+${idx.nome}\s+ON\s+(?:public\.)?${idx.tabela}\s*\(\s*${
-                    idx.colunas.replace(/,\s*/g, '\s*,\s*').replace(/\s+/g, '\s+')
-                }\s*\)`,
+                `CREATE\\s+INDEX\\s+${idx.nome}\\s+ON\\s+(?:public\\.)?${idx.tabela}\\s*\\(\\s*${colunas}\\s*\\)`,
                 'i',
             );
             expect(up, `índice ${idx.nome} ausente ou com colunas diferentes`).toMatch(criacao);
