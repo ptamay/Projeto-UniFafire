@@ -27,7 +27,7 @@ export async function POST() {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    logAction(
+    await logAction(
         session.id,
         session.username,
         'IMPORT_DATABASE_INDISPONIVEL',

@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
         // Atualiza no banco
         await execute('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedNew, user.id]);
 
-        logAction(user.id, user.username, 'CHANGE_PASSWORD', 'Self', 'User changed their password via security page');
+        await logAction(user.id, user.username, 'CHANGE_PASSWORD', 'Self', 'User changed their password via security page');
 
         // Cria uma nova sessão com o novo fragmento de hash
         const pwd_hash = hashedNew.slice(-10);

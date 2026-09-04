@@ -35,7 +35,7 @@ export async function POST() {
 
     // Tentativa de restauração é evento de auditoria mesmo recusada: é operação
     // destrutiva por natureza, e saber que alguém tentou importa (§3.5).
-    logAction(
+    await logAction(
         session.id,
         session.username,
         'RESTORE_BACKUP_INDISPONIVEL',

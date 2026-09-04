@@ -77,7 +77,7 @@ export async function POST(request: Request) {
                     VALUES ($1, 'withdraw', $2, $3, $4)
                 `, [keyId, resolvedUserId, targetUser.username, transactionId]);
 
-                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name, 
+                await logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name, 
                     `Atribuída diretamente para ${targetUser.full_name || targetUser.username}. Justificativa: ${justification.trim()}`);
 
                 return NextResponse.json({ 
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
             const transactionId = txResult!.id;
 
-            logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 
+            await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 
                 `Retirada iniciada para ${targetUser.full_name || targetUser.username}`);
 
             return NextResponse.json({ 
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
                     VALUES ($1, 'return', $2, $3, $4)
                 `, [keyId, currentUserId || resolvedUserId, targetUser?.username || 'Unknown', transactionId]);
 
-                logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name,
+                await logAction(session.id, session.username, 'TRANSACTION_BYPASS', key.name,
                     `Devolução forçada de ${targetUser?.username || 'Unknown'}. Justificativa: ${returnJustification}`);
 
                 return NextResponse.json({ 
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
             const transactionId = txResult!.id;
 
-            logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 'Devolução iniciada pelo porteiro');
+            await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 'Devolução iniciada pelo porteiro');
 
             return NextResponse.json({ 
                 success: true, 
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
                     VALUES ($1, 'transfer', $2, $3, $4)
                 `, [keyId, resolvedUserId, targetUser.username, transactionId]);
 
-                logAction(session.id, session.username, 'KEY_TRANSFERRED', key.name, 
+                await logAction(session.id, session.username, 'KEY_TRANSFERRED', key.name, 
                     `Chave transferida (bypass admin) para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
 
                 return NextResponse.json({ 
@@ -270,7 +270,7 @@ export async function POST(request: Request) {
 
                 const transactionId = txResult!.id;
 
-                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
+                await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
                     `Transferência iniciada para ${targetUser.full_name || targetUser.username}. Observação: ${obs?.trim() || 'Nenhuma'}`);
 
                 return NextResponse.json({
@@ -298,7 +298,7 @@ export async function POST(request: Request) {
 
                 const transactionId = txResult!.id;
 
-                logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
+                await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
                     `Solicitação de chave iniciada por ${session.username} ao portador. Observação: ${obs?.trim() || 'Nenhuma'}`);
 
                 return NextResponse.json({

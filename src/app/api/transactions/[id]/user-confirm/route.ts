@@ -116,7 +116,7 @@ export async function POST(request: Request, { params }: RouteParams) {
                 }
             });
 
-            logAction(session.id, session.username,
+            await logAction(session.id, session.username,
                 tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : (tx.action === 'return' ? 'KEY_RETURNED' : 'KEY_TRANSFERRED'),
                 tx.key_name || 'Chave manipulada',
                 `Transação #${transactionId} completada com dupla confirmação`

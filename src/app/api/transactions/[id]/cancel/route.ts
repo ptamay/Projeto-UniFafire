@@ -41,7 +41,7 @@ export async function POST(request: Request, { params }: RouteParams) {
             [new Date().toISOString(), transactionId],
         );
 
-        logAction(session.id, session.username, 'TRANSACTION_CANCELLED', `Transação #${transactionId}`, 'Cancelada');
+        await logAction(session.id, session.username, 'TRANSACTION_CANCELLED', `Transação #${transactionId}`, 'Cancelada');
 
         return NextResponse.json({ success: true, message: 'Transação cancelada.' });
     } catch (error) {

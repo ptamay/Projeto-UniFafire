@@ -57,7 +57,7 @@ export async function PUT(request: Request) {
             payload.id,
         ]);
 
-        logAction(Number(payload.id), String(payload.username), 'UPDATE_PROFILE', 'Self', 'User updated their own profile');
+        await logAction(Number(payload.id), String(payload.username), 'UPDATE_PROFILE', 'Self', 'User updated their own profile');
 
         return NextResponse.json({ success: true });
     } catch (error) {

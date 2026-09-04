@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         await execute('UPDATE users SET role = $1 WHERE id = $2', [newRole, targetUserId]);
 
         // Action Log
-        logAction(session.id, session.username, 'CHANGE_ROLE', targetUser.username, `Changed role from ${targetUser.role} to ${newRole}`);
+        await logAction(session.id, session.username, 'CHANGE_ROLE', targetUser.username, `Changed role from ${targetUser.role} to ${newRole}`);
 
         return NextResponse.json({ success: true, message: `Usuário ${newRole === 'ADMIN' ? 'promovido' : 'rebaixado'} com sucesso.` });
 

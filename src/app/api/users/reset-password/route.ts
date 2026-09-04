@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         );
 
         // Action Log
-        logAction(session.id, session.username, 'RESET_PASSWORD', targetUser.username, `Alterada senha do usuário ${targetUser.username}`);
+        await logAction(session.id, session.username, 'RESET_PASSWORD', targetUser.username, `Alterada senha do usuário ${targetUser.username}`);
 
         return NextResponse.json({ 
             success: true, 

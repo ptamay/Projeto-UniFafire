@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
         
         if (!(await checkRateLimit(ip))) {
-            logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
+            await logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
             // TASK-061 (constitution §2.6): 429 tem de dizer quando voltar; sem o
             // header o cliente só pode adivinhar e tende a insistir em vão.
             return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         }
 
         if (await checkLockout(body.username, ip)) {
-            logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
+            await logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
             return NextResponse.json(
                 { error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' },
                 { status: 423, headers: { 'Retry-After': String(LOCKOUT_WINDOW_MINUTES * 60) } }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
 
         if (!match) {
             await recordLoginAttempt(user.username, ip, false);
-            logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
+            await logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
                 'UPDATE users SET password_hash = $1, requires_password_change = false WHERE id = $2',
                 [hashedNew, user.id],
             );
-            logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
+            await logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
             currentHash = hashedNew;
         }
 
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
         (await cookies()).set(opcoesCookieSessao(sessionToken));
 
-        logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
+        await logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -100,7 +100,7 @@ export async function POST(request: Request) {
                     [hash, role, full_name || null, matricula || null, phone || null, existing.id],
                 );
 
-                logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
+                await logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
 
                 return NextResponse.json({
                     id: existing.id, username: finalUsername, role,
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
             [finalUsername, hash, role, full_name || null, matricula || null, phone || null],
         );
 
-        logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
+        await logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
 
         return NextResponse.json({ id: criado!.id, username: finalUsername, role, full_name, matricula, generatedPassword: finalPassword });
     } catch (error) {
@@ -172,7 +172,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
+        await logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -206,7 +206,7 @@ export async function PUT(request: Request) {
             [full_name || null, matricula || null, phone || null, role || targetUser.role, id],
         );
 
-        logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
+        await logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
 
         return NextResponse.json({ success: true });
     } catch (error) {

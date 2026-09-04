@@ -110,7 +110,7 @@ export async function POST(request: Request) {
         );
 
         if (user) {
-            logAction(user.id, user.username, 'CREATE_KEY', name, `Room: ${room || 'N/A'}`);
+            await logAction(user.id, user.username, 'CREATE_KEY', name, `Room: ${room || 'N/A'}`);
         }
 
         return NextResponse.json({ id: criada!.id, name, room, status: 'available' });
@@ -149,7 +149,7 @@ export async function PUT(request: Request) {
 
         if (user && currentKey) {
             const details = `Changed from: ${currentKey.name} (${currentKey.room}) to ${name} (${room})`;
-            logAction(user.id, user.username, 'UPDATE_KEY', name, details);
+            await logAction(user.id, user.username, 'UPDATE_KEY', name, details);
         }
 
         return NextResponse.json({ success: true, id, name, room });
@@ -181,7 +181,7 @@ export async function DELETE(request: Request) {
         await execute('UPDATE keys SET active = false WHERE id = $1', [id]);
 
         if (user) {
-            logAction(user.id, user.username, 'DELETE_KEY', key.name, `Deleted key ${key.name} - ${key.room}`);
+            await logAction(user.id, user.username, 'DELETE_KEY', key.name, `Deleted key ${key.name} - ${key.room}`);
         }
 
         return NextResponse.json({ success: true });
