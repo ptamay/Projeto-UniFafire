@@ -31,26 +31,10 @@ vi.mock('@/lib/session', () => ({
     verifySession: vi.fn().mockImplementation(() => Promise.resolve(sessaoAtual)),
 }));
 
-function requisicaoRestore(filename = 'keys_backup_2026-07-06.db') {
-    return new Request('http://localhost/api/backups/restore', {
-        method: 'POST',
-        body: JSON.stringify({ filename }),
-    }) as never;
-}
-
-async function requisicaoImport() {
-    const form = new FormData();
-    form.append('file', new File([new Uint8Array([1, 2, 3])], 'qualquer.db'));
-    return new Request('http://localhost/api/backups/import', {
-        method: 'POST',
-        body: form,
-    }) as never;
-}
-
 describe('TASK-068 — restore por cópia de arquivo não finge funcionar', () => {
     it('BDD 7: responde erro explícito citando a TASK-078', async () => {
         sessaoAtual = { id: 1, role: 'ADMIN', username: 'admin' };
-        const res = await RestorePOST(requisicaoRestore());
+        const res = await RestorePOST();
         const body = await res.json();
 
         expect(res.ok, 'não pode responder sucesso').toBe(false);
@@ -63,7 +47,7 @@ describe('TASK-068 — restore por cópia de arquivo não finge funcionar', () =
         const dbPath = path.resolve(process.cwd(), 'keys.db');
         const antes = fs.existsSync(dbPath) ? fs.statSync(dbPath).mtimeMs : null;
 
-        await RestorePOST(requisicaoRestore());
+        await RestorePOST();
 
         const depois = fs.existsSync(dbPath) ? fs.statSync(dbPath).mtimeMs : null;
         expect(depois).toBe(antes);
@@ -71,7 +55,7 @@ describe('TASK-068 — restore por cópia de arquivo não finge funcionar', () =
 
     it('BDD 7: continua exigindo ADMIN — a recusa é da operação, não da porta', async () => {
         sessaoAtual = { id: 9, role: 'PORTEIRO', username: 'porteiro' };
-        const res = await RestorePOST(requisicaoRestore());
+        const res = await RestorePOST();
         expect(res.status, 'não-ADMIN tem de levar 403, não a mensagem de desativado').toBe(403);
         sessaoAtual = { id: 1, role: 'ADMIN', username: 'admin' };
     });
@@ -80,7 +64,7 @@ describe('TASK-068 — restore por cópia de arquivo não finge funcionar', () =
 describe('TASK-068 — import por upload de arquivo não finge funcionar', () => {
     it('BDD 7: responde erro explícito citando a TASK-078', async () => {
         sessaoAtual = { id: 1, role: 'ADMIN', username: 'admin' };
-        const res = await ImportPOST(await requisicaoImport());
+        const res = await ImportPOST();
         const body = await res.json();
 
         expect(res.ok).toBe(false);
@@ -92,18 +76,25 @@ describe('TASK-068 — import por upload de arquivo não finge funcionar', () =>
         const dbPath = path.resolve(process.cwd(), 'keys.db');
         const antes = fs.existsSync(dbPath) ? fs.statSync(dbPath).mtimeMs : null;
 
-        await ImportPOST(await requisicaoImport());
+        await ImportPOST();
 
         const depois = fs.existsSync(dbPath) ? fs.statSync(dbPath).mtimeMs : null;
         expect(depois).toBe(antes);
     });
 
     it('BDD 7: nenhuma das duas rotas importa mais resetConnection', () => {
+        // Sem os comentários: os dois arquivos CITAM `resetConnection` de
+        // propósito, para registrar o que foi removido e por quê. A asserção é
+        // sobre o que executa, não sobre o que explica.
+        const semComentarios = (s: string) =>
+            s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
         for (const rota of ['restore', 'import']) {
-            const fonte = fs.readFileSync(
+            const fonte = semComentarios(fs.readFileSync(
                 path.resolve(process.cwd(), `src/app/api/backups/${rota}/route.ts`), 'utf-8',
-            );
-            expect(fonte, `${rota} ainda depende de resetConnection`).not.toMatch(/resetConnection/);
+            ));
+            expect(fonte, `${rota} ainda importa resetConnection`).not.toMatch(/resetConnection/);
+            expect(fonte, `${rota} ainda importa @/lib/db`).not.toMatch(/@\/lib\/db/);
         }
     });
 });

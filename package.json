@@ -12,7 +12,9 @@
     "test:e2e": "playwright test",
     "postinstall": "npm rebuild better-sqlite3 && node scripts/init-db.js",
     "prepare": "husky",
-    "tunnel": "npx cloudflared tunnel --url http://localhost:3000"
+    "tunnel": "npx cloudflared tunnel --url http://localhost:3000",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d --wait",
+    "test:db:down": "docker compose -f docker-compose.test.yml down -v"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

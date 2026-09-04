@@ -1,0 +1,35 @@
+# TASK-068 (Sprint 21 · decisão D1) — Postgres real para a suíte de testes.
+#
+# Recomendação do ADR-012 e decisão do usuário: testar contra o mesmo dialeto de
+# produção. SQLite em memória não exercitaria os triggers PL/pgSQL nem o bypass
+# por set_config que a TASK-065 entregou — e a Sprint 21 reescreve 162 chamadas
+# tendo a suíte como única rede de segurança.
+#
+#   npm run test:db:up     sobe (idempotente)
+#   npm run test:db:down   derruba e apaga o volume
+#
+# Porta 55432 de propósito: não colide com um Postgres que já esteja instalado
+# na máquina na 5432.
+
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: unifafire-postgres-test
+    environment:
+      POSTGRES_USER: unifafire
+      POSTGRES_PASSWORD: unifafire_test
+      POSTGRES_DB: unifafire_test
+      # Banco descartável: fsync desligado troca durabilidade por velocidade, o
+      # que aqui é ganho puro — o volume é apagado a cada `test:db:down`.
+      POSTGRES_INITDB_ARGS: "--no-sync"
+    command: >
+      postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unifafire -d unifafire_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

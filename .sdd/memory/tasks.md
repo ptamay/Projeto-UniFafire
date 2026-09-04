@@ -80,37 +80,37 @@ instância pode ser destruída entre duas requisições.
 as isola atrás de um erro explícito, para que nenhuma delas finja funcionar.
 
 **Critérios BDD**:
-- [ ] **Cenário**: O pool conecta pelo pooler em transaction mode
+- [x] **Cenário**: O pool conecta pelo pooler em transaction mode
       Dado `DATABASE_URL` apontando para o pooler
       Quando o módulo é carregado
       Então a conexão é obtida de um pool com limite configurável
       E nenhuma consulta usa prepared statement **nomeado** (incompatível com transaction mode).
-- [ ] **Cenário**: A API de acesso a dados cobre os três formatos de uso do código atual
+- [x] **Cenário**: A API de acesso a dados cobre os três formatos de uso do código atual
       Dado que hoje o código usa `.get()`, `.all()` e `.run()`
       Quando o módulo novo é usado
       Então `queryOne` devolve uma linha ou `undefined`, `query` devolve o array de linhas,
       e `execute` devolve o número de linhas afetadas
       E todos aceitam parâmetros vinculados, nunca interpolação.
-- [ ] **Cenário**: Parâmetro vinculado, sempre (constitution §1.3)
+- [x] **Cenário**: Parâmetro vinculado, sempre (constitution §1.3)
       Dado um valor com aspa simples vindo de input
       Quando ele é passado como parâmetro
       Então chega ao banco como dado, não como SQL
       E uma tentativa de montar SQL por concatenação é recusada pelo próprio formato da API.
-- [ ] **Cenário**: O banco de teste é Postgres real, com o schema da Etapa 3
+- [x] **Cenário**: O banco de teste é Postgres real, com o schema da Etapa 3
       Dado o container de teste no ar
       Quando a suíte inicia
       Então as migrations de `db/migrations-pg/` são aplicadas
       E os triggers de imutabilidade da TASK-065 estão ativos no banco de teste.
-- [ ] **Cenário**: Docker parado dá mensagem acionável, não erro de conexão cru
+- [x] **Cenário**: Docker parado dá mensagem acionável, não erro de conexão cru
       Dado que o daemon do Docker não está rodando
       Quando a suíte é executada
       Então a falha diz o que fazer (subir o container), em vez de `ECONNREFUSED`.
-- [ ] **Cenário**: Isolamento entre testes
+- [x] **Cenário**: Isolamento entre testes
       Dado que os testes compartilham um banco real
       Quando um teste grava dados
       Então o teste seguinte não os enxerga
       E a ordem de execução não altera o resultado.
-- [ ] **Cenário**: As rotas de backup por cópia de arquivo não fingem funcionar
+- [x] **Cenário**: As rotas de backup por cópia de arquivo não fingem funcionar
       Dado `resetConnection` sem equivalente possível no Postgres
       Quando `backups/import` ou `backups/restore` é chamada
       Então a resposta é um erro explícito citando a TASK-078
