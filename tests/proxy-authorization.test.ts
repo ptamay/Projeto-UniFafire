@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { NextRequest } from 'next/server';
-import { proxy } from '@/proxy';
+import { proxy, config as proxyConfig } from '@/proxy';
 import { signSession } from '@/lib/session-edge';
 
 // TASK-077 (Sprint 22 · Etapa 7a do ADR-012) — autorização com defesa em
@@ -116,9 +116,16 @@ describe('TASK-077 — a lista de rotas públicas é explícita e mínima (BDD 3
         // passava despercebido enquanto o proxy deixava tudo passar. Com negação
         // por padrão, um `sw.js` respondendo 307 quebra a instalação do PWA, e um
         // `manifest.json` redirecionado tira o app da tela inicial.
-        for (const arquivo of ['/manifest.json', '/sw.js', '/workbox-4754cb34.js', '/favicon.ico', '/logo/unifafire_logo.png']) {
+        for (const arquivo of [
+            '/manifest.json', '/sw.js', '/workbox-4754cb34.js', '/favicon.ico',
+            '/logo/unifafire_logo.png',
+            // Fonte: a página de login precisa de tipografia antes de existir
+            // sessão. Hoje o Next serve `__nextjs_font` antes do proxy, mas uma
+            // fonte auto-hospedada em `public/` cairia na negação por padrão.
+            '/fonts/geist-latin.woff2', '/fonts/inter.ttf',
+        ]) {
             const res = await proxy(req(arquivo));
-            expect(passou(res), `${arquivo} bloqueado — quebraria o PWA ou o ícone`).toBe(true);
+            expect(passou(res), `${arquivo} bloqueado — quebraria o PWA, o ícone ou a fonte do login`).toBe(true);
         }
     });
 
@@ -127,6 +134,36 @@ describe('TASK-077 — a lista de rotas públicas é explícita e mínima (BDD 3
         // exigem sessão por definição.
         const res = await proxy(req('/api/auth/me'));
         expect(res.status, '/api/auth/me passou sem sessão — ela devolve dados da sessão').toBe(401);
+    });
+
+    it('o matcher deixa TODO o namespace interno do Next de fora', () => {
+        // Este teste existe porque a primeira versão da task não o tinha, e o
+        // defeito passou: o matcher excluía só `_next/static` e `_next/image`,
+        // então `/_next/hmr` caiu na negação por padrão e respondeu 307. O
+        // WebSocket do hot reload parou de conectar, e a suíte ficou verde — o
+        // matcher é CONFIG ESTÁTICA que a função `proxy` nunca enxerga, então
+        // testar só a função deixa este portão inteiro sem cobertura.
+        const [padrao] = proxyConfig.matcher;
+        const re = new RegExp(`^${padrao}$`);
+
+        for (const interno of [
+            '/_next/hmr',
+            '/_next/webpack-hmr',
+            '/_next/static/chunks/main.js',
+            '/_next/image',
+            '/_next/qualquer-coisa-que-o-next-invente-depois',
+        ]) {
+            expect(re.test(interno), `${interno} entrou no proxy e seria negado`).toBe(false);
+        }
+    });
+
+    it('o matcher NÃO deixa rota de aplicação de fora', () => {
+        const [padrao] = proxyConfig.matcher;
+        const re = new RegExp(`^${padrao}$`);
+
+        for (const rota of ['/', '/keys', '/api/users', '/manifest.json', '/api/rota-nova']) {
+            expect(re.test(rota), `${rota} escapou do proxy pelo matcher`).toBe(true);
+        }
     });
 
     it('a lista é declarada como constante, não espalhada em ifs', () => {
