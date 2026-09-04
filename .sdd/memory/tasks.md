@@ -238,26 +238,26 @@ Etapa 7. Motivo: preservar o plano de reversão do ADR-012, que depende de `git 
 devolver um sistema funcional; um DROP em SQLite é a única parte que um revert não desfaz.
 
 **Critérios BDD**:
-- [ ] **Cenário**: A consulta do histórico deixa de tocar `employees`
+- [x] **Cenário**: A consulta do histórico deixa de tocar `employees`
       Dado `src/lib/history-query.ts`
       Quando a consulta é montada
       Então não há `LEFT JOIN employees`
       E os testes de `tests/history-query.test.ts` continuam passando sem alteração de expectativa.
-- [ ] **Cenário**: O fallback de `employee_id` sai da criação de transação
+- [x] **Cenário**: O fallback de `employee_id` sai da criação de transação
       Dado um POST em `/api/transactions` sem `user_id` e com `employee_id`
       Quando a requisição é processada
       Então ela é rejeitada pela validação Zod, como qualquer requisição sem portador
       E nenhum caminho do código resolve portador a partir de `employee_id`.
-- [ ] **Cenário**: `employees` sai da limpeza destrutiva
+- [x] **Cenário**: `employees` sai da limpeza destrutiva
       Dado `clear-database/route.ts`
       Quando `tablesToClear` é inspecionada
       Então `employees` não está na lista
       E os testes de `tests/destructive-trail.test.ts` continuam passando.
-- [ ] **Cenário**: O schema Postgres nasce sem o legado
+- [x] **Cenário**: O schema Postgres nasce sem o legado
       Dado o schema aplicado no Supabase
       Quando `list_tables` e as colunas de `keys` e `history` são inspecionadas
       Então não existe tabela `employees` nem coluna `employee_id` em nenhuma tabela.
-- [ ] **Cenário**: O `keys.db` não é alterado
+- [x] **Cenário**: O `keys.db` não é alterado
       Dado que nenhuma migration SQLite é adicionada por esta task
       Quando `db/migrations/` é inspecionado
       Então ele permanece com os 5 pares existentes.
