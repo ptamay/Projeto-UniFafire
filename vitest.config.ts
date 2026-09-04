@@ -9,10 +9,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
     exclude: ['**/node_modules/**', 'tests/e2e/**', '.claude/worktrees/**'],
     env: {
-      // MOCK_DB_IN_MEMORY sustenta o que ainda nao migrou (decisao D4): durante a
-      // TASK-069 os dois bancos convivem, por arquivo e nunca para a mesma
-      // consulta. Sai junto com src/lib/db.ts, na ultima fatia.
-      MOCK_DB_IN_MEMORY: 'true',
+      // MOCK_DB_IN_MEMORY saiu na TASK-080: seu unico leitor era
+      // scripts/init-db.js, removido junto com o caminho admin/admin. O duplo
+      // dialeto previsto na decisao D4 terminou na Sprint 21.
       DATABASE_URL: TEST_DATABASE_URL,
       JWT_SECRET: 'test_secret_32_characters_long_1234567890',
       APP_TIMEZONE: 'America/Recife',

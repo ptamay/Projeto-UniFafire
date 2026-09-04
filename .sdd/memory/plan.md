@@ -18,7 +18,7 @@
 | Validação | Zod (`src/lib/schemas.ts`) | fonte única de schemas e RBAC |
 | Jobs | ~~node-cron (`src/lib/backup.ts`)~~ | ⛔ **neutralizado na Sprint 21** — processo de longa duração não existe em execução serverless. Substituto é da **TASK-078** (Etapa 7), que é bloqueante para o go-live |
 | UI | CSS nativo estruturado + tokens do `ui-context.md` + react-hot-toast | sem migração para shadcn — ver D-03 |
-| Hospedagem | **Vercel** (ADR-012) | ⏳ Etapa 7 (Sprint 24). PM2 + `.bat` + `ecosystem.config.js` seguem vigentes e só saem após os 30 dias de retenção do plano de reversão |
+| Hospedagem | **Vercel** (ADR-012) | ⏳ Etapa 7b (Sprint 23). O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) sai na TASK-079 **sem janela de retenção** — não existe servidor PM2 a manter ligado (Achados de 2026-09-04) |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
 
@@ -250,17 +250,6 @@
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
 > que a numeração das etapas do ADR-012 continue rastreável.
-- [ ] **TASK-080 → bootstrap do primeiro usuário ADMIN no Postgres. Precede a TASK-079: sem isto o sistema sobe inacessível.** REQ-001 + REQ-031. Numa base Supabase vazia não existe caminho para entrar — `scripts/init-db.js` só fala SQLite e saiu do `postinstall` na TASK-071, nenhuma migration de `db/migrations-pg/` insere usuário, e toda rota exige sessão (`/api/users` exige ADMIN). Desenho proposto — **script de operação, não rota**:
-  - Vive em `db/` (junto de `migrate.mjs` e `load-pg.mjs`), fora do bundle da aplicação. Uma rota de bootstrap seria superfície de ataque permanente para um uso único; um script não é alcançável por HTTP.
-  - **Recusa se `users` já tiver qualquer linha.** A garantia de "uma vez só" fica no estado do banco, não na disciplina de quem roda — mesma lógica pela qual o bypass da TASK-070 virou `set_config` transacional em vez de tabela-flag.
-  - Senha inicial **nunca embutida e nunca padrão**: lida de variável de ambiente ou gerada aleatoriamente e impressa uma vez. O `admin`/`admin` do `init-db.js` nasceu numa intranet; aqui a exposição é pública (constitution §2).
-  - Grava com `requires_password_change = true`. **Não inventa fluxo novo:** `login/route.ts:78` já devolve `REQUIRE_PASSWORD_CHANGE` (403) e força a troca na primeira entrada — caminho existente e testado.
-  - Hash com `bcryptjs` (D-10), nunca o addon nativo. Registra a criação em `audit_logs`.
-  - Teste contra o Postgres do container (D-11): cria numa base vazia; recusa numa base com usuário; a senha não aparece em log nem em `audit_logs` (constitution §6).
-- [ ] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
-- [ ] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão.
-- [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). **Desativar** o endpoint de restore por cópia de arquivo, que deixa de funcionar — não deixar quebrado.
-- [ ] TASK-079 → deploy, ping agendado contra a pausa por inatividade, e remoção do aparato local (PM2, `.bat`, `show-ip.js`) apenas APÓS os 30 dias de retenção do plano de reversão.
 
 ### Achados de 2026-09-04 — não existe produção (confirmado pelo usuário)
 
