@@ -44,63 +44,47 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 21 concluída
-- Sprint/Task Ativa: Nenhuma. Sprints 16–21 concluídas.
-- Última Ação: dois Change Requests pós-sprint, em 2026-09-04 — (1) Tipo B: TASK-080,
-  bootstrap do primeiro ADMIN (commit 8dabc95); (2) Tipo C: antecipação da Etapa 7 e
-  dissolução da Etapa 6 (commit f136c90), com correção do Plano de Reversão do ADR-012.
-  Antes disso: Sprint 21 (Etapa 4 do ADR-012 — camada de dados assíncrona) fechada.
-  TASK-068 a 071: src/lib/pg.ts (query/queryOne/execute/withTransaction/closePool, pool
-  PREGUIÇOSO, sem prepared statement nomeado), 162 chamadas síncronas em 28 arquivos
-  convertidas em 5 fatias por FRONTEIRA DE EXECUÇÃO, transações explícitas com client
-  dedicado, bypass da imutabilidade por set_config transacional, bcrypt→bcryptjs e
-  postinstall removido. src/lib/db.ts APAGADO — nada em src/ importa better-sqlite3, que
-  virou devDependency. Fora do escopo original: backup.ts e as rotas restore/import
-  NEUTRALIZADOS (503 citando a TASK-078). Verificado: 284 testes / 37 arquivos, 6 gates,
-  tsc 0, eslint 0, npm run build OK, npm audit 0 vulnerabilidades, e o app rodado de ponta
-  a ponta no navegador contra o Postgres do container.
-- Próxima Ação: Sprint 22 — **Etapa 7a: Pré-requisitos do Go-Live** (ROADMAP REORDENADO em
-  2026-09-04, CR Tipo C — a Etapa 7 foi antecipada). TASK-080 (bootstrap do primeiro ADMIN),
-  TASK-074 (structured-logger → app_logs), TASK-076 (JWT_SECRET + cookie secure), TASK-077
-  (autorização no proxy.ts). Depois: Sprint 23 = Etapa 7b (TASK-078, 075, 079 — backup e
-  deploy); Sprint 24 = Etapa 5 (Realtime, TASK-072/073), adiada por ser feature.
-  A Etapa 6 foi DISSOLVIDA: a TASK-074 subiu porque structured-logger.ts:51 grava em logs/
-  com appendFileSync, e no Vercel isso falha, cai no catch e degrada para console SEM
-  ALARME — reprovando o critério (d) do REQ-031, que nomeia o log estruturado. A TASK-075
-  foi para a 7b junto da TASK-078, de que depende.
-- Decisões em aberto: expurgar keys.db do histórico antigo do git exige reescrever
-  história — baixo risco (não contém secret; a decisão do banco dos testes foi resolvida
-  como D-11: Postgres em container).
-- Testes: exigem Postgres em container — `npm run test:db:up` ANTES de `npx vitest`.
-  Atenção: a suíte dá TRUNCATE no mesmo banco usado para verificação no navegador.
-- Estado do Supabase: schema das 9 tabelas + índices + triggers de imutabilidade + RLS
-  aplicados; dados SINTÉTICOS carregados (20 users, 5 keys, 92 tx, 30 history, 99 logs, 4
-  settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
+- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO e REORDENADO; Sprint 22 concluída
+- Sprint/Task Ativa: Nenhuma. Sprints 16–22 concluídas.
+- Última Ação: Sprint 22 (Etapa 7a do ADR-012 — pré-requisitos do go-live) fechada.
+  TASK-080 bootstrap do primeiro ADMIN (script em db/, exclusividade por NOT EXISTS no SQL,
+  senha aleatória impressa uma vez; scripts/init-db.js e o admin/admin REMOVIDOS);
+  TASK-074 structured-logger → app_logs (migration pareada, trigger de imutabilidade, fora
+  de tablesToClear) — subiu da Etapa 6 por ser pré-requisito, não melhoria;
+  TASK-076 política de segredo (recusa UUID, repetição e o placeholder do .env.example) e
+  cookie `secure` incondicional em produção, com app-env.ts extraído por causa do Edge;
+  TASK-077 proxy passa a NEGAR por padrão — rota nova nasce fechada, API 401 e página 307;
+  TASK-081 (CR Tipo B no meio da sprint) as 27 chamadas de logAction sem await, mais
+  @typescript-eslint/no-floating-promises como guarda mecânica na superfície de servidor.
+  Verificado: 352 testes / 41 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0
+  vulnerabilidades, npm run build OK, e o sistema exercitado no navegador de uma base
+  VAZIA até o painel — bootstrap, troca forçada de senha, todas as páginas e a trilha de
+  auditoria aparecendo na tela de Logs.
+- Próxima Ação: Sprint 23 — Etapa 7b: Backup e Deploy. TASK-078 (backup gerenciado +
+  verificação agendada — bloqueante do go-live pela §4.3), TASK-075 (métrica de backup sai
+  do .jsonl e vem do banco) e TASK-079 (deploy no Vercel, ping agendado, e remoção do
+  aparato local: PM2, .bat, ecosystem.config.js, show-ip.js e /api/server-info).
+- ⚠️ NÃO EXISTE PRODUÇÃO (confirmado em 2026-09-04). Sem servidor PM2, sem keys.db real, e o
+  conteúdo do banco anterior era FICTÍCIO. Não há migração de dados no caminho do go-live.
+  Objetivo declarado pelo usuário: "fazer o sistema funcionar no Supabase e Vercel. Só isso."
+  O plano de reversão do ADR-012 foi corrigido (protegia estado inexistente) e a TASK-067
+  (db/load-pg.mjs) ficou sem uso no caminho de produção — correta e testada, mas fora do go-live.
+- Decisões em aberto: expurgar keys.db do histórico antigo do git (risco baixíssimo —
+  aqueles arquivos nunca tiveram dado real).
+- ⚠️ TESTES: exigem Postgres em container — `npm run test:db:up` ANTES de `npx vitest`.
+  A suíte dá TRUNCATE no MESMO banco usado para verificar no navegador. Isto reincidiu 3x
+  na Sprint 22 e sempre parece defeito de autenticação: o login recusa credencial que
+  estava correta. REGRA: verificação no navegador é sempre o ÚLTIMO passo, depois da suíte
+  e dos gates. Para semear: TRUNCATE + `node db/bootstrap-admin.mjs`.
+- Estado do Supabase: schema + índices + triggers + RLS aplicados; dados SINTÉTICOS da
+  TASK-067 ainda lá. Limpar `users` é pré-requisito de rodar a TASK-080 contra ele — o
+  bootstrap recusa base povoada, por construção.
 - Arquivos não commitados: nenhum
-- Branch atual: feature/sprint-21-camada-async (Sprints 16–21)
-- Pendências do usuário: NENHUMA. PR #14 (release v0.3.0) merged em 03e4466 (2026-09-04).
-- ⚠️ NÃO EXISTE PRODUÇÃO (confirmado pelo usuário em 2026-09-04). Não há servidor PM2 em
-  uso, não há keys.db com dados reais, ninguém usa o sistema hoje. Os dados reais ainda
-  serão cadastrados/importados de outra fonte, direto no Postgres. O destino é Vercel +
-  Supabase. Consequências, TODAS já verificadas no código — não repita as premissas antigas:
-  · A pendência "node db/migrate.mjs up no keys.db de produção", carregada por várias
-    sprints, era FANTASMA. Não há banco para migrar. db/migrations/ (SQLite) fica só como
-    histórico; Gate 2 e tests/migrations.test.ts continuam cobrindo o pareamento.
-  · O plano de reversão do ADR-012 (§Reversão, itens 2/3/4) pressupunha PM2 + keys.db de
-    produção e estava VAZIO. CORRIGIDO no CR f136c90: texto original mantido tachado para
-    rastreabilidade, com o que de fato vale ao lado. O ponto de não-retorno passa a ser o
-    primeiro dado REAL cadastrado, que é operação posterior ao go-live.
-  · O conteúdo do keys.db anterior era FICTÍCIO (esclarecido pelo usuário). Não há dado a
-    preservar, migração de dados nem risco de PII no que existe hoje. Objetivo declarado:
-    "fazer o sistema funcionar no Supabase e Vercel. Só isso."
-  · A TASK-067 (db/load-pg.mjs) fica sem uso no caminho de produção — correta e testada,
-    ferramenta pronta caso um dia exista um SQLite de origem. Fora do go-live.
-  · Gap do bootstrap do ADMIN: virou TASK-080, primeira da Sprint 22 (Etapa 7a), e PRECEDE
-    a TASK-079 — sem ela o sistema sobe inacessível.
-- Bloqueantes para o go-live: (1) TASK-080 — bootstrap do primeiro ADMIN; (2) TASK-078 —
-  desde a Sprint 21 NÃO HÁ backup de aplicação, só o gerenciado do provedor, que a
-  constitution §4.3 exige verificar (peso reduzido: não há dado real a perder hoje).
-- Sequenciamento: DECIDIDO em 2026-09-04 — Etapa 7 antecipada (ver Próxima Ação).
+- Branch atual: feature/sprint-22-pre-requisitos-go-live (Sprints 16–22, não publicada)
+- Pendências do usuário: nenhuma. PR #14 (release v0.3.0) merged em 03e4466.
+- Bloqueante para o go-live: TASK-078 — desde a Sprint 21 NÃO HÁ backup de aplicação, só o
+  gerenciado do provedor, que a §4.3 exige VERIFICAR e não apenas ter. Peso reduzido pelo
+  fato de não haver dado real a perder hoje, mas continua bloqueante.
 - Atualizado em: 2026-09-04
 ```
 
@@ -150,12 +134,13 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 21 concluída)
-Última sprint     : 21 ✅ (Etapa 4 do ADR-012 — Camada de Dados Assíncrona · TASK-068 a 071)
+Sprint atual      : — (nenhuma ativa; Sprint 22 concluída)
+Última sprint     : 22 ✅ (Etapa 7a do ADR-012 — Pré-requisitos do Go-Live · TASK-080, 074, 076, 077, 081)
 Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
-                    Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida. 3 e 4 fechadas)
+                    Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida.
+                    Etapas 3, 4 e 7a fechadas — falta 7b e depois a 5)
 Último commit     : (ver git log -1)
-Próxima ação      : Sprint 22 — Etapa 7a: Pré-requisitos do Go-Live (TASK-080, 074, 076, 077)
+Próxima ação      : Sprint 23 — Etapa 7b: Backup e Deploy (TASK-078, 075, 079)
 ```
 
 ---
@@ -169,15 +154,21 @@ Próxima ação      : Sprint 22 — Etapa 7a: Pré-requisitos do Go-Live (TASK-
 |--------|------------------|
 | Frontend | Next.js + Tailwind CSS + Custom CSS |
 | Backend / dados | **Postgres (Supabase, `sa-east-1`) via `pg`** — `src/lib/pg.ts`. Sem ORM, sem prepared statement nomeado, `$n` sempre |
-| Auth | Sessão/JWT (`jose`) em cookie + `bcryptjs` |
-| Deploy | **Vercel** (⏳ Etapa 7 — PM2 local ainda vigente até lá) |
+| Auth | Sessão/JWT (`jose`) + `bcryptjs`. Segredo validado por `src/lib/secret-policy.ts` — o processo NÃO SOBE com segredo fraco. Cookie só por `src/lib/session-cookie.ts`, com `secure` incondicional em produção |
+| Deploy | **Vercel** (⏳ Sprint 23). Não existe PM2 em produção — o aparato local sai na TASK-079 sem janela de retenção |
 | Testes | Vitest contra **Postgres real em container** (`npm run test:db:up`) + Playwright |
 | Secrets | .env local |
 | Erros | Sentry |
+| Autorização | `src/proxy.ts` NEGA por padrão (API 401, página 307). Papel continua sendo do handler — §3.2 |
 | Agente de sprint | Antigravity |
 
 > ⚠️ `better-sqlite3` saiu do runtime na Sprint 21 e é **devDependency** — usado só pelas
 > ferramentas offline `db/migrate.mjs` e `db/load-pg.mjs`. Importá-lo em `src/` reprova a suíte.
+>
+> ⚠️ Promessa solta é **erro de lint** na superfície de servidor desde a TASK-081
+> (`@typescript-eslint/no-floating-promises`). Chamada assíncrona sem `await` em rota, lib,
+> proxy ou Server Component reprova o pre-commit — em serverless a instância congela quando
+> a resposta sai e a escrita pendente morre com ela.
 
 ---
 
