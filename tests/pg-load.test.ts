@@ -93,7 +93,7 @@ describe('TASK-067 — escape de literais SQL', () => {
         expect(pgLiteral('texto simples')).toBe("'texto simples'");
         expect(pgLiteral(42)).toBe('42');
         expect(pgLiteral(0)).toBe('0');
-        expect(pgLiteral(9007199254740993n)).toBe('9007199254740993');
+        expect(pgLiteral(BigInt('9007199254740993'))).toBe('9007199254740993');
         expect(pgLiteral(null)).toBe('NULL');
     });
 

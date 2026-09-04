@@ -282,36 +282,36 @@ local confiável, não input externo, o que a coloca fora do alcance de §1.3, m
 qualidade do escape precisa ser provada mesmo assim.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Escape de literais é correto e recusa o que não sabe tratar
+- [x] **Cenário**: Escape de literais é correto e recusa o que não sabe tratar
       Dado um valor com aspa simples, barra invertida, quebra de linha, `NULL`, booleano e número
       Quando o gerador o converte em literal SQL
       Então o valor sobrevive intacto ao ir e voltar do banco
       E qualquer tipo fora dessa lista faz o gerador lançar, nunca emitir SQL adivinhado.
-- [ ] **Cenário**: Contagem por tabela reconcilia
+- [x] **Cenário**: Contagem por tabela reconcilia
       Dado o banco de origem
       Quando a carga termina
       Então `COUNT(*)` no Postgres é igual ao do SQLite **para cada uma das 9 tabelas**
       E a divergência em qualquer tabela aborta a carga com relatório por tabela.
-- [ ] **Cenário**: Sequências de IDENTITY ficam à frente dos IDs carregados
+- [x] **Cenário**: Sequências de IDENTITY ficam à frente dos IDs carregados
       Dado que os IDs de origem são preservados na carga
       Quando um novo registro é inserido depois da carga
       Então ele recebe um ID livre, sem colidir com nenhum carregado.
-- [ ] **Cenário**: Instantes chegam íntegros
+- [x] **Cenário**: Instantes chegam íntegros
       Dado que `history.timestamp` foi normalizado para ISO com `Z` na TASK-055
       Quando as linhas são carregadas em `timestamptz`
       Então o instante lido de volta é igual ao de origem
       E nenhuma linha desloca por interpretação de fuso.
-- [ ] **Cenário**: A carga não escreve no histórico por caminho proibido
+- [x] **Cenário**: A carga não escreve no histórico por caminho proibido
       Dado que `history` tem trigger de imutabilidade (TASK-065)
       Quando as linhas de histórico são inseridas
       Então o `INSERT` é permitido normalmente, sem uso do modo manutenção
       (o trigger cobre UPDATE e DELETE, nunca INSERT).
-- [ ] **Cenário**: A origem permanece intacta
+- [x] **Cenário**: A origem permanece intacta
       Dado o arquivo SQLite de origem
       Quando a carga termina
       Então o arquivo tem o mesmo conteúdo de antes (aberto somente-leitura)
       E `PRAGMA integrity_check` retorna `ok`.
-- [ ] **Cenário**: A carga é repetível
+- [x] **Cenário**: A carga é repetível
       Dado que a carga definitiva acontecerá de novo na Etapa 7
       Quando o loader é executado sobre um Postgres já carregado
       Então ele falha de forma explícita ou trunca e recarrega sob flag, nunca duplica em silêncio.
