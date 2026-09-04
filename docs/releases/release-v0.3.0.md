@@ -131,10 +131,28 @@ já gravados.
      comportamento anterior.
 - **Tempo estimado:** < 15 min (instância única PM2; a migração de dados são 30 linhas).
 
+## Auditoria de dependências — correção de registro
+
+> ⚠️ **Este documento e os commits da Sprint 20 afirmaram "npm audit sem HIGH/CRITICAL".
+> Estava errado.** A verificação usava um pipeline (`npm audit ... | grep ... | head`) cujo
+> código de saída é o do `head`, não o do `npm audit` — o gate parecia verde sem nunca ter
+> sido lido. Medido corretamente em 2026-09-03: **10 vulnerabilidades (8 high, 2 moderate),
+> `npm audit` saindo com 1.** Os commits são história imutável e não foram reescritos; a
+> correção fica registrada aqui.
+>
+> É a mesma classe de defeito da TASK-059 — um gate que não podia reprovar — desta vez na
+> forma de invocação, não no script.
+
+| Pacote | Severidade | Tratamento |
+|---|---|---|
+| `@humanfs/node`, `dompurify` | moderate | `npm audit fix` (sem quebra) |
+| `brace-expansion`, `browserslist`, `fast-uri`, `js-yaml`, `nanoid`, `postcss`, `sharp` | high | `npm audit fix` (sem quebra) |
+| `next` (9 advisories: SSRF em Server Actions, exposição não autenticada de Server Functions, cache confusion, DoS na Image Optimization) | high | **16.2.6 → 16.3.4**, fora do range declarado. Aprovado pelo usuário em 2026-09-03. Relevante além do gate: o ADR-012 expõe este app na internet pública, onde SSRF em Server Actions deixa de ser teórico. |
+
 ## Pendências antes do deploy real
-- [ ] Push da branch + abertura de PR contra `main`.
-- [ ] `./scripts/ci-gates.sh` e `npm audit` limpos no PR (ambos verdes localmente em
-      2026-09-03: 6 gates, 197 testes, zero HIGH/CRITICAL).
+- [x] Push da branch + abertura de PR contra `main` — [PR #14](https://github.com/ptamay/Projeto-UniFafire/pull/14).
+- [ ] `npm audit` limpo (ver seção acima — em correção; **bloqueia o merge** por §6).
+- [x] `./scripts/ci-gates.sh` verde localmente em 2026-09-03: 6 gates, 197 testes.
 - [ ] **Aplicar `node db/migrate.mjs up` no `keys.db` de produção** — pendência herdada da
       Sprint 16, é o único passo de dados deste release.
 - [ ] Backup do `keys.db` de produção imediatamente antes da migration (o runner testa em
