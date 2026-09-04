@@ -86,16 +86,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · A pendência "node db/migrate.mjs up no keys.db de produção", carregada por várias
     sprints, era FANTASMA. Não há banco para migrar. db/migrations/ (SQLite) fica só como
     histórico; Gate 2 e tests/migrations.test.ts continuam cobrindo o pareamento.
-  · O plano de reversão do ADR-012 (§Reversão, itens 2/3/4) pressupõe PM2 + keys.db de
-    produção e portanto está VAZIO. Não é problema — sem estado anterior não há ponto de
-    não-retorno —, mas o ADR declara uma rede que não existe. Correção pendente = CR Tipo C.
+  · O plano de reversão do ADR-012 (§Reversão, itens 2/3/4) pressupunha PM2 + keys.db de
+    produção e estava VAZIO. CORRIGIDO no CR f136c90: texto original mantido tachado para
+    rastreabilidade, com o que de fato vale ao lado. O ponto de não-retorno passa a ser o
+    primeiro dado REAL cadastrado, que é operação posterior ao go-live.
   · O conteúdo do keys.db anterior era FICTÍCIO (esclarecido pelo usuário). Não há dado a
     preservar, migração de dados nem risco de PII no que existe hoje. Objetivo declarado:
     "fazer o sistema funcionar no Supabase e Vercel. Só isso."
   · A TASK-067 (db/load-pg.mjs) fica sem uso no caminho de produção — correta e testada,
     ferramenta pronta caso um dia exista um SQLite de origem. Fora do go-live.
-  · Gap do bootstrap do ADMIN: virou TASK-080, aberta no plan.md (Sprint 24), e PRECEDE a
-    TASK-079 — sem ela o sistema sobe inacessível.
+  · Gap do bootstrap do ADMIN: virou TASK-080, primeira da Sprint 22 (Etapa 7a), e PRECEDE
+    a TASK-079 — sem ela o sistema sobe inacessível.
 - Bloqueantes para o go-live: (1) TASK-080 — bootstrap do primeiro ADMIN; (2) TASK-078 —
   desde a Sprint 21 NÃO HÁ backup de aplicação, só o gerenciado do provedor, que a
   constitution §4.3 exige verificar (peso reduzido: não há dado real a perder hoje).
@@ -151,9 +152,10 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 Modo do projeto   : EXPRESSO
 Sprint atual      : — (nenhuma ativa; Sprint 21 concluída)
 Última sprint     : 21 ✅ (Etapa 4 do ADR-012 — Camada de Dados Assíncrona · TASK-068 a 071)
-Fase atual        : 8-10 (execução da migração ADR-012; Etapas 3–7 = Sprints 20–24, Etapas 3 e 4 fechadas)
+Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
+                    Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida. 3 e 4 fechadas)
 Último commit     : (ver git log -1)
-Próxima ação      : Sprint 22 — Etapa 5 (Realtime · REQ-032 · TASK-072 e 073)
+Próxima ação      : Sprint 22 — Etapa 7a: Pré-requisitos do Go-Live (TASK-080, 074, 076, 077)
 ```
 
 ---
