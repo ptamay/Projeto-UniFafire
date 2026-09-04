@@ -9,7 +9,6 @@ interface RawKeyRow {
     name: string;
     room: string | null;
     status: 'available' | 'in_use';
-    employee_id: number | null;
     employee_name: string | null;
     employee_username: string | null;
     employee_role: string | null;
@@ -50,7 +49,6 @@ function getData() {
     const keys: Key[] = rawKeys.map((k) => ({
         ...k,
         room: k.room ?? undefined,
-        employee_id: k.employee_id ?? undefined,
         employee_name: k.employee_name ?? undefined,
         employee_role: k.employee_role ?? undefined,
         pending_info: k.pending_info ? JSON.parse(k.pending_info) : undefined,

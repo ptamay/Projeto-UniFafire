@@ -45,12 +45,11 @@ export interface HistoryQuery {
 const SELECT = `
         SELECT h.id, h.action, h.timestamp,
                k.name as key_name, k.room,
-               COALESCE(u.full_name, u.username, e.name) as employee_name,
+               COALESCE(u.full_name, u.username) as employee_name,
                p.username as confirmed_by,
                kt.justification
         FROM history h
         LEFT JOIN keys k ON h.key_id = k.id
-        LEFT JOIN employees e ON h.employee_id = e.id
         LEFT JOIN users u ON h.user_id = u.id
         LEFT JOIN key_transactions kt ON h.transaction_id = kt.id
         LEFT JOIN users p ON kt.porteiro_id = p.id`;

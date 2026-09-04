@@ -12,7 +12,6 @@ export interface Key {
     name: string;
     room?: string;
     status: 'available' | 'in_use';
-    employee_id?: number;
     employee_name?: string;
     employee_role?: string;
     pending_info?: { transaction_id: number; action: 'withdraw' | 'return' | 'transfer'; user_confirmed: boolean; porteiro_confirmed: boolean; user_name: string; user_role: string; user_id: number; porteiro_id?: number | null; };

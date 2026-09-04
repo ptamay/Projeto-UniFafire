@@ -31,7 +31,6 @@ export interface KeyTableRow {
     name: string;
     room: string | null;
     status: 'available' | 'in_use';
-    employee_id: number | null;
     user_id: number | null;
     active: number;
 }

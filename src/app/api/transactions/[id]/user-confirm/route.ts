@@ -77,21 +77,21 @@ export async function POST(request: Request, { params }: RouteParams) {
                     .run(now, transactionId);
 
                 if (tx.action === 'withdraw') {
-                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ?, employee_id = NULL WHERE id = ?")
+                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ? WHERE id = ?")
                         .run(tx.user_id, tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'withdraw', ?, ?)`)
+                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'withdraw', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
                 } else if (tx.action === 'return') {
-                    db.prepare("UPDATE keys SET status = 'available', user_id = NULL, employee_id = NULL WHERE id = ?")
+                    db.prepare("UPDATE keys SET status = 'available', user_id = NULL WHERE id = ?")
                         .run(tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'return', ?, ?)`)
+                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'return', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
                 } else if (tx.action === 'transfer') {
                     // Na transferência por usuário comum, o alvo é o user_id da transação.
                     // A chave continua in_use, mas agora com o novo usuário.
-                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ?, employee_id = NULL WHERE id = ?")
+                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ? WHERE id = ?")
                         .run(tx.user_id, tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, employee_id, user_id, username, action, timestamp, transaction_id) VALUES (?, NULL, ?, ?, 'transfer', ?, ?)`)
+                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'transfer', ?, ?)`)
                         .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
                 }
             });

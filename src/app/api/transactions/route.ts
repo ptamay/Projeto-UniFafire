@@ -24,10 +24,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Dados inválidos' }, { status: 400 });
         }
         
-        const { action, key_id: keyId, user_id: userId, employee_id: legacyEmployeeId, bypassConfirmation, justification, observation } = parseResult.data;
+        const { action, key_id: keyId, user_id: userId, bypassConfirmation, justification, observation } = parseResult.data;
 
-        // Resolver o user_id: preferir user_id, fallback para employee_id (legado)
-        const resolvedUserId = userId || legacyEmployeeId || null;
+        const resolvedUserId = userId || null;
 
         const key = db.prepare('SELECT * FROM keys WHERE id = ?').get(keyId) as KeyTableRow | undefined;
         if (!key) return NextResponse.json({ error: 'Chave não encontrada.' }, { status: 404 });

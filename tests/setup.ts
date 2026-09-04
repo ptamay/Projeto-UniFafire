@@ -19,28 +19,18 @@ beforeAll(() => {
             requires_password_change BOOLEAN DEFAULT 1
         );
         
-        CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            role TEXT,
-            active INTEGER DEFAULT 1
-        );
-
         CREATE TABLE IF NOT EXISTS keys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             room TEXT,
             status TEXT DEFAULT 'available',
-            employee_id INTEGER,
             user_id INTEGER,
             active INTEGER DEFAULT 1,
-            FOREIGN KEY(employee_id) REFERENCES employees(id),
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER,
             user_id INTEGER,
             username TEXT,
             key_id INTEGER,

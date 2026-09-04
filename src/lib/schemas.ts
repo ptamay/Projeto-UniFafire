@@ -96,18 +96,10 @@ export const KeySchema = z.object({
 });
 
 // Employees (mantido para compatibilidade com histórico)
-export const EmployeeSchema = z.object({
-    id: z.number().int().positive().optional(),
-    name: z.string().min(2, "Nome do funcionário muito curto."),
-    role: z.string().optional()
-});
-
 export const TransactionSchema = z.object({
     action: z.enum(['withdraw', 'return', 'transfer']),
     key_id: z.number().int().positive("ID da chave inválido."),
     user_id: z.number().int().positive("ID do usuário inválido.").nullable().optional(),
-    // Legacy support
-    employee_id: z.number().int().positive().nullable().optional(),
     // Bypass (CR)
     bypassConfirmation: z.boolean().optional(),
     justification: z.string().optional(),
