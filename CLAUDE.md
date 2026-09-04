@@ -69,8 +69,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
 - Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
 - Branch atual: feature/sprint-21-camada-async (Sprints 16–21)
-- Pendências do usuário: (1) merge do PR #14 (release v0.3.0, Sprints 16–20); (2) deploy —
-  backup do keys.db e depois `node db/migrate.mjs up` no keys.db de produção.
+- Pendências do usuário: resta APENAS `node db/migrate.mjs up` no keys.db de produção.
+  PR #14 (release v0.3.0) merged em 03e4466 (2026-09-04); backup manual do keys.db feito.
+  Migrações pendentes lá: 202609021700_rate_limit_hits e 202609021800_normalize_history_timestamps.
+  Produção continua em SQLite/PM2 (main) até a Etapa 7 — a Sprint 21 é da branch, não do deploy.
 - Bloqueante para o go-live: TASK-078 (Etapa 7) — desde a Sprint 21 NÃO HÁ backup de
   aplicação; só o gerenciado do provedor, que constitution §4.3 exige verificar.
 - Atualizado em: 2026-09-04
