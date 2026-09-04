@@ -20,6 +20,12 @@ export default defineConfig({
     },
     // Aplica db/migrations-pg/ no container antes da suite (TASK-068).
     globalSetup: ['./tests/global-setup-pg.ts'],
+    // TASK-069 fatia (a): os arquivos passam a compartilhar um banco REAL, e o
+    // seed de cada um faz TRUNCATE. Em paralelo, um arquivo apaga a semente do
+    // outro no meio da execucao — falha que nao tem nada a ver com o codigo sob
+    // teste. Serializar os ARQUIVOS e o preco do banco real; dentro de cada
+    // arquivo os testes seguem em sequencia como sempre estiveram.
+    fileParallelism: false,
     setupFiles: ['./tests/setup.ts'],
     alias: {
       '@': path.resolve(__dirname, './src'),

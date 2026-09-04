@@ -1,4 +1,4 @@
-import db from '@/lib/db';
+import { execute } from '@/lib/pg';
 import { headers } from 'next/headers';
 import { logStructured } from '@/lib/structured-logger';
 
@@ -27,16 +27,15 @@ export async function logAction(userId: number | null, username: string | undefi
             ipAddress = 'System';
         }
 
-        const stmt = db.prepare(`
-            INSERT INTO action_logs (user_id, username, action, target, details, ip_address, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-
         // Ensure username is a string or null
         const safeUsername = username || 'Unknown';
         const safeUserId = userId === 0 ? null : userId;
 
-        stmt.run(safeUserId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString());
+        await execute(
+            `INSERT INTO action_logs (user_id, username, action, target, details, ip_address, timestamp)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [safeUserId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString()],
+        );
         // TASK-033: além da trilha no banco (REQ-010), emite pelo canal estruturado
         // persistente em arquivo — sobrevive a limpezas do banco (REQ-014).
         logStructured('info', 'audit_action', {

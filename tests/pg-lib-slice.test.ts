@@ -133,7 +133,13 @@ describe('TASK-069(a) — session valida contra o Postgres', () => {
              ON CONFLICT (id) DO UPDATE SET active = true`,
         );
 
-        const token = await signSession({ id: 902, username: 'so_no_postgres', role: 'ALUNO' });
+        // pwd_hash e os ultimos 10 caracteres do hash atual: e assim que o
+        // "logout everywhere" funciona — trocar a senha muda o sufixo e invalida
+        // toda sessao emitida antes. Sem ele o teste mediria a coisa errada.
+        const token = await signSession({
+            id: 902, username: 'so_no_postgres', role: 'ALUNO',
+            pwd_hash: 'hash-qualquer'.slice(-10),
+        });
         const sessao = await verifySession(token);
 
         expect(sessao, 'verifySession ainda está consultando o SQLite').not.toBeNull();
@@ -147,7 +153,10 @@ describe('TASK-069(a) — session valida contra o Postgres', () => {
              ON CONFLICT (id) DO UPDATE SET active = false`,
         );
 
-        const token = await signSession({ id: 903, username: 'inativo_pg', role: 'ALUNO' });
+        const token = await signSession({
+            id: 903, username: 'inativo_pg', role: 'ALUNO',
+            pwd_hash: 'hash-qualquer'.slice(-10),
+        });
         await expect(verifySession(token)).resolves.toBeNull();
     });
 });

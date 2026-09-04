@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
         const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
         
-        if (!checkRateLimit(ip)) {
+        if (!(await checkRateLimit(ip))) {
             logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
             // TASK-061 (constitution §2.6): 429 tem de dizer quando voltar; sem o
             // header o cliente só pode adivinhar e tende a insistir em vão.
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
             );
         }
 
-        if (checkLockout(body.username, ip)) {
+        if (await checkLockout(body.username, ip)) {
             logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
             return NextResponse.json(
                 { error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' },
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         }
 
         if (!body.username || !body.password) {
-            recordLoginAttempt(body.username || 'empty', ip, false);
+            await recordLoginAttempt(body.username || 'empty', ip, false);
             return NextResponse.json({ error: 'Usuário e senha são obrigatórios' }, { status: 400 });
         }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         const user = stmt.get(body.username) as LoginUserRow | undefined;
 
         if (!user) {
-            recordLoginAttempt(body.username, ip, false);
+            await recordLoginAttempt(body.username, ip, false);
             // Prevenindo enumeração
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
@@ -63,13 +63,13 @@ export async function POST(request: Request) {
         const match = await bcrypt.compare(body.password, user.password_hash);
 
         if (!match) {
-            recordLoginAttempt(user.username, ip, false);
+            await recordLoginAttempt(user.username, ip, false);
             logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
         // --- Fluxo de sucesso ---
-        clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
+        await clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
 
         let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova

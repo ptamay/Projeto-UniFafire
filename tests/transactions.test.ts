@@ -4,6 +4,7 @@ import { GET as PendingGET } from '@/app/api/transactions/pending/route';
 import { POST as CancelPOST } from '@/app/api/transactions/[id]/cancel/route';
 import { POST as ConfirmPOST } from '@/app/api/transactions/[id]/user-confirm/route';
 import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 
 // Mock cookies and session
 vi.mock('next/headers', () => {
@@ -320,10 +321,12 @@ describe('Ciclo de Vida das Chaves (Transações)', () => {
 
 // REQ-028 (ADR-009) — Devolução forçada ampla pela portaria.
 describe('Devolução forçada ampla (REQ-028)', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         db.prepare('DELETE FROM key_transactions').run();
         db.prepare('DELETE FROM history').run();
-        db.prepare('DELETE FROM action_logs').run();
+        // action_logs migrou para o Postgres na fatia (a); o resto deste arquivo
+        // segue em SQLite ate a fatia (c).
+        await execute('DELETE FROM action_logs');
         db.prepare("UPDATE keys SET status = 'available', user_id = NULL").run();
     });
 
@@ -349,8 +352,8 @@ describe('Devolução forçada ampla (REQ-028)', () => {
 
         const hist = db.prepare("SELECT count(*) as c FROM history WHERE key_id = 1 AND action = 'return'").get() as { c: number };
         expect(hist.c).toBe(1);
-        const audit = db.prepare("SELECT count(*) as c FROM action_logs WHERE target = 'Chave Teste'").get() as { c: number };
-        expect(audit.c).toBeGreaterThanOrEqual(1);
+        const audit = await queryOne<{ c: string }>("SELECT count(*) as c FROM action_logs WHERE target = 'Chave Teste'");
+        expect(Number(audit?.c)).toBeGreaterThanOrEqual(1);
     });
 
     it('rejeita a devolução forçada sem justificativa', async () => {

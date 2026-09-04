@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 
 // TASK-031 — trilha persistente das operações destrutivas (REQ-014):
 // registro prévio em destino que sobrevive à limpeza do banco.
@@ -74,9 +75,12 @@ describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
         expect(res.status).toBe(200);
 
         // Trilha no banco (action_logs não é alvo do history/clear)
-        const dbTrail = db.prepare("SELECT details FROM action_logs WHERE action = 'CLEAR_HISTORY' ORDER BY id DESC").get() as { details: string };
+        // action_logs migrou para o Postgres na fatia (a): logAction grava la.
+        const dbTrail = await queryOne<{ details: string }>(
+            "SELECT details FROM action_logs WHERE action = 'CLEAR_HISTORY' ORDER BY id DESC LIMIT 1",
+        );
         expect(dbTrail).toBeDefined();
-        expect(dbTrail.details).toMatch(/Iniciando/i);
+        expect(dbTrail?.details).toMatch(/Iniciando/i);
 
         // Trilha prévia no arquivo
         const pre = readEntries().find(e => e.msg === 'destructive_operation' && e.op === 'history-clear' && e.phase === 'pre');

@@ -1,5 +1,5 @@
 import { signSession, verifySessionEdge } from './session-edge';
-import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 
 // Re-exporta signSession para uso normal nas rotas
 export { signSession };
@@ -16,8 +16,12 @@ export async function verifySession(token: string) {
     if (!payload) return null;
 
     try {
-        const stmt = db.prepare('SELECT password_hash FROM users WHERE id = ? AND active = 1');
-        const user = stmt.get(payload.id) as { password_hash: string } | undefined;
+        // active vira comparacao booleana: no Postgres a coluna e boolean de
+        // verdade (TASK-063), e `active = 1` seria erro de tipo — falha alta em
+        // vez de nunca casar em silencio.
+        const user = await queryOne<{ password_hash: string }>(
+            'SELECT password_hash FROM users WHERE id = $1 AND active', [payload.id],
+        );
 
         if (!user || typeof user.password_hash !== 'string') {
             return null; // Usuário não existe ou inativo
