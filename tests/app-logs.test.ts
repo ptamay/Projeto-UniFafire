@@ -264,27 +264,48 @@ describe('TASK-074 — falha ao gravar não derruba a requisição', () => {
     });
 });
 
-describe('TASK-074 — nada em src/ escreve no filesystem', () => {
-    it('BDD 7: nenhuma escrita em disco no código da aplicação', () => {
-        // O filesystem do destino é efêmero e somente-leitura. Qualquer escrita
-        // ou falha em silêncio (o caso deste defeito) ou lança em produção.
+describe('TASK-074 — nada em src/ toca o filesystem, salvo exceção declarada', () => {
+    // O filesystem do destino é efêmero e somente-leitura. Escrita ou falha em
+    // silêncio (o caso deste defeito) ou lança em produção; leitura devolve vazio
+    // e o código conclui que "não há nada", que é pior do que um erro.
+    //
+    // `src/lib/backup.ts` é a ÚNICA exceção, e é declarada aqui de propósito: ele
+    // ainda lê `backups/` e `backup-history.jsonl` e remove arquivo com
+    // unlinkSync. Converter isso é da TASK-078 (backup gerenciado) e da TASK-075
+    // (a métrica sai do .jsonl e vem do banco), ambas na Sprint 23 — e o módulo
+    // já recusa as operações que importam.
+    //
+    // A exceção é uma LISTA, não um buraco na regex: qualquer arquivo NOVO que
+    // toque o filesystem reprova, que é justamente o que se quer guardar.
+    const EXCECOES = ['src/lib/backup.ts'];
+
+    it('BDD 7: nenhum acesso a disco fora da exceção declarada', () => {
         const alvos: string[] = [];
         const varrer = (dir: string) => {
             for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
                 const p = path.join(dir, e.name);
                 if (e.isDirectory()) varrer(p);
                 else if (/\.tsx?$/.test(e.name)) {
+                    const rel = path.relative(RAIZ, p).split(path.sep).join('/');
+                    if (EXCECOES.includes(rel)) continue;
                     const fonte = fs.readFileSync(p, 'utf-8')
                         .replace(/\/\*[\s\S]*?\*\//g, '')
                         .replace(/^\s*\/\/.*$/gm, '');
-                    if (/\b(appendFileSync|writeFileSync|mkdirSync|createWriteStream|appendFile|writeFile)\s*\(/.test(fonte)) {
-                        alvos.push(p);
-                    }
+                    if (/fs\.[a-zA-Z]+\s*\(|from ['"](node:)?fs['"]/.test(fonte)) alvos.push(rel);
                 }
             }
         };
         varrer(path.resolve(RAIZ, 'src'));
-        expect(alvos, `escrita em disco no runtime:\n${alvos.join('\n')}`).toEqual([]);
+        expect(alvos, `acesso a disco no runtime:\n${alvos.join('\n')}`).toEqual([]);
+    });
+
+    it('BDD 7: a exceção não cresceu sem alguém decidir', () => {
+        // Se a lista mudar, é decisão de arquitetura — não pode passar num diff
+        // sem que este teste obrigue a olhar.
+        expect(EXCECOES).toEqual(['src/lib/backup.ts']);
+        for (const e of EXCECOES) {
+            expect(fs.existsSync(path.resolve(RAIZ, e)), `exceção obsoleta: ${e}`).toBe(true);
+        }
     });
 
     it('BDD 7: o logger não expõe mais caminho de arquivo', () => {

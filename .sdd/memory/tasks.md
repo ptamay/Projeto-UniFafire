@@ -130,33 +130,33 @@ um teste que apenas verifique "a chamada não lançou" passaria com o defeito pr
 critério aqui afirma sobre **a linha chegando em `app_logs`**.
 
 **Critérios BDD**:
-- [ ] **Cenário**: A migration de `app_logs` é pareada
+- [x] **Cenário**: A migration de `app_logs` é pareada
       Dado `db/migrations-pg/`
       Então existe o UP com a tabela e o DOWN correspondente escrito antes dele
       E o Gate 2 passa (constitution §4.1).
-- [ ] **Cenário**: A linha é persistida em tabela, não em arquivo
+- [x] **Cenário**: A linha é persistida em tabela, não em arquivo
       Dado o logger em uso
       Quando `logStructured` é chamado
       Então a entrada existe em `app_logs` com severidade, mensagem, contexto e instante
       E **nenhuma escrita em `logs/` acontece**.
-- [ ] **Cenário**: A trilha é imutável como o `history`
+- [x] **Cenário**: A trilha é imutável como o `history`
       Dada uma linha em `app_logs`
       Quando se tenta `UPDATE` ou `DELETE` nela
       Então o banco recusa (constitution §7 — `REVOKE UPDATE, DELETE`).
-- [ ] **Cenário**: `app_logs` sobrevive ao REQ-014
+- [x] **Cenário**: `app_logs` sobrevive ao REQ-014
       Dado o fluxo destrutivo de `settings/clear-database`
       Quando ele é executado
       Então `app_logs` **não** é limpa — não está em `tablesToClear`.
-- [ ] **Cenário**: A máscara de dados sensíveis continua valendo
+- [x] **Cenário**: A máscara de dados sensíveis continua valendo
       Dado um contexto com chaves `password`, `token`, `hash` ou `secret`
       Quando a entrada é gravada
       Então os valores aparecem mascarados em `app_logs` (constitution §6.1).
-- [ ] **Cenário**: Falha ao gravar não derruba a requisição
+- [x] **Cenário**: Falha ao gravar não derruba a requisição
       Dado que a escrita em `app_logs` falha
       Quando uma rota chama o logger
       Então a requisição segue normalmente
       E a falha é sinalizada por um canal que não depende da tabela.
-- [ ] **Cenário**: Nada em `src/` escreve no filesystem
+- [x] **Cenário**: Nada em `src/` escreve no filesystem
       Dado o código de `src/`
       Então não há `appendFileSync`, `writeFileSync`, `mkdirSync` nem `createWriteStream`
       — o filesystem do destino é somente-leitura.
