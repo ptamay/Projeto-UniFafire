@@ -111,6 +111,6 @@ export async function POST(request: Request) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     } finally {
-        logTiming('POST /api/auth/login', performance.now() - started);
+        await logTiming('POST /api/auth/login', performance.now() - started);
     }
 }

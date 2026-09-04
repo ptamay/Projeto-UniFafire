@@ -38,14 +38,14 @@ describe('TASK-032 — verificação automática do backup (REQ-009)', () => {
     // corrompida reprovando) voltam na TASK-078, quando o backup gerenciado do
     // provedor tiver verificacao propria. Registrado aqui para nao se perder.
     it('TASK-070: a geração por cópia de arquivo recusa explicitamente', async () => {
-        const r = createBackup();
+        const r = await createBackup();
         expect(r.success, 'nao pode responder sucesso').toBe(false);
         expect(r.error, 'a recusa precisa apontar a substituta').toMatch(/TASK-078/);
     });
 
     it('TASK-070: a recusa não escreve arquivo nenhum em backups/', async () => {
         const antes = fs.existsSync(backupsDir) ? fs.readdirSync(backupsDir).length : 0;
-        createBackup();
+        await createBackup();
         const depois = fs.existsSync(backupsDir) ? fs.readdirSync(backupsDir).length : 0;
         expect(depois, 'gerou arquivo apesar de recusar').toBe(antes);
     });

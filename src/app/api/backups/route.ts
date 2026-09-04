@@ -28,12 +28,19 @@ export async function POST() {
     const isAdmin = await verifyAdmin();
     if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const success = createBackup();
-    if (success) {
+    // `createBackup()` devolve um OBJETO, e objeto e sempre verdadeiro: o
+    // `if (success)` que estava aqui entrava no ramo de sucesso mesmo com a
+    // funcao recusando, e a rota respondia 200 "Backup gerado com sucesso"
+    // sem ter gerado nada. Mesma classe do `if (checkLockout(...))` com Promise
+    // que a Sprint 21 pegou no type-check — o valor certo, testado errado.
+    const r = await createBackup();
+    if (r.success) {
         return NextResponse.json({ success: true, message: 'Backup gerado com sucesso.' });
-    } else {
-        return NextResponse.json({ error: 'Falha ao gravar backup manual.' }, { status: 500 });
     }
+    // 503, nao 500: nao e falha de execucao, e recusa deliberada enquanto a
+    // TASK-078 nao entrega o substituto. Mesma resposta de backups/restore e
+    // backups/import.
+    return NextResponse.json({ error: r.error }, { status: 503 });
 }
 
 // Excluir Backup

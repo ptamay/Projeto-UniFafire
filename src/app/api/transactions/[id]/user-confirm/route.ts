@@ -142,6 +142,6 @@ export async function POST(request: Request, { params }: RouteParams) {
         console.error('User confirm error:', error);
         return NextResponse.json({ error: 'Falha ao confirmar transação.' }, { status: 500 });
     } finally {
-        logTiming('POST /api/transactions/[id]/user-confirm', performance.now() - started);
+        await logTiming('POST /api/transactions/[id]/user-confirm', performance.now() - started);
     }
 }

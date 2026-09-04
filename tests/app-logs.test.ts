@@ -23,6 +23,18 @@ import path from 'path';
 // sobreviveu até aqui. Todo cenário abaixo afirma sobre A LINHA CHEGANDO EM
 // `app_logs`, nunca sobre a chamada ter sobrevivido.
 
+// A rota destrutiva do REQ-014 le sessao do cookie; sem isto ela lanca
+// "cookies was called outside a request scope" e o teste mede a falta do mock em
+// vez do que se propos a medir.
+vi.mock('next/headers', () => ({
+    cookies: () => ({ get: vi.fn().mockReturnValue({ value: 'token-de-teste' }), set: vi.fn() }),
+    headers: () => Promise.resolve(new Headers()),
+}));
+
+vi.mock('@/lib/session', () => ({
+    verifySession: vi.fn().mockResolvedValue({ id: 1, role: 'ADMIN', username: 'test_admin' }),
+}));
+
 const falharEscrita = { ativo: false };
 
 // Só as escritas em `app_logs` falham, e só quando ligado. `query`/`queryOne`
@@ -31,7 +43,7 @@ vi.mock('@/lib/pg', async (importOriginal) => {
     const real = await importOriginal<typeof import('@/lib/pg')>();
     return {
         ...real,
-        execute: async (sql: string, params?: unknown[]) => {
+        execute: async (sql: string, params?: import('@/lib/pg').Param[]) => {
             if (falharEscrita.ativo && /app_logs/i.test(sql)) {
                 throw new Error('falha proposital de escrita em app_logs');
             }
@@ -206,6 +218,15 @@ describe('TASK-074 — a máscara de dados sensíveis continua valendo (§6.1)',
         expect(ctx, 'hash na trilha').not.toContain('$2b$10$hashquenaopodevazar');
         expect(ctx, 'secret na trilha').not.toContain('nao-vaza');
         expect(l!.context, 'a máscara comeu o que não era sensível').toMatchObject({ rota: '/api/ok' });
+    });
+
+    it('BDD 5: maskSensitive não altera o objeto original', () => {
+        // Herdado de tests/structured-logger.test.ts (TASK-033), aposentado nesta
+        // task: mascarar no lugar corromperia o objeto de quem chamou, e o dado
+        // sensível sumiria da aplicação além do log.
+        const original = { password: 'abc', user: 'x' };
+        maskSensitive(original);
+        expect(original.password).toBe('abc');
     });
 
     it('BDD 5: a máscara alcança qualquer profundidade', () => {

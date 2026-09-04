@@ -18,8 +18,9 @@ export async function POST() {
 
         // TASK-031 (REQ-014): registro PRÉVIO em destino que sobrevive à limpeza —
         // esta operação apaga as próprias tabelas de auditoria, então a trilha
-        // obrigatória vai para o log estruturado em arquivo ANTES de qualquer DELETE.
-        logStructured('warn', 'destructive_operation', {
+        // obrigatória vai para `app_logs` ANTES de qualquer DELETE (TASK-074: o
+        // destino era arquivo em `logs/`, que não sobrevive a filesystem efêmero).
+        await logStructured('warn', 'destructive_operation', {
             op: 'clear-database',
             phase: 'pre',
             user_id: session.id,
@@ -42,13 +43,14 @@ export async function POST() {
             tx.execute(`TRUNCATE ${tablesToClear.join(', ')} RESTART IDENTITY CASCADE`),
         );
 
-        logStructured('warn', 'destructive_operation', {
+        await logStructured('warn', 'destructive_operation', {
             op: 'clear-database',
             phase: 'done',
             user_id: session.id,
             username: session.username,
         });
-        // Registro pós-operação no banco recém-limpo — a trilha prévia está no arquivo
+        // Registro pós-operação no banco recém-limpo — a trilha prévia está em app_logs,
+        // que fica fora de `tablesToClear` justamente para sobreviver a este TRUNCATE.
         await logAction(session.id, session.username, 'CLEAR_DATABASE', 'Database',
             'Banco de dados limpo (trilha prévia no log estruturado)');
 

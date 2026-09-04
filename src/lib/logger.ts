@@ -37,8 +37,10 @@ export async function logAction(userId: number | null, username: string | undefi
             [safeUserId, safeUsername, action, target, details || null, ipAddress, new Date().toISOString()],
         );
         // TASK-033: além da trilha no banco (REQ-010), emite pelo canal estruturado
-        // persistente em arquivo — sobrevive a limpezas do banco (REQ-014).
-        logStructured('info', 'audit_action', {
+        // persistente em `app_logs` — fora de `tablesToClear`, sobrevive a
+        // limpezas do banco (REQ-014). Destino trocado de arquivo para tabela na
+        // TASK-074: no Vercel a escrita em `logs/` falharia em silêncio.
+        await logStructured('info', 'audit_action', {
             audit: true,
             user_id: safeUserId,
             username: safeUsername,

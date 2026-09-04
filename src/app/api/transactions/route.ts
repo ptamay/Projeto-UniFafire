@@ -322,6 +322,6 @@ export async function POST(request: Request) {
         console.error('Transaction error:', error);
         return NextResponse.json({ error: 'Falha na transação.' }, { status: 500 });
     } finally {
-        logTiming('POST /api/transactions', performance.now() - started);
+        await logTiming('POST /api/transactions', performance.now() - started);
     }
 }

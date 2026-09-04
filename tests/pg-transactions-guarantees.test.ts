@@ -238,7 +238,7 @@ describe('TASK-070 — o SQLite sai do runtime', () => {
 describe('TASK-070 — o backup por cópia de arquivo não finge funcionar', () => {
     it('createBackup recusa explicitamente, citando a TASK-078', async () => {
         const { createBackup } = await import('@/lib/backup');
-        const r = createBackup();
+        const r = await createBackup();
         expect(r.success, 'nao pode responder sucesso').toBe(false);
         expect(r.error).toMatch(/TASK-078/);
     });
@@ -248,7 +248,7 @@ describe('TASK-070 — o backup por cópia de arquivo não finge funcionar', () 
         // execucao serverless. Agendar e nunca rodar seria pior do que nao
         // agendar: daria a impressao de que ha backup.
         const { startCronJobs } = await import('@/lib/backup');
-        expect(() => startCronJobs()).not.toThrow();
+        await expect(startCronJobs()).resolves.toBeUndefined();
         const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/backup.ts'), 'utf-8')
             .replace(/\/\/.*$/gm, '');
         expect(fonte, 'ainda agenda cron').not.toMatch(/cron\.schedule/);

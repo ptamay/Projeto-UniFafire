@@ -64,12 +64,12 @@ export function getBackupReliability(days = 30): {
  * onde esta função continua copiando o arquivo; esta branch só chega ao usuário
  * no go-live, quando o backup gerenciado já estará no lugar.
  */
-export function createBackup(): { success: false; error: string } {
+export async function createBackup(): Promise<{ success: false; error: string }> {
     const error =
         'Backup por cópia de arquivo foi desativado na migração para Postgres. ' +
         'O backup passa a ser gerenciado pelo provedor do banco; a verificação ' +
         'agendada é a TASK-078 (Etapa 7 do ADR-012). Nenhum arquivo foi gerado.';
-    logStructured('warn', 'backup_indisponivel', { motivo: 'TASK-070', substituta: 'TASK-078' });
+    await logStructured('warn', 'backup_indisponivel', { motivo: 'TASK-070', substituta: 'TASK-078' });
     return { success: false, error };
 }
 
@@ -127,8 +127,8 @@ export function deleteBackup(filename: string) {
  * Agendar e nunca rodar seria pior do que não agendar — daria a impressão de que
  * há backup automático. O agendamento passa a ser da hospedagem (TASK-078).
  */
-export function startCronJobs() {
-    logStructured('info', 'cron_desativado', {
+export async function startCronJobs(): Promise<void> {
+    await logStructured('info', 'cron_desativado', {
         motivo: 'node-cron exige processo de longa duração (TASK-070)',
         substituta: 'TASK-078',
     });

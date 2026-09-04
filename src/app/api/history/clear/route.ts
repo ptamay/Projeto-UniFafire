@@ -26,7 +26,7 @@ export async function DELETE() {
         // TASK-031 (REQ-014): trilha gravada ANTES da deleção
         const pending = Number((await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM history'))?.c ?? 0);
         await logAction(session.id, session.username, 'CLEAR_HISTORY', 'History Table', `Iniciando limpeza de ${pending} registros`);
-        logStructured('warn', 'destructive_operation', {
+        await logStructured('warn', 'destructive_operation', {
             op: 'history-clear',
             phase: 'pre',
             user_id: session.id,
@@ -38,7 +38,7 @@ export async function DELETE() {
         // (TASK-030) bloqueiam DELETE fora deste fluxo.
         const apagados = await withMaintenanceMode(tx => tx.execute('DELETE FROM history'));
 
-        logStructured('warn', 'destructive_operation', {
+        await logStructured('warn', 'destructive_operation', {
             op: 'history-clear',
             phase: 'done',
             user_id: session.id,
