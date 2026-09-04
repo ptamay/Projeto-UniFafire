@@ -242,6 +242,41 @@ autoridade; o proxy é a rede que pega o que ela esquecer.
 
 ---
 
+## TASK-081: A trilha de auditoria é esperada, não largada
+
+> Aberta em 2026-09-04 como CR Tipo B (`4c7055b`), durante a execução da TASK-076.
+
+**Contexto**: 27 chamadas de `logAction` sem `await`, em 12 arquivos. `logAction` grava em
+`action_logs` e chama `logStructured`, que a TASK-074 tornou assíncrono. Em execução
+serverless a instância pode congelar assim que a resposta sai, e a escrita pendente morre
+com ela.
+
+**Isto tornava a TASK-074 incompleta.** O critério daquela task — "a linha chega em
+`app_logs`" — foi verificado e passa; o REQUISITO (REQ-031(d), trilha sem perda) não estava
+cumprido enquanto o principal chamador do logger soltava a promessa.
+
+⚠️ **O que define os testes desta task:** promessa solta **não tem sintoma confiável em
+teste**. Em Node, o `await` da asserção seguinte cede o event loop e a escrita pendente
+completa — o teste de comportamento passa com o defeito presente E depois de corrigido, ou
+seja, não mede nada. A prova disso ficou registrada no commit vermelho: os dois cenários de
+comportamento **já passavam** antes da correção. O que distingue é o texto da chamada.
+
+**Critérios BDD**:
+- [x] **Cenário**: Nenhuma chamada da trilha fica sem espera
+      Dado o código de `src/`
+      Então nenhuma chamada de `logAction` está em posição de statement sem `await`
+      E o mesmo vale para `logStructured`, `logTiming`, `recordLoginAttempt` e `clearLoginAttempts`.
+- [x] **Cenário**: A guarda é mecânica, não vigilância humana
+      Dado que promessa solta é invisível em revisão — sem sintoma, teste verde, tipo correto
+      Então `@typescript-eslint/no-floating-promises` está ligada como erro na superfície de servidor
+      E foi provado que ela reprova uma promessa solta reintroduzida.
+- [x] **Cenário**: A espera não quebrou a gravação
+      Dada uma rota destrutiva e uma rota de escrita comum
+      Quando cada uma responde
+      Então a entrada correspondente já está em `action_logs`.
+
+---
+
 ## Definition of Done da sprint
 
 - [ ] Os 4 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, com a suíte inteira verde a cada um
