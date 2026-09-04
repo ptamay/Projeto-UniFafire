@@ -212,6 +212,17 @@
 - [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco.
 
 ### Sprint 24 — Etapa 7: Deploy e Go-Live (ADR-012 · REQ-031)
+> **Objetivo declarado pelo usuário (2026-09-04): fazer o sistema funcionar no Supabase +
+> Vercel.** Não há migração de dados a fazer — o conteúdo do `keys.db` anterior era
+> fictício. Isso tira a carga de dados do caminho crítico e deixa a etapa com uma pergunta
+> só: o que falta para o sistema subir e ser usável.
+- [ ] **TASK-080 → bootstrap do primeiro usuário ADMIN no Postgres. Precede a TASK-079: sem isto o sistema sobe inacessível.** REQ-001 + REQ-031. Numa base Supabase vazia não existe caminho para entrar — `scripts/init-db.js` só fala SQLite e saiu do `postinstall` na TASK-071, nenhuma migration de `db/migrations-pg/` insere usuário, e toda rota exige sessão (`/api/users` exige ADMIN). Desenho proposto — **script de operação, não rota**:
+  - Vive em `db/` (junto de `migrate.mjs` e `load-pg.mjs`), fora do bundle da aplicação. Uma rota de bootstrap seria superfície de ataque permanente para um uso único; um script não é alcançável por HTTP.
+  - **Recusa se `users` já tiver qualquer linha.** A garantia de "uma vez só" fica no estado do banco, não na disciplina de quem roda — mesma lógica pela qual o bypass da TASK-070 virou `set_config` transacional em vez de tabela-flag.
+  - Senha inicial **nunca embutida e nunca padrão**: lida de variável de ambiente ou gerada aleatoriamente e impressa uma vez. O `admin`/`admin` do `init-db.js` nasceu numa intranet; aqui a exposição é pública (constitution §2).
+  - Grava com `requires_password_change = true`. **Não inventa fluxo novo:** `login/route.ts:78` já devolve `REQUIRE_PASSWORD_CHANGE` (403) e força a troca na primeira entrada — caminho existente e testado.
+  - Hash com `bcryptjs` (D-10), nunca o addon nativo. Registra a criação em `audit_logs`.
+  - Teste contra o Postgres do container (D-11): cria numa base vazia; recusa numa base com usuário; a senha não aparece em log nem em `audit_logs` (constitution §6).
 - [ ] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
 - [ ] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão.
 - [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). **Desativar** o endpoint de restore por cópia de arquivo, que deixa de funcionar — não deixar quebrado.
@@ -239,8 +250,8 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 ### Decisões pendentes das Etapas 3–7
 - ~~**Banco dos testes (Etapa 4).**~~ — **resolvida em 2026-09-03 (D-11):** Postgres real em container, conforme a recomendação do ADR-012. Implementada na TASK-068.
 - **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt. **Risco revisto para BAIXÍSSIMO em 2026-09-04:** aqueles arquivos nunca contiveram dados reais.
-- **Origem dos dados reais (Etapa 7) — ABERTA, e bloqueia o go-live.** Não existe `keys.db` real; os dados serão cadastrados ou importados de outra fonte ainda não definida. Enquanto isso não for decidido não dá para dimensionar a Etapa 7: cadastro manual pela UI é uma task (e depende do bootstrap do ADMIN acima); importação de planilha é outra, com validação, deduplicação e um formato de origem a especificar. O `db/load-pg.mjs` da TASK-067 só serve ao caso "existe um SQLite de origem", que deixou de valer. **Decidir antes de planejar a Sprint 24.**
-- **Dados sintéticos no Supabase.** As 20 users / 5 keys / 92 tx / 30 history / 99 logs / 4 settings carregados na TASK-067 precisam ser expurgados antes de qualquer dado real entrar. O `history` é imutável (TASK-065): a limpeza exige o bypass autorizado do REQ-014, não um `DELETE` solto.
+- ~~**Origem dos dados reais (Etapa 7)**~~ — **não é bloqueio (esclarecido em 2026-09-04):** o conteúdo do `keys.db` anterior era **fictício**. Não há dado a preservar nem migração a fazer, e o objetivo declarado é fazer o sistema funcionar no Supabase + Vercel. O cadastro dos dados reais é operação posterior, pela própria UI, depois da TASK-080. **Consequência:** o `db/load-pg.mjs` da TASK-067 fica sem uso no caminho de produção — segue correto e testado, e é a ferramenta pronta caso um dia exista um SQLite de origem, mas não faz parte do go-live.
+- **Dados sintéticos no Supabase — limpeza operacional, não risco de PII.** As 20 users / 5 keys / 92 tx / 30 history / 99 logs / 4 settings da TASK-067 são fictícios, como o `keys.db` que os originou; não há urgência de expurgo. Ao limpar, lembrar que `history` é imutável (TASK-065): exige o bypass autorizado do REQ-014, não um `DELETE` solto. A TASK-080 recusa base com usuário, então a limpeza de `users` é pré-requisito de rodá-la contra o Supabase atual.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.

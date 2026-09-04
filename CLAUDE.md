@@ -80,15 +80,19 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · O plano de reversão do ADR-012 (§Reversão, itens 2/3/4) pressupõe PM2 + keys.db de
     produção e portanto está VAZIO. Não é problema — sem estado anterior não há ponto de
     não-retorno —, mas o ADR declara uma rede que não existe. Correção pendente = CR Tipo C.
-  · A TASK-067 (db/load-pg.mjs) foi construída para carregar keys.db → Postgres. Sem
-    keys.db real ela não tem origem. A origem dos dados reais é DECISÃO EM ABERTO.
-  · 🚨 GAP BLOQUEANTE, sem task: não há como criar o PRIMEIRO usuário ADMIN no Postgres.
-    scripts/init-db.js só fala SQLite e saiu do postinstall; nenhuma migration-pg insere
-    usuário; toda rota exige sessão. Base Supabase vazia = ninguém consegue logar.
-- Bloqueantes para o go-live: (1) TASK-078 (Etapa 7) — desde a Sprint 21 NÃO HÁ backup de
-  aplicação; só o gerenciado do provedor, que constitution §4.3 exige verificar.
-  (2) Bootstrap do primeiro ADMIN no Postgres — gap acima, ainda sem task.
-  (3) Origem dos dados reais — decisão em aberto, ver acima.
+  · O conteúdo do keys.db anterior era FICTÍCIO (esclarecido pelo usuário). Não há dado a
+    preservar, migração de dados nem risco de PII no que existe hoje. Objetivo declarado:
+    "fazer o sistema funcionar no Supabase e Vercel. Só isso."
+  · A TASK-067 (db/load-pg.mjs) fica sem uso no caminho de produção — correta e testada,
+    ferramenta pronta caso um dia exista um SQLite de origem. Fora do go-live.
+  · Gap do bootstrap do ADMIN: virou TASK-080, aberta no plan.md (Sprint 24), e PRECEDE a
+    TASK-079 — sem ela o sistema sobe inacessível.
+- Bloqueantes para o go-live: (1) TASK-080 — bootstrap do primeiro ADMIN; (2) TASK-078 —
+  desde a Sprint 21 NÃO HÁ backup de aplicação, só o gerenciado do provedor, que a
+  constitution §4.3 exige verificar (peso reduzido: não há dado real a perder hoje).
+- Sequenciamento a rever: o objetivo do usuário é subir no Supabase+Vercel, e a Sprint 22
+  (Realtime) é feature, não pré-requisito. Vale considerar antecipar a Etapa 7 (TASK-080,
+  076, 077, 079) antes das Sprints 22–23. NÃO decidido — perguntar ao usuário.
 - Atualizado em: 2026-09-04
 ```
 
