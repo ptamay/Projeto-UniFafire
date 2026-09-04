@@ -165,36 +165,54 @@ de "quem pode escrever no banco" e não pode ficar para depois — o projeto já
 na internet.
 
 **Critérios BDD**:
-- [ ] **Cenário**: UPDATE em `history` é rejeitado
+- [x] **Cenário**: UPDATE em `history` é rejeitado
       Dado um registro em `history`
       Quando um `UPDATE` é executado fora do modo manutenção
       Então a transação é abortada com exceção citando REQ-005
       E o registro permanece idêntico.
-- [ ] **Cenário**: DELETE em `history` é rejeitado
+- [x] **Cenário**: DELETE em `history` é rejeitado
       Dado um registro em `history`
       Quando um `DELETE` é executado fora do modo manutenção
       Então a transação é abortada com exceção citando REQ-005 e o fluxo ADMIN do REQ-014.
-- [ ] **Cenário**: O bypass de manutenção funciona e não sobrevive à transação
+- [x] **Cenário**: O bypass de manutenção funciona e não sobrevive à transação
       Dado `set_config('app.maintenance_mode', 'on', true)` dentro de uma transação
       Quando um `DELETE` em `history` é executado na mesma transação
       Então ele é permitido
       E, encerrada a transação, um novo `DELETE` volta a ser rejeitado sem qualquer
       limpeza explícita de estado.
-- [ ] **Cenário**: `REVOKE` como defesa em profundidade
+- [x] **Cenário**: `REVOKE` como defesa em profundidade
       Dado o schema aplicado
       Quando as permissões de `history` são inspecionadas
       Então `UPDATE` e `DELETE` estão revogados de `PUBLIC`, `anon` e `authenticated`
       E a nota de que o papel de aplicação com menor privilégio é entregue na Etapa 7
       (TASK-077) está registrada no cabeçalho da migration.
-- [ ] **Cenário**: Nenhuma tabela é alcançável pela chave anônima
+- [x] **Cenário**: Nenhuma tabela é alcançável pela chave anônima
       Dado que a autorização do sistema é sessão própria verificada no servidor (§3.2)
       Quando o acesso pela API de dados do Supabase é verificado
       Então nenhuma das 9 tabelas responde a leitura ou escrita com a chave anônima
       E `get_advisors(security)` não reporta tabela exposta sem proteção.
-- [ ] **Cenário**: DOWN pareado
+- [x] **Cenário**: DOWN pareado
       Dado o UP aplicado
       Quando o DOWN é aplicado
       Então triggers, função e GRANTs voltam ao estado anterior ao UP.
+
+---
+
+**Achados durante a execução (não previstos na micro-spec):**
+
+1. **`rls_auto_enable` exposta como RPC anônimo.** Função `SECURITY DEFINER` do
+   event trigger do próprio Supabase, publicada em `/rest/v1/rpc/`. Não foi
+   introduzida por nós. `REVOKE EXECUTE` fecha, sem afetar o event trigger, que não
+   passa por esse privilégio. Duas WARN do `get_advisors` zeradas.
+2. **`search_path` mutável em `history_imutavel`** — esta **fomos nós** que
+   introduzimos, detectada ao reconsultar o advisor após aplicar. Função sem
+   `search_path` declarado resolve nomes pela sessão de quem dispara o trigger: o
+   controle que guarda a trilha dependendo de estado do chamador. Corrigida com
+   `SET search_path = pg_catalog`, ciclo test→fix próprio.
+3. **Os 9 INFO `rls_enabled_no_policy` que permanecem são o estado pretendido**, não
+   pendência: RLS ligada sem política nega tudo a quem não é dono. O advisor supõe
+   que se queira políticas; aqui não se quer — a autorização é a sessão da §3.2, e
+   uma política abriria um segundo caminho em paralelo a ela.
 
 ---
 
