@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
-import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 import ProfileClient from './ProfileClient';
 
 export default async function ProfilePage() {
@@ -14,8 +14,9 @@ export default async function ProfilePage() {
         if (!session) throw new Error();
     } catch { redirect('/login'); }
 
-    const stmt = db.prepare('SELECT username, role, full_name, matricula, phone FROM users WHERE id = ?');
-    const user = stmt.get(session.id);
+    const user = await queryOne(
+        'SELECT username, role, full_name, matricula, phone FROM users WHERE id = $1', [session.id],
+    );
 
     if (!user) redirect('/login');
 

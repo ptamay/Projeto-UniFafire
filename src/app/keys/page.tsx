@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
-import db from '@/lib/db';
+import { query as pgQuery, queryOne } from '@/lib/pg';
 import KeysClient from '../components/KeysClient';
 import type { KeyTableRow } from '@/lib/db-rows';
 
@@ -13,11 +13,13 @@ export default async function KeysPage() {
     try {
         session = await verifySession(sessionCookie.value);
         if (!session) throw new Error();
-        const user = db.prepare('SELECT id FROM users WHERE id = ?').get(session.id);
+        const user = await queryOne('SELECT id FROM users WHERE id = $1', [session.id]);
         if (!user) redirect('/login');
     } catch { redirect('/login'); }
 
-    const rawKeys = db.prepare("SELECT * FROM keys WHERE active = 1 ORDER BY CASE WHEN status = 'in_use' THEN 0 ELSE 1 END, name ASC").all() as KeyTableRow[];
+    const rawKeys = await pgQuery<KeyTableRow>(
+        "SELECT * FROM keys WHERE active ORDER BY CASE WHEN status = 'in_use' THEN 0 ELSE 1 END, lower(name) ASC",
+    );
     const keys = rawKeys.map((k) => ({ ...k, room: k.room ?? '' }));
 
     return (

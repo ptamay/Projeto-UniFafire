@@ -129,8 +129,12 @@ describe('TASK-069(e) — ordenação sem diferenciar maiúsculas', () => {
             for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
                 const p = path.join(dir, e.name);
                 if (e.isDirectory()) varrer(p);
-                else if (/\.tsx?$/.test(e.name) && /COLLATE\s+NOCASE/i.test(fs.readFileSync(p, 'utf-8'))) {
-                    alvos.push(p);
+                else if (/\.tsx?$/.test(e.name)) {
+                    // Sem comentários: o arquivo CITA o COLLATE de propósito, para
+                    // registrar o que foi trocado. A asserção é sobre o SQL.
+                    const fonte = fs.readFileSync(p, 'utf-8')
+                        .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+                    if (/COLLATE\s+NOCASE/i.test(fonte)) alvos.push(p);
                 }
             }
         };
@@ -141,11 +145,16 @@ describe('TASK-069(e) — ordenação sem diferenciar maiúsculas', () => {
     it('a lista de portadores do filtro ordena ignorando maiúsculas', async () => {
         // 'Artur' antes de 'zelia': com ordenação sensível a caso, o Z maiúsculo
         // viria antes do a minúsculo e a lista sairia fora de ordem para o operador.
+        // SELECT DISTINCT exige que a expressao do ORDER BY esteja na lista de
+        // selecao — restricao do Postgres que o SQLite nao tem. A subconsulta
+        // preserva a semantica exata em vez de mudar o DISTINCT.
         const linhas = await query<{ name: string }>(`
-            SELECT DISTINCT u.id, COALESCE(u.full_name, u.username) as name
-            FROM history h JOIN users u ON h.user_id = u.id
-            WHERE u.id IN ($1, $2)
-            ORDER BY lower(COALESCE(u.full_name, u.username))
+            SELECT id, name FROM (
+                SELECT DISTINCT u.id, COALESCE(u.full_name, u.username) as name
+                FROM history h JOIN users u ON h.user_id = u.id
+                WHERE u.id IN ($1, $2)
+            ) t
+            ORDER BY lower(name)
         `, [U1, U2]);
         expect(linhas.map(l => l.name)).toEqual(['Artur Pereira', 'zelia da Silva']);
     });

@@ -64,39 +64,46 @@ function parseId(raw?: string): number | null {
 export function buildHistoryQuery(filters: HistoryFilters): HistoryQuery {
     const conditions: string[] = [];
     const params: (string | number)[] = [];
+    // Marcador posicional NUMERADO do Postgres. O indice sai do tamanho corrente
+    // de `params`, e nao de contagem manual: assim numero e valor nao podem
+    // divergir conforme os filtros entram e saem. Trocar $n entre dois filtros
+    // nao daria erro de sintaxe — daria o resultado errado, em silencio.
+    const p = (deslocamento = 0) => `$${params.length + 1 + deslocamento}`;
 
     // Filtros temporais: faixa [início, fim) em UTC a partir do fuso do operador (TASK-055).
     if (filters.date) {
         const { startIso, endIso } = localDayRangeUtc(filters.date);
-        conditions.push('h.timestamp >= ? AND h.timestamp < ?');
+        conditions.push(`h.timestamp >= ${p()} AND h.timestamp < ${p(1)}`);
         params.push(startIso, endIso);
     }
     if (filters.month) {
         const { startIso, endIso } = localMonthRangeUtc(filters.month);
-        conditions.push('h.timestamp >= ? AND h.timestamp < ?');
+        conditions.push(`h.timestamp >= ${p()} AND h.timestamp < ${p(1)}`);
         params.push(startIso, endIso);
     }
     if (filters.hour) {
-        conditions.push("strftime('%H', h.timestamp) = ?");
+        // to_char no lugar de strftime. O fuso NAO se move para o SQL:
+        // localHourToUtcHour (TASK-055) ja converte a hora do operador para UTC.
+        conditions.push(`to_char(h.timestamp AT TIME ZONE 'UTC', 'HH24') = ${p()}`);
         params.push(localHourToUtcHour(filters.hour));
     }
 
     const userId = parseId(filters.userId);
     if (userId !== null) {
-        conditions.push('h.user_id = ?');
+        conditions.push(`h.user_id = ${p()}`);
         params.push(userId);
     }
 
     const keyId = parseId(filters.keyId);
     if (keyId !== null) {
-        conditions.push('h.key_id = ?');
+        conditions.push(`h.key_id = ${p()}`);
         params.push(keyId);
     }
 
     // Ação fora do vocabulário conhecido é descartada: um valor arbitrário vindo
     // da URL não deve virar condição nem filtrar tudo para fora sem explicação.
     if (filters.action && ACTION_VALUES.has(filters.action)) {
-        conditions.push('h.action = ?');
+        conditions.push(`h.action = ${p()}`);
         params.push(filters.action);
     }
 
@@ -107,7 +114,7 @@ export function buildHistoryQuery(filters: HistoryFilters): HistoryQuery {
     const offset = (page - 1) * limit;
 
     return {
-        sql: `${SELECT}${where} ORDER BY h.timestamp DESC LIMIT ? OFFSET ?`,
+        sql: `${SELECT}${where} ORDER BY h.timestamp DESC LIMIT ${p()} OFFSET ${p(1)}`,
         countSql: `SELECT COUNT(*) as total FROM history h${where}`,
         params: [...params, limit, offset],
         countParams: params,
