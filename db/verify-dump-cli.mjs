@@ -9,7 +9,10 @@
 // o job do workflow reprovar. Backup que não restaura idêntico não é backup.
 
 import pg from 'pg';
-import { contarLinhas, tabelasDoBanco, reconciliarContagens } from './verify-dump.mjs';
+import {
+    contarLinhas, tabelasDoBanco, reconciliarContagens,
+    lerEsquema, compararEsquema,
+} from './verify-dump.mjs';
 
 const [urlOrigem, urlRestaurado] = process.argv.slice(2);
 
@@ -39,8 +42,18 @@ try {
 
     reconciliarContagens(contagensOrigem, contagensRestaurado);
 
+    // Contagem igual NAO significa banco igual. Um dump truncado no fim perde
+    // esquema, nao dados — no ensaio da TASK-078 perdeu o RLS da tabela `users`,
+    // e a reconciliacao por linhas aprovou.
+    const esquemaOrigem = await lerEsquema(origem);
+    const esquemaRestaurado = await lerEsquema(restaurado);
+    compararEsquema(esquemaOrigem, esquemaRestaurado);
+
     const total = Object.values(contagensOrigem).reduce((a, b) => a + b, 0);
-    console.log(`✅ Backup VERIFICADO: ${total} linhas restauradas e reconciliadas.`);
+    console.log(
+        `✅ Backup VERIFICADO: ${total} linhas em ${tabelas.length} tabelas, ` +
+        `mais ${esquemaOrigem.indices.length} índices, ${esquemaOrigem.triggers.length} triggers ` +
+        `e ${esquemaOrigem.tabelasComRls.length} tabelas sob RLS.`);
 } catch (e) {
     console.error(`❌ ${e instanceof Error ? e.message : String(e)}`);
     process.exitCode = 1;

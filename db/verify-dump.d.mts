@@ -21,3 +21,25 @@ export function reconciliarContagens(
 ): void;
 export function contarLinhas(executor: ExecutorContagem, tabelas: string[]): Promise<Record<string, number>>;
 export function tabelasDoBanco(executor: ExecutorContagem): Promise<string[]>;
+
+export interface Esquema {
+    tabelas: string[];
+    indices: string[];
+    triggers: string[];
+    tabelasComRls: string[];
+    funcoes: string[];
+}
+
+export interface DivergenciaEsquema {
+    dimensao: string;
+    lado: string;
+    objeto: string;
+}
+
+export class DivergenciaDeEsquema extends Error {
+    constructor(divergencias: DivergenciaEsquema[]);
+    divergencias: DivergenciaEsquema[];
+}
+
+export function compararEsquema(origem: Partial<Esquema>, destino: Partial<Esquema>): void;
+export function lerEsquema(executor: ExecutorContagem): Promise<Esquema>;

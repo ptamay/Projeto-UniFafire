@@ -95,3 +95,92 @@ export async function tabelasDoBanco(executor) {
     );
     return r.rows.map(l => l.table_name);
 }
+
+// --- Verificação de esquema --------------------------------------------------
+//
+// ## Por que contar linhas não bastava
+//
+// Descoberto no ensaio real do ciclo, com o backup já "verificado" e verde:
+// truncar o FIM de um dump não perde linha nenhuma, porque as instruções finais
+// não são dados — são esquema. No ensaio, o dump truncado perdeu exatamente
+// `ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;`. O `psql` restaurou sem
+// erro, as contagens bateram, e a reconciliação por linhas APROVOU.
+//
+// Medido: origem com 11 tabelas sob RLS, restauração com 10.
+//
+// Um backup que volta com um controle de segurança a menos é indistinguível de
+// um bom, se a única pergunta for "quantas linhas?". Restaurar esse backup num
+// incidente devolveria o sistema com `users` exposta pela API de dados do
+// Supabase — e ninguém procuraria por isso no meio de uma recuperação.
+
+const DIMENSOES = [
+    ['tabelas', 'tabela'],
+    ['indices', 'índice'],
+    ['triggers', 'trigger'],
+    ['tabelasComRls', 'RLS'],
+    ['funcoes', 'função'],
+];
+
+export class DivergenciaDeEsquema extends Error {
+    constructor(divergencias) {
+        super(
+            'Verificação do backup REPROVOU — o esquema restaurado difere da origem:\n' +
+            divergencias.map(d => `  ${d.dimensao}: ${d.lado} "${d.objeto}"`).join('\n') +
+            '\nContagem de linhas não pega isto: um dump truncado no fim perde esquema, não dados.',
+        );
+        this.name = 'DivergenciaDeEsquema';
+        this.divergencias = divergencias;
+    }
+}
+
+/**
+ * Compara os objetos de esquema entre origem e restauração.
+ *
+ * Objeto A MAIS no destino também reprova: indica base de verificação suja, e
+ * com resíduo de execução anterior a reconciliação inteira perde valor — pode
+ * estar aprovando por comparar com o que sobrou, não com o que voltou.
+ *
+ * @param {Record<string, string[]>} origem
+ * @param {Record<string, string[]>} destino
+ */
+export function compararEsquema(origem, destino) {
+    const divergencias = [];
+
+    for (const [chave, rotulo] of DIMENSOES) {
+        const a = new Set(origem[chave] ?? []);
+        const b = new Set(destino[chave] ?? []);
+
+        for (const o of a) if (!b.has(o)) divergencias.push({ dimensao: rotulo, lado: 'ausente na restauração', objeto: o });
+        for (const o of b) if (!a.has(o)) divergencias.push({ dimensao: rotulo, lado: 'sobrando na restauração', objeto: o });
+    }
+
+    if (divergencias.length > 0) throw new DivergenciaDeEsquema(divergencias);
+}
+
+/** Fotografa o esquema de um banco nas dimensões que a restauração precisa devolver. */
+export async function lerEsquema(executor) {
+    const uma = async (sql) => (await executor.query(sql)).rows.map(r => Object.values(r)[0]);
+
+    return {
+        tabelas: await uma(
+            `SELECT table_name FROM information_schema.tables
+              WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1`),
+        indices: await uma(
+            `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' ORDER BY 1`),
+        triggers: await uma(
+            `SELECT tg.tgname FROM pg_trigger tg
+               JOIN pg_class c ON c.oid = tg.tgrelid
+               JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND NOT tg.tgisinternal ORDER BY 1`),
+        // A dimensão que o ensaio provou faltar. `relrowsecurity` é o estado
+        // real da tabela, não a intenção declarada na migration.
+        tabelasComRls: await uma(
+            `SELECT c.relname FROM pg_class c
+               JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity ORDER BY 1`),
+        funcoes: await uma(
+            `SELECT p.proname FROM pg_proc p
+               JOIN pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname = 'public' ORDER BY 1`),
+    };
+}
