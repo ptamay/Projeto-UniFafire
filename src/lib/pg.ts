@@ -60,17 +60,25 @@ function criarPool(): Pool {
     });
 }
 
-// Reusar o pool entre invocações na mesma instância é o que evita pagar handshake
-// por requisição. É o único estado global aqui — e, ao contrário do `global.db`
+// PREGUIÇOSO, e não no carregamento do módulo. A primeira versão criava o pool
+// na importação, e `criarPool()` lança quando falta DATABASE_URL — o que quebrou
+// o BUILD: o Next importa cada rota para coletar os dados da página, e ali não há
+// variável de ambiente de banco. Nenhum teste pegaria isso, porque em teste a
+// DATABASE_URL sempre existe; só o build de produção expõe.
+//
+// Reusar o pool entre invocações na mesma instância evita pagar handshake por
+// requisição. É o único estado global aqui — e, ao contrário do `global.db`
 // anterior, perdê-lo não corrompe nada: um pool novo simplesmente reconecta.
-export const pool: Pool = globalThis.__pgPool ?? (globalThis.__pgPool = criarPool());
+export function getPool(): Pool {
+    return globalThis.__pgPool ?? (globalThis.__pgPool = criarPool());
+}
 
 /** Todas as linhas. Equivalente ao `.all()` do better-sqlite3. */
 export async function query<T = Record<string, unknown>>(
     sql: string,
     params: Param[] = [],
 ): Promise<T[]> {
-    const res = await pool.query(sql, params);
+    const res = await getPool().query(sql, params);
     return res.rows as T[];
 }
 
@@ -79,13 +87,13 @@ export async function queryOne<T = Record<string, unknown>>(
     sql: string,
     params: Param[] = [],
 ): Promise<T | undefined> {
-    const res = await pool.query(sql, params);
+    const res = await getPool().query(sql, params);
     return (res.rows[0] as T | undefined) ?? undefined;
 }
 
 /** Linhas afetadas. Equivalente ao `.run()` — mas devolve contagem, não `info`. */
 export async function execute(sql: string, params: Param[] = []): Promise<number> {
-    const res = await pool.query(sql, params);
+    const res = await getPool().query(sql, params);
     return res.rowCount ?? 0;
 }
 
@@ -120,7 +128,7 @@ function amarrar(client: PoolClient): Tx {
  * de virar conexão vazada e, algumas requisições depois, pool esgotado.
  */
 export async function withTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
-    const client = await pool.connect();
+    const client = await getPool().connect();
     try {
         await client.query('BEGIN');
         const resultado = await fn(amarrar(client));

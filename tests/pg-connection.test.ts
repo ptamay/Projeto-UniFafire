@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { query, queryOne, execute, withTransaction, pool, closePool } from '@/lib/pg';
+import { query, queryOne, execute, withTransaction, getPool, closePool } from '@/lib/pg';
 
 // TASK-068 (Sprint 21 · Etapa 4 do ADR-012) — conexão via pooler e o módulo de
 // acesso a dados.
@@ -138,6 +138,23 @@ describe('TASK-068 — parâmetro vinculado, sempre (constitution §1.3)', () =>
     });
 });
 
+describe('TASK-068 — o pool nasce preguiçoso', () => {
+    it('importar o módulo NÃO abre conexão nem exige DATABASE_URL', () => {
+        // A primeira versão criava o pool no carregamento do módulo, e criarPool()
+        // lança quando falta DATABASE_URL. Isso quebrou o BUILD: o Next importa
+        // cada rota para coletar os dados da página, e ali não há variável de banco.
+        // Nenhum teste pegou — em teste a DATABASE_URL sempre existe. Este lê o
+        // fonte, que é o único jeito de a suíte enxergar o problema.
+        const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/pg.ts'), 'utf-8')
+            .replace(/\/\/.*$/gm, '');
+        expect(
+            fonte,
+            'criação de pool no topo do módulo volta a quebrar o build',
+        ).not.toMatch(/^export const pool\s*[:=]/m);
+        expect(fonte, 'o acesso ao pool precisa ser por função').toMatch(/export function getPool\(/);
+    });
+});
+
 describe('TASK-068 — isolamento entre testes', () => {
     it('BDD 6: um teste grava…', async () => {
         await execute('INSERT INTO keys (name) VALUES ($1)', ['vazamento']);
@@ -163,17 +180,17 @@ describe('TASK-068 — o pool devolve o que pega', () => {
         await query('SELECT 1');
         await queryOne('SELECT 1');
         await execute('SELECT 1');
-        expect(pool.idleCount).toBeGreaterThan(0);
-        expect(pool.totalCount - pool.idleCount).toBe(0);
+        expect(getPool().idleCount).toBeGreaterThan(0);
+        expect(getPool().totalCount - getPool().idleCount).toBe(0);
     });
 
     it('BDD: transação devolve o client mesmo quando lança', async () => {
-        const antes = pool.totalCount - pool.idleCount;
+        const antes = getPool().totalCount - getPool().idleCount;
         await expect(
             withTransaction(async () => {
                 throw new Error('falha proposital');
             }),
         ).rejects.toThrow('falha proposital');
-        expect(pool.totalCount - pool.idleCount).toBe(antes);
+        expect(getPool().totalCount - getPool().idleCount).toBe(antes);
     });
 });
