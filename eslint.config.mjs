@@ -29,6 +29,7 @@ const eslintConfig = defineConfig([
     "impeccable/**",
     ".agents/skills/impeccable/**",
     ".claude/skills/impeccable/**",
+    ".gemini/**",
   ]),
 ]);
 

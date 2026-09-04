@@ -12,7 +12,6 @@
 //   node db/load-pg.mjs <origem.db>            imprime o SQL de carga no stdout
 //   node db/load-pg.mjs <origem.db> --truncate TRUNCATE ... RESTART IDENTITY antes
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Database from 'better-sqlite3';

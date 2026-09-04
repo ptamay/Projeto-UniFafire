@@ -71,3 +71,6 @@ test-results/
 /impeccable/
 .agents/skills/impeccable/
 .claude/skills/impeccable/
+
+# Mesma causa das linhas acima: arvore de skills de agente vendorizada.
+.gemini/
