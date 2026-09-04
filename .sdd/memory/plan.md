@@ -202,20 +202,54 @@
 - [x] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`. `postinstall` (que rodava `npm rebuild better-sqlite3 && node scripts/init-db.js`) removido: quebraria o build da hospedagem.
 - [x] **Fora do escopo original, decidido na execução:** `src/lib/backup.ts` e as rotas `backups/restore` e `backups/import` foram **neutralizados**, não convertidos. Backup por cópia de arquivo SQLite não tem equivalente em Postgres gerenciado, e `node-cron` exige processo de longa duração que não existe em execução serverless. `createBackup()` recusa explicitamente e as rotas devolvem 503, ambos citando a **TASK-078** (Etapa 7), que é a dona do desenho substituto. O 403 de não-ADMIN e a trilha de auditoria continuam antes da recusa. Agendar e nunca rodar seria pior do que não agendar.
 
-### Sprint 22 — Etapa 5: Realtime (ADR-012 · REQ-032)
-> Onde o requisito que motivou a migração é efetivamente entregue.
+> ## ⚠️ Reordenação aprovada em 2026-09-04
+>
+> **Objetivo declarado pelo usuário: fazer o sistema funcionar no Supabase + Vercel.**
+> Não há migração de dados — o conteúdo do `keys.db` anterior era fictício. A Etapa 7 foi
+> antecipada; Realtime (Etapa 5) é feature, não pré-requisito do go-live, e vai para o fim.
+>
+> **A Etapa 6 NÃO foi adiada junto, e o motivo é dela ser pré-requisito de verdade.**
+> `structured-logger.ts:51` faz `fs.mkdirSync` + `fs.appendFileSync` em `logs/`. No Vercel
+> o filesystem é efêmero e somente-leitura: a escrita falha, cai no `catch` e degrada para
+> `console` — **sem derrubar nada e sem alarme.** A constitution §7 já tinha antecipado
+> exatamente isso ("arquivo em `logs/` não serve à hospedagem serverless… a trilha se
+> perderia"), e o REQ-031 nomeia **o log estruturado** no critério de aceite (d), junto com
+> `history` e `action_logs`. Subir antes da TASK-074 seria reprovar o critério do próprio
+> requisito que motiva a etapa — e do jeito mais traiçoeiro, com a aplicação parecendo bem.
+> Por isso a TASK-074 sobe para a Sprint 22, e a TASK-075 acompanha a TASK-078, de que é
+> dependente. A Etapa 6 deixa de existir como sprint e se dissolve nas duas primeiras.
+
+### Sprint 22 — Etapa 7a: Pré-requisitos do Go-Live (ADR-012 · REQ-031)
+> Tudo que precisa estar de pé ANTES de existir uma URL pública. Nenhuma destas é
+> opcional: sem a 080 não se entra, sem a 074 a trilha se perde em silêncio, e a 076/077
+> são o que separa "acessível pela internet" de "exposto na internet".
+- [ ] **TASK-080 → bootstrap do primeiro usuário ADMIN no Postgres. Precede a TASK-079: sem isto o sistema sobe inacessível.** REQ-001 + REQ-031. Numa base Supabase vazia não existe caminho para entrar — `scripts/init-db.js` só fala SQLite e saiu do `postinstall` na TASK-071, nenhuma migration de `db/migrations-pg/` insere usuário, e toda rota exige sessão (`/api/users` exige ADMIN). Desenho proposto — **script de operação, não rota**:
+  - Vive em `db/` (junto de `migrate.mjs` e `load-pg.mjs`), fora do bundle da aplicação. Uma rota de bootstrap seria superfície de ataque permanente para um uso único; um script não é alcançável por HTTP.
+  - **Recusa se `users` já tiver qualquer linha.** A garantia de "uma vez só" fica no estado do banco, não na disciplina de quem roda — mesma lógica pela qual o bypass da TASK-070 virou `set_config` transacional em vez de tabela-flag.
+  - Senha inicial **nunca embutida e nunca padrão**: lida de variável de ambiente ou gerada aleatoriamente e impressa uma vez. O `admin`/`admin` do `init-db.js` nasceu numa intranet; aqui a exposição é pública (constitution §2).
+  - Grava com `requires_password_change = true`. **Não inventa fluxo novo:** `login/route.ts:78` já devolve `REQUIRE_PASSWORD_CHANGE` (403) e força a troca na primeira entrada — caminho existente e testado.
+  - Hash com `bcryptjs` (D-10), nunca o addon nativo. Registra a criação em `audit_logs`.
+  - Teste contra o Postgres do container (D-11): cria numa base vazia; recusa numa base com usuário; a senha não aparece em log nem em `audit_logs` (constitution §6).
+- [ ] **TASK-074 → `structured-logger` passa a gravar em `app_logs`** (constitution §7), com `REVOKE UPDATE, DELETE`. `app_logs` fora de `tablesToClear` — é o destino que precisa sobreviver ao REQ-014. **Trazida da Etapa 6 por ser pré-requisito do deploy** (ver quadro acima). Cuidado de teste: a falha atual é silenciosa por design (`catch` → `console`), então o teste tem de provar que a linha chega em `app_logs`, não que a chamada não lançou.
+- [ ] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
+- [ ] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão. Débito registrado desde a Sprint 9 como "tolerável em rede local; endereçar antes da exposição pública" — é agora.
+
+### Sprint 23 — Etapa 7b: Backup e Deploy (ADR-012 · REQ-031)
+- [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). O endpoint de restore por cópia de arquivo **já foi desativado na Sprint 21** (503 citando esta task); aqui entra o substituto. Peso revisto: não há dado real a perder hoje, mas §4.3 exige verificação, não existência.
+- [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco. **Trazida da Etapa 6 para junto da TASK-078**, de que é dependente: a fonte que ela lia deixou de ser escrita quando o `backup.ts` foi neutralizado.
+- [ ] TASK-079 → deploy e ping agendado contra a pausa por inatividade. **Remoção do aparato local revista:** não há mais "30 dias de retenção do PM2" a esperar — não existe servidor PM2 (ver Achados de 2026-09-04). Sai junto: `.bat`, `ecosystem.config.js`, `show-ip.js`, os scripts `dev`/`start` que o invocam, e a rota `/api/server-info`, que expõe IPs de rede local via `os.networkInterfaces()` — no Vercel ela devolveria endereços de container, informação sem sentido para o operador.
+
+### Sprint 24 — Etapa 5: Realtime (ADR-012 · REQ-032)
+> Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
+> go-live por decisão de 2026-09-04:** é melhoria de experiência sobre um sistema que já
+> funciona, não condição para ele funcionar. Até lá o polling de 3 s continua valendo.
 - [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
 - [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
 
-### Sprint 23 — Etapa 6: Logs Estruturados em Tabela (ADR-012)
-- [ ] TASK-074 → `structured-logger` passa a gravar em `app_logs` (constitution §7), com `REVOKE UPDATE, DELETE`. `app_logs` fora de `tablesToClear` — é o destino que precisa sobreviver ao REQ-014.
-- [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco.
-
-### Sprint 24 — Etapa 7: Deploy e Go-Live (ADR-012 · REQ-031)
-> **Objetivo declarado pelo usuário (2026-09-04): fazer o sistema funcionar no Supabase +
-> Vercel.** Não há migração de dados a fazer — o conteúdo do `keys.db` anterior era
-> fictício. Isso tira a carga de dados do caminho crítico e deixa a etapa com uma pergunta
-> só: o que falta para o sistema subir e ser usável.
+### Etapa 6 — dissolvida
+> Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
+> e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
+> que a numeração das etapas do ADR-012 continue rastreável.
 - [ ] **TASK-080 → bootstrap do primeiro usuário ADMIN no Postgres. Precede a TASK-079: sem isto o sistema sobe inacessível.** REQ-001 + REQ-031. Numa base Supabase vazia não existe caminho para entrar — `scripts/init-db.js` só fala SQLite e saiu do `postinstall` na TASK-071, nenhuma migration de `db/migrations-pg/` insere usuário, e toda rota exige sessão (`/api/users` exige ADMIN). Desenho proposto — **script de operação, não rota**:
   - Vive em `db/` (junto de `migrate.mjs` e `load-pg.mjs`), fora do bundle da aplicação. Uma rota de bootstrap seria superfície de ataque permanente para um uso único; um script não é alcançável por HTTP.
   - **Recusa se `users` já tiver qualquer linha.** A garantia de "uma vez só" fica no estado do banco, não na disciplina de quem roda — mesma lógica pela qual o bypass da TASK-070 virou `set_config` transacional em vez de tabela-flag.

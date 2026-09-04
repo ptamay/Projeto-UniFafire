@@ -56,9 +56,15 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   NEUTRALIZADOS (503 citando a TASK-078). Verificado: 284 testes / 37 arquivos, 6 gates,
   tsc 0, eslint 0, npm run build OK, npm audit 0 vulnerabilidades, e o app rodado de ponta
   a ponta no navegador contra o Postgres do container.
-- Próxima Ação: Sprint 22 — Etapa 5 (Realtime · REQ-032): TASK-072 e 073. Substituir os 4
-  pollings de 3 s por assinatura Realtime; critério de aceite ≤ 500 ms entre dispositivos,
-  com degradação graciosa para polling largo sem WebSocket.
+- Próxima Ação: Sprint 22 — **Etapa 7a: Pré-requisitos do Go-Live** (ROADMAP REORDENADO em
+  2026-09-04, CR Tipo C — a Etapa 7 foi antecipada). TASK-080 (bootstrap do primeiro ADMIN),
+  TASK-074 (structured-logger → app_logs), TASK-076 (JWT_SECRET + cookie secure), TASK-077
+  (autorização no proxy.ts). Depois: Sprint 23 = Etapa 7b (TASK-078, 075, 079 — backup e
+  deploy); Sprint 24 = Etapa 5 (Realtime, TASK-072/073), adiada por ser feature.
+  A Etapa 6 foi DISSOLVIDA: a TASK-074 subiu porque structured-logger.ts:51 grava em logs/
+  com appendFileSync, e no Vercel isso falha, cai no catch e degrada para console SEM
+  ALARME — reprovando o critério (d) do REQ-031, que nomeia o log estruturado. A TASK-075
+  foi para a 7b junto da TASK-078, de que depende.
 - Decisões em aberto: expurgar keys.db do histórico antigo do git exige reescrever
   história — baixo risco (não contém secret; a decisão do banco dos testes foi resolvida
   como D-11: Postgres em container).
@@ -90,9 +96,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - Bloqueantes para o go-live: (1) TASK-080 — bootstrap do primeiro ADMIN; (2) TASK-078 —
   desde a Sprint 21 NÃO HÁ backup de aplicação, só o gerenciado do provedor, que a
   constitution §4.3 exige verificar (peso reduzido: não há dado real a perder hoje).
-- Sequenciamento a rever: o objetivo do usuário é subir no Supabase+Vercel, e a Sprint 22
-  (Realtime) é feature, não pré-requisito. Vale considerar antecipar a Etapa 7 (TASK-080,
-  076, 077, 079) antes das Sprints 22–23. NÃO decidido — perguntar ao usuário.
+- Sequenciamento: DECIDIDO em 2026-09-04 — Etapa 7 antecipada (ver Próxima Ação).
 - Atualizado em: 2026-09-04
 ```
 
