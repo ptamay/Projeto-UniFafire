@@ -175,25 +175,25 @@ Um condicional derivado de header é pior que um valor fixo: quem controla o hea
 o `secure`.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Segredo fraco é recusado na partida
+- [x] **Cenário**: Segredo fraco é recusado na partida
       Dado um `JWT_SECRET` com menos de 32 bytes de entropia
       Quando a aplicação tenta assinar ou verificar sessão
       Então ela falha alto, com mensagem que diz o que fazer
       E **não** cai num segredo gerado em runtime (constitution §2.1).
-- [ ] **Cenário**: `secure` não depende de header em produção
+- [x] **Cenário**: `secure` não depende de header em produção
       Dado `APP_ENV` de produção
       Quando o cookie de sessão é emitido em qualquer caminho do código
       Então `secure` é verdadeiro **independentemente** de `x-forwarded-proto`
       E `httpOnly` e `sameSite` continuam aplicados.
-- [ ] **Cenário**: Dev local continua funcionando sem HTTPS
+- [x] **Cenário**: Dev local continua funcionando sem HTTPS
       Dado `APP_ENV` de desenvolvimento
       Então o relaxamento de `secure` é possível pelo perfil de ambiente (constitution §8)
       E esse relaxamento é impossível de ativar em produção.
-- [ ] **Cenário**: Nenhum segredo no código ou no repositório
+- [x] **Cenário**: Nenhum segredo no código ou no repositório
       Dado o código-fonte e os arquivos versionados
       Então não há valor de `JWT_SECRET` embutido
       E `.env.example` documenta a chave sem valor (constitution §6.2).
-- [ ] **Cenário**: A expiração continua como está
+- [x] **Cenário**: A expiração continua como está
       Dada uma sessão emitida após a mudança
       Então a expiração absoluta de 7 dias e o idle de 24 h permanecem (constitution §2.2)
       — esta task troca o segredo e o `secure`, não a política de sessão.
