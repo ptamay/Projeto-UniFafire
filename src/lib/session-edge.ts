@@ -1,8 +1,17 @@
 import { jwtVerify, SignJWT } from 'jose';
+import { validarJwtSecret } from '@/lib/secret-policy';
 
+// TASK-076: a guarda era `jwtSecret.length < 32` — contagem de caracteres, não
+// entropia. `'a'.repeat(40)` passava, e o segredo em uso era um UUID com sufixo.
+// A política vive em `secret-policy.ts`, testável sem carregar `jose`.
+//
+// Falha na IMPORTAÇÃO do módulo, de propósito: um segredo fraco não pode virar
+// um aviso que se ignora nem um fallback gerado em runtime (§2.1). Sem segredo
+// bom, o processo não sobe.
 const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret || jwtSecret.length < 32) {
-    throw new Error('CRITICAL FATAL ERROR: JWT_SECRET environment variable is missing or too short. It must be at least 32 characters long.');
+const verificacao = validarJwtSecret(jwtSecret);
+if (!verificacao.ok) {
+    throw new Error(`ERRO FATAL — JWT_SECRET inválido. ${verificacao.motivo}`);
 }
 
 const RUNTIME_SECRET = new TextEncoder().encode(jwtSecret);

@@ -6,6 +6,7 @@ import { logAction } from '@/lib/logger';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import type { UserAuthRow } from '@/lib/db-rows';
+import { opcoesCookieSessao } from '@/lib/session-cookie';
 
 const PasswordChangeSchema = z.object({
     currentPassword: z.string().min(1, "A senha atual é obrigatória"),
@@ -56,17 +57,8 @@ export async function PUT(request: Request) {
         const newPayload = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const newSessionToken = await signSession(newPayload);
 
-        // Atualiza o cookie da requisição
-        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
-
-        // Refresh session cookie since they just proved identity
-        (await cookies()).set('session', newSessionToken, {
-            httpOnly: true,
-            secure: isHttps,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24
-        });
+        // Renova o cookie: o usuário acabou de provar identidade.
+        (await cookies()).set(opcoesCookieSessao(newSessionToken));
 
         return NextResponse.json({ success: true });
     } catch (error) {

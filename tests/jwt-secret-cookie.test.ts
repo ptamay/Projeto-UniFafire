@@ -184,7 +184,13 @@ describe('TASK-076 — a decisão vive num lugar só', () => {
                     const fonte = fs.readFileSync(p, 'utf-8')
                         .replace(/\/\*[\s\S]*?\*\//g, '')
                         .replace(/^\s*\/\/.*$/gm, '');
-                    if (/set\(\s*\{?\s*['"]?name['"]?:\s*['"]session['"]|\.set\(\s*['"]session['"]/.test(fonte)) {
+                    // Detecta pelo ATO de gravar cookie, não pelo literal
+                    // 'session': depois desta task o literal sumiu dos call
+                    // sites, e uma varredura por ele deixaria de achar qualquer
+                    // coisa — passando verde por não medir nada. (Foi o que a
+                    // asserção de "pelo menos um emissor" pegou na primeira
+                    // versão deste teste.)
+                    if (/cookies\(\)\)?\.set\(|\.cookies\.set\(/.test(fonte)) {
                         emissores.push(rel);
                         if (!/opcoesCookieSessao/.test(fonte)) semHelper.push(rel);
                     }

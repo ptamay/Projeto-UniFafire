@@ -9,6 +9,7 @@ import {
     RATE_LIMIT_WINDOW_MS, LOCKOUT_WINDOW_MINUTES,
 } from '@/lib/security-profile';
 import { logTiming } from '@/lib/structured-logger';
+import { opcoesCookieSessao } from '@/lib/session-cookie';
 
 interface LoginUserRow {
     id: number;
@@ -26,7 +27,6 @@ export async function POST(request: Request) {
         // Pega IP do client. Em ambiente local pode vir do cabeçalho ou fallback genérico.
         // O header 'x-forwarded-for' é o padrão se houver reverse proxy (Nginx).
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
         
         if (!(await checkRateLimit(ip))) {
             logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
@@ -96,13 +96,7 @@ export async function POST(request: Request) {
         const payloadParams = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const sessionToken = await signSession(payloadParams);
 
-        (await cookies()).set('session', sessionToken, {
-            httpOnly: true,
-            secure: isHttps,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24 // 24 hours idle expiration
-        });
+        (await cookies()).set(opcoesCookieSessao(sessionToken));
 
         logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
 

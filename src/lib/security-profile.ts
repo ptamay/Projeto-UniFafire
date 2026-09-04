@@ -1,4 +1,5 @@
 import { queryOne, execute } from './pg';
+import { appEnv } from './app-env';
 
 // PERFIL DE AMBIENTE (constitution §8)
 // TASK-060 (Sprint 19) — §8 determina um perfil único dirigido por APP_ENV, do
@@ -8,11 +9,11 @@ import { queryOne, execute } from './pg';
 //
 // O default é `production`: ausência ou erro de configuração nunca pode relaxar
 // um controle de segurança. Só o literal exato 'dev' seleciona o perfil frouxo.
-export type AppEnv = 'dev' | 'production';
-
-export function appEnv(): AppEnv {
-    return process.env.APP_ENV === 'dev' ? 'dev' : 'production';
-}
+// TASK-076: a definicao saiu para `app-env.ts`, sem dependencia nenhuma, porque
+// o `proxy.ts` roda no Edge Runtime e este modulo importa `./pg`. Re-exportado
+// aqui para nao quebrar quem ja importava daqui.
+export type { AppEnv } from './app-env';
+export { appEnv };
 
 /** §8 — relaxável apenas em dev: lockout e rate limit. */
 function controlesRelaxados(): boolean {
