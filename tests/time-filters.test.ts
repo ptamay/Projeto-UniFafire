@@ -96,3 +96,27 @@ describe('TASK-055 — faixas UTC a partir de filtros locais', () => {
         expect(localHourToUtcHour('23')).toBe('02');
     });
 });
+
+// TASK-069 (Sprint 21) — o driver Postgres entrega `timestamptz` como Date, nao
+// como string.
+//
+// Encontrado rodando o app no navegador contra o Postgres: a pagina de historico
+// quebrava com "raw.trim is not a function". Nenhum dos 281 testes pegou, porque
+// todos afirmam sobre o RESULTADO da consulta, e nenhum passava o valor lido pela
+// formatacao que a tela usa. So o render expoe.
+describe('TASK-069 — instantes vindos do driver como Date', () => {
+    const INSTANTE = '2026-03-10T18:30:00.000Z';
+
+    it('normalizeTimestamp aceita Date, nao so string', () => {
+        expect(normalizeTimestamp(new Date(INSTANTE))).toBe(INSTANTE);
+    });
+
+    it('formatTimestamp exibe o mesmo instante vindo de Date ou de string', () => {
+        expect(formatTimestamp(new Date(INSTANTE))).toBe(formatTimestamp(INSTANTE));
+    });
+
+    it('a hora exibida continua no fuso do operador (TASK-055)', () => {
+        // 18:30Z = 15:30 em America/Recife. A conversao nao pode ter mudado isso.
+        expect(formatTimestamp(new Date(INSTANTE))).toMatch(/15:30/);
+    });
+});
