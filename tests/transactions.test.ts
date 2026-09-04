@@ -3,7 +3,6 @@ import { POST as TransactionPOST } from '@/app/api/transactions/route';
 import { GET as PendingGET } from '@/app/api/transactions/pending/route';
 import { POST as CancelPOST } from '@/app/api/transactions/[id]/cancel/route';
 import { POST as ConfirmPOST } from '@/app/api/transactions/[id]/user-confirm/route';
-import db from '@/lib/db';
 import { queryOne, execute, withTransaction } from '@/lib/pg';
 
 // Mock cookies and session
