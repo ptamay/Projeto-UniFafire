@@ -198,8 +198,34 @@ Hoje: *"Backup diário automatizado do SQLite via node-cron (já existente em
 `src/lib/backup.ts`)"*. `node-cron` depende de processo de longa duração, que não existe
 em serverless.
 
-Proposta: backup gerenciado do Supabase (diário no plano gratuito) + Vercel Cron para
-verificação. **RPO 24h / RTO 4h permanecem** — o meio muda, o alvo não.
+~~Proposta: backup gerenciado do Supabase (diário no plano gratuito) + Vercel Cron para
+verificação.~~ **A parte entre parênteses estava errada e é o que a nota abaixo corrige:
+não há backup gerenciado no plano gratuito.** **RPO 24h / RTO 4h permanecem** — o meio
+muda, o alvo não, e foi exatamente essa cláusula que permitiu corrigir sem mexer no alvo.
+
+
+> ### ⚠️ Correção de 2026-09-04 (CR Tipo D) — não existe backup gerenciado no plano gratuito
+>
+> A documentação do Supabase é explícita: backup automático diário só nos planos **Pro,
+> Team e Enterprise**. Para o plano gratuito ela **recomenda exportar com `db dump` e manter
+> backups off-site**. A §4.3 e este ADR falavam em "verificar o backup gerenciado do
+> provedor" — não havia o que verificar.
+>
+> O alvo não muda: RPO 24 h, RTO 4 h, e **verificação obrigatória**. Muda o meio:
+>
+> - `pg_dump` diário em job agendado do **GitHub Actions** (o mesmo lugar do ping contra a
+>   pausa por inatividade, então não entra infraestrutura nova).
+> - Destino: **repositório privado separado**. O repositório do código é PÚBLICO, e em repo
+>   público os artefatos de workflow são baixáveis por qualquer pessoa — o dump não pode
+>   encostar aqui.
+> - Verificação no próprio job: restaura o dump numa base descartável e reconcilia as
+>   contagens por tabela contra a origem. **Backup não verificado não conta como backup** —
+>   é o ponto que a §4.3 sempre quis e que "gerenciado pelo provedor" nunca garantiu.
+> - Cada execução, sucesso ou falha, é gravada em tabela do banco, para a métrica de
+>   confiabilidade (TASK-075) ler fato em vez de promessa.
+>
+> Custo permanece zero, como o REQ-031 restringe. A alternativa honesta seria o plano Pro
+> (US$ 25/mês), apresentada ao usuário e descartada por ele em favor desta.
 
 ### §7 — Observabilidade
 

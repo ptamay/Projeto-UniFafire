@@ -51,7 +51,11 @@
 
 1. **Migrações pareadas:** toda alteração de schema tem UP em `db/migrations/NNNN_up_*.sql` e DOWN pareado `NNNN_down_*.sql` com o mesmo prefixo. DOWN gerado ANTES de aplicar o UP. Migração sem DOWN = BLOQUEADOR.
 2. **Teste de migração:** UP + DOWN testados contra uma CÓPIA do banco (`backups/` ou cópia temporária) antes de tocar o banco de produção. Nunca aplicar migração direto em `keys.db` de produção.
-3. **DR obrigatório:** **RPO = 24 horas | RTO = 4 horas — o alvo não muda, o meio pode.** Após a Etapa 7 do ADR-012: backup diário gerenciado pelo provedor do banco, verificado por job agendado da hospedagem, já que `node-cron` exige processo de longa duração e não roda em serverless. Até lá permanece válido o backup em `src/lib/backup.ts`. Responsável pós-entrega: administrador local do sistema (documentar no runbook).
+3. **DR obrigatório:** **RPO = 24 horas | RTO = 4 horas — o alvo não muda, o meio pode.** Backup diário por **`pg_dump` em job agendado do GitHub Actions**, enviado para **repositório privado separado** (off-site), e **verificado no próprio job**: o dump é restaurado numa base descartável e as contagens por tabela são reconciliadas contra a origem. Backup não verificado não conta como backup. Cada execução — sucesso ou falha — é registrada em tabela do banco, para que a métrica de confiabilidade leia fato e não promessa. Responsável pós-entrega: administrador local do sistema (documentar no runbook).
+
+   > **Correção de 2026-09-04 (CR Tipo D).** Esta cláusula dizia "backup diário **gerenciado pelo provedor do banco**, verificado por job agendado da hospedagem". A premissa é falsa no plano escolhido: a documentação do Supabase declara backup automático apenas para os planos Pro, Team e Enterprise, e **recomenda explicitamente que projetos do plano gratuito exportem os dados com `db dump` e mantenham backups off-site**. Não havia backup gerenciado a verificar. Mantida a exigência que importa — RPO/RTO e verificação —, trocado o meio, que a própria cláusula sempre admitiu trocar. Ver ADR-012 §Backup.
+   >
+   > ⚠️ O repositório do código é **público**: o dump nunca pode ir para ele nem para artefatos de Actions deste repo, que são baixáveis por qualquer pessoa. Daí o destino ser um repositório privado separado.
 4. Histórico de transações é **imutável por design** para papéis não-ADMIN; nenhuma feature nova pode permitir edição/exclusão de transação individual.
 5. `keys.db`, `database.sqlite`, `backups/` e `logs/` nunca são commitados no git.
 
