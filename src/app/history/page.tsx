@@ -2,16 +2,21 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import db from '@/lib/db';
+import { buildHistoryQuery } from '@/lib/history-query';
 import HistoryClient, { type HistoryItem } from './HistoryClient';
 
-export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ page?: string, date?: string, month?: string, hour?: string }> }) {
-    const resolvedParams = await searchParams;
-    const page = parseInt(resolvedParams?.page || '1', 10) || 1;
-    const date = resolvedParams?.date || '';
-    const month = resolvedParams?.month || '';
-    const hour = resolvedParams?.hour || '';
-    const limit = 50;
-    const offset = (page - 1) * limit;
+interface HistorySearchParams {
+    page?: string;
+    date?: string;
+    month?: string;
+    hour?: string;
+    userId?: string;
+    keyId?: string;
+    action?: string;
+}
+
+export default async function HistoryPage({ searchParams }: { searchParams: Promise<HistorySearchParams> }) {
+    const p = (await searchParams) || {};
 
     const sessionCookie = (await cookies()).get('session');
     if (!sessionCookie) redirect('/login');
@@ -22,57 +27,51 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         if (!session) throw new Error();
     } catch { redirect('/login'); }
 
-    let query = `
-        SELECT h.id, h.action, h.timestamp, 
-               k.name as key_name, k.room, 
-               COALESCE(u.full_name, u.username, e.name) as employee_name,
-               p.username as confirmed_by
-        FROM history h
-        LEFT JOIN keys k ON h.key_id = k.id
-        LEFT JOIN employees e ON h.employee_id = e.id
-        LEFT JOIN users u ON h.user_id = u.id
-        LEFT JOIN key_transactions kt ON h.transaction_id = kt.id
-        LEFT JOIN users p ON kt.porteiro_id = p.id
-    `;
-    
-    let countQuery = 'SELECT COUNT(*) as total FROM history h';
-    const conditions: string[] = [];
-    const params: (string | number)[] = [];
+    const query = buildHistoryQuery({
+        date: p.date || '',
+        month: p.month || '',
+        hour: p.hour || '',
+        userId: p.userId || '',
+        keyId: p.keyId || '',
+        action: p.action || '',
+        page: parseInt(p.page || '1', 10) || 1,
+    });
 
-    if (date) {
-        conditions.push('DATE(h.timestamp) = DATE(?)');
-        params.push(date);
-    }
-    if (month) {
-        conditions.push("strftime('%Y-%m', h.timestamp) = ?");
-        params.push(month);
-    }
-    if (hour) {
-        conditions.push("strftime('%H', h.timestamp) = ?");
-        params.push(hour.padStart(2, '0'));
-    }
+    const history = db.prepare(query.sql).all(...query.params) as HistoryItem[];
+    const countRow = db.prepare(query.countSql).get(...query.countParams) as { total: number };
+    const totalPages = Math.max(1, Math.ceil(countRow.total / query.limit));
 
-    if (conditions.length > 0) {
-        const whereClause = ' WHERE ' + conditions.join(' AND ');
-        query += whereClause;
-        countQuery += whereClause;
-    }
+    // TASK-056: os seletores são alimentados apenas por quem/o que realmente tem
+    // movimentação registrada — filtrar por alguém sem histórico não é uma opção
+    // útil, e a lista se mantém curta sem depender do tamanho do cadastro.
+    const filterUsers = db.prepare(`
+        SELECT DISTINCT u.id, COALESCE(u.full_name, u.username) as name
+        FROM history h JOIN users u ON h.user_id = u.id
+        WHERE name IS NOT NULL
+        ORDER BY name COLLATE NOCASE
+    `).all() as { id: number; name: string }[];
 
-    query += ' ORDER BY h.timestamp DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    const filterKeys = db.prepare(`
+        SELECT DISTINCT k.id, k.name, k.room
+        FROM history h JOIN keys k ON h.key_id = k.id
+        ORDER BY k.name COLLATE NOCASE
+    `).all() as { id: number; name: string; room: string | null }[];
 
-    const history = db.prepare(query).all(...params) as HistoryItem[];
-
-    const countParams = params.slice(0, -2);
-    const countRow = db.prepare(countQuery).get(...countParams) as { total: number };
-    const totalPages = Math.ceil(countRow.total / limit);
-
-    return <HistoryClient 
-        history={history} 
-        userRole={session.role} 
-        username={session.username} 
-        currentPage={page} 
-        totalPages={totalPages} 
-        initialFilters={{ date, month, hour }}
+    return <HistoryClient
+        history={history}
+        userRole={session.role}
+        username={session.username}
+        currentPage={query.page}
+        totalPages={totalPages}
+        totalRecords={countRow.total}
+        filterOptions={{ users: filterUsers, keys: filterKeys }}
+        initialFilters={{
+            date: p.date || '',
+            month: p.month || '',
+            hour: p.hour || '',
+            userId: p.userId || '',
+            keyId: p.keyId || '',
+            action: p.action || '',
+        }}
     />;
 }

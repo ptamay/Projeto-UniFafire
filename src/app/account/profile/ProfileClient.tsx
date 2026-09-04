@@ -55,15 +55,6 @@ export default function ProfileClient({ userRole, username, initialData }: Profi
             
             <div className="main-content">
                 <header className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button 
-                        className="mobile-menu-toggle"
-                        onClick={() => setSidebarOpen(true)}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'none' }}
-                    >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-                        </svg>
-                    </button>
                     <div>
                         <h1 className="page-title">Meu Perfil</h1>
                         <p className="page-subtitle">Gerencie suas informações pessoais</p>
@@ -125,11 +116,6 @@ export default function ProfileClient({ userRole, username, initialData }: Profi
                     </div>
                 </div>
             </div>
-            <style jsx>{`
-                @media (max-width: 768px) {
-                    .mobile-menu-toggle { display: block !important; }
-                }
-            `}</style>
         </div>
     );
 }

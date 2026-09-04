@@ -1,0 +1,21 @@
+{
+  "_nota": "Governança MCP (constitution §8, sandbox deny-by-default em .sdd/agent_config.py). Todo servidor MCP habilitado no projeto é declarado aqui com escopo e justificativa. A configuração operacional vive em .mcp.json; este arquivo é o registro de por que cada servidor existe e até onde ele pode ir.",
+  "mcpServers": {
+    "supabase": {
+      "adicionado_em": "2026-09-03",
+      "motivo": "ADR-012 — Etapa 3 em diante (Sprints 20 a 24): criação do schema Postgres, aplicação de migrations, verificação de carga de dados e consulta à documentação do provedor.",
+      "projeto": "nkhoyvgnevtwlkheknxu",
+      "regiao": "sa-east-1 (São Paulo) — CONFIRMADA em 2026-09-03, conforme exigência de constitution §0 por conta da PII de alunos e funcionários.",
+      "regiao_como_foi_verificada": "db.nkhoyvgnevtwlkheknxu.supabase.co resolve para 2600:1f1e:b2a:a301:aab:b953:933d:33e0, que casa com o prefixo 2600:1f1e::/36 publicado pela AWS em ip-ranges.amazonaws.com como sa-east-1 (serviços AMAZON e EC2). Verificação indireta por DNS: a leitura direta dos metadados do projeto exigiria a feature 'account', recusada no escopo. Cross-check no painel do Supabase (Project Settings → General) é a confirmação autoritativa.",
+      "transporte": "http",
+      "features_habilitadas": ["docs", "database", "debugging", "development"],
+      "features_recusadas": {
+        "account": "Permite listar, pausar, restaurar e excluir projetos e gerenciar a organização. Autoridade de nível de conta que a migração não precisa; recusada por deny-by-default (decisão do usuário em 2026-09-03).",
+        "functions": "Edge Functions não estão no escopo do ADR-012. Habilitar sob demanda, se e quando entrarem.",
+        "branching": "Branching de banco não está no escopo. Idem."
+      },
+      "secrets": "Nenhum neste arquivo nem em .mcp.json. O project_ref é identificador público; o token OAuth é gerenciado pelo cliente fora do repositório (constitution §6.2).",
+      "revisar_em": "Go-live (Sprint 24) — reavaliar se o servidor ainda precisa estar habilitado após a migração concluir."
+    }
+  }
+}

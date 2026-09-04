@@ -12,7 +12,7 @@ export interface KeyTransactionRow {
     id: number;
     key_id: number;
     user_id: number;
-    action: 'withdraw' | 'return';
+    action: 'withdraw' | 'return' | 'transfer';
     status: 'pending' | 'porteiro_confirmed' | 'completed' | 'cancelled';
     porteiro_id: number | null;
     porteiro_confirmed_at: string | null;
@@ -31,7 +31,6 @@ export interface KeyTableRow {
     name: string;
     room: string | null;
     status: 'available' | 'in_use';
-    employee_id: number | null;
     user_id: number | null;
     active: number;
 }

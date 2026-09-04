@@ -14,11 +14,11 @@ type User = {
 };
 
 const ROLES = [
-    { value: 'ADMIN', label: 'Administrador', color: '#ef4444', desc: 'Acesso total ao sistema' },
-    { value: 'GESTOR', label: 'Gestor', color: '#8b5cf6', desc: 'Gerencia o sistema' },
-    { value: 'PORTEIRO', label: 'Porteiro', color: '#3b82f6', desc: 'Operação de chaves' },
-    { value: 'FUNCIONARIO', label: 'Funcionário', color: '#f59e0b', desc: 'Confirma retirada/devolução' },
-    { value: 'ALUNO', label: 'Aluno', color: '#10b981', desc: 'Confirma retirada/devolução' },
+    { value: 'ADMIN', label: 'Administrador', color: 'var(--text-primary)', desc: 'Acesso total ao sistema' },
+    { value: 'GESTOR', label: 'Gestor', color: 'var(--blue-300)', desc: 'Gerencia o sistema' },
+    { value: 'PORTEIRO', label: 'Porteiro', color: 'var(--blue-400)', desc: 'Operação de chaves' },
+    { value: 'FUNCIONARIO', label: 'Funcionário', color: 'var(--text-secondary)', desc: 'Confirma retirada/devolução' },
+    { value: 'ALUNO', label: 'Aluno', color: 'var(--green-400)', desc: 'Confirma retirada/devolução' },
 ];
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
@@ -55,6 +55,7 @@ export default function UsersClient({ userRole, username }: Props) {
     const [saving, setSaving] = useState(false);
     const [deleteModal, setDeleteModal] = useState<User | null>(null);
     const [resetModal, setResetModal] = useState<User | null>(null);
+    const [newUserPassword, setNewUserPassword] = useState<{username: string, password?: string, reactivated?: boolean} | null>(null);
     const [sysDefaultPass, setSysDefaultPass] = useState('unifafire123');
     const [filterRole, setFilterRole] = useState('all');
     const [search, setSearch] = useState('');
@@ -109,7 +110,7 @@ export default function UsersClient({ userRole, username }: Props) {
                 const data = await res.json();
                 if (res.ok) {
                     setUsers(prev => [...prev, { id: data.id, ...formData, username: data.username }]);
-                    toast.success(data.reactivated ? `Usuário reativado: @${data.username}` : `Usuário criado: @${data.username}`);
+                    setNewUserPassword({ username: data.username, password: data.generatedPassword, reactivated: data.reactivated });
                     setShowForm(false);
                 } else { toast.error(data.error || 'Erro ao criar usuário.'); }
             }
@@ -334,11 +335,44 @@ export default function UsersClient({ userRole, username }: Props) {
                 <ConfirmModal 
                     isOpen={true} 
                     title="Redefinir Senha" 
-                    message={`A senha do usuário "${resetModal.full_name || resetModal.username}" será redefinida para a senha padrão do sistema (${sysDefaultPass}). O usuário precisará criar uma nãova senha não próximo acesso.`} 
+                    message={`A senha do usuário "${resetModal.full_name || resetModal.username}" será redefinida para a senha padrão do sistema (${sysDefaultPass}). O usuário precisará criar uma nova senha no próximo acesso.`} 
                     confirmText="Redefinir" 
                     onConfirm={handleResetPass} 
                     onCancel={() => setResetModal(null)} 
                 />
+            )}
+            
+            {/* Modal de Senha do Novo Usuário */}
+            {newUserPassword && (
+                <div className="modal-overlay" onClick={() => setNewUserPassword(null)}>
+                    <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
+                        <div style={{ width: '48px', height: '48px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                            {newUserPassword.reactivated ? 'Usuário Reativado' : 'Usuário Criado'}!
+                        </h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                            O usuário <strong>@{newUserPassword.username}</strong> foi {newUserPassword.reactivated ? 'reativado' : 'criado'} com sucesso.
+                        </p>
+                        
+                        {newUserPassword.password && (
+                            <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px dashed var(--border-strong)' }}>
+                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Senha de Acesso Gerada</div>
+                                <div style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '2px' }}>{newUserPassword.password}</div>
+                            </div>
+                        )}
+                        
+                        <div style={{ padding: '0.75rem', background: 'var(--orange-50)', color: 'var(--orange-600)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>Por segurança, o sistema exigirá que o usuário <strong>cadastre uma nova senha</strong> no primeiro acesso.</span>
+                        </div>
+                        
+                        <button className="btn btn-green w-full" onClick={() => setNewUserPassword(null)}>
+                            Concluído
+                        </button>
+                    </div>
+                </div>
             )}
 
             <ConfirmModal isOpen={!!deleteModal} title="Remover Usuário" message={`Remover o usuário "${deleteModal?.full_name || deleteModal?.username}"? O acesso será revogado imediatamente.`} confirmText="Remover" onConfirm={handleDelete} onCancel={() => setDeleteModal(null)} />

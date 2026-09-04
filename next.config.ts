@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
   // As per suggestion: setting empty turbopack config
   // Note: Depending on exact Next 16 schema, it might be in experimental or top level.
   // The error said "setting an empty turbopack config in your Next config file (e.g. `turbopack: {}`)"
-  turbopack: {}
+  turbopack: {},
+  // Allow accessing the dev server from local network IP for mobile testing
+  allowedDevOrigins: ['192.168.0.206']
 };
 
 export default withPWA(nextConfig);

@@ -1,10 +1,32 @@
 ---
 trigger: model_decision
+description: "Ative OBRIGATORIAMENTE quando a tarefa for executar tasks de sprint, rodar o ciclo TDD, ou orquestrar os sub-agentes das Fases 10-11."
 ---
 
 # 10-sprint-tdd — Execução de Sprint (Model Decision)
-<!-- Ativação: MODEL DECISION. Descrição: ative quando a tarefa for executar tasks de sprint, -->
-<!-- rodar o ciclo TDD, ou orquestrar os sub-agentes das Fases 10–11. -->
+
+## 🎛️ Recomendação de Modelo e Esforço (obrigatória — antes de executar)
+
+Você DEVE recomendar proativamente — o usuário decide, mas nunca sem a sua sugestão:
+
+**No início da sprint** (Fase 8) e **antes de CADA task**, emita UMA linha:
+```
+🎛️ TASK-NNN → Canal: [Antigravity | Claude Code] · Modelo: [Gemini Pro | Haiku 4.5 | Sonnet 5 | Opus 4.8] · Esforço: [baixo | médio | alto | máximo] — motivo em 1 frase
+```
+Base da recomendação (nesta ordem):
+1. **Criticidade da sprint** registrada no `plan.md` (🔴 crítica → Claude Code + Opus + alto;
+   🟡 padrão → Sonnet/Gemini + médio; 🟢 volume → Antigravity + Gemini + baixo–médio).
+   Task que mistura níveis assume o MAIS ALTO.
+2. **Natureza do step:** ler/ordenar/reportar → Haiku + baixo · implementar → Sonnet/Gemini
+   conforme criticidade · decidir/auditar/atacar (Step 8, migration L, lógica de dinheiro) →
+   Opus + máximo.
+3. Se o canal recomendado ≠ canal atual → diga explicitamente ("recomendo mover esta task
+   para o Claude Code") e aguarde a decisão antes de implementar.
+
+Registre a recomendação aceita no `tasks.md` da task. Detalhe completo:
+`.sdd/reference/master-spec-core.md` Seções 5.2–5.3 (não precisa abrir para agir).
+
+---
 
 ## TDD Atômico (inviolável)
 Para CADA task:
@@ -42,7 +64,7 @@ O hook `commit-msg` bloqueia commits `feat`/`test` sem escopo `(TASK-NNN)`.
 
 ### 🤖 review-agent — Steps 6–8 (Validate, Security Gate, AI Validation Gate)
 - Validate (6): ⚡ BAIXO — execute testes, leia cobertura
-- Security Gate (7): ⚡ BAIXO — Semgrep + npm audit + `./scripts/ci-gates.sh` (Gates 1–6)
+- Security Gate (7): ⚡ BAIXO — Semgrep + auditoria de dependências da stack + `./scripts/ci-gates.sh` (Gates 1–6, autodetectam a stack)
 - AI Validation Gate (8): 🔴 **ESFORÇO MÁXIMO — não responda imediatamente:**
   > 1. Releia critérios BDD desta task no `tasks.md`
   > 2. Compare com o código commitado nos Steps 2–4
@@ -73,13 +95,13 @@ Sprint não encerra sem este commit. Se arquivo de memória ausente: crie com co
 ## Definition of Done (task pronta só quando TUDO for verdade)
 - [ ] Critérios BDD do `tasks.md` atendidos e verificados
 - [ ] Cobertura ≥ 80% | Lint zero erros
-- [ ] Semgrep zero HIGH/CRITICAL | npm audit zero HIGH/CRITICAL CVEs
+- [ ] Semgrep zero HIGH/CRITICAL | auditoria de dependências da stack (npm audit / pip-audit / …) zero HIGH/CRITICAL
 - [ ] `./scripts/ci-gates.sh` passou (imports, DOWN pareado, secrets, ordem TDD, type-check, bypass de ambiente)
 - [ ] Lockfile atualizado e commitado se dependência nova foi adicionada
 - [ ] Tenant isolation verificada (multi-tenant)
 - [ ] API versionada (`/v[N]/`)
 - [ ] Migration com rollback testado no branch Neon (se aplicável)
 - [ ] Zero secrets em código ou logs
-- [ ] Security headers (helmet.js ou next-safe) + rate limiting em rotas públicas/auth
+- [ ] Security headers (helmet.js, next-safe ou equivalente da stack) + rate limiting em rotas públicas/auth
 - [ ] E2E smoke passou se a task toca fluxo crítico do overview.md (Playwright — bloqueante no PADRÃO)
 - [ ] Se a task entrega/altera login: identidade de sessão no shell + rotas `/account/*` presentes

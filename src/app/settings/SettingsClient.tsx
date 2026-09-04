@@ -205,7 +205,7 @@ export default function SettingsClient({ userRole, username }: Props) {
                             </p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
                                 {serverInfo?.ips.map(ip => (
-                                    <div key={ip} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div key={ip} style={{ background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <code style={{ color: 'var(--green-300)', fontWeight: 700, fontSize: '0.9rem' }}>http://{ip}:3000</code>
                                         <button className="btn btn-ghost btn-sm" style={{ padding: '0.2rem 0.5rem', height: 'auto', fontSize: '0.65rem' }} onClick={() => {
                                             navigator.clipboard.writeText(`http://${ip}:3000`);

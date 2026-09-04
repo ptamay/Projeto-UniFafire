@@ -23,9 +23,9 @@ export async function POST(request: Request, { params }: RouteParams) {
         const tx = db.prepare('SELECT * FROM key_transactions WHERE id = ?').get(transactionId) as KeyTransactionRow | undefined;
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
-        // Apenas porteiro que iniciou, admin, ou o próprio usuário pode cancelar
-        const canCancel = ['ADMIN', 'GESTOR'].includes(session.role) || 
-                          tx.porteiro_id === session.id || 
+        // Portaria (qualquer porteiro/gestor/admin), quem iniciou, ou o próprio usuário pode cancelar
+        const canCancel = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role) ||
+                          tx.porteiro_id === session.id ||
                           tx.user_id === session.id;
 
         if (!canCancel) {

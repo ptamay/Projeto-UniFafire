@@ -4,7 +4,10 @@ import db from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { logAction } from '@/lib/logger';
 import { signSession } from '@/lib/session';
-import { checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts } from '@/lib/security-profile';
+import {
+    checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts,
+    RATE_LIMIT_WINDOW_MS, LOCKOUT_WINDOW_MINUTES,
+} from '@/lib/security-profile';
 import { logTiming } from '@/lib/structured-logger';
 
 interface LoginUserRow {
@@ -23,15 +26,24 @@ export async function POST(request: Request) {
         // Pega IP do client. Em ambiente local pode vir do cabeçalho ou fallback genérico.
         // O header 'x-forwarded-for' é o padrão se houver reverse proxy (Nginx).
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
         
         if (!checkRateLimit(ip)) {
             logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
-            return NextResponse.json({ error: 'Muitas tentativas. Tente novamente mais tarde.' }, { status: 429 });
+            // TASK-061 (constitution §2.6): 429 tem de dizer quando voltar; sem o
+            // header o cliente só pode adivinhar e tende a insistir em vão.
+            return NextResponse.json(
+                { error: 'Muitas tentativas. Tente novamente mais tarde.' },
+                { status: 429, headers: { 'Retry-After': String(RATE_LIMIT_WINDOW_MS / 1000) } }
+            );
         }
 
         if (checkLockout(body.username, ip)) {
             logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
-            return NextResponse.json({ error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' }, { status: 423 });
+            return NextResponse.json(
+                { error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' },
+                { status: 423, headers: { 'Retry-After': String(LOCKOUT_WINDOW_MINUTES * 60) } }
+            );
         }
 
         if (!body.username || !body.password) {
@@ -57,7 +69,7 @@ export async function POST(request: Request) {
         }
 
         // --- Fluxo de sucesso ---
-        clearLoginAttempts(user.username, ip); // Reseta as falhas
+        clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
 
         let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova
@@ -81,7 +93,7 @@ export async function POST(request: Request) {
 
         (await cookies()).set('session', sessionToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24 // 24 hours idle expiration

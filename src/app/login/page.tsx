@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import './login.css';
 
 export default function LoginPage() {
     const [username, setUsername] = useState('');
@@ -11,6 +12,14 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
     const [showForgotPopup, setShowForgotPopup] = useState(false);
+
+    // Respeita o tema salvo (dark-first, PRODUCT.md): mesmo mecanismo do Sidebar.
+    // Antes o cartão forçava light-mode — a tela mais brilhante do balcão às 22h.
+    useEffect(() => {
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,7 +54,7 @@ export default function LoginPage() {
             <div className="login-bg-orb login-bg-orb-1" />
             <div className="login-bg-orb login-bg-orb-2" />
 
-            <div className="login-container animate-slide light-mode">
+            <div className="login-container animate-slide">
                 <div className="login-brand">
                     <div className="login-logo-wrap">
                         <Image
@@ -233,112 +242,6 @@ export default function LoginPage() {
                     </div>
                 </div>
             )}
-
-            <style jsx>{`
-                .login-page {
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: var(--blue-950);
-                    position: relative;
-                    overflow: hidden;
-                    padding: 1rem;
-                }
-                .login-bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
-                .login-bg-orb-1 {
-                    width: 520px; height: 520px;
-                    background: radial-gradient(circle, rgba(26,46,138,0.65) 0%, transparent 70%);
-                    top: -120px; left: -120px;
-                }
-                .login-bg-orb-2 {
-                    width: 420px; height: 420px;
-                    background: radial-gradient(circle, rgba(29,128,70,0.18) 0%, transparent 70%);
-                    bottom: -90px; right: -90px;
-                }
-                .login-container {
-                    background: var(--bg-card);
-                    border: 1px solid var(--border);
-                    border-radius: 20px;
-                    padding: 2.5rem 2rem;
-                    width: 100%;
-                    max-width: 420px;
-                    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
-                    position: relative;
-                    z-index: 1;
-                }
-                .login-container::before {
-                    content: '';
-                    position: absolute;
-                    top: 0; left: 10%; right: 10%;
-                    height: 1px;
-                    background: linear-gradient(90deg, transparent, var(--green-400), transparent);
-                }
-                .login-brand { text-align: center; margin-bottom: 1.75rem; }
-                .login-logo-wrap {
-                    display: inline-flex;
-                    margin-bottom: 1.25rem;
-                }
-                .login-logo { border-radius: 50%; display: block; }
-                .login-title { font-size: 1.625rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
-                .login-subtitle { font-size: 0.875rem; color: var(--text-muted); letter-spacing: 0.02em; }
-                .login-divider {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    margin-bottom: 1.75rem;
-                    color: var(--text-muted);
-                    font-size: 0.75rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.1em;
-                    font-weight: 600;
-                }
-                .login-divider::before, .login-divider::after {
-                    content: ''; flex: 1; height: 1px; background: var(--border);
-                }
-                .login-form { display: flex; flex-direction: column; gap: 1.25rem; }
-                .login-error {
-                    display: flex; align-items: center; gap: 0.5rem;
-                    padding: 0.75rem 1rem;
-                    background: rgba(239,68,68,0.1);
-                    border: 1px solid rgba(239,68,68,0.25);
-                    border-radius: var(--radius-sm);
-                    color: #f87171; font-size: 0.875rem;
-                }
-                .input-icon-wrap { position: relative; }
-                .input-icon {
-                    position: absolute; left: 0.875rem; top: 50%;
-                    transform: translateY(-50%); color: var(--text-muted);
-                    pointer-events: none; z-index: 1;
-                }
-                .input-with-icon { padding-left: 2.75rem; }
-                .input-with-action { padding-right: 2.75rem; }
-                .input-action-btn {
-                    position: absolute; right: 0.75rem; top: 50%;
-                    transform: translateY(-50%);
-                    background: none; border: none; color: var(--text-muted);
-                    cursor: pointer; padding: 4px; border-radius: 4px;
-                    transition: color 0.15s; display: flex; align-items: center;
-                }
-                .input-action-btn:hover { color: var(--text-accent); }
-                .login-submit { width: 100%; margin-top: 0.25rem; min-height: 48px; }
-                .login-footer-text {
-                    text-align: center; font-size: 0.7rem;
-                    color: var(--text-muted); margin-top: 1.5rem; letter-spacing: 0.03em;
-                }
-                /* TASK-024 (REQ-016): mobile-first — 100dvh acomoda o teclado virtual
-                   e o container usa toda a largura útil a partir de 360px */
-                @media (max-width: 768px) {
-                    .login-page {
-                        min-height: 100dvh;
-                        align-items: flex-start;
-                        padding-top: max(1.5rem, 6dvh);
-                    }
-                    .login-container { padding: 2rem 1.25rem; }
-                    .login-bg-orb-1 { width: 320px; height: 320px; }
-                    .login-bg-orb-2 { width: 260px; height: 260px; }
-                }
-            `}</style>
         </div>
     );
 }

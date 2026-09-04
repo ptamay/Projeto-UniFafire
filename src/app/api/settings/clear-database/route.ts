@@ -14,7 +14,7 @@ export async function POST() {
         const session = await verifySession(sessionCookie.value);
         if (!session || session.role !== 'ADMIN') return NextResponse.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
 
-        const tablesToClear = ['history', 'action_logs', 'audit_logs', 'keys', 'employees'];
+        const tablesToClear = ['history', 'action_logs', 'audit_logs', 'keys'];
 
         // TASK-031 (REQ-014): registro PRÉVIO em destino que sobrevive à limpeza —
         // esta operação apaga as próprias tabelas de auditoria, então a trilha

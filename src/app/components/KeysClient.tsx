@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import Sidebar from './Sidebar';
+import ConfirmModal from './ConfirmModal';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string };
 
@@ -36,6 +38,9 @@ export default function KeysClient({
     const [editKeyName, setEditKeyName] = useState('');
     const [editKeyRoom, setEditKeyRoom] = useState('');
 
+    // Confirmação de remoção via ConfirmModal compartilhado (antes: confirm() nativo)
+    const [keyToDelete, setKeyToDelete] = useState<Key | null>(null);
+
     const refreshData = async () => {
         const kRes = await fetch('/api/keys');
         if (kRes.ok) {
@@ -63,10 +68,10 @@ export default function KeysClient({
             setNewKeyName('');
             setNewKeyRoom('');
             refreshData();
-            alert('Chave criada com sucesso!');
+            toast.success('Chave criada com sucesso!');
         } else {
             const err = await res.json();
-            alert(err.error || 'Erro ao criar chave.');
+            toast.error(err.error || 'Erro ao criar chave.');
         }
     };
 
@@ -89,31 +94,34 @@ export default function KeysClient({
             setShowEditKeyModal(false);
             setEditingKeyId(null);
             refreshData();
-            alert('Chave atualizada com sucesso!');
+            toast.success('Chave atualizada com sucesso!');
         } else {
-            alert('Erro ao atualizar chave.');
+            toast.error('Erro ao atualizar chave.');
         }
     };
 
-    const handleDeleteKey = async (key: Key) => {
+    const handleDeleteKey = (key: Key) => {
         if (key.status === 'in_use') {
-            alert('Não é possível remover uma chave que está em uso no momento.');
+            toast.error('Não é possível remover uma chave que está em uso no momento.');
             return;
         }
+        setKeyToDelete(key);
+    };
 
-        if (!confirm('Deseja realmente confirmar esta ação? (Remover chave)')) return;
+    const confirmDeleteKey = async () => {
+        if (!keyToDelete) return;
         const res = await fetch('/api/keys', {
             method: 'DELETE',
-            body: JSON.stringify({ id: key.id }),
+            body: JSON.stringify({ id: keyToDelete.id }),
             headers: { 'Content-Type': 'application/json' }
         });
 
         if (res.ok) {
-            alert('Chave removida com sucesso!');
+            toast.success('Chave removida com sucesso!');
             refreshData();
         } else {
             const err = await res.json();
-            alert(err.error || 'Erro ao remover chave.');
+            toast.error(err.error || 'Erro ao remover chave.');
         }
     };
 
@@ -167,7 +175,7 @@ export default function KeysClient({
                                         </td>
                                     </tr>
                                 ))}
-                                {keys.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: '#999' }}>Nenhuma chave cadastrada.</td></tr>}
+                                {keys.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma chave cadastrada.</td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -230,6 +238,16 @@ export default function KeysClient({
                     </div>
                 </div>
             )}
+
+            {/* Confirmação de remoção — mesmo vocabulário de modal do resto do app */}
+            <ConfirmModal
+                isOpen={keyToDelete !== null}
+                title="Remover chave"
+                message={keyToDelete ? `Remover a chave "${keyToDelete.name}"${keyToDelete.room ? ` (${keyToDelete.room})` : ''}? Esta ação não pode ser desfeita.` : ''}
+                confirmText="Remover"
+                onConfirm={confirmDeleteKey}
+                onCancel={() => setKeyToDelete(null)}
+            />
         </div>
     );
 }

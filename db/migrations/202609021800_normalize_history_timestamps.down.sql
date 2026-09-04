@@ -1,0 +1,8 @@
+-- 202609021800_normalize_history_timestamps (DOWN) — TASK-055
+-- No-op deliberado. O UP corrige a REPRESENTAÇÃO de um instante já gravado em
+-- UTC; não houve mudança de schema a desfazer. Reverter exigiria reintroduzir a
+-- forma ambígua ('YYYY-MM-DD HH:MM:SS') em linhas que o JavaScript voltaria a ler
+-- como hora local — ou seja, recolocar o defeito numa trilha de auditoria
+-- imutável (REQ-005). Um rollback que corrompe dado não é rollback.
+--
+-- A migração é idempotente: reaplicar o UP sobre dados já normalizados não faz nada.

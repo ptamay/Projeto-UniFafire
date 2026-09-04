@@ -19,28 +19,18 @@ beforeAll(() => {
             requires_password_change BOOLEAN DEFAULT 1
         );
         
-        CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            role TEXT,
-            active INTEGER DEFAULT 1
-        );
-
         CREATE TABLE IF NOT EXISTS keys (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             room TEXT,
             status TEXT DEFAULT 'available',
-            employee_id INTEGER,
             user_id INTEGER,
             active INTEGER DEFAULT 1,
-            FOREIGN KEY(employee_id) REFERENCES employees(id),
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
 
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER,
             user_id INTEGER,
             username TEXT,
             key_id INTEGER,
@@ -82,7 +72,8 @@ beforeAll(() => {
             porteiro_confirmed_at DATETIME,
             cancelled_at DATETIME,
             completed_at DATETIME,
-            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            initiated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            justification TEXT
         );
     `);
 
@@ -97,6 +88,7 @@ beforeAll(() => {
     insertUser.run('test_porteiro', hash, 'PORTEIRO');
     insertUser.run('test_funcionario', hash, 'FUNCIONARIO');
     insertUser.run('test_aluno', hash, 'ALUNO');
+    insertUser.run('test_aluno2', hash, 'ALUNO');
 
     // 3. Semear uma chave disponível
     const insertKey = db.prepare("INSERT INTO keys (name, room, status) VALUES (?, ?, 'available')");

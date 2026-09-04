@@ -12,6 +12,8 @@ export async function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
+    const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
+
     if (!sessionCookie || !sessionCookie.value) {
         return NextResponse.next();
     }
@@ -25,7 +27,7 @@ export async function proxy(request: NextRequest) {
             name: 'session',
             value: sessionCookie.value,
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isHttps,
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24
