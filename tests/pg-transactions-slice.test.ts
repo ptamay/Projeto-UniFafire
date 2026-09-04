@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { query, queryOne, execute } from '@/lib/pg';
+import { query, queryOne, execute, withTransaction } from '@/lib/pg';
 
 // TASK-069 fatia (c) (Sprint 21 · Etapa 4 do ADR-012) — o ciclo de vida das
 // chaves passa a falar Postgres.
@@ -43,7 +43,14 @@ function post(body: Record<string, unknown>) {
 
 beforeEach(async () => {
     sessao = { id: 2, role: 'PORTEIRO', username: 'test_porteiro' };
-    await execute('DELETE FROM history WHERE key_id = $1', [KEY_ID]);
+    // O trigger de imutabilidade da TASK-065 bloqueia DELETE em `history` — a
+    // limpeza do teste passa pelo MESMO caminho autorizado do REQ-014, com o
+    // bypass de escopo transacional. Se um dia isto deixar de ser necessário, e
+    // porque a garantia caiu.
+    await withTransaction(async (tx) => {
+        await tx.execute("SELECT set_config('app.maintenance_mode', 'on', true)");
+        await tx.execute('DELETE FROM history WHERE key_id = $1', [KEY_ID]);
+    });
     await execute('DELETE FROM key_transactions WHERE key_id = $1', [KEY_ID]);
     await execute('DELETE FROM action_logs WHERE user_id = $1', [USER_ID]);
     await execute('DELETE FROM keys WHERE id = $1', [KEY_ID]);
@@ -178,7 +185,8 @@ describe('TASK-069(c) — pendentes e cancelamento', () => {
         const res = await GET();
         const body = await res.json();
 
-        const daChave = (body.transactions as { key_id: number }[]).filter(t => t.key_id === KEY_ID);
+        // A rota devolve o array direto, sem envelope.
+        const daChave = (body as { key_id: number }[]).filter(t => t.key_id === KEY_ID);
         expect(daChave.length, 'a pendente criada no Postgres não apareceu').toBe(1);
     });
 

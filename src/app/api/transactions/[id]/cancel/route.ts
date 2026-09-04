@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: RouteParams) {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const tx = db.prepare('SELECT * FROM key_transactions WHERE id = ?').get(transactionId) as KeyTransactionRow | undefined;
+        const tx = await queryOne<KeyTransactionRow>('SELECT * FROM key_transactions WHERE id = $1', [transactionId]);
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
         // Portaria (qualquer porteiro/gestor/admin), quem iniciou, ou o próprio usuário pode cancelar
@@ -36,8 +36,10 @@ export async function POST(request: Request, { params }: RouteParams) {
             return NextResponse.json({ error: 'Esta transação não pode ser cancelada.' }, { status: 400 });
         }
 
-        db.prepare("UPDATE key_transactions SET status = 'cancelled', completed_at = ? WHERE id = ?")
-            .run(new Date().toISOString(), transactionId);
+        await execute(
+            "UPDATE key_transactions SET status = 'cancelled', completed_at = $1 WHERE id = $2",
+            [new Date().toISOString(), transactionId],
+        );
 
         logAction(session.id, session.username, 'TRANSACTION_CANCELLED', `Transação #${transactionId}`, 'Cancelada');
 

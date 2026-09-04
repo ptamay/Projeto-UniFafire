@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 
@@ -32,7 +32,7 @@ export async function GET() {
         // Outros usuários veem apenas as que são para eles
         let transactions: PendingTransactionRow[];
         if (session.role === 'ADMIN' || session.role === 'GESTOR' || session.role === 'PORTEIRO') {
-            transactions = db.prepare(`
+            transactions = await query<PendingTransactionRow>(`
                 SELECT kt.*, 
                        k.name as key_name, k.room as key_room,
                        u.username as user_username, u.full_name as user_full_name,
@@ -43,9 +43,9 @@ export async function GET() {
                 LEFT JOIN users p ON kt.porteiro_id = p.id
                 WHERE kt.status IN ('pending', 'porteiro_confirmed')
                 ORDER BY kt.initiated_at DESC
-            `).all() as PendingTransactionRow[];
+            `);
         } else {
-            transactions = db.prepare(`
+            transactions = await query<PendingTransactionRow>(`
                 SELECT kt.*,
                        k.name as key_name, k.room as key_room,
                        u.username as user_username, u.full_name as user_full_name,
@@ -54,10 +54,10 @@ export async function GET() {
                 LEFT JOIN keys k ON kt.key_id = k.id
                 LEFT JOIN users u ON kt.user_id = u.id
                 LEFT JOIN users p ON kt.porteiro_id = p.id
-                WHERE (kt.user_id = ? OR kt.porteiro_id = ?) 
+                WHERE (kt.user_id = $1 OR kt.porteiro_id = $2) 
                   AND kt.status IN ('pending', 'porteiro_confirmed')
                 ORDER BY kt.initiated_at DESC
-            `).all(session.id, session.id) as PendingTransactionRow[];
+            `, [session.id, session.id]);
         }
 
         return NextResponse.json(transactions);
