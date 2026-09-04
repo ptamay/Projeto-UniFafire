@@ -217,9 +217,30 @@
 - [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). **Desativar** o endpoint de restore por cópia de arquivo, que deixa de funcionar — não deixar quebrado.
 - [ ] TASK-079 → deploy, ping agendado contra a pausa por inatividade, e remoção do aparato local (PM2, `.bat`, `show-ip.js`) apenas APÓS os 30 dias de retenção do plano de reversão.
 
+### Achados de 2026-09-04 — não existe produção (confirmado pelo usuário)
+
+> Não há servidor PM2 em uso, não há `keys.db` com dados reais e ninguém usa o sistema
+> hoje. Os dados reais ainda serão cadastrados ou importados de outra fonte, direto no
+> Postgres. Três coisas que este projeto vinha carregando como verdade caem com isso.
+
+1. **A pendência de deploy era fantasma.** `node db/migrate.mjs up` no "`keys.db` de produção" atravessou várias sprints no checkpoint descrevendo um banco que não existe — a mesma classe de erro do débito do `keys.db` rastreado no git, que a TASK-062 desmentiu. `db/migrations/` (SQLite) permanece como histórico; o Gate 2 e `tests/migrations.test.ts` seguem cobrindo o pareamento UP/DOWN. **Lição, de novo: pendência herdada se reverifica antes de ser repetida.**
+2. **O plano de reversão do ADR-012 está vazio.** Os itens 2, 3 e 4 (§Reversão) pressupõem `keys.db` de produção íntegro, ponto de não-retorno na primeira escrita e servidor PM2 ligado por 30 dias. Nada disso existe. Na prática o risco é **menor** do que o ADR supõe — sem estado anterior não há o que perder —, mas o documento declara uma rede de segurança inexistente, e isso é pior do que declarar que não há rede. **Correção pendente: CR Tipo C** (changelog no `spec.md` + atualização do ADR-012). Não aplicada sem confirmação.
+3. **A TASK-067 ficou sem origem.** `db/load-pg.mjs` foi construído para ler `keys.db` e reconciliar contagens. Sem `keys.db` real não há de onde carregar. O código continua correto e testado — o que falta é decidir de onde os dados reais vêm (ver Decisões pendentes).
+
+**🚨 Gap bloqueante do go-live, ainda sem task: bootstrap do primeiro ADMIN no Postgres.**
+`scripts/init-db.js` cria `admin`/`admin`, mas só fala SQLite e saiu do `postinstall` na
+TASK-071. Nenhuma migration de `db/migrations-pg/` insere usuário. Toda rota exige sessão
+e `/api/users` exige papel ADMIN. Numa base Supabase vazia, **ninguém consegue entrar** —
+não há caminho para criar o primeiro usuário. Precisa de task própria na Etapa 7, com dois
+cuidados: a senha inicial não pode ser previsível (o `admin`/`admin` do SQLite nasceu numa
+intranet; aqui a exposição é pública, constitution §2) e o procedimento tem de ser
+executável uma vez só, sem deixar caminho de escalada aberto depois.
+
 ### Decisões pendentes das Etapas 3–7
 - ~~**Banco dos testes (Etapa 4).**~~ — **resolvida em 2026-09-03 (D-11):** Postgres real em container, conforme a recomendação do ADR-012. Implementada na TASK-068.
-- **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt.
+- **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt. **Risco revisto para BAIXÍSSIMO em 2026-09-04:** aqueles arquivos nunca contiveram dados reais.
+- **Origem dos dados reais (Etapa 7) — ABERTA, e bloqueia o go-live.** Não existe `keys.db` real; os dados serão cadastrados ou importados de outra fonte ainda não definida. Enquanto isso não for decidido não dá para dimensionar a Etapa 7: cadastro manual pela UI é uma task (e depende do bootstrap do ADMIN acima); importação de planilha é outra, com validação, deduplicação e um formato de origem a especificar. O `db/load-pg.mjs` da TASK-067 só serve ao caso "existe um SQLite de origem", que deixou de valer. **Decidir antes de planejar a Sprint 24.**
+- **Dados sintéticos no Supabase.** As 20 users / 5 keys / 92 tx / 30 history / 99 logs / 4 settings carregados na TASK-067 precisam ser expurgados antes de qualquer dado real entrar. O `history` é imutável (TASK-065): a limpeza exige o bypass autorizado do REQ-014, não um `DELETE` solto.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.

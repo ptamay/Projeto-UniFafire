@@ -69,12 +69,26 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
 - Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
 - Branch atual: feature/sprint-21-camada-async (Sprints 16–21)
-- Pendências do usuário: resta APENAS `node db/migrate.mjs up` no keys.db de produção.
-  PR #14 (release v0.3.0) merged em 03e4466 (2026-09-04); backup manual do keys.db feito.
-  Migrações pendentes lá: 202609021700_rate_limit_hits e 202609021800_normalize_history_timestamps.
-  Produção continua em SQLite/PM2 (main) até a Etapa 7 — a Sprint 21 é da branch, não do deploy.
-- Bloqueante para o go-live: TASK-078 (Etapa 7) — desde a Sprint 21 NÃO HÁ backup de
+- Pendências do usuário: NENHUMA. PR #14 (release v0.3.0) merged em 03e4466 (2026-09-04).
+- ⚠️ NÃO EXISTE PRODUÇÃO (confirmado pelo usuário em 2026-09-04). Não há servidor PM2 em
+  uso, não há keys.db com dados reais, ninguém usa o sistema hoje. Os dados reais ainda
+  serão cadastrados/importados de outra fonte, direto no Postgres. O destino é Vercel +
+  Supabase. Consequências, TODAS já verificadas no código — não repita as premissas antigas:
+  · A pendência "node db/migrate.mjs up no keys.db de produção", carregada por várias
+    sprints, era FANTASMA. Não há banco para migrar. db/migrations/ (SQLite) fica só como
+    histórico; Gate 2 e tests/migrations.test.ts continuam cobrindo o pareamento.
+  · O plano de reversão do ADR-012 (§Reversão, itens 2/3/4) pressupõe PM2 + keys.db de
+    produção e portanto está VAZIO. Não é problema — sem estado anterior não há ponto de
+    não-retorno —, mas o ADR declara uma rede que não existe. Correção pendente = CR Tipo C.
+  · A TASK-067 (db/load-pg.mjs) foi construída para carregar keys.db → Postgres. Sem
+    keys.db real ela não tem origem. A origem dos dados reais é DECISÃO EM ABERTO.
+  · 🚨 GAP BLOQUEANTE, sem task: não há como criar o PRIMEIRO usuário ADMIN no Postgres.
+    scripts/init-db.js só fala SQLite e saiu do postinstall; nenhuma migration-pg insere
+    usuário; toda rota exige sessão. Base Supabase vazia = ninguém consegue logar.
+- Bloqueantes para o go-live: (1) TASK-078 (Etapa 7) — desde a Sprint 21 NÃO HÁ backup de
   aplicação; só o gerenciado do provedor, que constitution §4.3 exige verificar.
+  (2) Bootstrap do primeiro ADMIN no Postgres — gap acima, ainda sem task.
+  (3) Origem dos dados reais — decisão em aberto, ver acima.
 - Atualizado em: 2026-09-04
 ```
 
