@@ -1,61 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import cron from 'node-cron';
-import Database from 'better-sqlite3';
-import db from './db';
 import { logStructured } from './structured-logger';
 
-// Paths resolvidos em tempo de chamada (TASK-032) — honram DB_PATH/BACKUPS_DIR do ambiente
-function getDbPath() {
-    if (process.env.DB_PATH) return path.resolve(process.cwd(), process.env.DB_PATH);
-    return process.env.MOCK_DB_IN_MEMORY === 'true'
-        ? ':memory:'
-        : path.resolve(process.cwd(), 'keys.db');
-}
+// Path dos backups resolvido em tempo de chamada (TASK-032) — honra BACKUPS_DIR.
 
 function getBackupsDir() {
     return path.resolve(process.cwd(), process.env.BACKUPS_DIR || 'backups');
 }
 
-let lastBackupDay = ''; // YYYY-MM-DD to prevent duplicates
 
-// TASK-032 (REQ-009): valida que o backup existe, tem conteúdo e abre como SQLite íntegro
-function verifyBackupFile(filePath: string): { ok: boolean; error?: string } {
-    try {
-        if (!fs.existsSync(filePath)) return { ok: false, error: 'arquivo não existe' };
-        if (fs.statSync(filePath).size === 0) return { ok: false, error: 'arquivo vazio' };
-        const check = new Database(filePath, { readonly: true });
-        try {
-            const result = check.prepare('PRAGMA quick_check').get() as { quick_check: string };
-            if (result.quick_check !== 'ok') return { ok: false, error: `quick_check: ${result.quick_check}` };
-        } finally {
-            check.close();
-        }
-        return { ok: true };
-    } catch (e) {
-        return { ok: false, error: e instanceof Error ? e.message : String(e) };
-    }
-}
-
-// TASK-032: registro estruturado e persistente de cada run (fonte da métrica
-// "confiabilidade do backup" — spec §5, alvo 100%)
-function recordBackupRun(entry: {
-    filename: string | null;
-    status: 'success' | 'failed';
-    verified: boolean;
-    size: number;
-    duration_ms: number;
-    error?: string;
-}) {
-    const record = { ts: new Date().toISOString(), ...entry };
-    try {
-        fs.mkdirSync(getBackupsDir(), { recursive: true });
-        fs.appendFileSync(path.join(getBackupsDir(), 'backup-history.jsonl'), JSON.stringify(record) + '\n', 'utf-8');
-    } catch (e) {
-        console.error('[Backup] Falha ao registrar run:', e);
-    }
-    logStructured(entry.status === 'success' ? 'info' : 'error', 'backup_run', record);
-}
 
 export function getBackupReliability(days = 30): {
     totalDays: number;
@@ -91,73 +44,33 @@ export function getBackupReliability(days = 30): {
     }
 }
 
-export function createBackup(options: { force?: boolean } = {}) {
-    const startedAt = performance.now();
-    const dbPath = getDbPath();
-    const backupsDir = getBackupsDir();
-    let backupFilename: string | null = null;
-    try {
-        if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
-        if (!fs.existsSync(dbPath)) {
-            console.error('Database file not found. Skipping backup.');
-            recordBackupRun({ filename: null, status: 'failed', verified: false, size: 0, duration_ms: Math.round(performance.now() - startedAt), error: 'banco de origem não encontrado' });
-            return false;
-        }
-
-        const date = new Date();
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        const timestamp = `${yyyy}-${mm}-${dd}`;
-
-        // Prevent duplicate run on same day
-        if (!options.force && lastBackupDay === timestamp) return true;
-
-        backupFilename = `keys_backup_${timestamp}.db`;
-        const destPath = path.resolve(backupsDir, backupFilename);
-
-        fs.copyFileSync(dbPath, destPath);
-        lastBackupDay = timestamp;
-
-        // TASK-032: verificação automática do arquivo gerado
-        const verification = verifyBackupFile(destPath);
-        const size = fs.existsSync(destPath) ? fs.statSync(destPath).size : 0;
-        if (!verification.ok) {
-            recordBackupRun({ filename: backupFilename, status: 'failed', verified: false, size, duration_ms: Math.round(performance.now() - startedAt), error: verification.error });
-            console.error(`[Backup Automático] Backup gerado mas REPROVADO na verificação: ${verification.error}`);
-            return false;
-        }
-        recordBackupRun({ filename: backupFilename, status: 'success', verified: true, size, duration_ms: Math.round(performance.now() - startedAt) });
-        console.log(`[Backup Automático] Banco de dados salvo e verificado com sucesso em: ${backupFilename}`);
-
-        // Rotação de Backups Dinâmica (Lê do Banco)
-        let retentionCount = 3;
-        try {
-            const row = db.prepare("SELECT value FROM settings WHERE key = 'backup_retention_count'").get() as { value: string };
-            if (row) retentionCount = parseInt(row.value, 10);
-        } catch {
-            console.error('[Backup] Erro ao ler retention_count, usando padrão 3');
-        }
-
-        const currentBackups = getAvailableBackups();
-        if (currentBackups.length > retentionCount) {
-            const filesToDelete = currentBackups.slice(retentionCount);
-            filesToDelete.forEach(bkp => {
-                try {
-                    fs.unlinkSync(path.resolve(backupsDir, bkp.filename));
-                    console.log(`[Backup Automático] Backup antigo removido (Limite: ${retentionCount}): ${bkp.filename}`);
-                } catch (err) {
-                    console.error(`[Backup Automático] Erro ao remover ${bkp.filename}`, err);
-                }
-            });
-        }
-
-        return true;
-    } catch (e) {
-        console.error('[Backup Error]', e);
-        recordBackupRun({ filename: backupFilename, status: 'failed', verified: false, size: 0, duration_ms: Math.round(performance.now() - startedAt), error: e instanceof Error ? e.message : String(e) });
-        return false;
-    }
+/**
+ * DESATIVADO na TASK-070 (Sprint 21 · Etapa 4 do ADR-012).
+ *
+ * A implementação anterior copiava o arquivo `keys.db` para `backups/` e
+ * verificava a cópia com `PRAGMA quick_check`. Nenhuma das duas coisas existe na
+ * stack nova: não há arquivo de banco para copiar, e o disco da hospedagem é
+ * efêmero — a cópia sumiria com a instância.
+ *
+ * O ADR-012 §4.3 já registra a substituta: backup gerenciado pelo provedor do
+ * banco, verificado por job agendado da hospedagem. RPO 24h / RTO 4h continuam
+ * valendo; o meio é que muda. O desenho é a **TASK-078**, na Etapa 7.
+ *
+ * Recusa explícita em vez de sucesso mentiroso: quem clicar em "gerar backup"
+ * precisa saber que não gerou. Mesmo tratamento das rotas `backups/restore` e
+ * `backups/import` na TASK-068.
+ *
+ * ⚠️ Isto NÃO deixa a produção sem backup hoje. O servidor PM2 roda a `main`,
+ * onde esta função continua copiando o arquivo; esta branch só chega ao usuário
+ * no go-live, quando o backup gerenciado já estará no lugar.
+ */
+export function createBackup(): { success: false; error: string } {
+    const error =
+        'Backup por cópia de arquivo foi desativado na migração para Postgres. ' +
+        'O backup passa a ser gerenciado pelo provedor do banco; a verificação ' +
+        'agendada é a TASK-078 (Etapa 7 do ADR-012). Nenhum arquivo foi gerado.';
+    logStructured('warn', 'backup_indisponivel', { motivo: 'TASK-070', substituta: 'TASK-078' });
+    return { success: false, error };
 }
 
 export function getAvailableBackups() {
@@ -207,31 +120,16 @@ export function deleteBackup(filename: string) {
     }
 }
 
-// Inicializa a Rotina de Backup ("Checagem por minuto")
-let isCronStarted = false;
-
+/**
+ * DESATIVADO na TASK-070. `node-cron` precisa de um processo de longa duração,
+ * que não existe em execução serverless: o agendamento nunca dispararia.
+ *
+ * Agendar e nunca rodar seria pior do que não agendar — daria a impressão de que
+ * há backup automático. O agendamento passa a ser da hospedagem (TASK-078).
+ */
 export function startCronJobs() {
-    if (isCronStarted) return;
-    
-    // Agendador Dinâmico: Roda a cada minuto
-    cron.schedule('* * * * *', () => {
-        const now = new Date();
-        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-        try {
-            // Busca o horário agendado no banco
-            const row = db.prepare("SELECT value FROM settings WHERE key = 'backup_time'").get() as { value: string };
-            const scheduledTime = row?.value || '03:00';
-
-            if (currentHHMM === scheduledTime) {
-                console.log(`[Backup] Horário atingido (${currentHHMM}). Iniciando...`);
-                createBackup();
-            }
-        } catch (err) {
-            console.error('[Cron] Erro ao verificar horário de backup no banco', err);
-        }
+    logStructured('info', 'cron_desativado', {
+        motivo: 'node-cron exige processo de longa duração (TASK-070)',
+        substituta: 'TASK-078',
     });
-
-    isCronStarted = true;
-    console.log('CronJob de backup dinâmico inicializado.');
 }

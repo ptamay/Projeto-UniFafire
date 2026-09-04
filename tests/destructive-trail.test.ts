@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import db from '@/lib/db';
-import { queryOne } from '@/lib/pg';
+import { queryOne, execute } from '@/lib/pg';
 
 // TASK-031 — trilha persistente das operações destrutivas (REQ-014):
 // registro prévio em destino que sobrevive à limpeza do banco.
@@ -30,11 +29,11 @@ function readEntries(): Record<string, unknown>[] {
     return fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean).map(l => JSON.parse(l));
 }
 
-beforeAll(() => {
+beforeAll(async () => {
     process.env.LOG_DIR = tmpLogDir;
 });
 
-afterAll(() => {
+afterAll(async () => {
     delete process.env.LOG_DIR;
     fs.rmSync(tmpLogDir, { recursive: true, force: true });
 });
@@ -42,17 +41,17 @@ afterAll(() => {
 describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
     it('BDD 1/2: clear-database grava registro prévio E de conclusão em destino que sobrevive à limpeza', async () => {
         // Estado: trilha antiga no banco que SERÁ apagada pela operação
-        db.prepare(`INSERT INTO action_logs (user_id, username, action, target) VALUES (1, 'test_admin', 'ANTIGA', 'x')`).run();
-        db.prepare(`INSERT INTO history (key_id, user_id, username, action) VALUES (1, 1, 'test_admin', 'withdraw')`).run();
+        await execute(`INSERT INTO action_logs (user_id, username, action, target) VALUES (1, 'test_admin', 'ANTIGA', 'x')`);
+        await execute(`INSERT INTO history (key_id, user_id, username, action) VALUES (1, 1, 'test_admin', 'withdraw')`);
 
         const { POST } = await import('@/app/api/settings/clear-database/route');
         const res = await POST();
         expect(res.status).toBe(200);
 
         // Banco limpo (inclusive a própria trilha antiga em action_logs)
-        const remainingHistory = (db.prepare('SELECT COUNT(*) as c FROM history').get() as { c: number }).c;
+        const remainingHistory = Number((await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM history'))?.c);
         expect(remainingHistory).toBe(0);
-        const oldTrail = (db.prepare("SELECT COUNT(*) as c FROM action_logs WHERE action = 'ANTIGA'").get() as { c: number }).c;
+        const oldTrail = Number((await queryOne<{ c: string }>("SELECT COUNT(*) as c FROM action_logs WHERE action = 'ANTIGA'"))?.c);
         expect(oldTrail).toBe(0);
 
         // Mas a trilha estruturada em ARQUIVO sobreviveu: prévia + conclusão
@@ -67,8 +66,10 @@ describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
 
     it('BDD 3: history/clear grava a trilha ANTES da deleção (action_logs + arquivo)', async () => {
         // Re-semeia uma chave (o clear-database do teste anterior limpou keys)
-        const keyId = db.prepare("INSERT INTO keys (name, room, status) VALUES ('Chave Trilha', 'Sala 102', 'available')").run().lastInsertRowid;
-        db.prepare(`INSERT INTO history (key_id, user_id, username, action) VALUES (?, 1, 'test_admin', 'withdraw')`).run(keyId);
+        const keyId = (await queryOne<{ id: number }>(
+            "INSERT INTO keys (name, room, status) VALUES ('Chave Trilha', 'Sala 102', 'available') RETURNING id",
+        ))!.id;
+        await execute(`INSERT INTO history (key_id, user_id, username, action) VALUES ($1, 1, 'test_admin', 'withdraw')`, [keyId]);
 
         const { DELETE } = await import('@/app/api/history/clear/route');
         const res = await DELETE();

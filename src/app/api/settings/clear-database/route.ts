@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { withMaintenanceMode } from '@/lib/db-maintenance';
@@ -29,20 +29,18 @@ export async function POST() {
 
         // Bypass de manutenção (REQ-014): history tem triggers de imutabilidade
         // (TASK-030) que bloqueiam DELETE fora deste fluxo.
-        withMaintenanceMode(() => {
-            for (const table of tablesToClear) {
-                try {
-                    // Check if table exists first to avoid error noise
-                    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
-                    if (tableExists) {
-                        db.prepare(`DELETE FROM ${table}`).run();
-                        db.prepare(`DELETE FROM sqlite_sequence WHERE name = ?`).run(table);
-                    }
-                } catch (err) {
-                    console.error(`Error clearing table ${table}:`, err);
-                }
-            }
-        });
+        // TRUNCATE ... RESTART IDENTITY CASCADE faz num comando o que antes eram
+        // tres por tabela: apaga, zera a sequencia de ids e resolve as chaves
+        // estrangeiras entre elas. A checagem em sqlite_master saiu junto — aquele
+        // catalogo nao existe no Postgres, e consultar tabela inexistente aqui
+        // seria erro em tempo de execucao dentro da operacao destrutiva.
+        //
+        // Os nomes vem de `tablesToClear`, constante do proprio codigo — a unica
+        // interpolacao de identificador que a §1.3 admite, e por isso ela esta
+        // aqui e nao vinda de request.
+        await withMaintenanceMode(tx =>
+            tx.execute(`TRUNCATE ${tablesToClear.join(', ')} RESTART IDENTITY CASCADE`),
+        );
 
         logStructured('warn', 'destructive_operation', {
             op: 'clear-database',

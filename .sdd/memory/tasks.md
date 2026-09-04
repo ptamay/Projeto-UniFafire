@@ -134,32 +134,32 @@ fim. Não há BDD por fatia: os critérios abaixo valem para **todas**, e a últ
 os que só podem ser verificados no fim.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Nenhum marcador posicional do SQLite sobrevive
+- [x] **Cenário**: Nenhum marcador posicional do SQLite sobrevive
       Dado o código convertido
       Quando as consultas são inspecionadas
       Então não há `?` como marcador de parâmetro
       E toda consulta usa `$n`, com a numeração batendo com a ordem dos valores.
-- [ ] **Cenário**: Comparação de booleano deixa de usar 0/1
+- [x] **Cenário**: Comparação de booleano deixa de usar 0/1
       Dado que `users.active`, `users.requires_password_change`, `keys.active` e
       `login_attempts.success` são `boolean` no Postgres (TASK-063)
       Quando as 15 ocorrências são convertidas
       Então nenhuma compara a coluna com `0` ou `1`.
-- [ ] **Cenário**: Os 4 fluxos críticos continuam funcionando (spec §4)
+- [x] **Cenário**: Os 4 fluxos críticos continuam funcionando (spec §4)
       Dado login, retirada, confirmação e devolução
       Quando cada um é exercido pela suíte contra o Postgres de teste
       Então o comportamento é idêntico ao de antes da conversão
       E nenhum teste existente precisou ter a expectativa afrouxada para passar.
-- [ ] **Cenário**: `strftime` do filtro de hora vira extração com fuso explícito
+- [x] **Cenário**: `strftime` do filtro de hora vira extração com fuso explícito
       Dado que a TASK-055 prendeu a exibição a `America/Recife`
       Quando o filtro de hora é convertido em `history-query.ts` e `logs/route.ts`
       Então a hora é extraída **convertendo o fuso**, não do valor cru em UTC
       E o defeito que a TASK-055 corrigiu não volta por outro caminho.
-- [ ] **Cenário**: Os Server Components consultam de forma assíncrona
+- [x] **Cenário**: Os Server Components consultam de forma assíncrona
       Dado que os 4 consultam o banco durante o render
       Quando são convertidos
       Então cada um aguarda a consulta antes de renderizar
       E a página continua sendo renderizada no servidor, sem virar client component.
-- [ ] **Cenário**: `src/lib/db.ts` deixa de existir e `better-sqlite3` sai do runtime
+- [x] **Cenário**: `src/lib/db.ts` deixa de existir e `better-sqlite3` sai do runtime
       Dado que todas as fatias fecharam
       Quando o código-fonte é inspecionado
       Então nenhum arquivo de `src/` importa `better-sqlite3` nem `@/lib/db`
@@ -181,22 +181,22 @@ imutabilidade, que na TASK-065 virou `set_config(..., is_local = true)` e por is
 de estar dentro de uma transação de verdade).
 
 **Critérios BDD**:
-- [ ] **Cenário**: A transação usa um único client, do começo ao fim
+- [x] **Cenário**: A transação usa um único client, do começo ao fim
       Dado um bloco transacional
       Quando várias consultas são executadas dentro dele
       Então todas passam pelo mesmo client
       E o client volta ao pool ao final, inclusive quando há erro.
-- [ ] **Cenário**: Erro no meio reverte tudo
+- [x] **Cenário**: Erro no meio reverte tudo
       Dado a confirmação de uma retirada, que grava em `key_transactions`, `keys` e `history`
       Quando a última gravação falha
       Então nenhuma das anteriores persiste.
-- [ ] **Cenário**: O bypass de manutenção só vale dentro da transação
+- [x] **Cenário**: O bypass de manutenção só vale dentro da transação
       Dado `withMaintenanceMode`
       Quando ele executa um `DELETE` em `history`
       Então o `DELETE` é permitido
       E, encerrada a transação, um novo `DELETE` volta a ser rejeitado pelo trigger
       E nada precisou ser limpo explicitamente (TASK-065).
-- [ ] **Cenário**: Vazamento de conexão é detectável
+- [x] **Cenário**: Vazamento de conexão é detectável
       Dado a suíte inteira executada
       Quando ela termina
       Então o pool não tem client em uso pendente.

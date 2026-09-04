@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
@@ -24,7 +24,7 @@ export async function DELETE() {
         }
 
         // TASK-031 (REQ-014): trilha gravada ANTES da deleção
-        const pending = (db.prepare('SELECT COUNT(*) as c FROM history').get() as { c: number }).c;
+        const pending = Number((await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM history'))?.c ?? 0);
         await logAction(session.id, session.username, 'CLEAR_HISTORY', 'History Table', `Iniciando limpeza de ${pending} registros`);
         logStructured('warn', 'destructive_operation', {
             op: 'history-clear',
@@ -36,17 +36,17 @@ export async function DELETE() {
 
         // Clear History — bypass de manutenção (REQ-014): triggers de imutabilidade
         // (TASK-030) bloqueiam DELETE fora deste fluxo.
-        const info = withMaintenanceMode(() => db.prepare('DELETE FROM history').run());
+        const apagados = await withMaintenanceMode(tx => tx.execute('DELETE FROM history'));
 
         logStructured('warn', 'destructive_operation', {
             op: 'history-clear',
             phase: 'done',
             user_id: session.id,
             username: session.username,
-            records: info.changes,
+            records: apagados,
         });
 
-        return NextResponse.json({ success: true, count: info.changes });
+        return NextResponse.json({ success: true, count: apagados });
 
     } catch (error) {
         console.error('Clear history error:', error);

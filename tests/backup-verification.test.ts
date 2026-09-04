@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import Database from 'better-sqlite3';
 
 // TASK-032 — verificação automática do backup diário (REQ-009, spec §5):
 // todo run é validado (arquivo existe, tamanho > 0, SQLite íntegro) e registrado
@@ -14,11 +13,6 @@ let caseId = 0;
 let backupsDir: string;
 let sourceDb: string;
 
-function historyEntries(): Record<string, unknown>[] {
-    const file = path.join(backupsDir, 'backup-history.jsonl');
-    if (!fs.existsSync(file)) return [];
-    return fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean).map(l => JSON.parse(l));
-}
 
 beforeEach(() => {
     caseId++;
@@ -35,35 +29,25 @@ afterAll(() => {
 });
 
 describe('TASK-032 — verificação automática do backup (REQ-009)', () => {
-    it('BDD 1/3: backup bem-sucedido é verificado (existe, >0 bytes, SQLite válido) e registrado', () => {
-        const db = new Database(sourceDb);
-        db.exec('CREATE TABLE t (id INTEGER); INSERT INTO t VALUES (1);');
-        db.close();
-
-        const ok = createBackup({ force: true });
-        expect(ok).toBe(true);
-
-        const entries = historyEntries();
-        expect(entries.length).toBe(1);
-        const run = entries[0];
-        expect(run.status).toBe('success');
-        expect(run.verified).toBe(true);
-        expect(run.size as number).toBeGreaterThan(0);
-        expect(typeof run.duration_ms).toBe('number');
-        expect(typeof run.filename).toBe('string');
-        expect(fs.existsSync(path.join(backupsDir, run.filename as string))).toBe(true);
+    // TASK-070 (Sprint 21): os dois cenarios que exercitavam a GERACAO do backup
+    // foram reescritos. A copia de arquivo deixou de existir — nao ha keys.db para
+    // copiar na stack nova, e o disco da hospedagem e efemero. O que a TASK-032
+    // entregou e que sobrevive e a METRICA de confiabilidade, coberta abaixo.
+    //
+    // Os cenarios originais (verificacao da copia com quick_check, e fonte
+    // corrompida reprovando) voltam na TASK-078, quando o backup gerenciado do
+    // provedor tiver verificacao propria. Registrado aqui para nao se perder.
+    it('TASK-070: a geração por cópia de arquivo recusa explicitamente', async () => {
+        const r = createBackup();
+        expect(r.success, 'nao pode responder sucesso').toBe(false);
+        expect(r.error, 'a recusa precisa apontar a substituta').toMatch(/TASK-078/);
     });
 
-    it('BDD 3b: fonte corrompida (não é SQLite) → verificação reprova e run é registrado como falha', () => {
-        fs.writeFileSync(sourceDb, 'isto não é um banco sqlite');
-
-        const ok = createBackup({ force: true });
-        expect(ok).toBe(false);
-
-        const entries = historyEntries();
-        expect(entries.length).toBe(1);
-        expect(entries[0].status).toBe('failed');
-        expect(entries[0].verified).toBe(false);
+    it('TASK-070: a recusa não escreve arquivo nenhum em backups/', async () => {
+        const antes = fs.existsSync(backupsDir) ? fs.readdirSync(backupsDir).length : 0;
+        createBackup();
+        const depois = fs.existsSync(backupsDir) ? fs.readdirSync(backupsDir).length : 0;
+        expect(depois, 'gerou arquivo apesar de recusar').toBe(antes);
     });
 
     it('BDD 2: métrica de confiabilidade = % de dias com backup concluído com sucesso', () => {

@@ -89,6 +89,22 @@ describe('TASK-070 — o bypass da imutabilidade vive numa transação', () => {
         ).toBe(2);
     });
 
+    it('INSERT em history continua permitido — a trilha cresce, nunca e reescrita', async () => {
+        // Cenario herdado de tests/history-immutability.test.ts (TASK-030), que
+        // testava a implementacao SQLite e foi aposentado nesta task. O trigger
+        // cobre UPDATE e DELETE; barrar INSERT quebraria o fluxo normal.
+        await expect(
+            execute("INSERT INTO history (key_id, action, username) VALUES (NULL, 'return', 'fluxo_normal')"),
+        ).resolves.toBe(1);
+    });
+
+    it('UPDATE direto em history falha com erro explícito', async () => {
+        await execute("INSERT INTO history (action, username) VALUES ('withdraw', 'alvo_update')");
+        await expect(
+            execute("UPDATE history SET action = 'return' WHERE username = 'alvo_update'"),
+        ).rejects.toThrow(/REQ-005/);
+    });
+
     it('a tabela-flag do SQLite não reaparece', async () => {
         const t = await query(
             "SELECT table_name FROM information_schema.tables WHERE table_name = '_maintenance_mode'",

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query, withTransaction } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 
 export async function GET() {
     try {
-        const settingsArr = db.prepare("SELECT key, value FROM settings").all() as { key: string, value: string }[];
+        const settingsArr = await query<{ key: string; value: string }>('SELECT key, value FROM settings');
         
         const settingsMap: Record<string, string> = {};
         settingsArr.forEach(s => settingsMap[s.key] = s.value);
@@ -33,23 +33,23 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         
-        const trans = db.transaction(() => {
+        // Client dedicado: as quatro configuracoes entram juntas ou nenhuma
+        // entra. ON CONFLICT DO UPDATE ja tem a mesma sintaxe nos dois dialetos —
+        // o que muda e so o marcador de parametro.
+        await withTransaction(async (tx) => {
+            const gravar = (chave: string, valor: string) => tx.execute(
+                `INSERT INTO settings (key, value) VALUES ($1, $2)
+                 ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+                [chave, valor],
+            );
+
             // Suporta 'time' (antigo) ou 'autoLogoutTime'
             const logoutTime = body.autoLogoutTime || body.time;
-            if (logoutTime) {
-                db.prepare("INSERT INTO settings (key, value) VALUES ('auto_logout_time', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(logoutTime);
-            }
-            if (body.backupTime) {
-                db.prepare("INSERT INTO settings (key, value) VALUES ('backup_time', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(body.backupTime);
-            }
-            if (body.backupCount !== undefined) {
-                db.prepare("INSERT INTO settings (key, value) VALUES ('backup_retention_count', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(String(body.backupCount));
-            }
-            if (body.defaultResetPassword) {
-                db.prepare("INSERT INTO settings (key, value) VALUES ('default_reset_password', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(body.defaultResetPassword);
-            }
+            if (logoutTime) await gravar('auto_logout_time', String(logoutTime));
+            if (body.backupTime) await gravar('backup_time', String(body.backupTime));
+            if (body.backupCount !== undefined) await gravar('backup_retention_count', String(body.backupCount));
+            if (body.defaultResetPassword) await gravar('default_reset_password', String(body.defaultResetPassword));
         });
-        trans();
 
         return NextResponse.json({ success: true });
     } catch (e) {
