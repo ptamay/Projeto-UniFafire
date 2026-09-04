@@ -46,7 +46,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 ```
 - Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 21 concluída
 - Sprint/Task Ativa: Nenhuma. Sprints 16–21 concluídas.
-- Última Ação: Sprint 21 (Etapa 4 do ADR-012 — camada de dados assíncrona) fechada.
+- Última Ação: dois Change Requests pós-sprint, em 2026-09-04 — (1) Tipo B: TASK-080,
+  bootstrap do primeiro ADMIN (commit 8dabc95); (2) Tipo C: antecipação da Etapa 7 e
+  dissolução da Etapa 6 (commit f136c90), com correção do Plano de Reversão do ADR-012.
+  Antes disso: Sprint 21 (Etapa 4 do ADR-012 — camada de dados assíncrona) fechada.
   TASK-068 a 071: src/lib/pg.ts (query/queryOne/execute/withTransaction/closePool, pool
   PREGUIÇOSO, sem prepared statement nomeado), 162 chamadas síncronas em 28 arquivos
   convertidas em 5 fatias por FRONTEIRA DE EXECUÇÃO, transações explícitas com client
@@ -73,7 +76,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - Estado do Supabase: schema das 9 tabelas + índices + triggers de imutabilidade + RLS
   aplicados; dados SINTÉTICOS carregados (20 users, 5 keys, 92 tx, 30 history, 99 logs, 4
   settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
-- Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
+- Arquivos não commitados: nenhum
 - Branch atual: feature/sprint-21-camada-async (Sprints 16–21)
 - Pendências do usuário: NENHUMA. PR #14 (release v0.3.0) merged em 03e4466 (2026-09-04).
 - ⚠️ NÃO EXISTE PRODUÇÃO (confirmado pelo usuário em 2026-09-04). Não há servidor PM2 em
