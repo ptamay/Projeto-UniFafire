@@ -216,27 +216,27 @@ substituição** — a checagem de papel por rota (constitution §3.2) continua 
 autoridade; o proxy é a rede que pega o que ela esquecer.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Requisição sem sessão não passa
+- [x] **Cenário**: Requisição sem sessão não passa
       Dada uma requisição a rota protegida sem cookie de sessão
       Então o proxy recusa — redireciona para login (página) ou responde 401 (API)
       E **não** chega ao handler.
-- [ ] **Cenário**: Requisição com sessão inválida ou expirada não passa
+- [x] **Cenário**: Requisição com sessão inválida ou expirada não passa
       Dado um cookie com JWT adulterado, expirado ou assinado com outro segredo
       Então o proxy recusa e limpa o cookie.
-- [ ] **Cenário**: A lista de rotas públicas é explícita e mínima
+- [x] **Cenário**: A lista de rotas públicas é explícita e mínima
       Dado o proxy
       Então só `/login`, `/api/auth/*` e os estáticos passam sem sessão
       E o padrão é **negar** — rota nova nasce protegida por omissão.
-- [ ] **Cenário**: Uma rota nova esquecida nasce fechada
+- [x] **Cenário**: Uma rota nova esquecida nasce fechada
       Dada uma rota de API criada sem nenhuma verificação no handler
       Quando ela é acessada sem sessão
       Então a resposta não é do handler — o proxy barrou antes.
-- [ ] **Cenário**: A verificação por rota continua sendo a autoridade
+- [x] **Cenário**: A verificação por rota continua sendo a autoridade
       Dada uma sessão válida de papel insuficiente
       Quando ela acessa rota que exige papel maior
       Então o handler responde 403 (constitution §3.2)
       E o proxy não é o que autoriza papel — ele só garante que há sessão.
-- [ ] **Cenário**: Os quatro fluxos críticos do spec §4 continuam íntegros
+- [x] **Cenário**: Os quatro fluxos críticos do spec §4 continuam íntegros
       Dada a suíte completa
       Então login, retirada, confirmação e devolução passam sem alteração de comportamento.
 
