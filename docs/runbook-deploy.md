@@ -39,8 +39,30 @@ linha de comando**. Alternativa sem instalar nada, se houver Docker:
 docker run --rm -i postgres:17 psql "<URL>" -v ON_ERROR_STOP=1
 ```
 
-Contas necessárias: **Vercel**, **Supabase** e **GitHub**, com permissão de
-administrador no repositório.
+### As contas, e uma pegadinha que já custou tempo
+
+| Serviço | Conta | Observação |
+|---|---|---|
+| **GitHub** | `ptamay` — dono de `ptamay/Projeto-UniFafire` | Precisa de permissão de administrador para cadastrar secrets |
+| **Vercel** | Escopo **`projeto-uni-fafire`** (`team_WIfabVaM7632RsSQheQDTEbW`), projeto `projeto-uni-fafire` | ⚠️ **É uma conta Vercel DIFERENTE da que está ligada ao GitHub `ptamay`.** Decisão de 2026-09-05: fica como está |
+| **Supabase** | Projeto em `sa-east-1` | — |
+| _(preencher)_ | E-mail da conta Vercel dona do projeto: `________________` | **Preencha esta linha.** Deixei em branco de propósito em vez de chutar |
+
+⚠️ **A pegadinha:** o `vercel` CLI autenticado como `ptamay` **não enxerga** esse
+projeto — `vercel teams ls` lista só `ptamays-projects`, e qualquer
+`vercel inspect ... --scope projeto-uni-fafire` responde *"The specified scope
+does not exist"*. Não é erro de digitação nem de permissão no repositório: é
+conta diferente. Para operar pelo CLI, entre com a conta dona do projeto; pelo
+navegador, use o link do §8.
+
+Os deploys funcionam mesmo assim porque quem os dispara é a **integração com o
+GitHub**, não a conta do CLI.
+
+> **Requisito operacional:** as credenciais dessa conta Vercel precisam estar no
+> gerenciador de senhas da instituição, junto com o `JWT_SECRET`. Sem isso, o
+> procedimento de incidente do §8 — "abra o painel da Vercel" — não é executável
+> por quem estiver de plantão, e o responsável nomeado no topo deste documento
+> responde por um sistema em que não consegue entrar.
 
 ---
 
@@ -48,7 +70,7 @@ administrador no repositório.
 
 | Peça | Onde | Observação |
 |---|---|---|
-| Aplicação (Next.js) | **Vercel** | Execução serverless: sem processo longo, sem disco para escrever |
+| Aplicação (Next.js) | **Vercel**, escopo `projeto-uni-fafire` | Execução serverless: sem processo longo, sem disco para escrever. Conta própria — ver §0 |
 | Banco | **Supabase Postgres** (`sa-east-1`) | Plano gratuito: **pausa após ~7 dias sem requisição** |
 | Backup | **GitHub Actions** → repositório **privado** | `pg_dump` diário, verificado por restauração (§6) |
 | Ping de saúde | **GitHub Actions** | Impede a pausa por inatividade (§7) |
@@ -301,7 +323,7 @@ volta indisponível sem avisar ninguém.
 
 | Sintoma | O que fazer |
 |---|---|
-| Sistema não abre | `GET /api/health`. `503` = banco fora ou pausado → abra o painel do Supabase e despause. Sem resposta nenhuma → painel da Vercel, últimos deploys e logs |
+| Sistema não abre | `GET /api/health`. `503` = banco fora ou pausado → abra o painel do Supabase e despause. Sem resposta nenhuma → painel da Vercel em https://vercel.com/projeto-uni-fafire/projeto-uni-fafire (§0: exige a conta dona do projeto, não a do GitHub), últimos deploys e *Build Logs* |
 | "Projeto pausado" no Supabase | Despause pelo painel; confira depois se o ping está rodando (§7) |
 | Processo não sobe, erro de segredo | `JWT_SECRET` ausente ou fraco. Ele é recusado por política (§3.1) — troque por um segredo forte e faça novo deploy |
 | Backup falhando | §6.4 para ver o erro registrado; depois a execução do job em Actions. Token expirado é a causa mais comum |
