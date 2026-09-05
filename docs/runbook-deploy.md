@@ -21,6 +21,29 @@ movimentações) · **RTO 4 h** (o sistema volta ao ar em até quatro horas).
 
 ---
 
+## 0. O que você precisa antes de começar
+
+Na **sua máquina** (o deploy é feito de fora, não de dentro do servidor):
+
+| Ferramenta | Para quê | Como conferir |
+|---|---|---|
+| **Git** | Clonar o repositório | `git --version` |
+| **Node.js 22+** | Rodar o bootstrap do ADMIN (§5) | `node --version` |
+| **`psql`** (cliente PostgreSQL 17) | Aplicar migrations (§4) e restaurar backup (§6.5) | `psql --version` |
+
+O `psql` é a única que costuma faltar. Ele vem no instalador do PostgreSQL
+(postgresql.org/download) — **você não precisa do servidor, só das ferramentas de
+linha de comando**. Alternativa sem instalar nada, se houver Docker:
+
+```bash
+docker run --rm -i postgres:17 psql "<URL>" -v ON_ERROR_STOP=1
+```
+
+Contas necessárias: **Vercel**, **Supabase** e **GitHub**, com permissão de
+administrador no repositório.
+
+---
+
 ## 1. A topologia, em cinco linhas
 
 | Peça | Onde | Observação |
@@ -41,6 +64,8 @@ sobrevive à requisição.
 
 1. **Criar o projeto**: vercel.com → *Add New* → *Project* → importar este
    repositório. Framework detectado: Next.js. Não altere o comando de build.
+   Em *Production Branch*, escolha a branch que deve ir ao ar — a partir daí,
+   todo push nela publica.
 2. **Configurar as variáveis de ambiente** (§3) **antes do primeiro deploy**. Sem
    `JWT_SECRET` válido o processo **não sobe** — é deliberado
    (`src/lib/secret-policy.ts`).
@@ -78,6 +103,15 @@ nova não é aplicada pelo deploy** — veja §4.
 
 Onde achar a string de conexão: Supabase → *Project Settings* → *Database* →
 *Connection string* → aba **Transaction pooler**.
+
+Como gerar um `JWT_SECRET` que a política aceita:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+Guarde-o no gerenciador de senhas da instituição. **Trocar esse segredo derruba
+todas as sessões ativas** — o que é o procedimento certo se ele vazar.
 
 ### 3.2 No GitHub (Settings → Secrets and variables → Actions)
 
@@ -130,6 +164,9 @@ Regras que não se negociam:
 ## 5. Criar o primeiro ADMIN (bootstrap)
 
 Não existe usuário padrão. Não existe `admin/admin` — foi removido na TASK-080.
+
+Rode **da sua máquina**, dentro do repositório clonado (`npm ci` antes, se for a
+primeira vez). Não há como fazer isso pela Vercel:
 
 ```bash
 DATABASE_URL="<a string de conexão de produção>" node db/bootstrap-admin.mjs
@@ -202,7 +239,15 @@ possíveis, e eles não significam a mesma coisa:
    acessível, não o apague — crie uma base nova e restaure nela.
 2. Baixe o dump do repositório privado (`backups/AAAA/MM/AAAA-MM-DD.sql.gz`).
    Prefira o mais recente **que tenha aparecido como verificado** em §6.4.
-3. Crie a base de destino (um projeto Supabase novo, ou uma base nova no mesmo).
+3. **Crie a base de destino.** Duas opções, e a escolha depende do que quebrou:
+   - **Projeto Supabase novo** — se o projeto atual está inacessível, pausado
+     além do recuperável, ou se você não confia mais nele. É o caminho mais
+     seguro; custa criar o projeto e esperar a base subir (alguns minutos).
+   - **Base nova no mesmo projeto** — se o Postgres responde e o problema foi
+     de dados. Mais rápido, e mantém a evidência do estado atual intacta.
+
+   O dump traz o schema inteiro: **não** aplique as migrations antes de
+   restaurar, ou o `psql` vai encontrar objetos já existentes e parar.
 4. Restaure:
 
    ```bash

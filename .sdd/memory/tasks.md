@@ -166,41 +166,71 @@ isso de "nenhum backup rodou".
 repositório carrega scripts de uma topologia que não existe mais.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Há um endpoint de saúde, e ele não vaza nada
+- [x] **Cenário**: Há um endpoint de saúde, e ele não vaza nada
       Dado `/api/health`
       Quando acessado sem sessão
       Então responde 200 confirmando que a aplicação e o banco respondem
       E **não** revela versão, caminho, variável de ambiente nem contagem de dados.
-- [ ] **Cenário**: O ping agendado evita a pausa por inatividade
+- [x] **Cenário**: O ping agendado evita a pausa por inatividade
       Dado `.github/workflows/`
       Então há workflow agendado chamando `/api/health` em intervalo menor que a janela de pausa
       E fica registrada a ressalva de que workflows agendados são desativados após ~60 dias sem atividade no repo.
-- [ ] **Cenário**: O aparato local sai por inteiro
+- [x] **Cenário**: O aparato local sai por inteiro
       Dado o repositório
       Então não existem `.bat`, `ecosystem.config.js`, `scripts/show-ip.js` nem `/api/server-info`
       E nenhum script do `package.json` os invoca
       E a suíte continua verde — nada de produção dependia deles.
-- [ ] **Cenário**: O build não exige banco
+- [x] **Cenário**: O build não exige banco
       Dado o repositório
       Quando `npm run build` roda **sem `DATABASE_URL` definida**
       Então ele passa — é a regressão que a TASK-068 já custou uma vez, e o deploy a
       encontraria de novo no pior momento.
-- [ ] **Cenário**: O runbook existe e é executável por outra pessoa
+- [x] **Cenário**: O runbook existe e é executável por outra pessoa
       Dado `docs/runbook-deploy.md`
       Então ele traz o passo a passo do deploy, dos secrets, do bootstrap do ADMIN e da restauração de backup
       E nomeia o responsável pós-entrega (constitution §4.3).
+
+**O que a execução ensinou** (registrado aqui porque não estava na micro-spec):
+
+- **O health e o ping são um mecanismo só, e ele tinha três jeitos de mentir.** (1) Responder
+  200 porque o processo subiu: em serverless a instância sempre sobe, e o que pausa é o banco
+  — por isso ele consulta. (2) O `curl` sem `--fail` trata 503 com corpo JSON como sucesso.
+  (3) Mesmo com `--fail`, um proxy ou página de erro devolve **200 com HTML** — por isso o job
+  também confere o corpo. Os três caminhos foram exercitados de verdade: com o container do
+  Postgres parado, `/api/health` respondeu 503 e o `curl` do workflow saiu com código 22
+  depois das tentativas; religado, voltou a 200.
+- **A entrada no proxy não é detalhe de configuração.** Depois da TASK-077 rota nova nasce
+  fechada. Sem `/api/health` na lista pública, o ping mediria a página de login — e 307 é
+  resposta, então o monitor ficaria **verde com o banco parado**. Há cenário para isso.
+- **O que estava errado no repositório era pior do que estar obsoleto: estava instruindo.**
+  `docs/runbook.md` mandava parar o serviço PM2, copiar `keys.db` por cima e restaurar por um
+  botão que a TASK-075 removeu. Os `.bat` chamavam `pm2` num app `sao-jose` — nome que nem
+  batia com o `ecosystem.config.js` (`unifafire`) — e o `scripts/init-db.js`, removido na
+  TASK-080. Nada disso funcionaria; tudo isso seria tentado.
+- **A leitura do runbook do começo ao fim encontrou quatro lacunas**, todas do tipo que só
+  aparece para quem não conhece o projeto: não dizia que é preciso ter `psql` (nem que ele vem
+  sem o servidor, nem a alternativa por Docker); não dizia de qual máquina se roda o bootstrap;
+  não dizia como gerar um `JWT_SECRET` que a política aceita; e mandava "criar a base de
+  destino" sem dizer qual das duas opções serve para qual falha — no meio de uma restauração,
+  que é o pior momento para decidir isso. As quatro foram corrigidas.
+
+**O que falta, e é do usuário** (§ do runbook entre parênteses): criar o projeto na Vercel e
+conectar o repositório (§2), cadastrar as variáveis e os secrets (§3), criar o repositório
+privado de backup (§6.1), aplicar as migrations no Supabase — **incluindo a de `backup_runs`,
+que ainda não está lá** (§4) — e limpar os dados sintéticos da TASK-067 de `users` antes do
+bootstrap (§5).
 
 ---
 
 ## Definition of Done da sprint
 
-- [ ] Os 3 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
+- [x] Os 3 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
 - [x] Migration de `backup_runs` com DOWN escrito antes do UP
-- [ ] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
-- [ ] `npm audit` sem HIGH/CRITICAL — **lido inteiro, sem `head`/`tail` cortando**
-- [ ] `npm run build` verde **sem `DATABASE_URL` definida**
-- [ ] App exercitado no navegador contra o container — **último passo, depois da suíte**
-- [ ] Runbook lido do começo ao fim como se eu não soubesse nada do projeto
+- [x] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
+- [x] `npm audit` sem HIGH/CRITICAL — **lido inteiro, sem `head`/`tail` cortando**
+- [x] `npm run build` verde **sem `DATABASE_URL` definida**
+- [x] App exercitado no navegador contra o container — **último passo, depois da suíte**
+- [x] Runbook lido do começo ao fim como se eu não soubesse nada do projeto
 - [ ] Fase 11 + Memory Sync
 
 > **Fora da DoD, porque não é meu:** o deploy em si, os secrets e o repositório privado de
