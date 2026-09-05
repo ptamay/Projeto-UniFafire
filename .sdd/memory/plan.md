@@ -235,10 +235,25 @@
 - [x] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão. Débito registrado desde a Sprint 9 como "tolerável em rede local; endereçar antes da exposição pública" — é agora.
 - [x] **TASK-081 → a trilha de auditoria é esperada, não largada.** REQ-010 + REQ-031(d). Achado durante a TASK-076: **26 chamadas de `logAction` sem `await`**, em 12 arquivos. `logAction` grava em `action_logs` e chama `logStructured`, que a TASK-074 tornou assíncrono — e em execução serverless a instância pode congelar assim que a resposta sai, matando a escrita pendente. **Consequência direta: o que a TASK-074 entregou não se sustenta enquanto os chamadores soltam a promessa.** O critério daquela task ("a linha chega em `app_logs`") foi verificado e passa; o REQUISITO (trilha sem perda) não está cumprido. Além de corrigir os 26 pontos, deixar uma guarda mecânica — promise solta desta família não pode voltar em revisão humana.
 
-### Sprint 23 — Etapa 7b: Backup e Deploy (ADR-012 · REQ-031)
-- [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). O endpoint de restore por cópia de arquivo **já foi desativado na Sprint 21** (503 citando esta task); aqui entra o substituto. Peso revisto: não há dado real a perder hoje, mas §4.3 exige verificação, não existência.
-- [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco. **Trazida da Etapa 6 para junto da TASK-078**, de que é dependente: a fonte que ela lia deixou de ser escrita quando o `backup.ts` foi neutralizado.
-- [ ] TASK-079 → deploy e ping agendado contra a pausa por inatividade. **Remoção do aparato local revista:** não há mais "30 dias de retenção do PM2" a esperar — não existe servidor PM2 (ver Achados de 2026-09-04). Sai junto: `.bat`, `ecosystem.config.js`, `show-ip.js`, os scripts `dev`/`start` que o invocam, e a rota `/api/server-info`, que expõe IPs de rede local via `os.networkInterfaces()` — no Vercel ela devolveria endereços de container, informação sem sentido para o operador.
+### Sprint 23 ✅ — Etapa 7b: Backup e Deploy (ADR-012 · REQ-031)
+- [x] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). O endpoint de restore por cópia de arquivo **já foi desativado na Sprint 21** (503 citando esta task); aqui entra o substituto. Peso revisto: não há dado real a perder hoje, mas §4.3 exige verificação, não existência.
+- [x] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco. **Trazida da Etapa 6 para junto da TASK-078**, de que é dependente: a fonte que ela lia deixou de ser escrita quando o `backup.ts` foi neutralizado.
+- [x] TASK-079 → deploy e ping agendado contra a pausa por inatividade. **Remoção do aparato local revista:** não há mais "30 dias de retenção do PM2" a esperar — não existe servidor PM2 (ver Achados de 2026-09-04). Sai junto: `.bat`, `ecosystem.config.js`, `show-ip.js`, os scripts `dev`/`start` que o invocam, e a rota `/api/server-info`, que expõe IPs de rede local via `os.networkInterfaces()` — no Vercel ela devolveria endereços de container, informação sem sentido para o operador.
+
+> **Fechada em 2026-09-04.** Entregue: `pg_dump` diário no GitHub Actions verificado por
+> **restauração** (contagens **e esquema**) num Postgres descartável, com cada execução —
+> inclusive a que falhou — gravada em `backup_runs`; a métrica de confiabilidade lendo o banco
+> e distinguindo na tela quatro estados que antes eram um silêncio só; `/api/health` público e
+> pobre de propósito, com ping diário contra a pausa do Supabase; o aparato local removido por
+> inteiro; e `docs/runbook-deploy.md` escrito para quem não conhece o projeto.
+>
+> ⚠️ **O termo "backup gerenciado" no texto da TASK-078 acima está obsoleto** — o CR Tipo D
+> `7770d2e` apurou que o plano gratuito do Supabase não tem backup gerenciado e a §4.3 foi
+> corrigida. O alvo (RPO 24 h / RTO 4 h + verificação) não mudou; o meio virou `pg_dump`.
+>
+> **A sprint fecha SEM o sistema no ar, e isso é por desenho.** Criar o projeto na Vercel,
+> cadastrar os secrets, criar o repositório privado de backup e aplicar as migrations no
+> Supabase exigem credencial do usuário. Passo a passo em `docs/runbook-deploy.md`.
 
 ### Sprint 24 — Etapa 5: Realtime (ADR-012 · REQ-032)
 > Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
@@ -351,3 +366,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 20 (schema Postgres · Etapa 3 ADR-012) | 2026-09-03 | 2026-09-03 | 1 | 5 tasks | 5 | 1 (TASK-065: search_path mutavel em history_imutavel introduzido pela propria task, achado do get_advisors e corrigido em test->fix; e o criterio de EXPLAIN da TASK-064 reescrito na execucao — Index Cond vs Filter no lugar de Seq Scan) | 1 (Gate 5 type-check: literal BigInt e counts sem tipo em pg-load.test — corrigido com .d.mts) | — | — |
 | 21 (camada async · Etapa 4 ADR-012) | 2026-09-03 | 2026-09-04 | 2 | 4 tasks | 5 (as 4 + neutralizacao do backup, fora do escopo original) | 2 (TASK-068: pool criado no topo do modulo quebrou `npm run build` — refeito preguicoso em fix; TASK-069: 4 correcoes de escopo entre fatias — history-query, db-maintenance e backup sairam, user-confirm voltou — mais o `Date` do driver na formatacao, corrigido em test->fix) | 2 (Gate 5 type-check: `if (checkLockout(...))` com Promise<boolean> sempre verdadeiro em login/route — travaria todo usuario, pego antes do commit; `npm run build`: pool no topo do modulo) | — | — |
 | 22 (pre-requisitos do go-live · Etapa 7a ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 4 tasks | 5 (as 4 + TASK-081, aberta em CR no meio da sprint) | 3 (TASK-074: meu proprio teste BDD 7 cobria so escrita em disco e deixava passar leitura e unlinkSync — verde sem provar o que dizia; TASK-076: a varredura de emissores de cookie ficou cega quando o literal 'session' saiu dos call sites, e so nao passou despercebido porque eu tinha posto uma asercao de "pelo menos um emissor encontrado"; TASK-077: quebrei o hot reload ao manter o matcher excluindo apenas _next/static e _next/image) | 1 (Gate 5 type-check: `unknown[]` vs `Param[]` no mock de execute em app-logs.test) | — | — |
+| 23 (backup e deploy · Etapa 7b ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 3 tasks | 3 | 3 (TASK-078: a verificacao por contagem de linhas aprovou um dump truncado no ensaio — perdeu o RLS de `users` e as contagens bateram; entrou `compararEsquema` num segundo commit vermelho. TASK-075 e TASK-079: quatro varreduras de fonte MINHAS escritas errado — tres proibiam ate o comentario que explica o codigo morto, e uma exigia "responsavel" no singular contra um cabecalho "Responsaveis") | 0 (todos os gates verdes em cada task) | — | — |

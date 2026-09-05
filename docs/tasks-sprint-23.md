@@ -1,3 +1,7 @@
+<!-- Snapshot da micro-spec da Sprint 23, arquivado no Memory Sync (Step 10) de
+     2026-09-04. `.sdd/memory/tasks.md` é sobrescrito a cada sprint; este arquivo
+     é o registro do que foi combinado e do que foi entregue. Não editar. -->
+
 # tasks.md — Micro-spec da Sprint Ativa (Sprint 23 · 🔴 crítica)
 
 > **Etapa 7b do ADR-012 — Backup e Deploy.** A sprint que põe o sistema no ar e define o
@@ -231,30 +235,7 @@ bootstrap (§5).
 - [x] `npm run build` verde **sem `DATABASE_URL` definida**
 - [x] App exercitado no navegador contra o container — **último passo, depois da suíte**
 - [x] Runbook lido do começo ao fim como se eu não soubesse nada do projeto
-- [x] Fase 11 + Memory Sync
-
----
-
-## Sprint 23 — FECHADA em 2026-09-04
-
-3 tasks planejadas, 3 entregues, em 11 commits: um CR Tipo D e os três pares
-`test` → `feat` → `refactor`. Verificado no fecho: **404 testes / 44 arquivos**,
-6 gates mecânicos, `tsc --noEmit` 0, `eslint` 0, `npm audit` lido inteiro com 0
-vulnerabilidades, `next build` verde **sem `DATABASE_URL`**, e o sistema
-exercitado no navegador de uma base VAZIA.
-
-**A sprint fecha com tudo pronto e o runbook na mão — não com o sistema no ar.**
-Era o combinado desde a abertura: o deploy, os secrets e o repositório privado de
-backup exigem credencial do usuário. `docs/runbook-deploy.md` §2–§7.
-
-**Nenhuma falha de gate.** Os três retrabalhos foram todos de TESTE MEU — e é a
-segunda sprint seguida em que isso é a íntegra do retrabalho (na 22 foram três
-pelo mesmo motivo). Na TASK-078 a verificação por contagem de linhas aprovou um
-dump truncado no ensaio; nas outras duas, quatro varreduras de fonte escritas
-errado. O padrão está claro o bastante para virar regra de leitura: **teste que
-varre texto precisa ser exercitado contra o caso que ele deveria pegar**, senão
-ele passa e não prova nada.
-
+- [ ] Fase 11 + Memory Sync
 
 > **Fora da DoD, porque não é meu:** o deploy em si, os secrets e o repositório privado de
 > backup. A sprint fecha com tudo pronto e o runbook na mão — **não com o sistema no ar**.
