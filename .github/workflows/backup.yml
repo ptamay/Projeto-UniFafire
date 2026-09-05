@@ -103,7 +103,7 @@ jobs:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           set -euo pipefail
-          docker run --rm --network host -e PGPASSWORD \
+          docker run --rm --network host \
             "$PGDUMP_IMAGE" pg_dump "$DATABASE_URL" \
             --no-owner --no-privileges --format=plain \
             | gzip -9 > "$ARQUIVO"
