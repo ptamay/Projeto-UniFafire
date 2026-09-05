@@ -118,22 +118,45 @@ não existiria de qualquer forma. Hoje a métrica devolve "sem dados", e a tela 
 isso de "nenhum backup rodou".
 
 **Critérios BDD**:
-- [ ] **Cenário**: A confiabilidade vem de `backup_runs`
+- [x] **Cenário**: A confiabilidade vem de `backup_runs`
       Dadas execuções registradas nos últimos 30 dias
       Quando a métrica é calculada
       Então o percentual reflete sucessos sobre dias com execução, lido do banco.
-- [ ] **Cenário**: "Nunca rodou" e "rodou e falhou" são estados diferentes na tela
+- [x] **Cenário**: "Nunca rodou" e "rodou e falhou" são estados diferentes na tela
       Dado nenhum registro de execução
       Então a métrica informa que não há execução registrada
       E isso **não** é apresentado como 0% nem como 100% — ambos seriam mentira.
-- [ ] **Cenário**: Nada mais lê o `.jsonl`
+- [x] **Cenário**: Nada mais lê o `.jsonl`
       Dado o código de `src/`
       Então não há referência a `backup-history.jsonl`
       E `backup.ts` sai da lista de exceção da guarda de filesystem da TASK-074.
-- [ ] **Cenário**: A rota de confiabilidade continua restrita
+- [x] **Cenário**: A rota de confiabilidade continua restrita
       Dada `/api/backups/reliability`
       Quando um não-ADMIN a acessa
       Então recebe 403 — trocar a fonte não afrouxa a autorização.
+
+**O que a execução ensinou** (registrado aqui porque não estava na micro-spec):
+
+- **São TRÊS estados sem número, não dois.** O critério pede para separar "nunca rodou" de
+  "rodou e falhou". Escrever os cenários revelou o terceiro, e é o pior: **rodou por meses e
+  parou**. Dentro de uma janela de 30 dias ele produz exatamente o mesmo `percent: null` de
+  quem nunca rodou — e as duas situações não se parecem em nada. Por isso `lastRun` é lido
+  **fora** da janela: é o que permite a tela dizer "sem execução nos últimos 30 dias; a
+  última foi em 21/07/2026 e terminou verificada". Verificado no navegador.
+- **O quarto estado é "não sei".** Se a leitura da métrica falhar, devolver "nenhuma
+  execução" seria repetir o defeito desta task num lugar novo: a tela diria que o backup não
+  rodou quando o que houve foi o banco não responder. A rota devolve 503 e a tela diz que
+  não foi possível ler.
+- **A condicional que escondia o bloco era o defeito, não um detalhe de layout.** A tela
+  fazia `bkpReliability.totalDays > 0 && (...)`: sem execução nenhuma, o bloco inteiro sumia,
+  e tela sem bloco é indistinguível de "está tudo bem". Por isso a decisão de apresentação
+  virou função pura (`descreverConfiabilidade`), com teste nos quatro estados — condicional
+  dentro de JSX não tem teste, exatamente como YAML não tem.
+- **O que saiu junto, porque a guarda de filesystem não admite meio-termo.** Para
+  `src/lib/backup.ts` sair da lista de exceção da TASK-074, o módulo tinha de perder TODO o
+  acesso a disco — não só o `.jsonl`. Foram junto `getAvailableBackups`, `deleteBackup`, o
+  `DELETE /api/backups` e os botões de restaurar e excluir da tela. A lista de exceção agora
+  está **vazia**.
 
 ---
 
