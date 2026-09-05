@@ -36,6 +36,20 @@ import { APP_TIMEZONE } from '@/lib/time-filters';
 
 const RAIZ = process.cwd();
 
+/**
+ * Fonte sem comentário, como já fazem as guardas da TASK-074 e da TASK-081.
+ *
+ * A varredura é sobre o que o código FAZ. Um comentário que explica por que o
+ * `.jsonl` morreu é registro, não referência — apagá-lo para satisfazer um grep
+ * jogaria fora exatamente a informação que impede alguém de reintroduzir a
+ * leitura daqui a três sprints.
+ */
+function semComentarios(arquivo: string) {
+    return fs.readFileSync(path.isAbsolute(arquivo) ? arquivo : path.resolve(RAIZ, arquivo), 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+}
+
 async function limpar() {
     await withTransaction(async (tx) => {
         // `backup_runs` é imutável por trigger (TASK-078). O bypass transacional
@@ -123,9 +137,10 @@ describe('TASK-075 — a confiabilidade vem de backup_runs', () => {
     });
 
     it('BDD 3: a métrica não lê arquivo nenhum', async () => {
-        const fonte = fs.readFileSync(path.resolve(RAIZ, 'src/lib/backup.ts'), 'utf-8');
-        expect(fonte, 'ainda lê o .jsonl').not.toMatch(/backup-history\.jsonl/);
-        expect(fonte, 'ainda toca o filesystem').not.toMatch(/from ['"](node:)?fs['"]|fs\.[a-zA-Z]+\s*\(/);
+        expect(semComentarios('src/lib/backup.ts'), 'ainda lê o .jsonl')
+            .not.toMatch(/backup-history\.jsonl/);
+        expect(semComentarios('src/lib/backup.ts'), 'ainda toca o filesystem')
+            .not.toMatch(/from ['"](node:)?fs['"]|fs\.[a-zA-Z]+\s*\(/);
     });
 
     it('BDD 3: nada em src/ menciona o .jsonl', () => {
@@ -134,7 +149,7 @@ describe('TASK-075 — a confiabilidade vem de backup_runs', () => {
             for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
                 const p = path.join(dir, e.name);
                 if (e.isDirectory()) varrer(p);
-                else if (/\.tsx?$/.test(e.name) && fs.readFileSync(p, 'utf-8').includes('backup-history.jsonl')) {
+                else if (/\.tsx?$/.test(e.name) && semComentarios(p).includes('backup-history.jsonl')) {
                     achados.push(path.relative(RAIZ, p));
                 }
             }

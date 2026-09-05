@@ -1,47 +1,129 @@
-import fs from 'fs';
-import path from 'path';
+import { query, queryOne } from './pg';
 import { logStructured } from './structured-logger';
+import { APP_TIMEZONE } from './time-filters';
+import type { BackupReliability } from './backup-reliability';
 
-// Path dos backups resolvido em tempo de chamada (TASK-032) — honra BACKUPS_DIR.
+// TASK-075 (Sprint 23 · Etapa 7b do ADR-012) — a métrica de confiabilidade lê o
+// banco. REQ-009, spec §5.
+//
+// ## O que este arquivo deixou de fazer
+//
+// Até aqui ele lia `backups/backup-history.jsonl`, listava `keys_backup_*.db` de
+// um diretório e apagava arquivo com `unlinkSync`. Nada disso sobrevive ao
+// destino: o disco do Vercel é efêmero e somente-leitura, e o `.jsonl` deixou de
+// ser escrito quando a TASK-070 neutralizou a geração por cópia, na Sprint 21.
+// A métrica devolvia "sem dados" havia duas sprints — não porque não houvesse
+// backup, mas porque estava perguntando ao lugar errado.
+//
+// Com isso `src/lib/backup.ts` sai da lista de exceção da guarda de filesystem
+// da TASK-074, que fica vazia: nada em `src/` toca disco.
+//
+// ## Onde os backups estão agora
+//
+// Fora daqui, e de propósito. O `pg_dump` roda no GitHub Actions
+// (`.github/workflows/backup.yml`, TASK-078), é verificado por restauração numa
+// base descartável e vai para um repositório PRIVADO separado. O que a aplicação
+// guarda é o REGISTRO de cada execução, em `backup_runs` — e é dele que esta
+// métrica vive.
 
-function getBackupsDir() {
-    return path.resolve(process.cwd(), process.env.BACKUPS_DIR || 'backups');
+/**
+ * Confiabilidade do backup na janela de `days` dias.
+ *
+ * ## Por dia, não por execução
+ *
+ * O denominador é "dias com execução", não "execuções". O caso que decide isso é
+ * real: o job falha às 03h, alguém dispara de novo às 09h e funciona. O dia
+ * terminou protegido. Contar execuções mostraria 50% num dia que está inteiro.
+ *
+ * ## `percent: null` não é zero
+ *
+ * Nulo significa "não houve execução na janela"; zero significa "houve, e todas
+ * falharam". Colapsar os dois num número só foi o defeito que esta task veio
+ * corrigir — e o pior lado do colapso é que "nunca rodou" apareceria como um
+ * número, que é a forma mais fácil de não ser lido.
+ *
+ * ## `lastRun` ignora a janela
+ *
+ * De propósito. Sem isso, "rodou por seis meses e parou há 40 dias" fica idêntico
+ * a "nunca rodou" — os dois com `percent: null` e nada mais na tela.
+ *
+ * Não engole erro: se o banco não responder, quem chama precisa saber disso em
+ * vez de receber "nenhuma execução", que é exatamente a leitura errada e
+ * tranquilizadora.
+ */
+export async function getBackupReliability(days = 30): Promise<BackupReliability> {
+    const dias = await query<{ dia: string; ok: boolean }>(
+        `SELECT (ran_at AT TIME ZONE $1)::date AS dia, bool_or(succeeded) AS ok
+           FROM backup_runs
+          WHERE ran_at >= now() - make_interval(days => $2::int)
+          GROUP BY 1`,
+        [APP_TIMEZONE, days],
+    );
+
+    const totalDays = dias.length;
+    const successDays = dias.filter(d => d.ok).length;
+
+    const ultima = await queryOne<{
+        ran_at: Date | string;
+        succeeded: boolean;
+        size_bytes: string | number | null;
+        error: string | null;
+        destination: string | null;
+    }>(
+        `SELECT ran_at, succeeded, size_bytes, error, destination
+           FROM backup_runs
+          ORDER BY ran_at DESC
+          LIMIT 1`,
+    );
+
+    return {
+        totalDays,
+        successDays,
+        percent: totalDays === 0 ? null : Math.round((successDays / totalDays) * 1000) / 10,
+        lastRun: ultima
+            ? {
+                // O driver entrega `timestamptz` como Date, e esta resposta
+                // atravessa JSON até o navegador. Normalizar aqui evita a
+                // travessia meia-boca que quebrou a página de histórico na
+                // Sprint 21 (Date onde o formatador esperava string).
+                ranAt: new Date(ultima.ran_at).toISOString(),
+                succeeded: ultima.succeeded,
+                // `bigint` chega como string no driver do Postgres — a coluna é
+                // bigint porque dump comprimido passa de 2 GB sem drama.
+                sizeBytes: ultima.size_bytes === null ? null : Number(ultima.size_bytes),
+                error: ultima.error,
+                destination: ultima.destination,
+            }
+            : null,
+    };
 }
 
+/** As últimas execuções registradas, para a tela mostrar o que aconteceu — não
+ *  só o percentual. Substitui a antiga listagem de arquivos `.db` em disco. */
+export async function getBackupRuns(limit = 10) {
+    const linhas = await query<{
+        id: string | number;
+        ran_at: Date | string;
+        succeeded: boolean;
+        size_bytes: string | number | null;
+        error: string | null;
+        destination: string | null;
+    }>(
+        `SELECT id, ran_at, succeeded, size_bytes, error, destination
+           FROM backup_runs
+          ORDER BY ran_at DESC
+          LIMIT $1`,
+        [limit],
+    );
 
-
-export function getBackupReliability(days = 30): {
-    totalDays: number;
-    successDays: number;
-    percent: number | null;
-    lastRun: Record<string, unknown> | null;
-} {
-    try {
-        const file = path.join(getBackupsDir(), 'backup-history.jsonl');
-        if (!fs.existsSync(file)) return { totalDays: 0, successDays: 0, percent: null, lastRun: null };
-        const cutoff = Date.now() - days * 86400000;
-        const entries = fs.readFileSync(file, 'utf-8')
-            .split('\n').filter(Boolean)
-            .map(l => JSON.parse(l) as { ts: string; status: string })
-            .filter(e => new Date(e.ts).getTime() >= cutoff);
-
-        const byDay = new Map<string, boolean>();
-        for (const e of entries) {
-            const day = e.ts.slice(0, 10);
-            byDay.set(day, byDay.get(day) === true || e.status === 'success');
-        }
-        const totalDays = byDay.size;
-        const successDays = [...byDay.values()].filter(Boolean).length;
-        return {
-            totalDays,
-            successDays,
-            percent: totalDays === 0 ? null : Math.round((successDays / totalDays) * 1000) / 10,
-            lastRun: entries.length ? (entries[entries.length - 1] as Record<string, unknown>) : null,
-        };
-    } catch (e) {
-        console.error('[Backup] Falha ao calcular confiabilidade:', e);
-        return { totalDays: 0, successDays: 0, percent: null, lastRun: null };
-    }
+    return linhas.map(l => ({
+        id: Number(l.id),
+        ranAt: new Date(l.ran_at).toISOString(),
+        succeeded: l.succeeded,
+        sizeBytes: l.size_bytes === null ? null : Number(l.size_bytes),
+        error: l.error,
+        destination: l.destination,
+    }));
 }
 
 /**
@@ -52,72 +134,23 @@ export function getBackupReliability(days = 30): {
  * stack nova: não há arquivo de banco para copiar, e o disco da hospedagem é
  * efêmero — a cópia sumiria com a instância.
  *
- * O ADR-012 §4.3 já registra a substituta: backup gerenciado pelo provedor do
- * banco, verificado por job agendado da hospedagem. RPO 24h / RTO 4h continuam
- * valendo; o meio é que muda. O desenho é a **TASK-078**, na Etapa 7.
- *
  * Recusa explícita em vez de sucesso mentiroso: quem clicar em "gerar backup"
- * precisa saber que não gerou. Mesmo tratamento das rotas `backups/restore` e
- * `backups/import` na TASK-068.
+ * precisa saber que não gerou.
  *
- * ⚠️ Isto NÃO deixa a produção sem backup hoje. O servidor PM2 roda a `main`,
- * onde esta função continua copiando o arquivo; esta branch só chega ao usuário
- * no go-live, quando o backup gerenciado já estará no lugar.
+ * A mensagem foi corrigida na TASK-075. Ela dizia que o backup passaria a ser
+ * "gerenciado pelo provedor do banco" — o CR Tipo D de 2026-09-04 apurou que o
+ * plano gratuito do Supabase não tem backup gerenciado, e a §4.3 foi reescrita.
+ * Apontar o usuário para um mecanismo inexistente é a mesma classe de erro que a
+ * recusa existe para evitar.
  */
 export async function createBackup(): Promise<{ success: false; error: string }> {
     const error =
-        'Backup por cópia de arquivo foi desativado na migração para Postgres. ' +
-        'O backup passa a ser gerenciado pelo provedor do banco; a verificação ' +
-        'agendada é a TASK-078 (Etapa 7 do ADR-012). Nenhum arquivo foi gerado.';
+        'A geração de backup não parte mais da aplicação. O backup é o job diário ' +
+        '`.github/workflows/backup.yml` (TASK-078): ele faz o dump, verifica por ' +
+        'restauração e envia para o repositório privado. Para rodar fora da hora, ' +
+        'use "Run workflow" no GitHub Actions. Nenhum arquivo foi gerado aqui.';
     await logStructured('warn', 'backup_indisponivel', { motivo: 'TASK-070', substituta: 'TASK-078' });
     return { success: false, error };
-}
-
-export function getAvailableBackups() {
-    try {
-        const backupsDir = getBackupsDir();
-        if (!fs.existsSync(backupsDir)) return [];
-        const files = fs.readdirSync(backupsDir);
-        return files
-            .filter(f => f.startsWith('keys_backup_') && f.endsWith('.db'))
-            .map(f => {
-                const stat = fs.statSync(path.join(backupsDir, f));
-                return {
-                    filename: f,
-                    createdAt: stat.mtime,
-                    size: stat.size
-                };
-            })
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (e) {
-        console.error('[Backup Read Error]', e);
-        return [];
-    }
-}
-
-export function deleteBackup(filename: string) {
-    try {
-        if (typeof filename !== 'string') return false;
-
-        const backupFilenamePattern = /^keys_backup_[A-Za-z0-9._-]+\.db$/;
-        if (!backupFilenamePattern.test(filename) || path.basename(filename) !== filename) return false;
-
-        const backupsDir = getBackupsDir();
-        const filePath = path.resolve(backupsDir, filename);
-        const relativePath = path.relative(backupsDir, filePath);
-
-        // Impedir Path Traversal
-        if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return false;
-
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            return true;
-        }
-        return false;
-    } catch (e) {
-        console.error('[Backup Delete Error]', e);
-        return false;
-    }
 }
 
 /**
@@ -125,7 +158,7 @@ export function deleteBackup(filename: string) {
  * que não existe em execução serverless: o agendamento nunca dispararia.
  *
  * Agendar e nunca rodar seria pior do que não agendar — daria a impressão de que
- * há backup automático. O agendamento passa a ser da hospedagem (TASK-078).
+ * há backup automático. O agendamento é do GitHub Actions (TASK-078).
  */
 export async function startCronJobs(): Promise<void> {
     await logStructured('info', 'cron_desativado', {
