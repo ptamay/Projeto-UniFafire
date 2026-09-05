@@ -1,0 +1,87 @@
+# TASK-079 (Sprint 23 · Etapa 7b do ADR-012) — ping contra a pausa por
+# inatividade. ADR-012, decisão sobre o plano gratuito do Supabase.
+#
+# ## O que este workflow impede
+#
+# O projeto Supabase no plano gratuito PAUSA após ~7 dias sem requisição. Um
+# sistema usado só no período letivo passa férias inteiras sem tráfego, volta
+# pausado, e ninguém é avisado — descobre quem tentar entrar. Uma batida diária
+# em `/api/health` mantém o projeto ativo e, de quebra, prova todo dia que a
+# aplicação e o banco conversam.
+#
+# ## ⚠️ RESSALVA QUE PRECISA SER LIDA: os ~60 dias
+#
+# O GitHub DESATIVA workflows agendados após ~60 dias sem atividade no
+# repositório (commit, PR, execução manual). Num repositório que entrou em
+# manutenção — que é exatamente o cenário de férias — este ping morre CALADO, e
+# o banco pausa poucos dias depois.
+#
+# Não há como resolver isso de dentro do próprio agendamento: o mecanismo que
+# falharia é o mesmo que teria de avisar. A mitigação é operacional e está no
+# runbook (`docs/runbook-deploy.md`): quem responde pelo sistema abre o Actions
+# uma vez por mês e confere que as duas agendas — esta e a de backup — rodaram.
+# Um "Run workflow" manual já reinicia a contagem dos 60 dias.
+#
+# ## Configuração (feita pelo usuário — ver o runbook)
+#
+#   Repositório → Settings → Secrets and variables → Actions → Variables:
+#     HEALTH_URL = https://<o-app>.vercel.app/api/health
+#
+# É variável, não secret: a URL é pública por definição — quem abre o sistema já
+# a conhece. Escrevê-la aqui, porém, deixaria o endereço de produção versionado
+# num repositório público, e mudá-lo viraria commit.
+
+name: Ping de saúde (evita a pausa do Supabase)
+
+on:
+  schedule:
+    # Diário, às 18:00 UTC = 15:00 em America/Recife. Longe das 06:00 UTC do
+    # backup de propósito: se as duas agendas atrasarem juntas, é sinal de
+    # problema no GitHub, não de coincidência.
+    #
+    # Diário contra uma janela de ~7 dias dá seis dias de folga. Um dia perdido
+    # — e o GitHub atrasa agendas sob carga — não chega perto de descobrir a
+    # janela.
+    - cron: '0 18 * * *'
+  # Também reinicia a contagem dos ~60 dias quando alguém roda à mão.
+  workflow_dispatch:
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Bater em /api/health
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HEALTH_URL:-}" ]; then
+            echo "::error::A variável HEALTH_URL não está configurada. Veja docs/runbook-deploy.md."
+            exit 1
+          fi
+
+          # --fail faz o curl sair diferente de zero em 4xx/5xx. Sem ele, um 503
+          # com corpo JSON seria "sucesso" e o job ficaria verde com o banco
+          # fora do ar — que é precisamente o que este ping existe para detectar.
+          #
+          # Três tentativas espaçadas: a primeira requisição depois de um período
+          # ocioso pode encontrar a instância fria e estourar o tempo, e um
+          # alarme que dispara por partida a frio deixa de ser lido em uma semana.
+          curl --fail --silent --show-error --location \
+               --retry 3 --retry-delay 20 --retry-all-errors \
+               --max-time 30 \
+               "$HEALTH_URL" -o resposta.json
+
+          cat resposta.json
+
+          # O corpo também é conferido: um proxy ou uma página de erro podem
+          # devolver 200 com HTML, e aí o `--fail` não protege nada.
+          grep -q '"status":"ok"' resposta.json \
+            || { echo "::error::A saúde respondeu 200 mas o corpo não é o esperado."; exit 1; }

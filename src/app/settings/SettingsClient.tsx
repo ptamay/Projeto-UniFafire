@@ -42,7 +42,6 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [importingDb, setImportingDb] = useState(false);
     const [isClearingDb, setIsClearingDb] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
-    const [serverInfo, setServerInfo] = useState<{ ips: string[], hostname: string } | null>(null);
     const [bkpReliability, setBkpReliability] = useState<BackupReliability | null>(null);
     // Falha de LEITURA da metrica nao pode virar "nenhuma execucao": as duas
     // aparecem iguais na tela e so uma delas significa que o backup parou.
@@ -75,9 +74,6 @@ export default function SettingsClient({ userRole, username }: Props) {
             if (d.backupCount) setBackupCount(d.backupCount);
             if (d.autoLogoutTime) setAutoLogoutTime(d.autoLogoutTime);
             if (d.defaultResetPassword) setDefaultResetPassword(d.defaultResetPassword);
-        });
-        fetch('/api/server-info').then(r => r.json()).then(d => {
-            if (d.ips) setServerInfo(d.ips ? d : null);
         });
         // loadingBkp já inicia true — busca direta evita setState síncrono no effect
         fetchBackups();
@@ -187,32 +183,10 @@ export default function SettingsClient({ userRole, username }: Props) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.5rem' }}>
-                    {/* Server Info Card */}
-                    <div className="card" style={{ background: 'linear-gradient(135deg, var(--blue-800), var(--blue-900))', border: '1px solid var(--green-500)', boxShadow: '0 0 15px rgba(29, 128, 70, 0.1)' }}>
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--green-400)' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-                            Informações do Servidor (Rede Interna)
-                        </h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-                                Para que outros usuários acessem o sistema na rede interna da UniFAFIRE, utilize um dos endereços abaixo:
-                            </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                {serverInfo?.ips.map(ip => (
-                                    <div key={ip} style={{ background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <code style={{ color: 'var(--green-300)', fontWeight: 700, fontSize: '0.9rem' }}>http://{ip}:3000</code>
-                                        <button className="btn btn-ghost btn-sm" style={{ padding: '0.2rem 0.5rem', height: 'auto', fontSize: '0.65rem' }} onClick={() => {
-                                            navigator.clipboard.writeText(`http://${ip}:3000`);
-                                            toast.success('Endereço copiado!');
-                                        }}>Copiar</button>
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                                Nome do Servidor: {serverInfo?.hostname || 'carregando...'}
-                            </div>
-                        </div>
-                    </div>
+                    {/* O card "Informacoes do Servidor (Rede Interna)" saiu na TASK-079.
+                        Ele listava os IPs da maquina para acesso pela rede da instituicao —
+                        uma topologia que deixou de existir com o deploy na Vercel. Endereco
+                        de acesso agora e uma URL so, e ela nao vem de `os.networkInterfaces()`. */}
                     {/* System & Security Settings */}
                     <div className="card">
                         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -45,6 +45,11 @@ const ROTAS_PUBLICAS = new Set([
     // Sair não pode exigir estar dentro: um cookie corrompido deixaria o usuário
     // preso sem conseguir limpá-lo.
     '/api/auth/logout',
+    // TASK-079: saúde, batida pelo ping agendado que impede o projeto Supabase
+    // de pausar por inatividade. Sem esta entrada o ping mediria a página de
+    // login — 307 é resposta, e o monitor ficaria verde com o banco parado. A
+    // rota devolve dois campos fixos e nada mais; a lista é testada.
+    '/api/health',
 ]);
 
 /**

@@ -3,10 +3,10 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/show-ip.js && node -e \"fs.rmSync('.next', {recursive:true,force:true})\" && next dev -H 0.0.0.0",
-    "dev:safe": "node scripts/show-ip.js && node -e \"fs.rmSync('.next', {recursive:true,force:true})\" && next dev -H 0.0.0.0",
+    "dev": "node -e \"fs.rmSync('.next', {recursive:true,force:true})\" && next dev",
+    "dev:safe": "node -e \"fs.rmSync('.next', {recursive:true,force:true})\" && next dev",
     "build": "next build",
-    "start": "node scripts/show-ip.js && next start -H 0.0.0.0",
+    "start": "next start",
     "lint": "eslint",
     "test": "vitest",
     "test:e2e": "playwright test",

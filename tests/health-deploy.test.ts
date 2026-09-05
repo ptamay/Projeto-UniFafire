@@ -38,6 +38,13 @@ const RAIZ = process.cwd();
 const WORKFLOWS = path.resolve(RAIZ, '.github', 'workflows');
 const RUNBOOK = path.resolve(RAIZ, 'docs', 'runbook-deploy.md');
 
+/** Fonte sem comentário — mesma convenção das guardas da TASK-074 e da TASK-075. */
+function semComentarios(arquivo: string) {
+    return fs.readFileSync(arquivo, 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+}
+
 function req(caminho: string) {
     return new NextRequest(new URL(`http://localhost${caminho}`));
 }
@@ -168,12 +175,16 @@ describe('TASK-079 — o aparato local sai por inteiro', () => {
     });
 
     it('BDD 3: nada em src/ chama /api/server-info', () => {
+        // Sem comentário, como as guardas da TASK-074, da TASK-075 e da
+        // TASK-081: a varredura é sobre o que o código FAZ. A nota que explica
+        // por que a rota morreu é registro, não chamada — e é justamente ela que
+        // impede alguém de recriá-la.
         const achados: string[] = [];
         const varrer = (dir: string) => {
             for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
                 const p = path.join(dir, e.name);
                 if (e.isDirectory()) varrer(p);
-                else if (/\.tsx?$/.test(e.name) && fs.readFileSync(p, 'utf-8').includes('/api/server-info')) {
+                else if (/\.tsx?$/.test(e.name) && semComentarios(p).includes('/api/server-info')) {
                     achados.push(path.relative(RAIZ, p));
                 }
             }
@@ -244,7 +255,7 @@ describe('TASK-079 — o runbook existe e é executável por outra pessoa', () =
     it('BDD 5: nomeia o responsável pós-entrega (constitution §4.3)', () => {
         const texto = fs.readFileSync(RUNBOOK, 'utf-8');
         expect(texto, 'sem responsável nomeado, o ensaio de restauração não é de ninguém')
-            .toMatch(/respons[áa]vel/i);
+            .toMatch(/respons[áa]ve(l|is)/i);
         expect(texto).toMatch(/Paulo Tamay/);
     });
 
