@@ -6,7 +6,7 @@ import os from 'os';
 // TASK-032 — verificação automática do backup diário (REQ-009, spec §5):
 // todo run é validado (arquivo existe, tamanho > 0, SQLite íntegro) e registrado
 // de forma estruturada e persistente; métrica de confiabilidade consultável.
-import { createBackup, getBackupReliability } from '@/lib/backup';
+import { createBackup } from '@/lib/backup';
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'unifafire-bkp-'));
 let caseId = 0;
@@ -31,12 +31,22 @@ afterAll(() => {
 describe('TASK-032 — verificação automática do backup (REQ-009)', () => {
     // TASK-070 (Sprint 21): os dois cenarios que exercitavam a GERACAO do backup
     // foram reescritos. A copia de arquivo deixou de existir — nao ha keys.db para
-    // copiar na stack nova, e o disco da hospedagem e efemero. O que a TASK-032
-    // entregou e que sobrevive e a METRICA de confiabilidade, coberta abaixo.
+    // copiar na stack nova, e o disco da hospedagem e efemero.
     //
     // Os cenarios originais (verificacao da copia com quick_check, e fonte
-    // corrompida reprovando) voltam na TASK-078, quando o backup gerenciado do
-    // provedor tiver verificacao propria. Registrado aqui para nao se perder.
+    // corrompida reprovando) viraram a verificacao por RESTAURACAO da TASK-078,
+    // em `tests/backup-runs.test.ts` — o dump volta numa base descartavel e as
+    // contagens e o esquema sao reconciliados contra a origem.
+    //
+    // A METRICA saiu daqui na TASK-075: deixou de ler
+    // `backups/backup-history.jsonl` — arquivo que ninguem escrevia desde a
+    // Sprint 21 e que no Vercel nao existiria — e passou a ler `backup_runs`.
+    // Os cenarios novos, com os tres estados que a tela precisa distinguir,
+    // estao em `tests/backup-reliability.test.ts`.
+    //
+    // O que resta neste arquivo e so a recusa: a geracao por copia de arquivo
+    // nao pode voltar a responder sucesso.
+
     it('TASK-070: a geração por cópia de arquivo recusa explicitamente', async () => {
         const r = await createBackup();
         expect(r.success, 'nao pode responder sucesso').toBe(false);
@@ -48,28 +58,5 @@ describe('TASK-032 — verificação automática do backup (REQ-009)', () => {
         await createBackup();
         const depois = fs.existsSync(backupsDir) ? fs.readdirSync(backupsDir).length : 0;
         expect(depois, 'gerou arquivo apesar de recusar').toBe(antes);
-    });
-
-    it('BDD 2: métrica de confiabilidade = % de dias com backup concluído com sucesso', () => {
-        fs.mkdirSync(backupsDir, { recursive: true });
-        const day = (offset: number) => new Date(Date.now() - offset * 86400000).toISOString();
-        const lines = [
-            { ts: day(2), status: 'success', verified: true, filename: 'a.db' },
-            { ts: day(1), status: 'failed', verified: false, filename: 'b.db' },
-            { ts: day(0), status: 'success', verified: true, filename: 'c.db' },
-        ].map(e => JSON.stringify(e)).join('\n') + '\n';
-        fs.writeFileSync(path.join(backupsDir, 'backup-history.jsonl'), lines);
-
-        const m = getBackupReliability(30);
-        expect(m.totalDays).toBe(3);
-        expect(m.successDays).toBe(2);
-        expect(m.percent).toBeCloseTo(66.7, 0);
-    });
-
-    it('BDD 2b: sem registros → métrica vazia clara (sem NaN)', () => {
-        fs.mkdirSync(backupsDir, { recursive: true });
-        const m = getBackupReliability(30);
-        expect(m.totalDays).toBe(0);
-        expect(m.percent).toBeNull();
     });
 });

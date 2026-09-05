@@ -269,15 +269,15 @@ describe('TASK-074 — nada em src/ toca o filesystem, salvo exceção declarada
     // silêncio (o caso deste defeito) ou lança em produção; leitura devolve vazio
     // e o código conclui que "não há nada", que é pior do que um erro.
     //
-    // `src/lib/backup.ts` é a ÚNICA exceção, e é declarada aqui de propósito: ele
-    // ainda lê `backups/` e `backup-history.jsonl` e remove arquivo com
-    // unlinkSync. Converter isso é da TASK-078 (backup gerenciado) e da TASK-075
-    // (a métrica sai do .jsonl e vem do banco), ambas na Sprint 23 — e o módulo
-    // já recusa as operações que importam.
+    // A lista está VAZIA desde a TASK-075 (Sprint 23). `src/lib/backup.ts` era a
+    // única exceção enquanto lia `backups/` e `backup-history.jsonl` e removia
+    // arquivo com unlinkSync; a métrica passou a vir de `backup_runs` e o resto
+    // do aparato de arquivo saiu junto. Não há mais nada em `src/` que toque
+    // disco — e a regra deixa de ter exceção para manter.
     //
     // A exceção é uma LISTA, não um buraco na regex: qualquer arquivo NOVO que
     // toque o filesystem reprova, que é justamente o que se quer guardar.
-    const EXCECOES = ['src/lib/backup.ts'];
+    const EXCECOES: string[] = [];
 
     it('BDD 7: nenhum acesso a disco fora da exceção declarada', () => {
         const alvos: string[] = [];
@@ -302,7 +302,7 @@ describe('TASK-074 — nada em src/ toca o filesystem, salvo exceção declarada
     it('BDD 7: a exceção não cresceu sem alguém decidir', () => {
         // Se a lista mudar, é decisão de arquitetura — não pode passar num diff
         // sem que este teste obrigue a olhar.
-        expect(EXCECOES).toEqual(['src/lib/backup.ts']);
+        expect(EXCECOES).toEqual([]);
         for (const e of EXCECOES) {
             expect(fs.existsSync(path.resolve(RAIZ, e)), `exceção obsoleta: ${e}`).toBe(true);
         }
