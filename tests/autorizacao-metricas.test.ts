@@ -138,3 +138,40 @@ describe('TASK-085 — nenhuma outra rota fica só com checagem de sessão', () 
         }
     });
 });
+
+describe('TASK-086 — o contrato de API descreve a superfície REAL', () => {
+    const CONTRATO = path.resolve(RAIZ, 'docs/api-contract.md');
+
+    it('BDD 1: o arquivo existe — era um débito da Sprint 24', () => {
+        // O `CLAUDE.md` o listava no mapa do projeto e ele nunca existiu. Um
+        // critério da TASK-082 ficou sem alvo por causa disso.
+        expect(fs.existsSync(CONTRATO)).toBe(true);
+    });
+
+    it('BDD 1: toda rota do código aparece no contrato', () => {
+        // Documento que descreve menos do que existe é pior que documento
+        // nenhum: quem o lê conclui que a superfície é menor do que é.
+        const texto = fs.readFileSync(CONTRATO, 'utf-8');
+        const ausentes = listarRotas()
+            .map(r => r.caminho.replace(/\[id\]/g, '[id]'))
+            .filter(c => !texto.includes(c));
+        expect(ausentes, `rotas que existem e não estão no contrato:\n${ausentes.join('\n')}`).toEqual([]);
+    });
+
+    it('BDD 2: a lista de rotas públicas do contrato casa com a do proxy', () => {
+        const texto = fs.readFileSync(CONTRATO, 'utf-8');
+        for (const rota of ROTAS_PUBLICAS) {
+            expect(texto, `${rota} é pública no proxy e não aparece no contrato`).toContain(rota);
+        }
+    });
+
+    it('BDD 2: o contrato não promete rota que foi removida', () => {
+        // As rotas mortas aparecem numa seção própria, marcadas como removidas —
+        // mas não podem constar da superfície como disponíveis.
+        const texto = fs.readFileSync(CONTRATO, 'utf-8');
+        const secaoViva = texto.slice(0, texto.indexOf('## O que NÃO existe'));
+        for (const morta of ['/api/server-info', '/api/backups/restore', '/api/backups/import']) {
+            expect(secaoViva, `${morta} aparece como disponível`).not.toContain(morta);
+        }
+    });
+});
