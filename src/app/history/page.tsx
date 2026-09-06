@@ -27,7 +27,21 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         if (!session) throw new Error();
     } catch { redirect('/login'); }
 
+    // TASK-088 (ADR-015) — esta pagina consulta o banco DIRETO, entao nao ha 403
+    // possivel: quem verifica quem esta perguntando e ela mesma. Antes ela
+    // verificava so a sessao, e qualquer autenticado que digitasse o endereco via
+    // o historico completo de todo mundo — o `Sidebar` esconde o link, mas isso e
+    // navegacao, nao autorizacao.
+    //
+    // ESCOPA em vez de bloquear: "quando peguei a chave da sala 12 e quando
+    // devolvi" e dado do proprio usuario. Quem opera o balcao ve tudo; os demais
+    // veem so as proprias movimentacoes.
+    const operaBalcao = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role);
+
     const query = buildHistoryQuery({
+        // TETO, e nao valor padrao de `userId`: a restricao SOBRESCREVE o filtro
+        // da query string. Se fosse default, `?userId=outro` a contornaria.
+        restritoAoUsuarioId: operaBalcao ? undefined : session.id,
         date: p.date || '',
         month: p.month || '',
         hour: p.hour || '',

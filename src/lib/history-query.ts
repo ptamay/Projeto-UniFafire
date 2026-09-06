@@ -26,6 +26,20 @@ export interface HistoryFilters {
     month?: string;
     hour?: string;
     userId?: string;
+    /**
+     * TETO imposto pelo servidor, e NÃO um valor padrão para `userId`
+     * (TASK-088, ADR-015 emendado).
+     *
+     * Quando presente, a consulta é restrita a este usuário e o `userId` vindo da
+     * query string é **ignorado**. A distinção é a segurança inteira: aplicar a
+     * restrição como default de `userId` deixaria um FUNCIONARIO passar
+     * `?userId=outro` e ler o histórico alheio — trocando uma exposição por outra,
+     * pior porque a página pareceria escopada.
+     *
+     * ADMIN, GESTOR e PORTEIRO chamam sem este campo e continuam podendo filtrar
+     * por usuário, que é a pergunta central do sistema: "quem pegou a chave X?".
+     */
+    restritoAoUsuarioId?: number;
     keyId?: string;
     action?: string;
     page?: number;
@@ -88,8 +102,11 @@ export function buildHistoryQuery(filters: HistoryFilters): HistoryQuery {
         params.push(localHourToUtcHour(filters.hour));
     }
 
-    const userId = parseId(filters.userId);
-    if (userId !== null) {
+    // O teto vence o filtro. Ver `restritoAoUsuarioId` na interface: se isto
+    // virar `filters.userId ?? filters.restritoAoUsuarioId`, a restricao passa a
+    // ser sobrescrivivel pela URL e o escopo deixa de existir.
+    const userId = filters.restritoAoUsuarioId ?? parseId(filters.userId);
+    if (userId !== null && userId !== undefined) {
         conditions.push(`h.user_id = ${p()}`);
         params.push(userId);
     }
