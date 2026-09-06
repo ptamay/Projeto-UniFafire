@@ -322,6 +322,19 @@
 > verdadeiros. Até que haja um número aqui, **o REQ-032 está entregue em código e não em
 > fato**.
 
+### Sprint 26 — Autorização de métricas e contrato de API (CR Tipo C · ADR-014)
+> Aberta pelo Change Request de 2026-09-06. Uma rota expõe dados pessoais a qualquer usuário
+> autenticado, e o exercício que achou isso — enumerar a superfície de API — vira o
+> documento que faltava.
+- [ ] **TASK-085 → `/api/metrics/frequent-users` passa a validar papel.** ADR-014. Hoje a rota só chama `verifySession`: qualquer autenticado, **inclusive ALUNO**, recebe nome, username, papel e frequência de retirada dos cinco maiores usuários de uma chave, com `keyId` sequencial e portanto enumerável. As duas rotas irmãs (`business`, `frequent-keys`) já restringem a ADMIN/GESTOR/PORTEIRO; esta passa a restringir igual. O consumidor único já chama dentro de `if (isPorteiroOrAdmin)`, então **nenhum uso legítimo muda** — o que muda é o servidor garantir o que a tela presumia (§3.2). O teste tem de provar que ALUNO recebe **403**, e uma guarda deve varrer as demais rotas para que nenhuma outra fique só com checagem de sessão sem declarar que é pública.
+- [ ] **TASK-086 → `docs/api-contract.md`, com a superfície real.** Débito da Sprint 24: o arquivo está no mapa do projeto (`CLAUDE.md`) e nunca existiu, e um critério da TASK-082 ficou sem alvo por isso. Deve listar as 24 rotas com métodos, papéis exigidos e o que cada uma devolve — gerado a partir do código, não de memória. E deve registrar as três rotas públicas (`/login`, `/api/auth/login`, `/api/auth/logout`, `/api/health`) como lista fechada, casando com `ROTAS_PUBLICAS` do `proxy.ts`.
+
+> **A lição do achado, e é reutilizável:** a rota foi escrita com checagem de sessão e sem
+> a de papel, e **nada acusou**. Não há teste que exija papel por rota, o proxy por desenho
+> não cobre, e a tela nunca a chamou de um perfil baixo — o defeito não tinha sintoma. Foi
+> preciso **enumerar a superfície inteira e comparar rotas irmãs**. O débito do
+> `api-contract.md` se pagou antes mesmo de o arquivo existir.
+
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
