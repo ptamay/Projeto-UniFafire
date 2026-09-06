@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
+import { SENHA_PADRAO_RESET } from '@/lib/settings-policy';
 
 export async function POST(request: Request) {
     try {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
         const settingsRow = await queryOne<{ value: string }>(
             "SELECT value FROM settings WHERE key = 'default_reset_password'",
         );
-        const defaultPassword = settingsRow ? settingsRow.value : 'unifafire123';
+        const defaultPassword = settingsRow ? settingsRow.value : SENHA_PADRAO_RESET;
 
         // Hash and update
         const newHash = await bcrypt.hash(defaultPassword, 10);

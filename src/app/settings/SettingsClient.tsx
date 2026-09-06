@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
+import { AUTO_LOGOUT_PADRAO, SENHA_PADRAO_RESET } from '@/lib/settings-policy';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -31,8 +32,8 @@ interface Props {
 
 export default function SettingsClient({ userRole, username }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [autoLogoutTime, setAutoLogoutTime] = useState('18:30');
-    const [defaultResetPassword, setDefaultResetPassword] = useState('unifafire123');
+    const [autoLogoutTime, setAutoLogoutTime] = useState(AUTO_LOGOUT_PADRAO);
+    const [defaultResetPassword, setDefaultResetPassword] = useState(SENHA_PADRAO_RESET);
     const [runs, setRuns] = useState<BackupRun[]>([]);
     const [loadingBkp, setLoadingBkp] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);

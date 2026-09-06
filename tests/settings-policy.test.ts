@@ -110,7 +110,11 @@ describe('TASK-083 — o logout dispara em vez de depender de um minuto exato', 
         // no corpo do efeito — nunca virou cleanup. Cada montagem deixava um
         // intervalo vivo para sempre.
         const fonte = semComentarios('src/app/components/Sidebar.tsx');
-        expect(fonte, 'o efeito não devolve cleanup do intervalo').toMatch(/return\s*\(\)\s*=>\s*clearInterval/);
+        // Mira o EFEITO devolvendo um cleanup que limpa — não uma única forma de
+        // escrevê-lo. O defeito era o `clearInterval` estar fora do caminho de
+        // retorno do efeito, não a quantidade de linhas.
+        expect(fonte, 'o efeito não devolve cleanup do intervalo')
+            .toMatch(/return\s*\(\)\s*=>\s*\{[\s\S]*?clearInterval/);
     });
 });
 

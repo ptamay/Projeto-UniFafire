@@ -3,6 +3,7 @@ import { query, queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { SENHA_PADRAO_RESET } from '@/lib/settings-policy';
 import { verifySession } from '@/lib/session';
 import { UserSchema } from '@/lib/schemas';
 
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
         let finalPassword = password;
         if (!finalPassword) {
             const settingsRow = await queryOne<{ value: string }>("SELECT value FROM settings WHERE key = 'default_reset_password'");
-            finalPassword = settingsRow ? settingsRow.value : 'unifafire123';
+            finalPassword = settingsRow ? settingsRow.value : SENHA_PADRAO_RESET;
         }
 
         const existing = await queryOne<Pick<UserRow, 'id' | 'active'>>('SELECT id, active FROM users WHERE username = $1', [finalUsername]);

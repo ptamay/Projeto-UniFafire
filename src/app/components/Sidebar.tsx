@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { cruzouOHorario } from '@/lib/settings-policy';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 
@@ -114,27 +115,57 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         window.location.href = '/login';
     };
 
+    // TASK-083 — dois defeitos consertados aqui, e o segundo era invisivel:
+    //
+    // 1. O `return () => clearInterval(...)` vivia DENTRO da funcao async, e nao
+    //    no corpo do efeito. Nunca virou cleanup: cada montagem deixava um
+    //    intervalo vivo para sempre. Agora o intervalo e criado no corpo do
+    //    efeito e o cleanup e do efeito.
+    //
+    // 2. A condicao era `agora === alvo`, verificada a cada 60 s. Um tick
+    //    atrasado pula o minuto e o logout nao acontece naquele dia — e
+    //    navegadores estrangulam timers em aba de fundo, entao o atraso e o caso
+    //    comum. Agora o gatilho e o CRUZAMENTO do horario (`cruzouOHorario`), que
+    //    tolera atraso sem expulsar quem entrou depois do horario.
     useEffect(() => {
-        const checkAutoLogout = async () => {
+        let intervalo: ReturnType<typeof setInterval> | undefined;
+        let cancelado = false;
+
+        const agoraHHMM = () => {
+            const d = new Date();
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        };
+
+        void (async () => {
             try {
                 const res = await fetch('/api/settings');
-                if (!res.ok) return;
+                if (!res.ok || cancelado) return;
                 const data = await res.json();
-                if (data.autoLogoutTime) {
-                    const checkInterval = setInterval(() => {
-                        const now = new Date();
-                        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                        if (currentHHMM === data.autoLogoutTime) {
-                            handleLogout();
-                        }
-                    }, 60000);
-                    return () => clearInterval(checkInterval);
-                }
+                // A rota ja recusa valor invalido herdado e devolve o padrao
+                // (TASK-083), entao o que chega aqui e sempre `HH:MM`.
+                const alvo: string = data.autoLogoutTime;
+                if (!alvo) return;
+
+                let anterior = agoraHHMM();
+                intervalo = setInterval(() => {
+                    const agora = agoraHHMM();
+                    if (cruzouOHorario(anterior, agora, alvo)) {
+                        anterior = agora;
+                        void handleLogout();
+                        return;
+                    }
+                    anterior = agora;
+                }, 60000);
             } catch {
-                // Silently ignore if settings fetch fails or is blocked (e.g. USER role without permission)
+                // Falha ao ler as configuracoes nao pode derrubar o shell — papel
+                // sem permissao para /api/settings cai aqui.
             }
+        })();
+
+        return () => {
+            cancelado = true;
+            if (intervalo) clearInterval(intervalo);
         };
-        checkAutoLogout();
     }, []);
 
     const navigate = (href: string) => {

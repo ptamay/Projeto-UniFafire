@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { SENHA_PADRAO_RESET } from '@/lib/settings-policy';
 import Sidebar from '../components/Sidebar';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -56,7 +57,7 @@ export default function UsersClient({ userRole, username }: Props) {
     const [deleteModal, setDeleteModal] = useState<User | null>(null);
     const [resetModal, setResetModal] = useState<User | null>(null);
     const [newUserPassword, setNewUserPassword] = useState<{username: string, password?: string, reactivated?: boolean} | null>(null);
-    const [sysDefaultPass, setSysDefaultPass] = useState('unifafire123');
+    const [sysDefaultPass, setSysDefaultPass] = useState(SENHA_PADRAO_RESET);
     const [filterRole, setFilterRole] = useState('all');
     const [search, setSearch] = useState('');
 
