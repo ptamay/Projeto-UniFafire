@@ -262,6 +262,20 @@
 - [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
 - [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
 
+### Sprint 25 — Faxina da tela de configurações (CR Tipo C · ADR-013)
+> Aberta pelo Change Request de 2026-09-06, depois do go-live. A tela `/settings` faz seis
+> afirmações falsas, todas resíduo da topologia desmontada nas Sprints 21–23. **Nenhum
+> requisito muda** — a tela passa a refletir o sistema que existe.
+- [ ] **TASK-082 → a tela de configurações deixa de prometer o que o sistema não faz.** ADR-013, decisões 1 e 2. Saem: os campos "Horário do Backup" e "Retenção (quantidade de backups)" (gravados em `settings` e **nunca lidos** desde a TASK-070), o botão "Gerar Backup Agora" (503 desde a TASK-070), o card "Importar Banco (.db)" e as rotas `/api/backups/restore` e `/api/backups/import` (503 desde a TASK-068, e `.db` é SQLite, fora do runtime desde a Sprint 21). Entra no lugar: texto informativo com o estado real — backup diário às 03:00 (America/Recife) pelo GitHub Actions, retenção pelo histórico do repositório privado, e onde disparar manualmente. **Permanecem** o card de confiabilidade e a lista de execuções (TASK-075): eles leem `backup_runs`, que é fato. `docs/api-contract.md` acompanha a remoção das duas rotas.
+- [ ] **TASK-083 → o logout automático volta a disparar, e a senha padrão tem uma fonte só.** ADR-013, decisões 3 e 4. **Defeito vivo em produção:** `Sidebar.tsx` compara a hora corrente (`"14:35"`) com `settings.auto_logout_time`, cujo valor é `"30"` — a comparação nunca casa e o `<input type="time">` exibe vazio. O schema valida no POST, mas nada protege um valor herdado: a validação passa a valer também na **leitura**, com fallback explícito. E `default_reset_password` deixa de ter dois padrões — `GET /api/settings` devolve `'saojose123'` enquanto as rotas que aplicam a senha usam `'unifafire123'`; passa a existir uma constante só, consumida pelas três. Corrigir as linhas sintéticas de `settings` em produção é **operação**, não deploy: entra no runbook.
+
+> **Lição registrada no ADR-013, e ela é reutilizável:** as quatro linhas de `settings` em
+> produção vieram da carga sintética da TASK-067 e foram preservadas na limpeza do go-live
+> sob o argumento de que eram "configuração, não dado sintético". O argumento estava errado,
+> e é a causa direta do logout quebrado. **"Configuração" não é sinônimo de "legítimo"** —
+> tabela de configuração povoada por seed carrega valor de teste para produção sem sintoma
+> nenhum no momento da carga.
+
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
