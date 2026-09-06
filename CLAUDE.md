@@ -30,56 +30,53 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — ADR-012: Etapas 3, 4, 7a e 7b CONCLUÍDAS. Falta a 5.
-- Sprint/Task Ativa: Nenhuma. Sprints 16–23 concluídas.
-- Última Ação: Sprint 23 (Etapa 7b — Backup e Deploy) FECHADA.
-  TASK-078 backup por `pg_dump` diário no GitHub Actions, verificado por RESTAURAÇÃO num
-  Postgres descartável — reconcilia contagens E esquema (tabelas, índices, triggers, RLS,
-  funções) — enviado a repositório PRIVADO separado, com cada execução gravada em
-  `backup_runs` (imutável por trigger), inclusive as que falharam;
-  TASK-075 a métrica de confiabilidade saiu do `.jsonl` e lê `backup_runs`, distinguindo na
-  tela quatro estados: nunca rodou / rodou e parou / rodou e falhou / íntegro — mais
-  "não foi possível ler". `src/lib/backup.ts` perdeu TODO acesso a disco e a lista de
-  exceção da guarda de filesystem da TASK-074 ficou VAZIA;
-  TASK-079 `/api/health` público e pobre de propósito (dois campos, lista fechada, consulta
-  o banco, 503 se ele não responde), ping diário em `keepalive.yml`, e o aparato local
-  removido inteiro — 4 `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info` e o
-  card de IPs da rede interna. `docs/runbook-deploy.md` escrito para quem não conhece o
-  projeto; `docs/runbook.md` virou ponteiro (ensinava PM2 e restauração por botão).
-  Verificado: 404 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0
-  vulnerabilidades, `next build` verde SEM DATABASE_URL, e o sistema exercitado no
-  navegador de uma base VAZIA. O 503 do health foi conferido com o container REALMENTE
-  parado, e o curl do workflow saiu com código 22.
-- Próxima Ação: **O GO-LIVE É DO USUÁRIO.** Seguir `docs/runbook-deploy.md`: criar o projeto
-  na Vercel (§2), cadastrar variáveis e secrets (§3), aplicar as migrations no Supabase (§4),
-  criar o primeiro ADMIN (§5) e criar o repositório privado de backup (§6.1). Depois disso,
-  Sprint 24 — Etapa 5: Realtime (TASK-072, 073), que é melhoria e não condição.
-- ⚠️ PENDÊNCIA QUE BLOQUEIA O BACKUP: a migration `202609041800_backup_runs.up.sql` ainda
-  NÃO foi aplicada ao Supabase. Sem ela o job de backup falha no passo final.
-- ⚠️ NÃO EXISTE PRODUÇÃO (confirmado em 2026-09-04). Sem servidor PM2 — e agora sem nem o
-  aparato dele no repositório. O conteúdo do banco anterior era FICTÍCIO; não há migração de
-  dados no caminho do go-live.
-- Estado do Supabase: schema + índices + triggers + RLS aplicados; dados SINTÉTICOS da
-  TASK-067 ainda lá. Limpar `users` é pré-requisito do bootstrap, que recusa base povoada.
-  Falta aplicar a migration de `backup_runs`.
-- Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco baixíssimo —
-  aqueles arquivos nunca tiveram dado real); (b) **CR de faxina da tela de configurações** —
-  são QUATRO itens prometendo o que o sistema não faz: "Horário do Backup" e "Retenção"
-  inertes, botão "Gerar Backup Agora" que sempre 503, e o card "Importar Banco (.db)" com
-  as rotas restore/import; (c) CR para runner de migrations do Postgres.
-- ⚠️ TESTES: exigem Postgres em container — `npm run test:db:up` ANTES de `npx vitest`.
-  A suíte dá TRUNCATE no MESMO banco usado para verificar no navegador. Parece sempre
-  defeito de autenticação: o login recusa credencial que estava correta. REGRA: verificação
-  no navegador é o ÚLTIMO passo, depois da suíte e dos gates. Para semear: TRUNCATE +
-  `DATABASE_URL=... node db/bootstrap-admin.mjs` (o script NÃO lê o .env.local).
-- ⚠️ LIÇÃO DE DUAS SPRINTS SEGUIDAS: todo o retrabalho das Sprints 22 e 23 foi TESTE MEU que
-  não media o que dizia medir. Teste que varre texto precisa ser exercitado contra o caso
-  que deveria pegar, senão passa e não prova nada.
+- Fase: 11 — GO-LIVE CONCLUÍDO em 2026-09-06. O sistema está NO AR.
+- Sprint/Task Ativa: Nenhuma. Sprints 16–23 concluídas e publicadas na `main`.
+- PRODUÇÃO (a partir de 2026-09-06 — a nota "NÃO EXISTE PRODUÇÃO" está VENCIDA):
+  · App: https://projeto-uni-fafire.vercel.app — Vercel, escopo `projeto-uni-fafire`,
+    conta `unifafiregc@gmail.com` (DIFERENTE da conta ligada ao GitHub `ptamay`; o
+    `vercel` CLI logado como ptamay NÃO enxerga o projeto — ver runbook §0)
+  · Banco: Supabase `sa-east-1`, 11 tabelas, todas as migrations aplicadas
+  · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
+    2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
+  · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
+- Última Ação: go-live executado. PRs #15 (Sprints 21–23), #16 (runbook §4),
+  #17 e #18 (dois defeitos do job de backup) merged na `main`.
+- Próxima Ação: nada bloqueante. Candidatos, em ordem de valor:
+  (a) ENSAIO DE RESTAURAÇÃO (runbook §6.6) — o job prova que o dump volta numa base
+      descartável, mas o RTO de 4 h NUNCA foi cronometrado. É o único item da §4.3
+      ainda não demonstrado;
+  (b) CR de faxina da tela de configurações — QUATRO itens prometendo o que o sistema
+      não faz: "Horário do Backup" e "Retenção" inertes, botão "Gerar Backup Agora"
+      que sempre 503, e o card "Importar Banco (.db)" com as rotas restore/import;
+  (c) Sprint 24 — Etapa 5: Realtime (TASK-072, 073). Melhoria, não condição.
+- ⚠️ LIÇÃO DO GO-LIVE, e é a mais cara desta rodada: o job de backup passou em 25
+  testes e falhou nas TRÊS primeiras execuções reais — extensões da plataforma no
+  dump, schema `public` já existente, e token sem `Contents`. A suíte cobria a
+  lógica pura de reconciliação; o que quebrou foi a orquestração em volta dela, que
+  nenhum teste alcança. O `tasks.md` da Sprint 23 tinha registrado esse limite com
+  todas as letras. **Job de CI só está verificado depois de rodar de verdade.**
+- ⚠️ O que NÃO está demonstrado: o RTO de 4 h (ver Próxima Ação (a)). E a tabela de
+  ensaios do runbook §6.6 continua com a linha em branco.
+- ⚠️ Credenciais: precisam estar no gerenciador de senhas da instituição — conta
+  Vercel, JWT_SECRET, senha do Supabase e o ADMIN. Sem isso o §8 (incidentes) não é
+  executável por quem estiver de plantão. A senha do Supabase FOI ROTACIONADA em
+  2026-09-06 (vazou num terminal); a antiga não vale mais.
+- ⚠️ TESTES (dev): exigem Postgres em container — `npm run test:db:up` ANTES de
+  `npx vitest`. A suíte dá TRUNCATE no MESMO banco usado para verificar no navegador.
+  Parece sempre defeito de autenticação. Verificação no navegador é o ÚLTIMO passo.
+  Para semear: TRUNCATE + `DATABASE_URL=... node db/bootstrap-admin.mjs` (o script
+  NÃO lê o .env.local). O Docker Desktop costuma estar parado — subir antes.
+- ⚠️ Migrations em produção: NÃO há runner. Aplicar à mão por `psql`, em ordem de
+  nome. O que já foi aplicado se consulta em `supabase_migrations.schema_migrations`
+  — mas os nomes do ledger não batem com os dos arquivos, e existe uma
+  `search_path_history_imutavel_task_065` no banco SEM arquivo no repositório.
+  Runbook §4.1. Migration que falta CALA em vez de gritar: conferir o schema.
+- Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco
+  baixíssimo); (b) o CR de faxina da tela; (c) CR para runner de migrations.
 - Arquivos não commitados: nenhum
-- Branch atual: feature/sprint-23-backup-deploy (Sprints 16–23, não publicada)
-- Pendências do usuário: o go-live inteiro (ver Próxima Ação). PR #14 (release v0.3.0)
-  merged em 03e4466.
-- Atualizado em: 2026-09-04
+- Branch atual: main (Sprints 21–23 publicadas; PRs #15–#18 merged)
+- Atualizado em: 2026-09-06
 ```
 
 ---
@@ -128,14 +125,16 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 23 concluída)
+Sprint atual      : — (nenhuma ativa; Sprint 23 concluída e PUBLICADA)
 Última sprint     : 23 ✅ (Etapa 7b do ADR-012 — Backup e Deploy · TASK-078, 075, 079)
+Produção          : NO AR desde 2026-09-06 — https://projeto-uni-fafire.vercel.app
 Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
                     Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida.
                     Etapas 3, 4, 7a e 7b fechadas — falta a 5, adiada para depois do go-live)
 Último commit     : (ver git log -1)
-Próxima ação      : GO-LIVE, e ele é do usuário — `docs/runbook-deploy.md`. Depois,
-                    Sprint 24 — Etapa 5: Realtime (TASK-072, 073)
+Próxima ação      : Nada bloqueante. Ensaio de restauração (runbook §6.6, RTO não
+                    medido) · CR de faxina da tela de configurações · Sprint 24
+                    (Realtime, TASK-072 e 073)
 ```
 
 ---
