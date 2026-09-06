@@ -166,13 +166,16 @@ describe('TASK-070 — as duas operações destrutivas do REQ-014', () => {
 });
 
 describe('TASK-070 — settings grava tudo ou nada', () => {
-    it('as quatro configurações entram juntas', async () => {
+    it('as configurações entram juntas', async () => {
+        // Eram QUATRO até a TASK-082. `backupTime` e `backupCount` saíram: eram
+        // gravadas e nunca lidas, e mantê-las na API só serviria para reencher a
+        // tabela com configuração que nada consome. A garantia sob teste é a
+        // atomicidade da escrita, e ela não depende da contagem de campos.
         const { POST } = await import('@/app/api/settings/route');
         const res = await POST(new Request('http://localhost/api/settings', {
             method: 'POST',
             body: JSON.stringify({
-                autoLogoutTime: '45', backupTime: '04:00',
-                backupCount: 9, defaultResetPassword: 'trocar-070',
+                autoLogoutTime: '45', defaultResetPassword: 'trocar-070',
             }),
         }) as never);
 
@@ -180,8 +183,6 @@ describe('TASK-070 — settings grava tudo ou nada', () => {
         const linhas = await query<{ key: string; value: string }>('SELECT key, value FROM settings ORDER BY key');
         expect(Object.fromEntries(linhas.map(l => [l.key, l.value]))).toEqual({
             auto_logout_time: '45',
-            backup_retention_count: '9',
-            backup_time: '04:00',
             default_reset_password: 'trocar-070',
         });
     });
@@ -235,22 +236,10 @@ describe('TASK-070 — o SQLite sai do runtime', () => {
     });
 });
 
-describe('TASK-070 — o backup por cópia de arquivo não finge funcionar', () => {
-    it('createBackup recusa explicitamente, citando a TASK-078', async () => {
-        const { createBackup } = await import('@/lib/backup');
-        const r = await createBackup();
-        expect(r.success, 'nao pode responder sucesso').toBe(false);
-        expect(r.error).toMatch(/TASK-078/);
-    });
-
-    it('startCronJobs não agenda nada', async () => {
-        // node-cron precisa de processo de longa duracao, que nao existe em
-        // execucao serverless. Agendar e nunca rodar seria pior do que nao
-        // agendar: daria a impressao de que ha backup.
-        const { startCronJobs } = await import('@/lib/backup');
-        await expect(startCronJobs()).resolves.toBeUndefined();
-        const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/backup.ts'), 'utf-8')
-            .replace(/\/\/.*$/gm, '');
-        expect(fonte, 'ainda agenda cron').not.toMatch(/cron\.schedule/);
-    });
-});
+// O describe `TASK-070 — o backup por cópia de arquivo não finge funcionar` saiu
+// na TASK-082 (Sprint 24): `createBackup()` foi REMOVIDA. Ela existia para
+// recusar uma operação que ninguém mais consegue disparar — o botão que a
+// chamava e o `POST /api/backups` saíram junto. Função cujo único propósito é
+// recusar o impossível é código morto, e o teste que a guardava mantinha o
+// código morto vivo. As guardas de que nada disso voltou estão em
+// `tests/settings-sem-promessa.test.ts`.

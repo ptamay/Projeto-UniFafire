@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
+import { AUTO_LOGOUT_PADRAO, SENHA_PADRAO_RESET, lerAutoLogoutTime } from '@/lib/settings-policy';
 
 export async function GET() {
     try {
@@ -10,14 +11,14 @@ export async function GET() {
         const settingsMap: Record<string, string> = {};
         settingsArr.forEach(s => settingsMap[s.key] = s.value);
 
-        return NextResponse.json({ 
-            autoLogoutTime: settingsMap['auto_logout_time'] || '18:30',
-            backupTime: settingsMap['backup_time'] || '03:00',
-            backupCount: parseInt(settingsMap['backup_retention_count'] || '3', 10),
-            defaultResetPassword: settingsMap['default_reset_password'] || 'saojose123'
+        // `lerAutoLogoutTime` recusa valor herdado invalido — o POST valida o
+        // que entra, e nao o que ja estava la (TASK-083).
+        return NextResponse.json({
+            autoLogoutTime: lerAutoLogoutTime(settingsMap['auto_logout_time']),
+            defaultResetPassword: settingsMap['default_reset_password'] || SENHA_PADRAO_RESET,
         });
     } catch {
-        return NextResponse.json({ autoLogoutTime: '18:30', backupTime: '03:00', backupCount: 3, defaultResetPassword: 'saojose123' });
+        return NextResponse.json({ autoLogoutTime: AUTO_LOGOUT_PADRAO, defaultResetPassword: SENHA_PADRAO_RESET });
     }
 }
 
@@ -46,8 +47,6 @@ export async function POST(req: Request) {
             // Suporta 'time' (antigo) ou 'autoLogoutTime'
             const logoutTime = body.autoLogoutTime || body.time;
             if (logoutTime) await gravar('auto_logout_time', String(logoutTime));
-            if (body.backupTime) await gravar('backup_time', String(body.backupTime));
-            if (body.backupCount !== undefined) await gravar('backup_retention_count', String(body.backupCount));
             if (body.defaultResetPassword) await gravar('default_reset_password', String(body.defaultResetPassword));
         });
 

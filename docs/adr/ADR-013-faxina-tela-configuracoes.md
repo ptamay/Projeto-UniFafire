@@ -1,7 +1,7 @@
 # ADR-013 — A tela de configurações deixa de prometer o que o sistema não faz
 
 - **Status:** Aceito
-- **Data:** 2026-09-06
+- **Data:** 2026-09-06 · **emendado em 2026-09-06** (achado 7 e decisão 5)
 - **Tipo de Change Request:** C (mudança em feature já implementada)
 - **Relacionado:** ADR-012 (migração Supabase + Vercel), REQ-031, constitution §4.3 e §7
 - **Origem:** revisão da tela `/settings` logo após o go-live de 2026-09-06
@@ -43,6 +43,30 @@ arquivo, backup por cópia local), desmontada entre as Sprints 21 e 23.
    sistema aplica outra. Hoje está latente — a linha existe —, e `'saojose'` é o
    nome antigo do projeto, anterior ao próprio UniFafire.
 
+**E uma sétima, encontrada ao preparar a micro-spec da sprint — a de maior
+impacto das sete:**
+
+7. **A trilha de auditoria é inundada pelo próprio sistema.** Medido em produção
+   menos de duas horas depois do go-live:
+
+   ```
+   cron_desativado   52 linhas   ← 87% da trilha
+   route_timing       4 linhas
+   audit_action       4 linhas
+   ```
+
+   `src/instrumentation.ts` chama `startCronJobs()` a cada inicialização de
+   instância, e a função existe **apenas para gravar um log dizendo que não faz
+   nada** — resíduo da TASK-070, que neutralizou o `node-cron`. Em execução
+   serverless isso é um cold start atrás do outro.
+
+   O que torna isto grave, e não cosmético: a constitution §7.1 determina que
+   `app_logs` **nunca entra em rotina de limpeza**. O ruído é portanto
+   **permanente**, cresce indefinidamente num plano de 500 MB, e ocupa a tabela
+   que existe para responder "o que aconteceu?" num incidente. Uma trilha em que
+   87% das linhas anunciam a inexistência de um agendador ensina quem a lê a
+   ignorá-la — que é o oposto do que a §7 quer.
+
 ### Como os dados sintéticos chegaram à produção
 
 Na limpeza da base para o go-live, `settings` foi **deliberadamente preservada**,
@@ -78,6 +102,12 @@ sistema que existe, em vez de descrever o que foi desmontado.
    protege um valor herdado.
 4. **O padrão de `default_reset_password` passa a ser único**, definido num lugar
    só e consumido pelas três rotas.
+
+5. **`startCronJobs()` é removida**, junto com `src/instrumentation.ts` (cujo
+   único conteúdo é chamá-la) e a dependência `node-cron`, que não agenda nada
+   desde a TASK-070. Código que existe só para anunciar que não faz nada, e que
+   cobra esse anúncio numa tabela imutável, é pior que código morto: é código
+   morto com custo recorrente.
 
 **O que permanece:** o card de confiabilidade do backup e a lista de execuções
 (TASK-075). Eles leem `backup_runs` — fato, não promessa — e são o único lugar do
@@ -121,8 +151,17 @@ isso. Fora de escopo deste ADR.
 
 Pelo ciclo TDD normal, **nunca ad-hoc** (regra `40-change-request.md`):
 
+- **TASK-084** — a trilha de auditoria para de ser inundada pelo próprio sistema
+  *(primeira da sprint: é a única com efeito imediato em produção, e cada dia
+  acumula ruído que a §7 proíbe apagar)*
 - **TASK-082** — a tela de configurações deixa de prometer o que o sistema não faz
 - **TASK-083** — o logout automático volta a disparar, e a senha padrão tem uma
   fonte só
 
-Ambas no backlog do `plan.md`.
+As três no `plan.md`, Sprint 24.
+
+> **Sobre a emenda:** o achado 7 e a decisão 5 entraram DEPOIS da aprovação
+> original deste ADR, ao preparar a micro-spec. Foram emendados aqui, e aprovados
+> pelo usuário, antes de qualquer implementação — em vez de virarem uma task sem
+> rastreabilidade no ADR, que é exatamente o escopo fantasma que a regra
+> `40-change-request.md` proíbe.

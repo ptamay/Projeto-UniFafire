@@ -109,6 +109,4 @@ export const TransactionSchema = z.object({
 // Settings
 export const SettingsSchema = z.object({
     time: z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)$/, "Formato de hora inválido (HH:MM).").optional(),
-    backupTime: z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)$/, "Formato de hora inválido para backup (HH:MM).").optional(),
-    backupCount: z.number().int().min(1, "O número de backups deve ser pelo menos 1.").max(50, "Máximo de 50 backups.").optional()
 });
