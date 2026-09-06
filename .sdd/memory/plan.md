@@ -297,6 +297,30 @@
 >
 > Medido no fecho, no cenário degradado (sem Realtime configurado): 12 requisições de API
 > em 89 s, contra ~145 do polling de 3 s.
+>
+> **Mecanismo VALIDADO em produção em 2026-09-06**, sem escrever dado nenhum. O trigger é
+> `FOR EACH STATEMENT`, então dispara com zero linhas afetadas — o que permitiu emitir o
+> sinal com `UPDATE keys SET name = name WHERE false` e observá-lo chegar a um cliente real:
+>
+> ```
+> 17:39:28  canal: SUBSCRIBED     (chave publicável aceita pelo Realtime)
+> 17:39:53  UPDATE ... WHERE false (zero linhas)
+> 17:39:55  SINAL RECEBIDO
+> ```
+>
+> Provado: a chave publicável funciona, o canal público aceita assinatura sem JWT do
+> Supabase, o trigger dispara e o sinal chega. **Não provado: a defasagem.** Os dois
+> instantes vieram de relógios diferentes (servidor do Supabase e máquina local), com
+> desvio desconhecido, mais a ida e volta da chamada MCP — o intervalo observado não é
+> medida de nada.
+>
+> **A MEDIÇÃO DE ≤ 500 ms FOI ADIADA por decisão do usuário em 2026-09-06**, e a razão é
+> boa: medi-la exigiria criar usuário e chave de teste e operar em produção, gravando em
+> `key_transactions`, `history` e `action_logs` — trilha **imutável por trigger**, que a
+> §7.1 proíbe limpar. Os primeiros registros do histórico do sistema seriam sintéticos e
+> permanentes. A medição fica para a **primeira operação real do dia a dia**, com dados
+> verdadeiros. Até que haja um número aqui, **o REQ-032 está entregue em código e não em
+> fato**.
 
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)

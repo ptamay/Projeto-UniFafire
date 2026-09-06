@@ -68,13 +68,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Verificado: 427 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0,
   `next build` sem DATABASE_URL, e a tela exercitada no navegador COM o valor
   quebrado de produção semeado.
-- Próxima Ação: **FECHAR O REQ-032, e é do usuário + medição.**
-  (1) cadastrar `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` na
-  Vercel — nos três ambientes, como as outras;
-  (2) aplicar `db/migrations-pg/202609061800_sinal_realtime.up.sql` no Supabase
-  (runbook §4);
-  (3) medir a defasagem entre dois dispositivos e registrar o número no `plan.md`.
-  Até lá produção roda em polling de 30 s — comportamento desenhado, não falha.
+- ✅ REQ-032, passos 1 e 2 FEITOS em 2026-09-06: variáveis `NEXT_PUBLIC_SUPABASE_*`
+  cadastradas na Vercel (tipo **Config**, não Secret — o prefixo público é
+  intencional) e a migration do sinal aplicada no Supabase. **Mecanismo validado
+  em produção** sem escrever dado: canal SUBSCRIBED, trigger disparado com
+  `UPDATE ... WHERE false` (zero linhas) e sinal recebido por um cliente real.
+- Próxima Ação: **MEDIR a defasagem de ≤ 500 ms — ADIADA por decisão do usuário.**
+  Medi-la agora exigiria criar usuário e chave de teste e operar em produção,
+  gravando registros sintéticos e PERMANENTES na trilha imutável (§7.1). Fica para
+  a primeira operação real do dia a dia. **Até haver um número no `plan.md`, o
+  REQ-032 está entregue em código e não em fato.**
 - ⚠️ Também aberto, e independente de sprint: o ENSAIO DE RESTAURAÇÃO (runbook
   §6.6). O RTO de 4 h nunca foi cronometrado.
 - ✅ **TODAS as etapas do ADR-012 estão fechadas em código** (3, 4, 5, 7a, 7b; a 6
