@@ -341,6 +341,41 @@
 > preciso **enumerar a superfície inteira e comparar rotas irmãs**. O débito do
 > `api-contract.md` se pagou antes mesmo de o arquivo existir.
 
+### Sprint 27 — Autorização em Server Components (CR Tipo C · ADR-015)
+> Terceiro CR de autorização em duas horas, e o de maior exposição. As páginas consultam o
+> banco direto: quando verificam só a sessão, **não há 403 possível** — não existe rota no
+> caminho, e a camada de API onde as checagens vivem é contornada.
+- [x] **TASK-088 → `/keys` bloqueia; `/history` escopa ao próprio usuário.** ADR-015 decisão 1, **emendada em 2026-09-06**. Hoje um ALUNO que digitar o endereço vê o histórico completo de movimentação (quem retirou qual chave, quando, com nome) e o inventário com portador — o `Sidebar` esconde os links, mas isso é navegação e não autorização. `/keys` redireciona, como `/logs` e `/users` já fazem: não há leitura legítima do inventário alheio. **`/history` escopa**: "quando peguei a chave da sala 12" é dado do próprio usuário, e A/G/P continuam vendo tudo. ⚠️ **A restrição tem de ser TETO, não padrão:** `buildHistoryQuery` já aceita `userId` da query string, e aplicar a restrição como default desse campo deixaria um FUNCIONARIO passar `?userId=outro` e ler o histórico alheio — troca de uma exposição por outra, mais difícil de ver. Entra como parâmetro separado que **sobrescreve** o filtro da URL.
+- [x] **TASK-089 → o dashboard escopa a lista de usuários ao papel que a usa.** ADR-015 decisão 2. `/` é legitimamente para todos os papéis — FUNCIONARIO e ALUNO precisam ver as próprias chaves —, mas entrega a **lista de todos os funcionários e alunos ativos** (`id`, `username`, `full_name`, `role`) ao navegador de todo mundo. A consulta serve à Ação Rápida do balcão, que não existe nesses perfis. **Escopar o que se entrega**, e não bloquear a página: mesma escolha da TASK-087.
+- [x] **TASK-090 → guarda que varre as `page.tsx`.** ADR-015 decisão 3, e vale mais que as duas primeiras. Reprova página que consulta o banco sem verificar papel, com exceções em lista. É o análogo da guarda do ADR-014 para rotas, e existe pela mesma razão: sem ela, a próxima página nasce igual — foi assim que estas três nasceram.
+
+> **O padrão, e é o que a sprint registra:** três achados, todos com a mesma forma — a
+> sessão é verificada, o papel não, e a interface esconde o que o servidor não protege.
+> Nenhum tinha sintoma, porque a tela certa nunca pediu o que não devia. A defesa não é
+> lembrar melhor; é comparar irmãos lado a lado e transformar a comparação em teste.
+
+> **Fechada em 2026-09-06.** 471 testes / 49 arquivos, 6 gates, tsc 0, eslint 0,
+> `next build` verde sem `DATABASE_URL`.
+>
+> **A emenda do ADR foi sua, e mudou a task.** A decisão 1 dizia que `/history` bloqueava,
+> como `/keys`. Você observou que ver o próprio histórico é legítimo — bloquear seria
+> proteger a pessoa do dado dela mesma —, e a página passou a **escopar**. O que a emenda
+> trouxe junto foi a armadilha: a restrição precisou entrar como **teto**, num campo
+> separado que sobrescreve o `userId` da query string, e não como default dele. Aplicada
+> como default, um FUNCIONARIO passaria `?userId=outro` e leria o histórico alheio — a
+> mesma exposição, agora atrás de uma página que **parece** escopada. Há cenário para a
+> sobrescrita, para o filtro continuar valendo a quem pode usá-lo, e para a restrição valer
+> também na **contagem** (escopar só a listagem esconderia as linhas e revelaria quantas
+> existem).
+>
+> **A guarda da TASK-090 nasceu cega duas vezes, e essa é a quinta e a sexta desta série.**
+> `consultaBanco` usava `pgQuery\s*\(` e não casava com `pgQuery<HistoryItem>(` — a
+> varredura concluía que NENHUMA página consulta o banco, e passava com as três abertas.
+> `verificaPapel` usava `session.role`, que casa com `userRole={session.role}` — repassar o
+> papel ao componente de cliente, exatamente o que as páginas desprotegidas faziam. As duas
+> só apareceram porque rodei o vermelho e conferi **quais** cenários passavam, em vez de
+> contar quantos falhavam.
+
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
@@ -377,6 +412,8 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 - ~~**Origem dos dados reais (Etapa 7)**~~ — **não é bloqueio (esclarecido em 2026-09-04):** o conteúdo do `keys.db` anterior era **fictício**. Não há dado a preservar nem migração a fazer, e o objetivo declarado é fazer o sistema funcionar no Supabase + Vercel. O cadastro dos dados reais é operação posterior, pela própria UI, depois da TASK-080. **Consequência:** o `db/load-pg.mjs` da TASK-067 fica sem uso no caminho de produção — segue correto e testado, e é a ferramenta pronta caso um dia exista um SQLite de origem, mas não faz parte do go-live.
 - **Dados sintéticos no Supabase — limpeza operacional, não risco de PII.** As 20 users / 5 keys / 92 tx / 30 history / 99 logs / 4 settings da TASK-067 são fictícios, como o `keys.db` que os originou; não há urgência de expurgo. Ao limpar, lembrar que `history` é imutável (TASK-065): exige o bypass autorizado do REQ-014, não um `DELETE` solto. A TASK-080 recusa base com usuário, então a limpeza de `users` é pré-requisito de rodá-la contra o Supabase atual.
 
+- **A §3.2 fala em "rota de API", e a fronteira real é maior (achado do ADR-015, 2026-09-06).** A cláusula diz "Toda **rota de API** valida a sessão E a permissão no servidor", e é razoável lê-la como dirigida a handlers. As três falhas desta sprint estavam em **Server Components**, que consultam o banco direto e nas quais não há 403 possível — a letra não as alcança, a intenção sim. A Sprint 27 corrigiu o código e pôs a guarda; **a cláusula continua com o texto antigo**. Emendá-la é Change Request **Tipo D** (constitution), e a decisão é sua. Enquanto não for, quem ler a §3.2 e escrever uma página nova vai concluir que ela não se aplica — o teste reprova, mas o documento discorda dele.
+
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
 
@@ -408,7 +445,12 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 - **Os scripts legados de `scripts/` ainda falam SQLite (achado da TASK-079).** `add_active_column_to_users.js`, `add_ip_to_logs.js`, `add_settings_table.js`, `migrate_keys.js`, `migrate_keys_soft_delete.js`, `migrate-employees-soft-delete.js`, `migrate-to-user-system.js` e `reset-db.js` são de antes das migrations pareadas e operam sobre `keys.db`, que não existe. Não foram removidos nesta task porque nenhum critério os alcança e `.bat`/`ecosystem`/`show-ip` estavam nomeados na micro-spec — mas são a mesma classe: instrução que não funciona esperando alguém tentar. CR de limpeza.
 - **`/api/backups/restore`, `/api/backups/import` e o card "Importar Banco (.db)" continuam na tela (achado da TASK-079).** As rotas respondem 503 desde a TASK-068 e a tela ainda oferece "Substitua o banco de dados atual por um arquivo externo (.db)" — arquivo `.db` é SQLite, que saiu da stack na Sprint 21. Mesma família dos débitos da TASK-075 (campos de agendamento e retenção inertes, botão "Gerar Backup Agora"): **tela prometendo o que o sistema não faz**. Já são quatro itens do mesmo tipo na mesma tela — vale um CR único de faxina da tela de configurações, em vez de quatro correções soltas.
 
-- **`docs/api-contract.md` está no mapa do projeto e não existe (achado da TASK-082, Sprint 24).** O `CLAUDE.md` o lista em "Localização dos artefatos principais" e o `.sdd/memory/` o menciona, mas o arquivo nunca foi criado. Um critério BDD da TASK-082 — "as rotas removidas não aparecem mais como disponíveis no contrato" — ficou **sem alvo**, e foi marcado como não cumprido em vez de riscado. Duas saídas: criar o contrato de verdade (as rotas públicas já estão descritas de forma dispersa entre `proxy.ts`, os handlers e o runbook), ou tirá-lo do mapa. Deixar como está é a coisa que esta própria sprint existe para combater: documento afirmando o que não está lá.
+- ~~**`docs/api-contract.md` está no mapa do projeto e não existe (achado da TASK-082, Sprint 24).**~~ — **quitado (TASK-086, Sprint 26):** o arquivo existe, descreve as 24 rotas com papéis exigidos, tem seção "O que NÃO existe" para as removidas, e é guardado por teste (rota nova sem entrada reprova). Registro original abaixo, porque o débito se pagou antes de ser quitado — foi ao enumerar a superfície para escrevê-lo que as falhas do ADR-014 apareceram.
+
+  > **`docs/api-contract.md` está no mapa do projeto e não existe (achado da TASK-082, Sprint 24).** O `CLAUDE.md` o lista em "Localização dos artefatos principais" e o `.sdd/memory/` o menciona, mas o arquivo nunca foi criado. Um critério BDD da TASK-082 — "as rotas removidas não aparecem mais como disponíveis no contrato" — ficou **sem alvo**, e foi marcado como não cumprido em vez de riscado. Duas saídas: criar o contrato de verdade (as rotas públicas já estão descritas de forma dispersa entre `proxy.ts`, os handlers e o runbook), ou tirá-lo do mapa. Deixar como está é a coisa que esta própria sprint existe para combater: documento afirmando o que não está lá.
+
+- **Nenhuma garantia de que toda tabela nasça com RLS e sem grant (achado da varredura de 2026-09-06, ADR-015).** As 11 tabelas de produção estão certas hoje — RLS ligado, zero políticas, nenhum grant a `anon`/`authenticated` —, mas isso depende de **cada migration lembrar**. Não há `ALTER DEFAULT PRIVILEGES` no schema `public`, nem teste que reprove uma tabela nova sem RLS. É a mesma forma dos três achados de autorização deste dia: o estado está correto e nada o defende. Endurecimento, não defeito ativo — cabe numa sprint própria, junto com o item abaixo.
+- **Os workflows não declaram `permissions:` (achado da mesma varredura).** `backup.yml` e `keepalive.yml` rodam com o `GITHUB_TOKEN` no padrão do repositório em vez do mínimo que cada um precisa. O backup já usa um PAT próprio para o repositório privado, então o `GITHUB_TOKEN` amplo não está sendo usado para nada — é superfície ociosa. Correção de uma linha por workflow, mas mexe em arquivo que o Gate 2 observa: CR pequeno.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
@@ -458,3 +500,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 24 (faxina da tela · CR Tipo C ADR-013) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 3 (a TASK-084 nasceu ao preparar a micro-spec, e virou a primeira da fila) | 3 (TASK-082: duas regex minhas — uma proibia a palavra "Retencao" e reprovava a propria correcao, outra exigia uma unica forma de escrever o cleanup; TASK-083: o cenario de literal espalhado achou um QUINTO ponto com a senha padrao, nao previsto no ADR) | 0 (todos os gates verdes em cada task) | — | — |
 | 25 (Realtime · Etapa 5 ADR-012) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 2 | 2 (TASK-072: a tabela do stub de `realtime.send` foi parar em `public` e quebrou a verificacao de esquema do backup — pega por um teste EXISTENTE, escrito na Sprint 23 para outra coisa; e o `globalSetup` nao derrubava o schema `realtime`, colidindo em 42P07 na segunda execucao) | 0 (todos os gates verdes em cada task) | — | — |
 | 26 (autorizacao e contrato de API · CR Tipo C ADR-014) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 3 (a TASK-087 nasceu de um SEGUNDO achado, minutos depois do primeiro e pelo mesmo metodo) | 2 (minha guarda anti-reincidencia nasceu CEGA — usava `role`, que casa com `u.role` do SQL, e passava COM O DEFEITO PRESENTE; e escrevi o contrato ANTES dos cenarios, invertendo a ordem TDD, corrigido tirando o arquivo do lugar para obter o vermelho de verdade) | 0 (todos os gates verdes) | — | — |
+| 27 (autorizacao em Server Components · CR Tipo C ADR-015) | 2026-09-06 | 2026-09-06 | 1 | 3 tasks | 3 | 1 (a guarda da TASK-090 nasceu cega DUAS vezes no mesmo teste: `pgQuery\s*\(` nao casava com `pgQuery<HistoryItem>(`, entao a varredura concluia que NENHUMA pagina consulta o banco; e `session.role` casava com `userRole={session.role}`, que e repassar o papel ao cliente — exatamente o que as paginas desprotegidas faziam. Quinta e sexta varredura de texto larga ou estreita demais nesta serie) | 0 (todos os gates verdes) | — | — |

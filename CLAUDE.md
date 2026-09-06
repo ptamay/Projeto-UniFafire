@@ -40,7 +40,37 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: **Sprint 26 — DUAS falhas de autorização corrigidas, e o contrato de
+- Última Ação: **Sprint 27 — TRÊS páginas entregavam dados de terceiros a qualquer
+  sessão, e a correção fechou a fronteira que a camada de API não alcança.** Terceiro
+  CR de autorização do dia, achado pela varredura lateral aplicada às TELAS.
+  As páginas são Server Components: consultam o banco direto, e quando verificam só
+  a sessão **não há 403 possível** — não existe rota no caminho.
+  TASK-088 — `/keys` BLOQUEIA (não há leitura legítima do inventário alheio) e
+  `/history` ESCOPA, por decisão sua: ver o próprio histórico é legítimo, bloquear
+  seria proteger a pessoa do dado dela mesma. A/G/P veem tudo; os demais, só as
+  próprias movimentações. ⚠️ **A restrição é TETO, não padrão** — campo separado que
+  SOBRESCREVE o `userId` da query string, senão um FUNCIONARIO passaria
+  `?userId=outro` e teríamos a mesma exposição atrás de uma página que PARECE
+  escopada. Vale também na CONTAGEM;
+  TASK-089 — o dashboard ESCOPA o que entrega em vez de bloquear (é legitimamente de
+  todos os papéis): a lista de TODOS os funcionários e alunos ativos nem é
+  consultada para quem não opera o balcão;
+  TASK-090 — guarda que varre as `page.tsx` e reprova página que consulta o banco
+  sem verificar papel, com exceções em lista. Vale mais que as duas primeiras.
+  Verificado: 471 testes / 49 arquivos, 6 gates, tsc 0, eslint 0, `next build` verde
+  sem DATABASE_URL.
+- ⚠️ A guarda da TASK-090 nasceu CEGA duas vezes, e são a quinta e a sexta desta
+  série: `pgQuery\s*\(` não casava com `pgQuery<HistoryItem>(` — a varredura
+  concluía que NENHUMA página consulta o banco — e `session.role` casava com
+  `userRole={session.role}`, que é repassar o papel ao cliente, exatamente o que as
+  páginas desprotegidas faziam. **Só apareceram porque rodei o vermelho e conferi
+  QUAIS cenários passavam, em vez de contar quantos falhavam.**
+- ⚠️ DECISÃO SUA, e ainda em aberto: a §3.2 diz "toda **rota de API** valida a sessão
+  E a permissão". As três falhas desta sprint estavam em Server Components, que a
+  letra não alcança e a intenção sim. O código foi corrigido e a guarda existe, mas
+  **a cláusula continua com o texto antigo** — quem a ler e escrever uma página nova
+  vai concluir que ela não se aplica. Emendar é CR **Tipo D** (constitution).
+- Ação anterior: **Sprint 26 — DUAS falhas de autorização corrigidas, e o contrato de
   API criado.** Ambas encontradas pelo mesmo método (enumerar a superfície e comparar
   rotas irmãs) e **nenhuma tinha sintoma**:
   TASK-085 — `/api/metrics/frequent-users` validava sessão e não papel: qualquer
@@ -109,9 +139,6 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   concluiu 16:14:46 UTC e, com 36 requisições em instâncias novas depois disso,
   `app_logs` NÃO recebeu nenhuma linha `cron_desativado` (parou em 61, a última
   às 15:53:02). O logout automático e a faxina da tela também estão no ar.
-- ⚠️ Fora das sprints e ainda pendente: o ENSAIO DE RESTAURAÇÃO (runbook §6.6). O
-  job prova que o dump volta numa base descartável, mas o RTO de 4 h NUNCA foi
-  cronometrado — é o único item da §4.3 ainda não demonstrado.
 - ⚠️ LIÇÃO DO GO-LIVE, e é a mais cara desta rodada: o job de backup passou em 25
   testes e falhou nas TRÊS primeiras execuções reais — extensões da plataforma no
   dump, schema `public` já existente, e token sem `Contents`. A suíte cobria a
@@ -135,7 +162,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `search_path_history_imutavel_task_065` no banco SEM arquivo no repositório.
   Runbook §4.1. Migration que falta CALA em vez de gritar: conferir o schema.
 - Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco
-  baixíssimo); (b) o CR de faxina da tela; (c) CR para runner de migrations.
+  baixíssimo); (b) CR para runner de migrations do Postgres; (c) emendar a §3.2
+  (Tipo D — ver acima); (d) senha aleatória por reset no lugar da padrão
+  compartilhada (Tipo A); (e) `ALTER DEFAULT PRIVILEGES` + teste de RLS por tabela
+  e `permissions:` nos workflows — endurecimento, cabe numa sprint só.
 - Arquivos não commitados: nenhum
 - ⚠️ CORREÇÃO OPERACIONAL PENDENTE, independente de sprint: as 4 linhas de
   `settings` em produção são da carga SINTÉTICA da TASK-067 — eu as preservei na
@@ -145,15 +175,19 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ✅ DÉBITO QUITADO: `docs/api-contract.md` existe desde 2026-09-06 (TASK-086), e
   escrevê-lo é o que revelou as duas falhas de autorização acima. **O débito se
   pagou antes de o arquivo existir.**
-- ⚠️ MÉTODO QUE VALE REPETIR: enumerar a superfície inteira e **comparar irmãos
-  lado a lado** achou dois defeitos que nenhum teste, nenhum gate e nenhuma tela
-  tinham acusado em meses. Serve para rotas, e provavelmente para migrations,
-  workflows e telas.
+- ⚠️ MÉTODO QUE VALE REPETIR, e já não é "provavelmente": enumerar a superfície
+  inteira e **comparar irmãos lado a lado** achou CINCO falhas de autorização em
+  duas horas — duas em rotas (ADR-014) e três em páginas (ADR-015) —, nenhuma com
+  sintoma, nenhuma acusada por teste, gate ou tela em meses. Todas com a mesma
+  forma: **a sessão é verificada, o papel não, e a interface esconde o que o
+  servidor não protege.** Aplicado depois a migrations e workflows, achou só
+  endurecimento (RLS por convenção, `permissions:` ausente) — registrado no
+  `plan.md`, não é defeito ativo.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feature/sprint-24-faxina-configuracoes (PR #21 aberto).
-  PRs #15–#20 merged na main.
+- Branch atual: feature/sprint-27-autorizacao-paginas (PR a abrir).
+  PRs #15–#26 merged na main.
 - Atualizado em: 2026-09-06
 ```
 
@@ -204,17 +238,19 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 ```
 Modo do projeto   : EXPRESSO
 Sprint atual      : — (nenhuma ativa, e nenhuma planejada)
-Última sprint     : 26 ✅ (CR Tipo C, ADR-014 — autorização e contrato de API ·
-                    TASK-085, 087, 086). Duas falhas de autorização corrigidas
-Sprint anterior   : 25 ✅ código (Etapa 5 — Realtime). REQ-032 pendente de MEDIÇÃO
+Última sprint     : 27 ✅ (CR Tipo C, ADR-015 — autorização em Server Components ·
+                    TASK-088, 089, 090). Três páginas entregavam dados de terceiros
+Sprint anterior   : 26 ✅ (CR Tipo C, ADR-014 · TASK-085, 087, 086). Duas rotas —
+                    uma delas permitia escalada de privilégio
 Produção          : NO AR desde 2026-09-06 — https://projeto-uni-fafire.vercel.app
 Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em código:
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : Fechar o REQ-032 (variáveis NEXT_PUBLIC_SUPABASE_* + migration
-                    do sinal + MEDIR a defasagem) · Ensaio de restauração
-                    (runbook §6.6, RTO não medido)
+Próxima ação      : MEDIR a defasagem do REQ-032 (≤ 500 ms) na primeira operação
+                    real — adiada por decisão do usuário para não gravar registro
+                    sintético na trilha imutável. Fora isso, nada planejado: o que
+                    vier entra por Change Request (cinco em aberto no checkpoint)
 ```
 
 ---

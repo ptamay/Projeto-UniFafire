@@ -19,7 +19,16 @@ interface RawKeyRow {
     withdraw_justification: string | null;
 }
 
-async function getData() {
+// TASK-089 (ADR-015) — `operaBalcao` decide o que a pagina ENTREGA, e nao se ela
+// abre. O dashboard e legitimamente de todos os papeis: FUNCIONARIO e ALUNO
+// precisam ver as proprias chaves, e bloquear a pagina quebraria o uso principal
+// deles para proteger um pedaco da carga.
+//
+// O que nao podem receber e a lista de todos os funcionarios e alunos ativos —
+// `id`, `username`, `full_name`, `role` —, que existe para a Acao Rapida do
+// balcao ("para quem?") e ia para o navegador de todo mundo. Escopar o que se
+// entrega, como na TASK-087 com a senha padrao.
+async function getData(operaBalcao: boolean) {
     const rawKeys = await pgQuery<RawKeyRow>(`
         SELECT k.*, u.full_name as employee_name, u.username as employee_username, u.role as employee_role,
                (SELECT json_build_object(
@@ -59,13 +68,17 @@ async function getData() {
         withdraw_justification: k.withdraw_justification ?? undefined,
     }));
     
-    // Pegar apenas usuários que podem receber chaves (FUNCIONARIO e ALUNO)
-    const users = await pgQuery<{ id: number; username: string; full_name: string | null; role: string }>(`
-        SELECT id, username, full_name, role
-        FROM users
-        WHERE active AND role IN ('FUNCIONARIO', 'ALUNO')
-        ORDER BY lower(COALESCE(full_name, username)) ASC
-    `);
+    // Nem consultada para quem nao opera o balcao: a lista nao chega ao navegador
+    // e nao sai do banco. Uma consulta que ninguem vai usar tambem e uma consulta
+    // que alguem pode interceptar.
+    const users = operaBalcao
+        ? await pgQuery<{ id: number; username: string; full_name: string | null; role: string }>(`
+            SELECT id, username, full_name, role
+            FROM users
+            WHERE active AND role IN ('FUNCIONARIO', 'ALUNO')
+            ORDER BY lower(COALESCE(full_name, username)) ASC
+        `)
+        : [];
 
     const mappedUsers: User[] = users.map((u) => ({
         id: u.id,
@@ -92,7 +105,8 @@ export default async function Home() {
         redirect('/login');
     }
 
-    const { keys, users } = await getData();
+    const operaBalcao = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(sessionData.role);
+    const { keys, users } = await getData(operaBalcao);
 
     return (
         <main>
