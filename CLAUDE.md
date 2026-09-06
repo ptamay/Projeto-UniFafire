@@ -40,7 +40,23 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: **Sprint 25 EXECUTADA e FECHADA — Etapa 5 do ADR-012 (Realtime).**
+- Última Ação: **Sprint 26 — DUAS falhas de autorização corrigidas, e o contrato de
+  API criado.** Ambas encontradas pelo mesmo método (enumerar a superfície e comparar
+  rotas irmãs) e **nenhuma tinha sintoma**:
+  TASK-085 — `/api/metrics/frequent-users` validava sessão e não papel: qualquer
+  autenticado, inclusive ALUNO, obtinha nome, username, papel e frequência de
+  retirada dos maiores usuários de qualquer chave (`keyId` sequencial);
+  TASK-087 — `GET /api/settings` não validava NADA e devolvia `defaultResetPassword`
+  a todos. Combinado com o fluxo de troca obrigatória do login, permitia **tomar a
+  conta de alguém** na janela entre um reset e o primeiro acesso da vítima,
+  herdando o papel — **escalada de privilégio**;
+  TASK-086 — `docs/api-contract.md`, débito da Sprint 24, agora existe e descreve a
+  superfície corrigida.
+- ⚠️ FICA REGISTRADO, e é decisão sua: a TASK-087 fechou o ACESSO, não a
+  fragilidade. Senha padrão compartilhada mantém a janela para quem a conhece
+  legitimamente. A alternativa (senha aleatória por reset, exibida uma vez) é
+  feature nova, Tipo A, sprint própria.
+- Ação anterior: **Sprint 25 — Etapa 5 do ADR-012 (Realtime).**
   O caminho literal do ADR (`postgres_changes`) foi REJEITADO com base em
   verificação: ele autoriza por RLS, e este sistema tem RLS negando tudo a `anon`
   e não usa Supabase Auth — usá-lo exigiria abrir as tabelas de chaves à chave
@@ -126,9 +142,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   limpeza do go-live achando que eram configuração legítima, e errei.
   `auto_logout_time` = "30" é a causa do logout quebrado. Corrigir pela tela ou
   por SQL, e revisar `default_reset_password` (hoje "trocar123").
-- ⚠️ DÉBITO NOVO: `docs/api-contract.md` está no mapa do projeto (logo abaixo, em
-  "Localização dos artefatos principais") e NÃO EXISTE. Um critério da TASK-082
-  ficou sem alvo por isso. Ou o contrato é criado, ou sai do mapa.
+- ✅ DÉBITO QUITADO: `docs/api-contract.md` existe desde 2026-09-06 (TASK-086), e
+  escrevê-lo é o que revelou as duas falhas de autorização acima. **O débito se
+  pagou antes de o arquivo existir.**
+- ⚠️ MÉTODO QUE VALE REPETIR: enumerar a superfície inteira e **comparar irmãos
+  lado a lado** achou dois defeitos que nenhum teste, nenhum gate e nenhuma tela
+  tinham acusado em meses. Serve para rotas, e provavelmente para migrations,
+  workflows e telas.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
@@ -184,8 +204,9 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 ```
 Modo do projeto   : EXPRESSO
 Sprint atual      : — (nenhuma ativa, e nenhuma planejada)
-Última sprint     : 25 ✅ código (Etapa 5 do ADR-012 — Realtime · TASK-072, 073).
-                    REQ-032 pendente de MEDIÇÃO em produção
+Última sprint     : 26 ✅ (CR Tipo C, ADR-014 — autorização e contrato de API ·
+                    TASK-085, 087, 086). Duas falhas de autorização corrigidas
+Sprint anterior   : 25 ✅ código (Etapa 5 — Realtime). REQ-032 pendente de MEDIÇÃO
 Produção          : NO AR desde 2026-09-06 — https://projeto-uni-fafire.vercel.app
 Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em código:
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
