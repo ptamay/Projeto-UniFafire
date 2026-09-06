@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
-import { useSinalDeMudanca } from '@/lib/realtime-sinal';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import PendingInline from './PendingInline';
@@ -320,7 +320,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     // meio de uma acao (dropdown/modal aberto ou campo preenchido) — evita que a
     // linha "pule" sob o cursor. O que mudou foi a origem do gatilho, de relogio
     // para sinal.
-    useSinalDeMudanca(() => { if (!interactingRef.current) refreshData(); });
+    useAtualizacaoDeChaves(() => { if (!interactingRef.current) refreshData(); });
 
     // Normalização para busca ignorando acentos
     // const normalize = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 
 // TASK-072 (Sprint 25 · Etapa 5 do ADR-012) — a assinatura do sinal de mudança.
@@ -106,4 +106,66 @@ export function useSinalDeMudanca(
             if (canal) void supabase.removeChannel(canal);
         };
     }, []);
+}
+
+// --- TASK-073: a rede de segurança ------------------------------------------
+//
+// ## Por que ela existe
+//
+// Antes da TASK-072, o pior caso era 3 s de defasagem. Com a assinatura no lugar
+// e sem esta rede, o pior caso vira **defasagem infinita**: o canal falha,
+// ninguém é avisado, e a tela mostra para sempre o estado de quando carregou. O
+// porteiro entrega uma chave que a tela diz disponível e que outro já levou.
+//
+// Trocar 3 s por infinito seria piorar o sistema com a desculpa de melhorá-lo.
+
+/** Intervalo do polling de emergência. Trinta segundos, e não três: o REQ-032 tem
+ *  duas metades, e a segunda é a cota — o polling de 3 s projetava ~10,5 milhões
+ *  de requisições/mês para 10 usuários. Degradar para outro polling de 3 s
+ *  devolveria o sincronismo e manteria o problema que motivou a migração. */
+export const INTERVALO_POLLING_LARGO = 30_000;
+
+/**
+ * Precisa do polling de emergência?
+ *
+ * A regra é "qualquer coisa que não seja `assinado`". `CHANNEL_ERROR`,
+ * `TIMED_OUT`, `CLOSED`, ausência de configuração e "ainda conectando" são
+ * estados diferentes com a MESMA consequência — não estou recebendo sinal.
+ * Distingui-los aqui só criaria caminhos para esquecer um.
+ *
+ * Incluir `conectando` sai de graça e dispensa um timeout de conexão separado: o
+ * primeiro disparo do intervalo está a 30 s, então uma conexão normal o cancela
+ * antes de custar uma requisição sequer, e uma conexão que nunca vem deixa o
+ * polling simplesmente acontecer. Um número mágico a menos para acertar.
+ */
+export function deveFazerPollingLargo(estado: EstadoSinal): boolean {
+    return estado !== 'assinado';
+}
+
+/**
+ * O hook que as telas devem usar: sinal quando há, polling largo quando não há.
+ *
+ * `useSinalDeMudanca` sozinho não tem rede de segurança. Uma tela que o assinasse
+ * cru ficaria congelada no dia em que o Realtime caísse, e o defeito só apareceria
+ * naquele dia. Há teste reprovando quem faça isso.
+ */
+export function useAtualizacaoDeChaves(aoAtualizar: () => void) {
+    const [estado, setEstado] = useState<EstadoSinal>('conectando');
+
+    useSinalDeMudanca(aoAtualizar, setEstado);
+
+    const aoAtualizarRef = useRef(aoAtualizar);
+    useEffect(() => {
+        aoAtualizarRef.current = aoAtualizar;
+    }, [aoAtualizar]);
+
+    useEffect(() => {
+        if (!deveFazerPollingLargo(estado)) return;
+
+        const intervalo = setInterval(() => aoAtualizarRef.current(), INTERVALO_POLLING_LARGO);
+        // O cleanup roda a cada transição de estado — é ele que garante que
+        // assinatura e polling nunca corram juntos: no instante em que o estado
+        // vira `assinado`, o efeito é desmontado e o intervalo, limpo.
+        return () => clearInterval(intervalo);
+    }, [estado]);
 }

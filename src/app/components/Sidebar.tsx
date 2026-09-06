@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useSinalDeMudanca } from '@/lib/realtime-sinal';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { cruzouOHorario } from '@/lib/settings-policy';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -224,7 +224,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         };
     }, [fetchPendingCount]);
 
-    useSinalDeMudanca(fetchPendingCount);
+    useAtualizacaoDeChaves(fetchPendingCount);
 
     // Itens visíveis por papel
     const allVisibleItems = navItems.flatMap(s => s.items).filter(i => i.roles.includes(userRole));

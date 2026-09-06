@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useSinalDeMudanca } from '@/lib/realtime-sinal';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import toast from 'react-hot-toast';
 
 // TASK-049 (REQ-029b, ADR-010) — painel compacto de pendências no Dashboard:
@@ -57,7 +57,7 @@ export default function PendingInline({ userRole, userId }: Props) {
         };
     }, [fetchPending]);
 
-    useSinalDeMudanca(fetchPending);
+    useAtualizacaoDeChaves(fetchPending);
 
     const act = async (txId: number, endpoint: 'user-confirm' | 'cancel', successMsg: string) => {
         setActionLoading(txId);

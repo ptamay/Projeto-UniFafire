@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useSinalDeMudanca } from '@/lib/realtime-sinal';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
@@ -74,7 +74,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
         };
     }, []);
 
-    useSinalDeMudanca(fetchPending);
+    useAtualizacaoDeChaves(fetchPending);
 
     const confirmTransaction = async (txId: number) => {
         setActionLoading(txId);
