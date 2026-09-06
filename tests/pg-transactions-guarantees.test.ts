@@ -243,14 +243,9 @@ describe('TASK-070 — o backup por cópia de arquivo não finge funcionar', () 
         expect(r.error).toMatch(/TASK-078/);
     });
 
-    it('startCronJobs não agenda nada', async () => {
-        // node-cron precisa de processo de longa duracao, que nao existe em
-        // execucao serverless. Agendar e nunca rodar seria pior do que nao
-        // agendar: daria a impressao de que ha backup.
-        const { startCronJobs } = await import('@/lib/backup');
-        await expect(startCronJobs()).resolves.toBeUndefined();
-        const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/lib/backup.ts'), 'utf-8')
-            .replace(/\/\/.*$/gm, '');
-        expect(fonte, 'ainda agenda cron').not.toMatch(/cron\.schedule/);
-    });
+    // O cenario `startCronJobs nao agenda nada` saiu na TASK-084 (Sprint 24): a
+    // funcao foi REMOVIDA, junto com `src/instrumentation.ts` e a dependencia
+    // `node-cron`. Ela existia para gravar um log dizendo que nao fazia nada, e
+    // isso custava 87% das linhas de `app_logs` em producao. As guardas de que
+    // nada disso voltou estao em `tests/backup.test.ts`.
 });
