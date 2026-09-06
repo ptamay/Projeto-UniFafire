@@ -10,6 +10,20 @@ export async function GET(request: Request) {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        // TASK-085 (ADR-014) — esta checagem não existia, e a rota devolvia a
+        // qualquer usuário autenticado (inclusive ALUNO) o nome, o username, o
+        // papel e a frequência de retirada dos cinco maiores usuários de uma
+        // chave. `keyId` é sequencial: enumerar dava o mapa de quem frequenta
+        // qual sala.
+        //
+        // O consumidor único já chamava a rota dentro de `if (isPorteiroOrAdmin)`
+        // — mas isso é gating de interface, e a §3.2 é literal: "checagem só no
+        // client = vulnerabilidade, não feature". O mesmo conjunto de papéis das
+        // rotas irmãs `business` e `frequent-keys`.
+        if (!['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const url = new URL(request.url);
         const keyIdStr = url.searchParams.get('keyId');
         
