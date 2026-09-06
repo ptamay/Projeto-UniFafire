@@ -97,6 +97,16 @@ jobs:
 
       - run: npm ci
 
+      # `--schema=public` NAO e detalhe de otimizacao. Sem ele o dump emite
+      # `CREATE EXTENSION supabase_vault` e outras extensoes da PLATAFORMA
+      # Supabase; a base de verificacao e um postgres puro, que nao as tem, e a
+      # restauracao aborta antes da primeira linha de dado. Foi assim que a
+      # primeira execucao real falhou (run 34037968370, 2026-09-06).
+      #
+      # As 11 tabelas da aplicacao vivem todas em `public`. As extensoes da
+      # plataforma sao recriadas por qualquer projeto Supabase novo. Escopar
+      # torna o dump portatil nos dois destinos de uma recuperacao: Postgres
+      # puro e projeto Supabase novo.
       - name: Gerar o dump
         id: dump
         env:
@@ -105,6 +115,7 @@ jobs:
           set -euo pipefail
           docker run --rm --network host \
             "$PGDUMP_IMAGE" pg_dump "$DATABASE_URL" \
+            --schema=public \
             --no-owner --no-privileges --format=plain \
             | gzip -9 > "$ARQUIVO"
           echo "size=$(stat -c%s "$ARQUIVO")" >> "$GITHUB_OUTPUT"
