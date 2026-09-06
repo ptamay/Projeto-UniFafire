@@ -169,35 +169,56 @@ que a §7 proíbe limpar.
 padrão (constitution §2).
 
 **Critérios BDD**:
-- [ ] **Cenário**: Valor inválido herdado não quebra mais o logout
+- [x] **Cenário**: Valor inválido herdado não quebra mais o logout
       Dado `settings.auto_logout_time` com um valor fora de `HH:MM` (hoje, em produção: `"30"`)
       Quando a configuração é lida
       Então a leitura recusa o valor inválido e usa o padrão explícito
       E o logout automático dispara no horário padrão em vez de nunca disparar.
-- [ ] **Cenário**: A tela nunca exibe um campo de hora vazio por dado inválido
+- [x] **Cenário**: A tela nunca exibe um campo de hora vazio por dado inválido
       Dado o mesmo valor inválido
       Quando a tela carrega
       Então o campo mostra o padrão em uso, não vazio.
-- [ ] **Cenário**: A senha padrão de reset tem UMA fonte
+- [x] **Cenário**: A senha padrão de reset tem UMA fonte
       Dado que hoje `GET /api/settings` devolve `'saojose123'` e as rotas que aplicam a senha
       usam `'unifafire123'`
       Então passa a existir uma constante única
       E as três rotas a consomem
       E não há literal de senha padrão espalhado.
-- [ ] **Cenário**: O ADMIN lê na tela a senha que o sistema realmente aplica
+- [x] **Cenário**: O ADMIN lê na tela a senha que o sistema realmente aplica
       Dada a ausência do registro em `settings`
       Quando o ADMIN reseta a senha de um usuário
       Então a senha aplicada é a mesma exibida na tela.
+
+**O que a execução ensinou:**
+
+- **Eram CINCO lugares com a senha padrão, não dois.** O ADR registrou a divergência entre
+  `GET /api/settings` (`saojose123`) e as duas rotas que aplicam (`unifafire123`). Escrever
+  o cenário "nenhum literal espalhado" achou um quinto: `UsersClient.tsx` inicializava o
+  estado com o literal. Cinco pontos que precisavam concordar, e dois já discordavam — a
+  pergunta certa não era "quais dois divergem?", e sim "quantos existem?".
+- **Dois defeitos do mesmo recurso não estavam no ADR**, e apareceram ao escrever os
+  cenários: (a) o `return () => clearInterval(...)` vivia dentro da função `async`, nunca
+  virou cleanup do efeito, e cada montagem do `Sidebar` deixava um intervalo vivo; (b) a
+  condição `agora === alvo` verificada a cada 60 s falha por construção — tick atrasado
+  pula o minuto, e navegador estrangula timer em aba de fundo, então o atraso é o caso
+  comum. Os dois estão consertados; nenhum tinha sintoma visível.
+- **A correção óbvia do (b) quebraria outra coisa.** Trocar por `agora >= alvo` faria o
+  logout disparar — e tornaria o sistema inutilizável à noite, porque qualquer login
+  depois do horário cairia fora na hora. A borda certa é o CRUZAMENTO. Há cenário fixando
+  isso, porque é o tipo de "simplificação" que alguém faria depois.
+- **Verificado contra o valor real quebrado.** Semeei `auto_logout_time = '30'` — o valor
+  exato de produção — e conferi no navegador: a rota devolve `18:30`, o campo de horário
+  mostra `18:30` em vez de vazio, e a senha na tela é a mesma que o sistema aplica.
 
 ---
 
 ## Definition of Done da sprint
 
-- [ ] Os 3 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
-- [ ] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
-- [ ] `npm audit` sem HIGH/CRITICAL — lido inteiro
-- [ ] `npm run build` verde **sem `DATABASE_URL` definida**
-- [ ] App exercitado no navegador — **último passo, depois da suíte**
+- [x] Os 3 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
+- [x] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
+- [x] `npm audit` sem HIGH/CRITICAL — lido inteiro
+- [x] `npm run build` verde **sem `DATABASE_URL` definida**
+- [x] App exercitado no navegador — **último passo, depois da suíte**
 - [ ] **Verificação em PRODUÇÃO após o deploy:** `app_logs` para de receber
       `cron_desativado`. É a única prova de que a TASK-084 funcionou, e ela só existe
       depois do merge.
