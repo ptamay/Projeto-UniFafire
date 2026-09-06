@@ -123,7 +123,7 @@ export default function SettingsClient({ userRole, username }: Props) {
                 <div className="page-header">
                     <div>
                         <h1 className="page-title">Configurações</h1>
-                        <p className="page-subtitle">Parmetros de backup e sistema</p>
+                        <p className="page-subtitle">Parâmetros do sistema e estado do backup</p>
                     </div>
                 </div>
 

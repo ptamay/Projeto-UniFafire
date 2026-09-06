@@ -107,33 +107,59 @@ que a §7 proíbe limpar.
 **Contexto**: ADR-013, decisões 1 e 2.
 
 **Critérios BDD**:
-- [ ] **Cenário**: Os controles inertes saem da tela
+- [x] **Cenário**: Os controles inertes saem da tela
       Dada a tela `/settings`
       Então não há campo "Horário do Backup" nem "Retenção (quantidade de backups)"
       E não há botão "Gerar Backup Agora"
       E não sobra estado nem handler órfão no componente.
-- [ ] **Cenário**: No lugar deles, o estado real
+- [x] **Cenário**: No lugar deles, o estado real
       Dado o card de Backup
       Então ele informa que o backup é diário às 03:00 (America/Recife) pelo GitHub Actions
       E que a retenção é o histórico do repositório privado
       E onde disparar uma execução manual.
-- [ ] **Cenário**: O card "Importar Banco (.db)" sai
+- [x] **Cenário**: O card "Importar Banco (.db)" sai
       Dada a tela `/settings`
       Então não há campo de importação de arquivo `.db`
       E o handler de importação não existe mais.
-- [ ] **Cenário**: As rotas mortas somem
+- [x] **Cenário**: As rotas mortas somem
       Dado o repositório
       Então `/api/backups/restore` e `/api/backups/import` não existem
       E `POST /api/backups` não existe
       E `createBackup()` sai de `src/lib/backup.ts` — função cujo único propósito era recusar
       uma operação que ninguém consegue mais disparar é código morto.
-- [ ] **Cenário**: O que lê fato permanece
+- [x] **Cenário**: O que lê fato permanece
       Dada a tela `/settings`
       Então o card de confiabilidade e a lista de execuções continuam lá
       E continuam lendo `backup_runs`.
-- [ ] **Cenário**: O contrato acompanha
+- [~] **Cenário**: O contrato acompanha — **SEM ALVO, não cumprido**
       Dado `docs/api-contract.md`
       Então as três rotas removidas não aparecem mais como disponíveis.
+      ⚠️ **O arquivo não existe.** O `CLAUDE.md` o lista no mapa do projeto
+      (`docs/api-contract.md`), e o `.sdd/memory/` também o menciona, mas ele nunca
+      foi criado. O critério foi escrito na micro-spec presumindo o mapa, sem
+      verificar. Marcado como não cumprido em vez de riscado como se tivesse sido —
+      e o mapa desatualizado vira débito.
+
+**O que a execução ensinou:**
+
+- **O mapa do projeto no `CLAUDE.md` afirma um arquivo que não existe.** Descoberto ao
+  tentar cumprir o último critério. Não é grave sozinho, mas é da mesma família de tudo
+  o que esta sprint corrige: um documento descrevendo algo que não está lá. E é a
+  segunda vez na sprint que confiar num registro sem verificar produziu um critério
+  falso. **Débito:** ou o `api-contract.md` é criado, ou sai do mapa.
+- **O lint pegou dois órfãos que os cenários não pegariam:** `loadBackups` (só chamada
+  pelo botão removido) e o import de `logStructured` em `backup.ts` (só usado por
+  `createBackup`). Os cenários varrem texto e afirmam ausência; quem encontra o que
+  ficou sem uso é o `no-unused-vars`. Vale como padrão: em task de remoção, os dois se
+  complementam.
+- **Um teste meu reprovava a própria correção.** A regex `/Retenção/i` proibia a palavra,
+  e o texto que entra no lugar diz — com verdade — que a retenção é o histórico do
+  repositório privado. Passou a mirar o rótulo do campo. Terceira vez nesta sprint e nas
+  duas anteriores que uma varredura de texto minha foi larga demais.
+- **O subtítulo da página descrevia a si mesmo errado**, e ficou pior com esta task:
+  "Parmetros de backup e sistema" — com o erro de digitação de origem, e prometendo
+  configuração de backup que a tela deixou de ter. Virou "Parâmetros do sistema e estado
+  do backup", que é o que ela é agora.
 
 ---
 
