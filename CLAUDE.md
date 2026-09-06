@@ -40,16 +40,19 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: go-live executado. PRs #15 (Sprints 21–23), #16 (runbook §4),
-  #17 e #18 (dois defeitos do job de backup) merged na `main`.
-- Próxima Ação: nada bloqueante. Candidatos, em ordem de valor:
-  (a) ENSAIO DE RESTAURAÇÃO (runbook §6.6) — o job prova que o dump volta numa base
-      descartável, mas o RTO de 4 h NUNCA foi cronometrado. É o único item da §4.3
-      ainda não demonstrado;
-  (b) CR de faxina da tela de configurações — QUATRO itens prometendo o que o sistema
-      não faz: "Horário do Backup" e "Retenção" inertes, botão "Gerar Backup Agora"
-      que sempre 503, e o card "Importar Banco (.db)" com as rotas restore/import;
-  (c) Sprint 24 — Etapa 5: Realtime (TASK-072, 073). Melhoria, não condição.
+- Última Ação: Change Request Tipo C registrado (ADR-013) — faxina da tela de
+  configurações. SEIS afirmações falsas na `/settings`, sendo DUAS defeitos vivos:
+  o logout automático não dispara (`auto_logout_time` = "30", comparado com
+  "HH:MM") e `default_reset_password` tem padrões divergentes entre a rota que lê
+  e as que aplicam. Geradas TASK-082 e TASK-083.
+- Próxima Ação: **Sprint 24 — Faxina da tela de configurações** (TASK-082, 083),
+  pelo ciclo TDD. Depois, Sprint 25 — Etapa 5: Realtime (TASK-072, 073).
+  As sprints foram RENUMERADAS em 2026-09-06: a faxina virou 24 e o Realtime 25,
+  para o número acompanhar a ordem de execução. O vínculo com o ADR-012 é a
+  Etapa 5, que não muda.
+- ⚠️ Fora das sprints e ainda pendente: o ENSAIO DE RESTAURAÇÃO (runbook §6.6). O
+  job prova que o dump volta numa base descartável, mas o RTO de 4 h NUNCA foi
+  cronometrado — é o único item da §4.3 ainda não demonstrado.
 - ⚠️ LIÇÃO DO GO-LIVE, e é a mais cara desta rodada: o job de backup passou em 25
   testes e falhou nas TRÊS primeiras execuções reais — extensões da plataforma no
   dump, schema `public` já existente, e token sem `Contents`. A suíte cobria a
@@ -75,7 +78,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco
   baixíssimo); (b) o CR de faxina da tela; (c) CR para runner de migrations.
 - Arquivos não commitados: nenhum
-- Branch atual: main (Sprints 21–23 publicadas; PRs #15–#18 merged)
+- ⚠️ CORREÇÃO OPERACIONAL PENDENTE, independente de sprint: as 4 linhas de
+  `settings` em produção são da carga SINTÉTICA da TASK-067 — eu as preservei na
+  limpeza do go-live achando que eram configuração legítima, e errei.
+  `auto_logout_time` = "30" é a causa do logout quebrado. Corrigir pela tela ou
+  por SQL, e revisar `default_reset_password` (hoje "trocar123").
+- Branch atual: main (Sprints 21–23 publicadas; PRs #15–#19 merged)
 - Atualizado em: 2026-09-06
 ```
 
