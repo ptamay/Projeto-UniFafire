@@ -166,13 +166,16 @@ describe('TASK-070 — as duas operações destrutivas do REQ-014', () => {
 });
 
 describe('TASK-070 — settings grava tudo ou nada', () => {
-    it('as quatro configurações entram juntas', async () => {
+    it('as configurações entram juntas', async () => {
+        // Eram QUATRO até a TASK-082. `backupTime` e `backupCount` saíram: eram
+        // gravadas e nunca lidas, e mantê-las na API só serviria para reencher a
+        // tabela com configuração que nada consome. A garantia sob teste é a
+        // atomicidade da escrita, e ela não depende da contagem de campos.
         const { POST } = await import('@/app/api/settings/route');
         const res = await POST(new Request('http://localhost/api/settings', {
             method: 'POST',
             body: JSON.stringify({
-                autoLogoutTime: '45', backupTime: '04:00',
-                backupCount: 9, defaultResetPassword: 'trocar-070',
+                autoLogoutTime: '45', defaultResetPassword: 'trocar-070',
             }),
         }) as never);
 
@@ -180,8 +183,6 @@ describe('TASK-070 — settings grava tudo ou nada', () => {
         const linhas = await query<{ key: string; value: string }>('SELECT key, value FROM settings ORDER BY key');
         expect(Object.fromEntries(linhas.map(l => [l.key, l.value]))).toEqual({
             auto_logout_time: '45',
-            backup_retention_count: '9',
-            backup_time: '04:00',
             default_reset_password: 'trocar-070',
         });
     });

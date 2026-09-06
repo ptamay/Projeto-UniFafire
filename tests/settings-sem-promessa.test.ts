@@ -46,7 +46,11 @@ describe('TASK-082 — os controles inertes saem da tela', () => {
     it('BDD 1: não há mais campo de horário nem de retenção de backup', () => {
         const tela = semComentarios(TELA);
         expect(tela, 'campo "Horário do Backup" continua na tela').not.toMatch(/Horário do Backup/i);
-        expect(tela, 'campo de retenção continua na tela').not.toMatch(/Retenção/i);
+        // Precisa mirar o CAMPO, não a palavra: o texto que entra no lugar
+        // explica que a retenção é o histórico do repositório privado, e essa
+        // frase é verdadeira. Regex larga demais reprovaria a correção.
+        expect(tela, 'campo de retenção continua na tela').not.toMatch(/Retenção \(quantidade/i);
+        expect(tela, 'o input de retenção continua na tela').not.toMatch(/type="number"[^>]*max=\{50\}/);
         expect(
             tela,
             'a tela ainda promete que backups antigos são removidos — nada os remove',

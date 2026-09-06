@@ -1,5 +1,4 @@
 import { query, queryOne } from './pg';
-import { logStructured } from './structured-logger';
 import { APP_TIMEZONE } from './time-filters';
 import type { BackupReliability } from './backup-reliability';
 
@@ -126,32 +125,18 @@ export async function getBackupRuns(limit = 10) {
     }));
 }
 
-/**
- * DESATIVADO na TASK-070 (Sprint 21 · Etapa 4 do ADR-012).
+/*
+ * `createBackup()` foi REMOVIDA na TASK-082 (Sprint 24).
  *
- * A implementação anterior copiava o arquivo `keys.db` para `backups/` e
- * verificava a cópia com `PRAGMA quick_check`. Nenhuma das duas coisas existe na
- * stack nova: não há arquivo de banco para copiar, e o disco da hospedagem é
- * efêmero — a cópia sumiria com a instância.
+ * Ela recusava explicitamente desde a TASK-070 — a geração por cópia de arquivo
+ * não existe na stack nova. A recusa era o comportamento certo enquanto alguém
+ * ainda podia disparar a operação; o botão "Gerar Backup Agora" e o
+ * `POST /api/backups` saíram nesta mesma task, e uma função cujo único propósito
+ * é recusar o impossível é código morto.
  *
- * Recusa explícita em vez de sucesso mentiroso: quem clicar em "gerar backup"
- * precisa saber que não gerou.
- *
- * A mensagem foi corrigida na TASK-075. Ela dizia que o backup passaria a ser
- * "gerenciado pelo provedor do banco" — o CR Tipo D de 2026-09-04 apurou que o
- * plano gratuito do Supabase não tem backup gerenciado, e a §4.3 foi reescrita.
- * Apontar o usuário para um mecanismo inexistente é a mesma classe de erro que a
- * recusa existe para evitar.
+ * Backup é `.github/workflows/backup.yml`. Para rodar fora da hora: Actions →
+ * "Backup diário verificado" → Run workflow.
  */
-export async function createBackup(): Promise<{ success: false; error: string }> {
-    const error =
-        'A geração de backup não parte mais da aplicação. O backup é o job diário ' +
-        '`.github/workflows/backup.yml` (TASK-078): ele faz o dump, verifica por ' +
-        'restauração e envia para o repositório privado. Para rodar fora da hora, ' +
-        'use "Run workflow" no GitHub Actions. Nenhum arquivo foi gerado aqui.';
-    await logStructured('warn', 'backup_indisponivel', { motivo: 'TASK-070', substituta: 'TASK-078' });
-    return { success: false, error };
-}
 
 /*
  * `startCronJobs()` foi REMOVIDA na TASK-084 (Sprint 24), junto com

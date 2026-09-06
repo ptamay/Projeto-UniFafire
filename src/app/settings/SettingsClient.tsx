@@ -31,15 +31,11 @@ interface Props {
 
 export default function SettingsClient({ userRole, username }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [backupTime, setBackupTime] = useState('03:00');
-    const [backupCount, setBackupCount] = useState(3);
     const [autoLogoutTime, setAutoLogoutTime] = useState('18:30');
     const [defaultResetPassword, setDefaultResetPassword] = useState('unifafire123');
     const [runs, setRuns] = useState<BackupRun[]>([]);
     const [loadingBkp, setLoadingBkp] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
-    const [generatingBkp, setGeneratingBkp] = useState(false);
-    const [importingDb, setImportingDb] = useState(false);
     const [isClearingDb, setIsClearingDb] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
     const [bkpReliability, setBkpReliability] = useState<BackupReliability | null>(null);
@@ -63,15 +59,8 @@ export default function SettingsClient({ userRole, username }: Props) {
             .catch(() => { setBkpReliability(null); setBkpIndisponivel(true); });
     };
 
-    const loadBackups = () => {
-        setLoadingBkp(true);
-        fetchBackups();
-    };
-
     useEffect(() => {
         fetch('/api/settings').then(r => r.json()).then(d => {
-            if (d.backupTime) setBackupTime(d.backupTime);
-            if (d.backupCount) setBackupCount(d.backupCount);
             if (d.autoLogoutTime) setAutoLogoutTime(d.autoLogoutTime);
             if (d.defaultResetPassword) setDefaultResetPassword(d.defaultResetPassword);
         });
@@ -86,8 +75,6 @@ export default function SettingsClient({ userRole, username }: Props) {
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ 
-                    backupTime, 
-                    backupCount, 
                     autoLogoutTime, 
                     defaultResetPassword 
                 }) 
@@ -98,58 +85,16 @@ export default function SettingsClient({ userRole, username }: Props) {
         setSavingSettings(false);
     };
 
-    const generateBackup = async () => {
-        setGeneratingBkp(true);
-        try {
-            const res = await fetch('/api/backups', { method: 'POST' });
-            const d = await res.json();
-            if (res.ok) { toast.success('Backup gerado!'); loadBackups(); }
-            else { toast.error(d.error || 'Erro ao gerar backup.'); }
-        } catch { toast.error('Erro de conexão.'); }
-        setGeneratingBkp(false);
-    };
+    // Saíram nesta task (TASK-082) três coisas que a tela oferecia e o sistema não
+    // fazia — `generateBackup` (POST que sempre 503 desde a TASK-070) e
+    // `handleImportFile` (importar `.db`, formato fora do runtime desde a Sprint
+    // 21) —, somadas a `deleteBackup` e `restoreBackup`, que já haviam saído na
+    // TASK-075.
+    //
+    // O que sobrou nesta tela sobre backup é leitura: confiabilidade e histórico
+    // de execuções, vindos de `backup_runs`. Gerar e restaurar são operações com
+    // credencial, e vivem no runbook.
 
-    // `deleteBackup` e `restoreBackup` sairam na TASK-075. Nao ha arquivo local
-    // para apagar nem para restaurar por clique: o dump esta num repositorio
-    // privado e a restauracao e um procedimento operado com credencial, descrito
-    // no runbook de deploy — nao um botao na tela de configuracoes.
-
-    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (!file.name.endsWith('.db')) {
-            toast.error('Por favor, selecione um arquivo .db');
-            return;
-        }
-
-        if (!confirm('Deseja importar este banco de dados? Todos os dados atuais serão perdidos.')) {
-            e.target.value = '';
-            return;
-        }
-
-        setImportingDb(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch('/api/backups/import', {
-                method: 'POST',
-                body: formData
-            });
-            const d = await res.json();
-            if (res.ok) {
-                toast.success('Banco importado com sucesso! Recarregando...');
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                toast.error(d.error || 'Erro ao importar.');
-            }
-        } catch {
-            toast.error('Erro de conexão.');
-        }
-        setImportingDb(false);
-        e.target.value = '';
-    };
 
     const clearDatabase = async () => {
         setIsClearingDb(true);
@@ -210,29 +155,8 @@ export default function SettingsClient({ userRole, username }: Props) {
                         </div>
                     </div>
 
-                    {/* Backup Settings */}
-                    <div className="card">
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Backup Automático
-                        </h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <div className="input-group">
-                                <label className="input-label">Horário do Backup</label>
-                                <input className="input" type="time" value={backupTime} onChange={e => setBackupTime(e.target.value)} />
-                            </div>
-                            <div className="input-group">
-                                <label className="input-label">Retenção (quantidade de backups)</label>
-                                <input className="input" type="number" min={1} max={50} value={backupCount} onChange={e => setBackupCount(Number(e.target.value))} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Backups mais antigos serão removidos automaticamente.</span>
-                            </div>
-                            <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings} style={{ alignSelf: 'flex-start' }}>
-                                {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Backup'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Import Database - ONLY ADMIN */}
+                    {/* Limpeza de dados — ONLY ADMIN. O bloco de importar .db saiu na
+                        TASK-082: `.db` e SQLite, formato fora do runtime desde a Sprint 21. */}
                     {userRole === 'ADMIN' && (
                     <div className="card">
                         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -240,25 +164,6 @@ export default function SettingsClient({ userRole, username }: Props) {
                             Gestão de Banco de Dados
                         </h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {/* Import Part */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Importar Banco (.db)</label>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    Substitua o banco de dados atual por um arquivo externo (.db).
-                                </p>
-                                <label className={`btn btn-blue ${importingDb ? 'disabled' : ''}`} style={{ cursor: importingDb ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                                    {importingDb ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
-                                        <>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                            Selecionar e Importar
-                                        </>
-                                    )}
-                                    <input type="file" accept=".db" style={{ display: 'none' }} onChange={handleImportFile} disabled={importingDb} />
-                                </label>
-                            </div>
-
-                            <div style={{ height: '1px', background: 'var(--border)', opacity: 0.5 }} />
-
                             {/* Clear Part */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Dados</label>
@@ -316,14 +221,17 @@ export default function SettingsClient({ userRole, username }: Props) {
                             );
                         })()}
 
-                        <button className="btn btn-blue" onClick={generateBackup} disabled={generatingBkp} style={{ margin: '1rem 0', width: '100%' }}>
-                            {generatingBkp ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
-                                <>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                    Gerar Backup Agora
-                                </>
-                            )}
-                        </button>
+                        {/* No lugar do botão que sempre recusava e dos campos que
+                            ninguém lia: o arranjo real, verificável. */}
+                        <div className="bkp-como">
+                            <strong>Como o backup funciona</strong>
+                            <ul>
+                                <li>Diário, às <strong>03:00</strong> (horário de Recife), executado pelo <strong>GitHub Actions</strong>.</li>
+                                <li>Cada dump é <strong>verificado por restauração</strong> num banco descartável antes de ser guardado — contagens e estrutura conferidas contra a origem.</li>
+                                <li>Guardado num <strong>repositório privado separado</strong>; a retenção é o histórico dele.</li>
+                                <li>Para gerar fora de hora ou restaurar, veja <code>docs/runbook-deploy.md</code> — são operações com credencial, fora desta tela.</li>
+                            </ul>
+                        </div>
 
                         <h3 style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Últimas execuções</h3>
                         {loadingBkp ? (
