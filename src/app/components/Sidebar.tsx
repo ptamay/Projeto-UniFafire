@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSinalDeMudanca } from '@/lib/realtime-sinal';
 import { cruzouOHorario } from '@/lib/settings-policy';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
@@ -190,28 +191,40 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const roleBadge = roleBadgeMap[userRole] || 'badge-user';
     const roleLabel = roleLabelMap[userRole] || userRole;
 
+    // TASK-072: `fetchPendingCount` saiu de dentro do efeito para o escopo do
+    // componente. Ela precisa ser alcancavel pelo `useSinalDeMudanca`, que e um
+    // hook e nao roda dentro de outro efeito.
+    const fetchPendingCount = useCallback(async () => {
+        try {
+            const res = await fetch('/api/transactions/pending');
+            if (res.ok) {
+                const data = await res.json();
+                setPendingCount(Array.isArray(data) ? data.length : 0);
+            }
+        } catch { /* silencioso — badge de pendências é best-effort */ }
+    }, []);
+
     useEffect(() => {
-        const fetchPendingCount = async () => {
-            try {
-                const res = await fetch('/api/transactions/pending');
-                if (res.ok) {
-                    const data = await res.json();
-                    setPendingCount(Array.isArray(data) ? data.length : 0);
-                }
-            } catch { /* silencioso — badge de pendências é best-effort */ }
-        };
+        // `fetchPendingCount` e ASSINCRONA: o `setPendingCount` acontece depois
+        // de dois `await`, nunca de forma sincrona no corpo do efeito. A regra
+        // nao enxerga isso atraves de um `useCallback` e acusa o mesmo padrao que
+        // aceita quando a funcao e declarada dentro do efeito (ver
+        // PendingInline). A funcao precisa viver fora para ser alcancavel pelo
+        // `useSinalDeMudanca`, que e um hook.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchPendingCount();
         const handleUpdate = () => fetchPendingCount();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        // Mesmo ritmo do Dashboard/Confirmações (3s) — o evento cobre a mesma aba,
-        // mas o badge também precisa refletir rápido pedidos/devoluções feitos
-        // por OUTRO dispositivo, que só chegam via polling.
-        const interval = setInterval(fetchPendingCount, 3000);
+        // TASK-072: o polling de 3 s saiu. O badge precisava dele para refletir
+        // pedidos feitos por OUTRO dispositivo — e e exatamente isso que o sinal
+        // do banco passa a entregar, sem 3 s de espera e sem uma requisicao a
+        // cada 3 s por aba aberta. O listener continua cobrindo a acao local.
         return () => {
-            clearInterval(interval);
             window.removeEventListener('pending-transactions-updated', handleUpdate);
         };
-    }, []);
+    }, [fetchPendingCount]);
+
+    useSinalDeMudanca(fetchPendingCount);
 
     // Itens visíveis por papel
     const allVisibleItems = navItems.flatMap(s => s.items).filter(i => i.roles.includes(userRole));

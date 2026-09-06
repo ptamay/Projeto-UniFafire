@@ -78,13 +78,13 @@ describe('TASK-072 — o banco anuncia a mudança, e não o conteúdo dela', () 
 
 describe('TASK-072 — toda escrita dispara, venha de onde vier', () => {
     beforeEach(async () => {
-        await execute('DELETE FROM realtime_sinais_enviados');
+        await execute('DELETE FROM realtime.sinais_enviados');
     });
 
     it('BDD 2: escrita em `keys` emite exatamente um sinal', async () => {
         await execute("INSERT INTO keys (name, room, status) VALUES ('Sala Sinal', '101', 'available')");
         const sinais = await query<{ topic: string; event: string; payload: unknown }>(
-            'SELECT topic, event, payload FROM realtime_sinais_enviados',
+            'SELECT topic, event, payload FROM realtime.sinais_enviados',
         );
         expect(sinais.length, 'a escrita não emitiu sinal').toBe(1);
         expect(sinais[0].topic).toBe('chaves');
@@ -95,12 +95,12 @@ describe('TASK-072 — toda escrita dispara, venha de onde vier', () => {
         const [k] = await query<{ id: number }>(
             "INSERT INTO keys (name, room, status) VALUES ('Sala Tx', '102', 'available') RETURNING id",
         );
-        await execute('DELETE FROM realtime_sinais_enviados');
+        await execute('DELETE FROM realtime.sinais_enviados');
         await execute(
-            "INSERT INTO key_transactions (key_id, user_id, status) VALUES ($1, 1, 'pending')",
+            "INSERT INTO key_transactions (key_id, user_id, action, status) VALUES ($1, 1, 'retirada', 'pending')",
             [k.id],
         );
-        const sinais = await query('SELECT 1 FROM realtime_sinais_enviados');
+        const sinais = await query('SELECT 1 FROM realtime.sinais_enviados');
         expect(sinais.length, 'transação não emitiu sinal').toBeGreaterThan(0);
     });
 
@@ -110,7 +110,7 @@ describe('TASK-072 — toda escrita dispara, venha de onde vier', () => {
         await execute(
             "INSERT INTO keys (name, room, status) VALUES ('L1','201','available'), ('L2','202','available'), ('L3','203','available')",
         );
-        const sinais = await query('SELECT 1 FROM realtime_sinais_enviados');
+        const sinais = await query('SELECT 1 FROM realtime.sinais_enviados');
         expect(sinais.length, 'emitiu um sinal por linha em vez de um por instrução').toBe(1);
     });
 });
