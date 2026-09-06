@@ -369,9 +369,49 @@ O job prova que o dump **volta**. Ele **não** prova o RTO de 4 h: ninguém
 cronometrou o caminho completo. O mantenedor deve executar §6.5 de ponta a ponta
 uma vez por semestre, cronometrar, e registrar aqui:
 
-| Data | Quem | Tempo até o sistema no ar | Resultado |
+| Data | Quem | Tempo | Resultado |
 |---|---|---|---|
-| _(pendente — fazer após o primeiro backup real)_ | | | |
+| 2026-09-06 | Claude Code (assistido) | **72 s** para as etapas 1–5 | ✅ Restauração íntegra. Ver detalhamento abaixo |
+
+**O que este ensaio cobriu (etapas 1 a 5 do §6.5):**
+
+| Etapa | Tempo | Resultado |
+|---|---|---|
+| Baixar o dump do repositório privado + descomprimir | 1 s | 4.739 B → 31.870 B (1.050 linhas) |
+| Criar a base descartável e restaurar (`ON_ERROR_STOP=1`) | 1 s | **sem um único erro** |
+| Conferir estrutura | — | 11 tabelas · 23 índices · 6 triggers · 11 sob RLS · 4 funções |
+| Conferir dados | — | **67 linhas**, idêntico ao que o job registrou |
+| Conferir que os controles FUNCIONAM | — | ver abaixo |
+
+**A verificação que vale mais que as contagens.** Objeto de esquema pode existir e não
+funcionar. Os guardas foram exercitados na base restaurada, não apenas contados:
+
+```
+UPDATE app_logs  → ERROR: §7: app_logs é imutável — UPDATE bloqueado
+DELETE backup_runs → ERROR: §4.3: backup_runs é imutável — DELETE bloqueado
+```
+
+E o ADMIN voltou utilizável: `admin` · papel ADMIN · hash bcrypt `$2b$` de 60 caracteres ·
+ativo. Um dump que restaura tudo menos a capacidade de entrar no sistema não serviria para
+recuperar coisa alguma.
+
+**⚠️ O que este ensaio NÃO cobriu, e por isso o RTO de 4 h ainda não está medido:**
+
+1. **Provisionar a base de destino real.** A restauração foi para um Postgres descartável
+   local, não para um projeto Supabase novo — que leva alguns minutos para subir e exige
+   conta.
+2. **Repontar a aplicação** (trocar `DATABASE_URL` na Vercel + redeploy) e confirmar o
+   sistema no ar com o dado restaurado.
+3. **O tempo humano**: perceber o incidente, decidir restaurar, encontrar o dump certo.
+   Na prática costuma dominar os outros dois.
+
+O que o ensaio prova é que **a parte técnica da restauração é de segundos e o dump está
+íntegro** — o que remove a maior incógnita. As etapas 1 a 3 acima são as que faltam
+cronometrar, e exigem credencial de produção.
+
+**Nota de escala:** o dump tinha 67 linhas. Com dados reais de um semestre, a restauração
+levará mais — mas a ordem de grandeza continua muito abaixo do RTO. O gargalo de 4 h nunca
+foi o `psql`.
 
 ---
 
