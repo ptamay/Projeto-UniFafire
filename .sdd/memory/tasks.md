@@ -1,265 +1,140 @@
-# tasks.md — Micro-spec da Sprint Ativa (Sprint 24 · 🟡 padrão, com uma task 🔴)
+# tasks.md — Micro-spec da Sprint Ativa (Sprint 25 · 🔴 crítica)
 
-> **Faxina da tela de configurações — CR Tipo C, ADR-013.** A primeira sprint depois do
-> go-live, e ela existe porque a tela mente.
+> **Etapa 5 do ADR-012 — Realtime. REQ-032.** A última etapa aberta, e o requisito que
+> motivou a migração inteira.
 >
-> Canal: Claude Code · Modelo: Sonnet 5 para as tasks de remoção, **Opus 5 para a TASK-083**
-> (toca controle de sessão e senha padrão — constitution §2).
->
-> Nenhum requisito muda. O sistema não ganha capacidade nenhuma: ele para de anunciar
-> capacidades que não tem.
+> Canal: Claude Code · Modelo: Opus 5 · Esforço: alto.
+> Criticidade 🔴: o caminho óbvio da implementação passa por afrouxar RLS, e a decisão D1
+> existe para não passar por ele.
 
 ---
 
-## O que esta sprint corrige, e por que é agora
+## O conflito que define esta sprint
 
-Seis afirmações falsas na `/settings`, todas resíduo da topologia desmontada nas Sprints
-21–23. Quatro são inércia — controles que gravam e ninguém lê. **Duas são defeitos vivos**,
-e um deles derruba um controle de segurança da constitution §2.
+O ADR-012 diz "substituindo os 4 pollings por **Supabase Realtime**" e não especifica o
+mecanismo. O mecanismo óbvio — `postgres_changes` — **não funciona neste sistema**, e
+fazê-lo funcionar custaria a autorização inteira:
 
-E uma sétima, encontrada ao preparar esta micro-spec, que virou a mais urgente das três
-tasks. Está na D3.
+- As 11 tabelas têm RLS ligado e **zero políticas**: negam tudo a `anon` e `authenticated`.
+  Postura deliberada da TASK-065.
+- **O sistema não usa Supabase Auth.** As sessões são JWTs nossos, assinados com
+  `JWT_SECRET`. Para o Supabase, todo usuário do sistema é `anon`.
+- `postgres_changes` autoriza **por RLS**. Um cliente no navegador receberia nada.
+
+Para ele entregar dados seria preciso criar políticas de SELECT para `anon` nas tabelas de
+chaves. A chave anônima vai no bundle do navegador e é pública por definição — as tabelas
+passariam a ser legíveis por qualquer um com o DevTools aberto, ao largo do `proxy.ts` e da
+checagem de papel em cada rota. É o que a constitution §3.2 proíbe.
 
 ---
 
 ## Decisões de execução
 
-**D1 — Remover, não consertar.** Fazer "Horário do Backup" e "Retenção" funcionarem exigiria
-credencial de escrita no GitHub **dentro da aplicação**, para reescrever o `cron` do workflow
-e apagar dumps no repositório privado. Superfície nova e permanente, por um controle que
-ninguém pediu e que o runbook já cobre. Rejeitado no ADR-013.
+**D1 — O Realtime carrega SINAL, não dados.** O banco emite "algo mudou nas chaves", sem
+conteúdo. O cliente, ao receber, **refaz a busca pelas rotas atuais** — que continuam
+validando sessão e papel no servidor. Nenhuma tabela é publicada, nenhuma política RLS é
+afrouxada, e a fronteira de autorização não se move um milímetro.
 
-**D2 — Rota morta sai junto com o botão.** `restore`, `import` e o `POST /api/backups`
-respondem 503 desde as TASK-068/070. Handler que responde 503 para sempre é pior que a
-ausência dele: sugere uma capacidade em manutenção, quando a capacidade não existe mais.
+O custo do desenho, dito por inteiro: há um refetch entre o sinal e a tela. Sinal
+(~100–300 ms) mais o refetch de uma rota já existente cabe nos 500 ms do REQ-032, mas é
+preciso **medir**, não presumir — está na DoD.
 
-**D3 — `startCronJobs()` sai, e esta é a task de maior valor da sprint.** Medido em produção
-em 2026-09-06, menos de duas horas depois do go-live:
+**D2 — Quem emite é o BANCO, não as rotas.** `realtime.send()` num trigger de `keys` e
+`key_transactions`. A alternativa era cada rota de escrita emitir depois de gravar, e ela
+falha pela pergunta que este projeto já errou três vezes: *pegamos todas?* São rotas de
+retirada, devolução, transferência, cancelamento, confirmação e bypass. Trigger no banco é
+fechado por construção — qualquer caminho de escrita dispara, inclusive SQL manual.
 
-```
-cron_desativado   52 linhas   ← 87% da trilha
-route_timing       4 linhas
-audit_action       4 linhas
-```
+**D3 — O canal é público, e por isso o sinal é vazio.** Canal privado exigiria Realtime
+Authorization, que se apoia num JWT do Supabase que este sistema não tem. Com canal público
+e carga vazia, o que sai é apenas *que houve uma mudança* — sem dizer qual, de quem ou o
+quê. **Isso não é zero:** quem tiver a chave anônima consegue inferir volume e horário de
+atividade. É o preço da decisão, e fica registrado em vez de omitido.
 
-`src/instrumentation.ts` chama `startCronJobs()` a cada inicialização de instância, e a
-função existe apenas para **gravar um log dizendo que não faz nada**. Em execução serverless
-isso é um cold start atrás do outro. A constitution §7 diz que `app_logs` **nunca entra em
-rotina de limpeza** — então esse ruído é permanente e cresce para sempre, num plano de 500 MB,
-dentro da tabela que existe para responder "o que aconteceu?" num incidente.
+**D4 — `supabase-js` entra só para o canal.** O acesso a dados continua sendo `pg`
+(`src/lib/pg.ts`). A tabela de stack do `plan.md` ganha a linha com esse limite explícito —
+biblioteca nova sem registro é o que a regra `00-core` chama de stack inventada.
 
-Uma trilha de auditoria em que 87% das linhas anunciam a inexistência de um agendador é uma
-trilha pior do que nenhuma: ela treina quem a lê a ignorá-la.
-
-**D4 — A correção do dado de produção NÃO é desta sprint.** As linhas sintéticas de
-`settings` (`auto_logout_time = "30"`) se corrigem por operação, não por deploy. A task
-garante que um valor inválido **herdado** não quebre mais o recurso; trocar o valor é do
-runbook.
+**D5 — A degradação não é polimento, é o que impede a piora.** Se a assinatura falhar em
+silêncio, a tela congela — e tela congelada é **pior** que os 3 s de hoje. Por isso a
+TASK-073 tem cenário de "nunca conectou" e de "caiu depois", e o fallback é observável.
 
 ---
 
-## TASK-084: a trilha de auditoria para de ser inundada pelo próprio sistema
+## TASK-072: o sinal substitui os quatro pollings
 
-**Contexto**: 52 das 60 linhas de `app_logs` em produção são `cron_desativado`. Primeira task
-por ser a única com efeito imediato em produção — e porque cada dia que passa acumula ruído
-que a §7 proíbe limpar.
+**Contexto**: quatro `setInterval(..., 3000)` — `DashboardClient`, `PendingInline`,
+`Sidebar` e `ConfirmClient` — que projetam ~10,5 mi de requisições/mês para 10 usuários e
+até 3.000 ms de defasagem.
 
 **Critérios BDD**:
-- [x] **Cenário**: O agendador que não existe deixa de se anunciar
-      Dado que `node-cron` não agenda nada desde a TASK-070
-      Então `startCronJobs()` não existe mais em `src/lib/backup.ts`
-      E `src/instrumentation.ts` não a invoca
-      E nenhuma inicialização de instância escreve em `app_logs`.
-- [x] **Cenário**: A dependência morta sai do `package.json`
-      Dado que nada mais importa `node-cron`
-      Então `node-cron` e `@types/node-cron` saem das dependências
-      E o Gate 1 continua verde (nenhum import sem pacote declarado).
-- [x] **Cenário**: O que a trilha deve registrar continua registrando
-      Dado um `audit_action` e um `route_timing`
-      Quando eles ocorrem
-      Então continuam gravando em `app_logs` normalmente
-      E a remoção não tocou no `structured-logger`.
-- [x] **Cenário**: O `instrumentation.ts` some se não sobrar nada nele
-      Dado que a única coisa que ele fazia era chamar `startCronJobs`
-      Então o arquivo é removido inteiro, e não deixado como casca vazia.
-
-**O que a execução ensinou:**
-
-- **As 52 linhas já escritas ficam.** A §7.1 proíbe rotina de limpeza em `app_logs`, e o
-  trigger de imutabilidade recusa `DELETE` sem o bypass de manutenção. A task estanca a
-  fonte; não desfaz o que já foi gravado — e não deveria. Consequência prática: a trilha
-  de produção carrega para sempre um bloco de ruído do primeiro dia, e quem a ler daqui a
-  um ano precisa saber que ele é de 2026-09-06 e tem causa conhecida. Fica aqui o registro.
-- **A prova real ainda não existe.** Tudo o que os testes garantem é que o código não emite
-  mais. Que `app_logs` **para de receber** `cron_desativado` só se verifica em produção,
-  depois do merge — está na DoD, e é a mesma lição das três falhas do backup.
-- **Achado lateral, para a TASK-082:** `next.config.ts` ainda tem
-  `allowedDevOrigins: ['192.168.0.206']` — resíduo do acesso pela rede interna da
-  instituição, topologia removida na TASK-079. É config de desenvolvimento e inofensiva,
-  mas é da mesma família das seis mentiras: descreve um mundo que não existe. **Entra no
-  escopo da TASK-082**, registrado aqui em vez de corrigido em silêncio no meio de outra
-  task.
+- [ ] **Cenário**: O banco anuncia a mudança, e não o conteúdo dela
+      Dada uma escrita em `keys` ou `key_transactions`
+      Então um trigger emite `realtime.send` no canal de chaves
+      E a carga da mensagem **não contém dado de negócio** — nem id, nem nome, nem usuário
+      E há migration com DOWN escrito antes do UP (constitution §4.1).
+- [ ] **Cenário**: Toda escrita dispara, venha de onde vier
+      Dadas as operações de retirada, devolução, transferência, cancelamento e bypass
+      Quando qualquer uma grava
+      Então o sinal é emitido sem que a rota precise lembrar de emiti-lo.
+- [ ] **Cenário**: Nenhuma tabela é publicada, nenhuma política é afrouxada
+      Dado o schema
+      Então a publicação `supabase_realtime` continua **sem tabelas**
+      E `pg_policies` em `public` continua **vazia**
+      E nenhuma migration desta sprint cria política para `anon`.
+- [ ] **Cenário**: O cliente refaz a busca pelas rotas autenticadas
+      Dado o sinal recebido no navegador
+      Quando a tela reage
+      Então ela chama as mesmas rotas de hoje, que validam sessão e papel
+      E o dado **não** vem do Supabase direto para o navegador.
+- [ ] **Cenário**: Os quatro pollings de 3 s deixam de existir
+      Dado `src/`
+      Então não há `setInterval` de 3.000 ms nos quatro componentes
+      E o relógio de `use-client-clock` e o logout automático de 60 s permanecem — não são
+      polling de dados.
 
 ---
 
-## TASK-082: a tela de configurações deixa de prometer o que o sistema não faz
+## TASK-073: sem WebSocket, a tela não congela
 
-**Contexto**: ADR-013, decisões 1 e 2.
-
-**Critérios BDD**:
-- [x] **Cenário**: Os controles inertes saem da tela
-      Dada a tela `/settings`
-      Então não há campo "Horário do Backup" nem "Retenção (quantidade de backups)"
-      E não há botão "Gerar Backup Agora"
-      E não sobra estado nem handler órfão no componente.
-- [x] **Cenário**: No lugar deles, o estado real
-      Dado o card de Backup
-      Então ele informa que o backup é diário às 03:00 (America/Recife) pelo GitHub Actions
-      E que a retenção é o histórico do repositório privado
-      E onde disparar uma execução manual.
-- [x] **Cenário**: O card "Importar Banco (.db)" sai
-      Dada a tela `/settings`
-      Então não há campo de importação de arquivo `.db`
-      E o handler de importação não existe mais.
-- [x] **Cenário**: As rotas mortas somem
-      Dado o repositório
-      Então `/api/backups/restore` e `/api/backups/import` não existem
-      E `POST /api/backups` não existe
-      E `createBackup()` sai de `src/lib/backup.ts` — função cujo único propósito era recusar
-      uma operação que ninguém consegue mais disparar é código morto.
-- [x] **Cenário**: O que lê fato permanece
-      Dada a tela `/settings`
-      Então o card de confiabilidade e a lista de execuções continuam lá
-      E continuam lendo `backup_runs`.
-- [~] **Cenário**: O contrato acompanha — **SEM ALVO, não cumprido**
-      Dado `docs/api-contract.md`
-      Então as três rotas removidas não aparecem mais como disponíveis.
-      ⚠️ **O arquivo não existe.** O `CLAUDE.md` o lista no mapa do projeto
-      (`docs/api-contract.md`), e o `.sdd/memory/` também o menciona, mas ele nunca
-      foi criado. O critério foi escrito na micro-spec presumindo o mapa, sem
-      verificar. Marcado como não cumprido em vez de riscado como se tivesse sido —
-      e o mapa desatualizado vira débito.
-
-**O que a execução ensinou:**
-
-- **O mapa do projeto no `CLAUDE.md` afirma um arquivo que não existe.** Descoberto ao
-  tentar cumprir o último critério. Não é grave sozinho, mas é da mesma família de tudo
-  o que esta sprint corrige: um documento descrevendo algo que não está lá. E é a
-  segunda vez na sprint que confiar num registro sem verificar produziu um critério
-  falso. **Débito:** ou o `api-contract.md` é criado, ou sai do mapa.
-- **O lint pegou dois órfãos que os cenários não pegariam:** `loadBackups` (só chamada
-  pelo botão removido) e o import de `logStructured` em `backup.ts` (só usado por
-  `createBackup`). Os cenários varrem texto e afirmam ausência; quem encontra o que
-  ficou sem uso é o `no-unused-vars`. Vale como padrão: em task de remoção, os dois se
-  complementam.
-- **Um teste meu reprovava a própria correção.** A regex `/Retenção/i` proibia a palavra,
-  e o texto que entra no lugar diz — com verdade — que a retenção é o histórico do
-  repositório privado. Passou a mirar o rótulo do campo. Terceira vez nesta sprint e nas
-  duas anteriores que uma varredura de texto minha foi larga demais.
-- **O subtítulo da página descrevia a si mesmo errado**, e ficou pior com esta task:
-  "Parmetros de backup e sistema" — com o erro de digitação de origem, e prometendo
-  configuração de backup que a tela deixou de ter. Virou "Parâmetros do sistema e estado
-  do backup", que é o que ela é agora.
-
----
-
-## TASK-083: o logout automático volta a disparar, e a senha padrão tem uma fonte só
-
-**Contexto**: ADR-013, decisões 3 e 4. 🔴 **crítica** — toca controle de sessão e senha
-padrão (constitution §2).
+**Contexto**: hoje o pior caso é 3 s de defasagem. Com assinatura que falha em silêncio, o
+pior caso vira **defasagem infinita**, e o usuário não tem como saber.
 
 **Critérios BDD**:
-- [x] **Cenário**: Valor inválido herdado não quebra mais o logout
-      Dado `settings.auto_logout_time` com um valor fora de `HH:MM` (hoje, em produção: `"30"`)
-      Quando a configuração é lida
-      Então a leitura recusa o valor inválido e usa o padrão explícito
-      E o logout automático dispara no horário padrão em vez de nunca disparar.
-- [x] **Cenário**: A tela nunca exibe um campo de hora vazio por dado inválido
-      Dado o mesmo valor inválido
-      Quando a tela carrega
-      Então o campo mostra o padrão em uso, não vazio.
-- [x] **Cenário**: A senha padrão de reset tem UMA fonte
-      Dado que hoje `GET /api/settings` devolve `'saojose123'` e as rotas que aplicam a senha
-      usam `'unifafire123'`
-      Então passa a existir uma constante única
-      E as três rotas a consomem
-      E não há literal de senha padrão espalhado.
-- [x] **Cenário**: O ADMIN lê na tela a senha que o sistema realmente aplica
-      Dada a ausência do registro em `settings`
-      Quando o ADMIN reseta a senha de um usuário
-      Então a senha aplicada é a mesma exibida na tela.
-
-**O que a execução ensinou:**
-
-- **Eram CINCO lugares com a senha padrão, não dois.** O ADR registrou a divergência entre
-  `GET /api/settings` (`saojose123`) e as duas rotas que aplicam (`unifafire123`). Escrever
-  o cenário "nenhum literal espalhado" achou um quinto: `UsersClient.tsx` inicializava o
-  estado com o literal. Cinco pontos que precisavam concordar, e dois já discordavam — a
-  pergunta certa não era "quais dois divergem?", e sim "quantos existem?".
-- **Dois defeitos do mesmo recurso não estavam no ADR**, e apareceram ao escrever os
-  cenários: (a) o `return () => clearInterval(...)` vivia dentro da função `async`, nunca
-  virou cleanup do efeito, e cada montagem do `Sidebar` deixava um intervalo vivo; (b) a
-  condição `agora === alvo` verificada a cada 60 s falha por construção — tick atrasado
-  pula o minuto, e navegador estrangula timer em aba de fundo, então o atraso é o caso
-  comum. Os dois estão consertados; nenhum tinha sintoma visível.
-- **A correção óbvia do (b) quebraria outra coisa.** Trocar por `agora >= alvo` faria o
-  logout disparar — e tornaria o sistema inutilizável à noite, porque qualquer login
-  depois do horário cairia fora na hora. A borda certa é o CRUZAMENTO. Há cenário fixando
-  isso, porque é o tipo de "simplificação" que alguém faria depois.
-- **Verificado contra o valor real quebrado.** Semeei `auto_logout_time = '30'` — o valor
-  exato de produção — e conferi no navegador: a rota devolve `18:30`, o campo de horário
-  mostra `18:30` em vez de vazio, e a senha na tela é a mesma que o sistema aplica.
+- [ ] **Cenário**: Assinatura que nunca conecta cai para polling largo
+      Dado que o canal não atinge o estado inscrito dentro do tempo limite
+      Então a tela passa a buscar em intervalo largo
+      E volta a atualizar, em vez de ficar parada.
+- [ ] **Cenário**: Conexão que cai depois também degrada
+      Dada uma assinatura ativa que é encerrada ou entra em erro
+      Então o polling largo assume
+      E, se a assinatura voltar, o polling largo é desligado — sem os dois rodando juntos.
+- [ ] **Cenário**: Sem as variáveis do Supabase, o sistema funciona
+      Dadas `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` ausentes
+      Então a aplicação sobe e as telas atualizam por polling largo
+      E **nada quebra** — ambiente sem Realtime é degradação, não falha.
+- [ ] **Cenário**: A decisão de degradar é testável fora do navegador
+      Dado o estado da assinatura
+      Então a escolha entre "assinado" e "degradado" é função pura, com teste
+      E não uma condicional enterrada no componente.
 
 ---
 
 ## Definition of Done da sprint
 
-- [x] Os 3 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
-- [x] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
-- [x] `npm audit` sem HIGH/CRITICAL — lido inteiro
-- [x] `npm run build` verde **sem `DATABASE_URL` definida**
-- [x] App exercitado no navegador — **último passo, depois da suíte**
-- [x] **Verificação em PRODUÇÃO após o deploy:** `app_logs` para de receber
-      `cron_desativado`. **Feita em 2026-09-06, e confirmada.** O deploy do merge
-      concluiu às 16:14:46 UTC; 36 requisições em três rotas distintas depois disso
-      atingiram instâncias novas — cold start garantido. A contagem ficou em **61
-      linhas, a última às 15:53:02**, antes do merge. **Zero linhas novas.** Sob o
-      código antigo, a primeira requisição a um deploy novo já escrevia uma. As 61
-      já gravadas permanecem: a §7.1 proíbe limpar `app_logs` e o trigger recusa
-      `DELETE` sem o bypass.
-- [x] Fase 11 + Memory Sync
+- [ ] Os 2 pares `test(TASK-NNN)` → `feat(TASK-NNN)` na ordem, suíte inteira verde a cada um
+- [ ] Migration do trigger com DOWN escrito antes do UP
+- [ ] `./scripts/ci-gates.sh` limpo (6 gates), `tsc --noEmit` 0, `eslint` 0
+- [ ] `npm audit` sem HIGH/CRITICAL — lido inteiro
+- [ ] `npm run build` verde **sem `DATABASE_URL` definida**
+- [ ] **A defasagem é MEDIDA, não presumida:** duas sessões abertas, uma opera, e o tempo
+      até a outra refletir fica registrado. Critério do REQ-032: **≤ 500 ms**. Se não
+      couber, o número real vai para o `plan.md` — não se declara cumprido o que não foi.
+- [ ] **A degradação é exercitada de verdade:** derrubar a conexão e confirmar que a tela
+      volta a atualizar por polling largo.
+- [ ] Fase 11 + Memory Sync
 
----
-
-## Sprint 24 — FECHADA em 2026-09-06
-
-2 tasks planejadas, **3 entregues** — a TASK-084 nasceu ao preparar a micro-spec e
-virou a primeira da fila. 10 commits: a micro-spec com a emenda do ADR e os três
-pares `test` → `feat` → `refactor`.
-
-Verificado no fecho: **427 testes / 44 arquivos**, 6 gates, `tsc` 0, `eslint` 0,
-`npm audit` 0 vulnerabilidades, `next build` verde **sem `DATABASE_URL`**, e a
-tela exercitada no navegador **com o valor quebrado de produção semeado**.
-
-**Dois itens seguem abertos, e é assim de propósito:**
-
-1. **A verificação em produção** — `app_logs` parar de receber `cron_desativado`.
-   Só existe depois do merge e do deploy. É a lição das três falhas do backup:
-   comportamento de runtime só está verificado depois de rodar de verdade.
-2. **O critério do `docs/api-contract.md`**, marcado como não cumprido porque o
-   arquivo não existe. Virou débito no `plan.md`.
-
-**O padrão do retrabalho mudou, e vale registrar.** Nas Sprints 22 e 23, todo o
-retrabalho foi teste meu que não media o que dizia medir. Aqui foram três, mas de
-duas naturezas diferentes: **duas regex minhas largas demais** (uma chegou a
-reprovar a própria correção) e **um achado legítimo** — o cenário de literal
-espalhado encontrou um quinto ponto com a senha padrão, que nem o ADR nem eu
-tínhamos mapeado. O segundo tipo é o teste funcionando como deveria.
-
-**A lição da sprint, em uma frase:** *validação só na fronteira de entrada assume
-que a fronteira sempre existiu.* Foi assim que um `"30"` de um seed de teste
-manteve um controle de segurança da §2 inerte em produção sem sintoma nenhum.
-
-
-> **Fora da DoD, porque é operação e não deploy:** corrigir as linhas sintéticas de
-> `settings` em produção. Entra no runbook.
+> **Fora da DoD, porque é do usuário:** cadastrar `NEXT_PUBLIC_SUPABASE_URL` e
+> `NEXT_PUBLIC_SUPABASE_ANON_KEY` na Vercel, e aplicar a migration do trigger no Supabase
+> (§3.1 e §4 do runbook). Até lá, produção roda em polling largo — que é o comportamento
+> desenhado, não uma falha.
