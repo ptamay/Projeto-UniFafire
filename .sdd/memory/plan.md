@@ -341,6 +341,19 @@
 > preciso **enumerar a superfície inteira e comparar rotas irmãs**. O débito do
 > `api-contract.md` se pagou antes mesmo de o arquivo existir.
 
+### Sprint 27 — Autorização em Server Components (CR Tipo C · ADR-015)
+> Terceiro CR de autorização em duas horas, e o de maior exposição. As páginas consultam o
+> banco direto: quando verificam só a sessão, **não há 403 possível** — não existe rota no
+> caminho, e a camada de API onde as checagens vivem é contornada.
+- [ ] **TASK-088 → `/history` e `/keys` verificam papel no servidor.** ADR-015 decisão 1. Hoje um ALUNO que digitar o endereço vê o histórico completo de movimentação (quem retirou qual chave, quando, com nome) e o inventário com portador. O `Sidebar` esconde os links — navegação, não autorização. Mesmo padrão que `/logs`, `/settings` e `/users` já usam: verificar e redirecionar.
+- [ ] **TASK-089 → o dashboard escopa a lista de usuários ao papel que a usa.** ADR-015 decisão 2. `/` é legitimamente para todos os papéis — FUNCIONARIO e ALUNO precisam ver as próprias chaves —, mas entrega a **lista de todos os funcionários e alunos ativos** (`id`, `username`, `full_name`, `role`) ao navegador de todo mundo. A consulta serve à Ação Rápida do balcão, que não existe nesses perfis. **Escopar o que se entrega**, e não bloquear a página: mesma escolha da TASK-087.
+- [ ] **TASK-090 → guarda que varre as `page.tsx`.** ADR-015 decisão 3, e vale mais que as duas primeiras. Reprova página que consulta o banco sem verificar papel, com exceções em lista. É o análogo da guarda do ADR-014 para rotas, e existe pela mesma razão: sem ela, a próxima página nasce igual — foi assim que estas três nasceram.
+
+> **O padrão, e é o que a sprint registra:** três achados, todos com a mesma forma — a
+> sessão é verificada, o papel não, e a interface esconde o que o servidor não protege.
+> Nenhum tinha sintoma, porque a tela certa nunca pediu o que não devia. A defesa não é
+> lembrar melhor; é comparar irmãos lado a lado e transformar a comparação em teste.
+
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
