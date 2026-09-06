@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 
@@ -14,25 +14,25 @@ export async function GET() {
         // "frequente" = chaves mais movimentadas GLOBALMENTE. O usuário comum
         // recebe as próprias. Prepared statements em ambos os ramos.
         const isPortaria = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(session.role);
-        const frequentKeys = (isPortaria
-            ? db.prepare(`
+        const frequentKeys = isPortaria
+            ? await query<{ id: number; frequency: string }>(`
                 SELECT k.id, COUNT(h.id) as frequency
                 FROM keys k
                 JOIN history h ON k.id = h.key_id
-                WHERE h.action = 'withdraw' AND k.active = 1
+                WHERE h.action = 'withdraw' AND k.active
                 GROUP BY k.id
                 ORDER BY frequency DESC
                 LIMIT 5
-            `).all()
-            : db.prepare(`
+            `)
+            : await query<{ id: number; frequency: string }>(`
                 SELECT k.id, COUNT(h.id) as frequency
                 FROM keys k
                 JOIN history h ON k.id = h.key_id
-                WHERE h.user_id = ? AND h.action = 'withdraw' AND k.active = 1
+                WHERE h.user_id = $1 AND h.action = 'withdraw' AND k.active
                 GROUP BY k.id
                 ORDER BY frequency DESC
                 LIMIT 5
-            `).all(session.id)) as { id: number, frequency: number }[];
+            `, [session.id]);
 
         return NextResponse.json(frequentKeys.map(k => k.id));
     } catch (error) {

@@ -25,12 +25,18 @@ const ISO_UTC = /Z$|[+-]\d{2}:?\d{2}$/;
 const SQLITE_LOCALLESS = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?$/;
 
 /**
- * Devolve o timestamp em ISO UTC, aceitando as duas formas presentes no banco.
- * Um valor sem marcação de fuso vem do CURRENT_TIMESTAMP do SQLite, que é UTC —
- * é anotado como tal em vez de ser reinterpretado como hora local.
+ * Devolve o timestamp em ISO UTC, aceitando as formas que chegam do banco.
+ *
+ * O driver Postgres entrega `timestamptz` como **Date** — este é o caminho
+ * normal desde a Sprint 21. As formas em texto continuam aceitas porque ainda
+ * chegam de outras origens: ISO com Z (gravado por `new Date().toISOString()`)
+ * e a forma sem fuso do `CURRENT_TIMESTAMP` do SQLite, que é UTC e é anotada
+ * como tal em vez de ser reinterpretada como hora local (TASK-055).
  */
-export function normalizeTimestamp(raw: string): string {
-    if (!raw) return raw;
+export function normalizeTimestamp(raw: string | Date): string {
+    if (!raw) return typeof raw === 'string' ? raw : '';
+    // Date primeiro: já é um instante, não há o que interpretar.
+    if (raw instanceof Date) return raw.toISOString();
     if (ISO_UTC.test(raw)) return new Date(raw).toISOString();
 
     const m = SQLITE_LOCALLESS.exec(raw.trim());
@@ -68,7 +74,7 @@ function localWallClockToUtc(
 }
 
 /** Formata para exibição no fuso da aplicação — independe do dispositivo de quem lê. */
-export function formatTimestamp(raw: string): string {
+export function formatTimestamp(raw: string | Date): string {
     if (!raw) return '';
     return new Date(normalizeTimestamp(raw)).toLocaleString('pt-BR', { timeZone: APP_TIMEZONE });
 }

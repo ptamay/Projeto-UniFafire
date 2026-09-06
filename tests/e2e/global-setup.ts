@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import Database from 'better-sqlite3';
 
 // TASK-028 — banco EFÊMERO para E2E: nunca tocar o keys.db real.

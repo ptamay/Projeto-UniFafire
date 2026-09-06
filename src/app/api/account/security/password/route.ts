@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import { verifySession, signSession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import type { UserAuthRow } from '@/lib/db-rows';
+import { opcoesCookieSessao } from '@/lib/session-cookie';
 
 const PasswordChangeSchema = z.object({
     currentPassword: z.string().min(1, "A senha atual é obrigatória"),
@@ -29,8 +30,9 @@ export async function PUT(request: Request) {
         const { currentPassword, newPassword } = parsed.data;
 
         // Recupera o usuário
-        const stmt = db.prepare('SELECT id, username, password_hash, role FROM users WHERE id = ?');
-        const user = stmt.get(payload.id) as UserAuthRow | undefined;
+        const user = await queryOne<UserAuthRow>(
+            'SELECT id, username, password_hash, role FROM users WHERE id = $1', [payload.id],
+        );
 
         if (!user) {
             return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
@@ -46,26 +48,17 @@ export async function PUT(request: Request) {
         const hashedNew = await bcrypt.hash(newPassword, 10);
 
         // Atualiza no banco
-        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashedNew, user.id);
+        await execute('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedNew, user.id]);
 
-        logAction(user.id, user.username, 'CHANGE_PASSWORD', 'Self', 'User changed their password via security page');
+        await logAction(user.id, user.username, 'CHANGE_PASSWORD', 'Self', 'User changed their password via security page');
 
         // Cria uma nova sessão com o novo fragmento de hash
         const pwd_hash = hashedNew.slice(-10);
         const newPayload = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const newSessionToken = await signSession(newPayload);
 
-        // Atualiza o cookie da requisição
-        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
-
-        // Refresh session cookie since they just proved identity
-        (await cookies()).set('session', newSessionToken, {
-            httpOnly: true,
-            secure: isHttps,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24
-        });
+        // Renova o cookie: o usuário acabou de provar identidade.
+        (await cookies()).set(opcoesCookieSessao(newSessionToken));
 
         return NextResponse.json({ success: true });
     } catch (error) {

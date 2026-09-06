@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { queryOne, execute, withTransaction } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
@@ -23,14 +23,14 @@ export async function POST(request: Request, { params }: RouteParams) {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const tx = db.prepare(`
+        const tx = await queryOne<KeyTransactionJoinRow>(`
             SELECT kt.*, k.name as key_name, k.status as key_status,
                    u.username as user_username, u.full_name as user_full_name
             FROM key_transactions kt
             LEFT JOIN keys k ON kt.key_id = k.id
             LEFT JOIN users u ON kt.user_id = u.id
-            WHERE kt.id = ?
-        `).get(transactionId) as KeyTransactionJoinRow | undefined;
+            WHERE kt.id = $1
+        `, [transactionId]);
 
         if (!tx) return NextResponse.json({ error: 'Transação não encontrada.' }, { status: 404 });
 
@@ -61,44 +61,62 @@ export async function POST(request: Request, { params }: RouteParams) {
             if (tx.porteiro_confirmed_at) return NextResponse.json({ error: 'O porteiro já confirmou esta transação.' }, { status: 400 });
             // Se a contraparte já estava designada, preserva-a; senão, o porteiro que assume vira o dono do lado.
             const counterpartyId = tx.porteiro_id ?? session.id;
-            db.prepare(`UPDATE key_transactions SET porteiro_confirmed_at = ?, porteiro_id = ? WHERE id = ?`).run(now, counterpartyId, transactionId);
+            await execute(
+                'UPDATE key_transactions SET porteiro_confirmed_at = $1, porteiro_id = $2 WHERE id = $3',
+                [now, counterpartyId, transactionId],
+            );
         } else {
             if (tx.user_confirmed_at) return NextResponse.json({ error: 'Você já confirmou esta transação.' }, { status: 400 });
-            db.prepare(`UPDATE key_transactions SET user_confirmed_at = ? WHERE id = ?`).run(now, transactionId);
+            await execute('UPDATE key_transactions SET user_confirmed_at = $1 WHERE id = $2', [now, transactionId]);
         }
 
         // Verificar se ambas as partes já confirmaram
-        const updatedTx = db.prepare('SELECT porteiro_confirmed_at, user_confirmed_at FROM key_transactions WHERE id = ?').get(transactionId) as Pick<KeyTransactionJoinRow, 'porteiro_confirmed_at' | 'user_confirmed_at'>;
+        const updatedTx = (await queryOne<Pick<KeyTransactionJoinRow, 'porteiro_confirmed_at' | 'user_confirmed_at'>>(
+            'SELECT porteiro_confirmed_at, user_confirmed_at FROM key_transactions WHERE id = $1',
+            [transactionId],
+        ))!;
 
         if (updatedTx.porteiro_confirmed_at && updatedTx.user_confirmed_at) {
             // Ambas as partes confirmaram, completar a transação
-            const completeTransaction = db.transaction(() => {
-                db.prepare(`UPDATE key_transactions SET status = 'completed', completed_at = ? WHERE id = ?`)
-                    .run(now, transactionId);
+            // O fecho da dupla confirmacao e a transacao mais critica do sistema:
+            // marca a transacao completa, muda o estado da chave e grava o
+            // historico. As tres tem de valer juntas ou nenhuma valer — uma chave
+            // marcada como devolvida sem a linha de historico correspondente e
+            // exatamente o buraco que o REQ-005 existe para impedir.
+            //
+            // No Postgres isso exige CLIENT DEDICADO: com o pool solto, cada
+            // consulta poderia sair por uma conexao diferente e o BEGIN nao
+            // alcancaria as demais.
+            await withTransaction(async (trx) => {
+                await trx.execute(
+                    "UPDATE key_transactions SET status = 'completed', completed_at = $1 WHERE id = $2",
+                    [now, transactionId],
+                );
 
                 if (tx.action === 'withdraw') {
-                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ? WHERE id = ?")
-                        .run(tx.user_id, tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'withdraw', ?, ?)`)
-                        .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
+                    await trx.execute("UPDATE keys SET status = 'in_use', user_id = $1 WHERE id = $2",
+                        [tx.user_id, tx.key_id]);
+                    await trx.execute(
+                        "INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES ($1, $2, $3, 'withdraw', $4, $5)",
+                        [tx.key_id, tx.user_id, tx.user_username, now, transactionId]);
                 } else if (tx.action === 'return') {
-                    db.prepare("UPDATE keys SET status = 'available', user_id = NULL WHERE id = ?")
-                        .run(tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'return', ?, ?)`)
-                        .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
+                    await trx.execute("UPDATE keys SET status = 'available', user_id = NULL WHERE id = $1",
+                        [tx.key_id]);
+                    await trx.execute(
+                        "INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES ($1, $2, $3, 'return', $4, $5)",
+                        [tx.key_id, tx.user_id, tx.user_username, now, transactionId]);
                 } else if (tx.action === 'transfer') {
                     // Na transferência por usuário comum, o alvo é o user_id da transação.
                     // A chave continua in_use, mas agora com o novo usuário.
-                    db.prepare("UPDATE keys SET status = 'in_use', user_id = ? WHERE id = ?")
-                        .run(tx.user_id, tx.key_id);
-                    db.prepare(`INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES (?, ?, ?, 'transfer', ?, ?)`)
-                        .run(tx.key_id, tx.user_id, tx.user_username, now, transactionId);
+                    await trx.execute("UPDATE keys SET status = 'in_use', user_id = $1 WHERE id = $2",
+                        [tx.user_id, tx.key_id]);
+                    await trx.execute(
+                        "INSERT INTO history (key_id, user_id, username, action, timestamp, transaction_id) VALUES ($1, $2, $3, 'transfer', $4, $5)",
+                        [tx.key_id, tx.user_id, tx.user_username, now, transactionId]);
                 }
             });
 
-            completeTransaction();
-
-            logAction(session.id, session.username,
+            await logAction(session.id, session.username,
                 tx.action === 'withdraw' ? 'KEY_WITHDRAWN' : (tx.action === 'return' ? 'KEY_RETURNED' : 'KEY_TRANSFERRED'),
                 tx.key_name || 'Chave manipulada',
                 `Transação #${transactionId} completada com dupla confirmação`
@@ -124,6 +142,6 @@ export async function POST(request: Request, { params }: RouteParams) {
         console.error('User confirm error:', error);
         return NextResponse.json({ error: 'Falha ao confirmar transação.' }, { status: 500 });
     } finally {
-        logTiming('POST /api/transactions/[id]/user-confirm', performance.now() - started);
+        await logTiming('POST /api/transactions/[id]/user-confirm', performance.now() - started);
     }
 }

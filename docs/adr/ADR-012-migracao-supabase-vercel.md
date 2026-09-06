@@ -80,12 +80,31 @@ dependerem da mudança de stack:
 |---|---|---|
 | 1 | Correções críticas pré-nuvem (Sprint 16) | ✅ entregue |
 | 2 | Filtros e paginação do histórico (Sprint 17) | ✅ entregue |
-| — | Higiene constitucional (Sprint 19) — pré-requisito acordado na aprovação | liberada |
-| 3 | Schema Postgres — índices, `timestamptz`, consolidação de legado (Sprint 20) | liberada |
-| 4 | Camada de dados assíncrona (Sprint 21) | liberada |
-| 5 | Realtime no lugar dos pollings (Sprint 22) | liberada |
-| 6 | Logs estruturados em tabela (Sprint 23) | liberada |
-| 7 | Deploy Vercel + ping GitHub Actions (Sprint 24) | liberada |
+| — | Higiene constitucional (Sprint 19) — pré-requisito acordado na aprovação | ✅ entregue |
+| 3 | Schema Postgres — índices, `timestamptz`, consolidação de legado (Sprint 20) | ✅ entregue |
+| 4 | Camada de dados assíncrona (Sprint 21) | ✅ entregue |
+| 7a | Pré-requisitos do go-live — bootstrap ADMIN, `app_logs`, `JWT_SECRET`, autorização (Sprint 22) | liberada |
+| 7b | Backup verificado + deploy Vercel e ping agendado (Sprint 23) | liberada |
+| 5 | Realtime no lugar dos pollings (Sprint 24) | liberada |
+| 6 | — dissolvida (ver nota abaixo) | — |
+
+> ### Correção de 2026-09-04 — ordem de execução e Etapa 6
+>
+> A ordem 5 → 6 → 7 pressupunha que Realtime e logs em tabela fossem melhorias sobre um
+> sistema já hospedado. Não é o caso: **o sistema nunca foi hospedado nem usado**, e o
+> objetivo declarado pelo usuário passou a ser fazê-lo funcionar em Supabase + Vercel.
+> A Etapa 7 foi antecipada e dividida em 7a (o que precisa existir antes de haver URL
+> pública) e 7b (backup e deploy). A Etapa 5 vai para o fim: é melhoria de experiência
+> sobre um sistema que funciona, não condição para ele funcionar.
+>
+> A **Etapa 6 deixou de existir como etapa** e se dissolveu nas duas primeiras, porque não
+> era melhoria: `structured-logger.ts:51` grava em `logs/` com `fs.appendFileSync`, e no
+> Vercel a escrita falha, cai no `catch` e degrada para `console` — sem derrubar nada e sem
+> alarme. A §7 da constitution já registrava que arquivo em `logs/` não serve à hospedagem
+> serverless, e o critério de aceite (d) do REQ-031 nomeia o log estruturado ao lado de
+> `history` e `action_logs`. Fazer o deploy antes disso reprovaria o critério do próprio
+> requisito que motiva a migração. A task de `app_logs` foi para a 7a; a métrica de backup,
+> que dependia de um arquivo que deixou de ser escrito, foi para a 7b junto do backup.
 
 ---
 
@@ -179,8 +198,34 @@ Hoje: *"Backup diário automatizado do SQLite via node-cron (já existente em
 `src/lib/backup.ts`)"*. `node-cron` depende de processo de longa duração, que não existe
 em serverless.
 
-Proposta: backup gerenciado do Supabase (diário no plano gratuito) + Vercel Cron para
-verificação. **RPO 24h / RTO 4h permanecem** — o meio muda, o alvo não.
+~~Proposta: backup gerenciado do Supabase (diário no plano gratuito) + Vercel Cron para
+verificação.~~ **A parte entre parênteses estava errada e é o que a nota abaixo corrige:
+não há backup gerenciado no plano gratuito.** **RPO 24h / RTO 4h permanecem** — o meio
+muda, o alvo não, e foi exatamente essa cláusula que permitiu corrigir sem mexer no alvo.
+
+
+> ### ⚠️ Correção de 2026-09-04 (CR Tipo D) — não existe backup gerenciado no plano gratuito
+>
+> A documentação do Supabase é explícita: backup automático diário só nos planos **Pro,
+> Team e Enterprise**. Para o plano gratuito ela **recomenda exportar com `db dump` e manter
+> backups off-site**. A §4.3 e este ADR falavam em "verificar o backup gerenciado do
+> provedor" — não havia o que verificar.
+>
+> O alvo não muda: RPO 24 h, RTO 4 h, e **verificação obrigatória**. Muda o meio:
+>
+> - `pg_dump` diário em job agendado do **GitHub Actions** (o mesmo lugar do ping contra a
+>   pausa por inatividade, então não entra infraestrutura nova).
+> - Destino: **repositório privado separado**. O repositório do código é PÚBLICO, e em repo
+>   público os artefatos de workflow são baixáveis por qualquer pessoa — o dump não pode
+>   encostar aqui.
+> - Verificação no próprio job: restaura o dump numa base descartável e reconcilia as
+>   contagens por tabela contra a origem. **Backup não verificado não conta como backup** —
+>   é o ponto que a §4.3 sempre quis e que "gerenciado pelo provedor" nunca garantiu.
+> - Cada execução, sucesso ou falha, é gravada em tabela do banco, para a métrica de
+>   confiabilidade (TASK-075) ler fato em vez de promessa.
+>
+> Custo permanece zero, como o REQ-031 restringe. A alternativa honesta seria o plano Pro
+> (US$ 25/mês), apresentada ao usuário e descartada por ele em favor desta.
 
 ### §7 — Observabilidade
 
@@ -276,17 +321,48 @@ container** — testar contra dialeto diferente do de produção anula boa parte
 
 ## Plano de Reversão
 
+> ### ⚠️ Correção de 2026-09-04 — este plano protegia algo que não existe
+>
+> O plano abaixo, escrito e aprovado em 2026-09-02, pressupõe um sistema em produção:
+> `keys.db` de produção íntegro, ponto de não-retorno na primeira escrita, e servidor PM2
+> ligado por 30 dias. **Confirmado com o usuário em 2026-09-04: nada disso existe.** Não há
+> servidor PM2 em uso, não há `keys.db` com dados reais, ninguém usa o sistema, e o
+> conteúdo do banco anterior era fictício.
+>
+> Na prática o risco é **menor** do que este ADR supunha — sem estado anterior não há o que
+> perder, e não existe ponto de não-retorno. Mas um documento aprovado que declara uma rede
+> de segurança inexistente é pior do que um que admite não ter rede: alguém pode contar com
+> ela numa decisão futura. Daí a correção, e não a remoção silenciosa.
+>
+> **O que de fato vale hoje:**
+>
+> 1. **Reversão de código é por git**, etapa a etapa, como antes. Isso continua verdadeiro
+>    e é a única cláusula do plano original que sobrevive intacta.
+> 2. **Não há dado a preservar.** Os dados hoje no Supabase são sintéticos (TASK-067), como
+>    o `keys.db` que os originou.
+> 3. **Não há PM2 para religar.** A remoção do aparato local (`.bat`, `ecosystem.config.js`,
+>    `show-ip.js`, `/api/server-info`) deixa de depender de uma janela de retenção de 30
+>    dias e entra na TASK-079 sem espera.
+> 4. **O ponto de não-retorno se desloca para o primeiro dado REAL cadastrado em produção**
+>    — que, pela decisão de 2026-09-04, é operação posterior ao go-live, feita pela UI.
+>    Até lá, reverter custa um `git revert` e uma base recriada pelas migrations.
+>
+> A ciência formal da direção sobre PII em provedor terceiro (constitution §0) continua
+> exigida — ela vale para quando o dado real entrar, não para o deploy em si.
+
+### Texto original (2026-09-02) — mantido para rastreabilidade, **premissas inválidas**
+
 Aplicável enquanto o SQLite não for descartado.
 
 1. **Etapas 3–6 são reversíveis por git.** Cada etapa é uma sprint com commits próprios;
    `git revert` do intervalo devolve o sistema ao PM2 + SQLite.
-2. **O `keys.db` de produção não é destruído pela migração** — a carga para o Postgres é
+2. ~~**O `keys.db` de produção não é destruído pela migração**~~ — a carga para o Postgres é
    cópia, não movimentação. Ele permanece como fonte íntegra até o go-live ser aceito.
-3. **Ponto de não-retorno: a primeira escrita em produção no Postgres.** A partir daí,
+3. ~~**Ponto de não-retorno: a primeira escrita em produção no Postgres.**~~ A partir daí,
    voltar exige exportar os dados novos do Postgres de volta para SQLite. Antes desse
    ponto, reverter custa um `git revert` e religar o PM2.
-4. **Retenção:** manter o servidor PM2 atual ligado e capaz de assumir por **30 dias**
-   após o go-live, com o `keys.db` congelado no estado da virada.
+4. ~~**Retenção:** manter o servidor PM2 atual ligado e capaz de assumir por **30 dias**
+   após o go-live, com o `keys.db` congelado no estado da virada.~~
 
 ---
 

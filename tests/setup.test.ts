@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 
 interface TestUserRow {
     id: number;
@@ -7,12 +7,12 @@ interface TestUserRow {
     role: string;
 }
 
-test('Banco de testes e seeds foram injetados corretamente', () => {
-    const admin = db.prepare('SELECT * FROM users WHERE username = ?').get('test_admin') as TestUserRow | undefined;
+test('Banco de testes e seeds foram injetados corretamente', async () => {
+    const admin = await queryOne<TestUserRow>('SELECT * FROM users WHERE username = $1', ['test_admin']);
     expect(admin).toBeDefined();
     expect(admin!.role).toBe('ADMIN');
 
-    const aluno = db.prepare('SELECT * FROM users WHERE username = ?').get('test_aluno') as TestUserRow | undefined;
+    const aluno = await queryOne<TestUserRow>('SELECT * FROM users WHERE username = $1', ['test_aluno']);
     expect(aluno).toBeDefined();
     expect(aluno!.role).toBe('ALUNO');
 });

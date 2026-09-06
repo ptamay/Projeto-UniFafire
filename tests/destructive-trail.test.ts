@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import db from '@/lib/db';
+import { describe, it, expect, vi } from 'vitest';
+import { query, queryOne, execute } from '@/lib/pg';
 
 // TASK-031 — trilha persistente das operações destrutivas (REQ-014):
 // registro prévio em destino que sobrevive à limpeza do banco.
+//
+// TASK-074 (Sprint 22) mudou esse destino: era arquivo em `logs/`, agora é a
+// tabela `app_logs`. O requisito é o mesmo e ficou MAIS forte — o arquivo era
+// texto editável por quem tivesse acesso ao servidor; a tabela tem trigger de
+// imutabilidade e está fora de `tablesToClear`. O que estes testes provam
+// continua sendo: a trilha da operação destrutiva SOBREVIVE à operação.
 
 vi.mock('next/headers', () => ({
     cookies: () => ({
@@ -20,42 +23,39 @@ vi.mock('@/lib/session', () => ({
     ),
 }));
 
-const tmpLogDir = fs.mkdtempSync(path.join(os.tmpdir(), 'unifafire-destr-'));
-
-function readEntries(): Record<string, unknown>[] {
-    const day = new Date().toISOString().slice(0, 10);
-    const file = path.join(tmpLogDir, `app-${day}.log`);
-    if (!fs.existsSync(file)) return [];
-    return fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean).map(l => JSON.parse(l));
+interface Entrada {
+    level: string;
+    message: string;
+    context: Record<string, unknown> | null;
 }
 
-beforeAll(() => {
-    process.env.LOG_DIR = tmpLogDir;
-});
-
-afterAll(() => {
-    delete process.env.LOG_DIR;
-    fs.rmSync(tmpLogDir, { recursive: true, force: true });
-});
+/** As entradas estruturadas gravadas, achatadas para o formato que os cenários
+ *  abaixo já usavam: `msg` e as chaves do contexto no mesmo nível. */
+async function readEntries(): Promise<Record<string, unknown>[]> {
+    const linhas = await query<Entrada>(
+        'SELECT level, message, context FROM app_logs ORDER BY id',
+    );
+    return linhas.map(l => ({ level: l.level, msg: l.message, ...(l.context ?? {}) }));
+}
 
 describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
     it('BDD 1/2: clear-database grava registro prévio E de conclusão em destino que sobrevive à limpeza', async () => {
         // Estado: trilha antiga no banco que SERÁ apagada pela operação
-        db.prepare(`INSERT INTO action_logs (user_id, username, action, target) VALUES (1, 'test_admin', 'ANTIGA', 'x')`).run();
-        db.prepare(`INSERT INTO history (key_id, user_id, username, action) VALUES (1, 1, 'test_admin', 'withdraw')`).run();
+        await execute(`INSERT INTO action_logs (user_id, username, action, target) VALUES (1, 'test_admin', 'ANTIGA', 'x')`);
+        await execute(`INSERT INTO history (key_id, user_id, username, action) VALUES (1, 1, 'test_admin', 'withdraw')`);
 
         const { POST } = await import('@/app/api/settings/clear-database/route');
         const res = await POST();
         expect(res.status).toBe(200);
 
         // Banco limpo (inclusive a própria trilha antiga em action_logs)
-        const remainingHistory = (db.prepare('SELECT COUNT(*) as c FROM history').get() as { c: number }).c;
+        const remainingHistory = Number((await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM history'))?.c);
         expect(remainingHistory).toBe(0);
-        const oldTrail = (db.prepare("SELECT COUNT(*) as c FROM action_logs WHERE action = 'ANTIGA'").get() as { c: number }).c;
+        const oldTrail = Number((await queryOne<{ c: string }>("SELECT COUNT(*) as c FROM action_logs WHERE action = 'ANTIGA'"))?.c);
         expect(oldTrail).toBe(0);
 
-        // Mas a trilha estruturada em ARQUIVO sobreviveu: prévia + conclusão
-        const entries = readEntries().filter(e => e.msg === 'destructive_operation' && e.op === 'clear-database');
+        // Mas a trilha estruturada em app_logs sobreviveu: prévia + conclusão
+        const entries = (await readEntries()).filter(e => e.msg === 'destructive_operation' && e.op === 'clear-database');
         const pre = entries.find(e => e.phase === 'pre');
         const done = entries.find(e => e.phase === 'done');
         expect(pre, 'registro PRÉVIO ausente').toBeDefined();
@@ -64,22 +64,27 @@ describe('TASK-031 — trilha destrutiva persistente (REQ-014)', () => {
         expect(pre!.level).toBe('warn');
     });
 
-    it('BDD 3: history/clear grava a trilha ANTES da deleção (action_logs + arquivo)', async () => {
+    it('BDD 3: history/clear grava a trilha ANTES da deleção (action_logs + app_logs)', async () => {
         // Re-semeia uma chave (o clear-database do teste anterior limpou keys)
-        const keyId = db.prepare("INSERT INTO keys (name, room, status) VALUES ('Chave Trilha', 'Sala 102', 'available')").run().lastInsertRowid;
-        db.prepare(`INSERT INTO history (key_id, user_id, username, action) VALUES (?, 1, 'test_admin', 'withdraw')`).run(keyId);
+        const keyId = (await queryOne<{ id: number }>(
+            "INSERT INTO keys (name, room, status) VALUES ('Chave Trilha', 'Sala 102', 'available') RETURNING id",
+        ))!.id;
+        await execute(`INSERT INTO history (key_id, user_id, username, action) VALUES ($1, 1, 'test_admin', 'withdraw')`, [keyId]);
 
         const { DELETE } = await import('@/app/api/history/clear/route');
         const res = await DELETE();
         expect(res.status).toBe(200);
 
         // Trilha no banco (action_logs não é alvo do history/clear)
-        const dbTrail = db.prepare("SELECT details FROM action_logs WHERE action = 'CLEAR_HISTORY' ORDER BY id DESC").get() as { details: string };
+        // action_logs migrou para o Postgres na fatia (a): logAction grava la.
+        const dbTrail = await queryOne<{ details: string }>(
+            "SELECT details FROM action_logs WHERE action = 'CLEAR_HISTORY' ORDER BY id DESC LIMIT 1",
+        );
         expect(dbTrail).toBeDefined();
-        expect(dbTrail.details).toMatch(/Iniciando/i);
+        expect(dbTrail?.details).toMatch(/Iniciando/i);
 
-        // Trilha prévia no arquivo
-        const pre = readEntries().find(e => e.msg === 'destructive_operation' && e.op === 'history-clear' && e.phase === 'pre');
+        // Trilha prévia em app_logs
+        const pre = (await readEntries()).find(e => e.msg === 'destructive_operation' && e.op === 'history-clear' && e.phase === 'pre');
         expect(pre).toBeDefined();
     });
 });

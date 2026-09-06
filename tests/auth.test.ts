@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '@/app/api/auth/login/route';
-import db from '@/lib/db';
+import { execute } from '@/lib/pg';
 
 // Mock do next/headers
 vi.mock('next/headers', () => {
@@ -27,9 +27,9 @@ function createLoginRequest(username: string, password: string, ip: string = '12
 
 describe('Auth API (Login)', () => {
     
-    beforeEach(() => {
+    beforeEach(async () => {
         // Limpar login_attempts para não interferir entre os testes de lockout
-        db.prepare('DELETE FROM login_attempts').run();
+        await execute('DELETE FROM login_attempts');
     });
 
     it('deve retornar 200 e setar o cookie JWT para credenciais corretas', async () => {

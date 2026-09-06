@@ -1,47 +1,48 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
-import path from 'path';
-import fs from 'fs';
-import { resetConnection } from '@/lib/db';
 import { logAction } from '@/lib/logger';
 
-export async function POST(request: Request) {
-    try {
-        const sessionCookie = (await cookies()).get('session');
-        if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        const session = await verifySession(sessionCookie.value);
-        if (!session || session.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+// TASK-068 (Sprint 21 · Etapa 4 do ADR-012) — importação de banco por upload,
+// DESATIVADA.
+//
+// Mesma raiz da rota de restore: a implementação anterior chamava
+// `resetConnection()` para gravar o arquivo enviado por cima do `keys.db`. Sem
+// arquivo de banco e sem processo longo, a operação não tem equivalente.
+//
+// Esta rota era ainda mais perigosa que a de restore: aceitava um `.db`
+// arbitrário vindo de upload e o promovia a banco de produção inteiro. Na
+// internet pública (ADR-012 §0) isso é superfície que não se reabre sem desenho
+// novo — o que é escopo da **TASK-078**, na Etapa 7.
+//
+// Recusa explícita, estado intocado, e o 403 para não-ADMIN preservado antes da
+// recusa (§3.5).
 
-        const formData = await request.formData();
-        const file = formData.get('file') as File;
+export async function POST() {
+    const sessionCookie = (await cookies()).get('session');
+    if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!file) {
-            return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
-        }
-
-        // Validate file (should be a .db file)
-        if (!file.name.endsWith('.db')) {
-            return NextResponse.json({ error: 'Formato inválido. Envie um arquivo .db' }, { status: 400 });
-        }
-
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const dbPath = path.resolve(process.cwd(), 'keys.db');
-
-        console.log(`[IMPORT SYSTEM] Iniciando importação do banco solicitada pelo Admin: ${session.username}.`);
-
-        // Executar importação sincronamente enquanto o banco atual estiver fechado
-        resetConnection(() => {
-            fs.writeFileSync(dbPath, buffer);
-            console.log(`[IMPORT SYSTEM] Arquivo físico substituído pelo arquivo enviado.`);
-        });
-
-        // Registrar a ação do administrador
-        logAction(session.id, session.username, 'IMPORT_DATABASE', file.name, 'Banco de dados importado manualmente pelo upload de arquivo.');
-
-        return NextResponse.json({ success: true, message: 'Banco de dados importado com sucesso.' });
-    } catch (e) {
-        console.error('[IMPORT SYSTEM ERROR]', e);
-        return NextResponse.json({ error: 'Erro crítico ao importar o banco de dados.' }, { status: 500 });
+    const session = await verifySession(sessionCookie.value);
+    if (!session || session.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    await logAction(
+        session.id,
+        session.username,
+        'IMPORT_DATABASE_INDISPONIVEL',
+        'backups/import',
+        'Importação de banco por upload desativada na migração para Postgres (TASK-068); substituta na TASK-078.',
+    );
+
+    return NextResponse.json(
+        {
+            error:
+                'Importação de banco por upload de arquivo foi desativada na migração para ' +
+                'Postgres. Promover um arquivo enviado a banco de produção não tem equivalente ' +
+                'seguro na nova stack; o desenho substituto é a TASK-078 (Etapa 7 do ADR-012). ' +
+                'Nenhum dado foi alterado.',
+        },
+        { status: 503 },
+    );
 }

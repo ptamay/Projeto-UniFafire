@@ -1,11 +1,36 @@
-import fs from 'fs';
-import path from 'path';
+import { execute } from '@/lib/pg';
 
-// TASK-033 (constitution §7) — logger estruturado: JSON por linha, severidades,
-// máscara de dados sensíveis e persistência em arquivo com rotação diária.
-// A trilha de auditoria no banco (action_logs, REQ-010) permanece em logger.ts;
-// este módulo é o canal operacional/observabilidade — inclusive para eventos que
-// precisam sobreviver a limpezas do banco (REQ-014).
+// TASK-033 (constitution §7) — logger estruturado: severidades, máscara de dados
+// sensíveis e persistência durável.
+//
+// A trilha de auditoria no banco (`action_logs`, REQ-010) permanece em
+// `logger.ts`; este módulo é o canal operacional/observabilidade — inclusive
+// para eventos que precisam sobreviver a limpezas do banco (REQ-014).
+//
+// ## TASK-074 (Sprint 22): o destino deixou de ser arquivo
+//
+// Até aqui a persistência era `fs.appendFileSync` em `logs/`, com rotação
+// diária. No Vercel o filesystem é efêmero e somente-leitura: a escrita falharia,
+// cairia no `catch` que já existia, degradaria para `console` e a aplicação
+// seguiria saudável — com a trilha evaporando a cada invocação, sem alarme.
+//
+// A §7 já registrava isso ("arquivo em `logs/` não serve à hospedagem
+// serverless… a trilha se perderia") e o critério de aceite (d) do REQ-031
+// nomeia o log estruturado ao lado de `history` e `action_logs`. Por isso a
+// TASK-074 subiu da Etapa 6 para a 7a: não é melhoria, é pré-requisito.
+//
+// ## Por que a função virou assíncrona
+//
+// Escrever no Postgres é assíncrono, e disparar sem esperar (`void logStructured`)
+// recriaria o problema numa forma nova: em execução serverless a instância pode
+// congelar assim que a resposta sai, e a escrita pendente morre com ela. O
+// REQ-031(d) pede a trilha "sem perda" — então quem loga espera. Os cinco
+// chamadores já estavam em contexto assíncrono.
+//
+// A degradação para `console` continua, e agora ela é o que ela deveria sempre
+// ter sido: um sinal de que a persistência falhou, não o lugar onde a trilha
+// mora. `console` nunca chama de volta o logger — recursão numa falha de
+// escrita seria um laço infinito exatamente quando o banco está ruim.
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -14,16 +39,6 @@ const MASK = '***';
 
 // Alvo p95 do spec §6 — acima disso o timing sobe para warn
 const SLOW_ROUTE_MS = 500;
-
-function logDir(): string {
-    return path.resolve(process.cwd(), process.env.LOG_DIR || 'logs');
-}
-
-/** Rotação diária: um arquivo por dia (app-YYYY-MM-DD.log). */
-export function currentLogFilePath(): string {
-    const day = new Date().toISOString().slice(0, 10);
-    return path.join(logDir(), `app-${day}.log`);
-}
 
 /** Retorna cópia com valores de chaves sensíveis mascarados, em qualquer profundidade. */
 export function maskSensitive(value: unknown): unknown {
@@ -38,32 +53,45 @@ export function maskSensitive(value: unknown): unknown {
     return value;
 }
 
-export function logStructured(level: LogLevel, message: string, context?: Record<string, unknown>) {
-    const entry = {
-        ts: new Date().toISOString(),
-        level,
-        msg: message,
-        ...(context ? (maskSensitive(context) as Record<string, unknown>) : {}),
-    };
-    const line = JSON.stringify(entry);
+export async function logStructured(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>,
+): Promise<void> {
+    const seguro = context
+        ? (maskSensitive(context) as Record<string, unknown>)
+        : null;
+
+    // A máscara roda ANTES de qualquer saída — inclusive antes do console, que
+    // em produção vai para o coletor da hospedagem e é tão público quanto a
+    // tabela (constitution §6.1).
+    const eco = JSON.stringify({ ts: new Date().toISOString(), level, msg: message, ...(seguro ?? {}) });
 
     try {
-        fs.mkdirSync(logDir(), { recursive: true });
-        fs.appendFileSync(currentLogFilePath(), line + '\n', 'utf-8');
+        await execute(
+            'INSERT INTO app_logs (level, message, context) VALUES ($1, $2, $3)',
+            [level, message, seguro ? JSON.stringify(seguro) : null],
+        );
     } catch (e) {
-        // Falha de disco não pode derrubar a aplicação — degrada para console
-        console.error('[structured-logger] falha ao persistir log:', e);
+        // Persistência é o objetivo, não a condição: uma requisição não pode cair
+        // porque o log falhou. Mas também não pode falhar em silêncio — foi o
+        // silêncio, e não a falha, que deixou o defeito de `logs/` passar.
+        console.error('[structured-logger] falha ao persistir em app_logs:', e);
     }
 
-    if (level === 'error') console.error(line);
-    else if (level === 'warn') console.warn(line);
-    else console.log(line);
+    if (level === 'error') console.error(eco);
+    else if (level === 'warn') console.warn(eco);
+    else console.log(eco);
 }
 
 /** Tempo de resposta de rotas críticas (login, withdraw, confirm, return). */
-export function logTiming(route: string, durationMs: number, context?: Record<string, unknown>) {
+export async function logTiming(
+    route: string,
+    durationMs: number,
+    context?: Record<string, unknown>,
+): Promise<void> {
     const level: LogLevel = durationMs > SLOW_ROUTE_MS ? 'warn' : 'info';
-    logStructured(level, 'route_timing', {
+    await logStructured(level, 'route_timing', {
         type: 'timing',
         route,
         duration_ms: Math.round(durationMs),

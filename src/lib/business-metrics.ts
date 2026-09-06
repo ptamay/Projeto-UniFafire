@@ -1,4 +1,4 @@
-import db from '@/lib/db';
+import { query } from '@/lib/pg';
 import { DOUBLE_CONFIRMATION_TARGET_MINUTES } from '@/lib/business-rules';
 
 // TASK-034 — métricas de negócio do spec §5, calculadas da tabela key_transactions.
@@ -12,13 +12,13 @@ export interface BusinessMetrics {
     medianCounterMinutes: number | null;
 }
 
-export function computeBusinessMetrics(windowDays = 30): BusinessMetrics {
+export async function computeBusinessMetrics(windowDays = 30): Promise<BusinessMetrics> {
     const cutoff = new Date(Date.now() - windowDays * 86400000).toISOString();
-    const rows = db.prepare(`
+    const rows = await query<{ initiated_at: Date; user_confirmed_at: Date | null }>(`
         SELECT initiated_at, user_confirmed_at
         FROM key_transactions
-        WHERE initiated_at >= ?
-    `).all(cutoff) as { initiated_at: string; user_confirmed_at: string | null }[];
+        WHERE initiated_at >= $1
+    `, [cutoff]);
 
     const total = rows.length;
     if (total === 0) {
@@ -27,7 +27,7 @@ export function computeBusinessMetrics(windowDays = 30): BusinessMetrics {
 
     const confirmedMinutes = rows
         .filter(r => r.user_confirmed_at)
-        .map(r => (new Date(r.user_confirmed_at as string).getTime() - new Date(r.initiated_at).getTime()) / 60000)
+        .map(r => ((r.user_confirmed_at as Date).getTime() - r.initiated_at.getTime()) / 60000)
         .filter(m => m >= 0)
         .sort((a, b) => a - b);
 

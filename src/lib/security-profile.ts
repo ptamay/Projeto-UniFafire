@@ -1,4 +1,5 @@
-import db from './db';
+import { queryOne, execute } from './pg';
+import { appEnv } from './app-env';
 
 // PERFIL DE AMBIENTE (constitution §8)
 // TASK-060 (Sprint 19) — §8 determina um perfil único dirigido por APP_ENV, do
@@ -8,11 +9,11 @@ import db from './db';
 //
 // O default é `production`: ausência ou erro de configuração nunca pode relaxar
 // um controle de segurança. Só o literal exato 'dev' seleciona o perfil frouxo.
-export type AppEnv = 'dev' | 'production';
-
-export function appEnv(): AppEnv {
-    return process.env.APP_ENV === 'dev' ? 'dev' : 'production';
-}
+// TASK-076: a definicao saiu para `app-env.ts`, sem dependencia nenhuma, porque
+// o `proxy.ts` roda no Edge Runtime e este modulo importa `./pg`. Re-exportado
+// aqui para nao quebrar quem ja importava daqui.
+export type { AppEnv } from './app-env';
+export { appEnv };
 
 /** §8 — relaxável apenas em dev: lockout e rate limit. */
 function controlesRelaxados(): boolean {
@@ -29,22 +30,10 @@ function controlesRelaxados(): boolean {
 export const RATE_LIMIT_MAX = 30;
 export const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
-export function ensureRateLimitTable() {
-    try {
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS rate_limit_hits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                scope TEXT NOT NULL,
-                identifier TEXT NOT NULL,
-                hit_at INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup
-                ON rate_limit_hits (scope, identifier, hit_at);
-        `);
-    } catch (error) {
-        console.error('Error ensuring rate_limit_hits table:', error);
-    }
-}
+// ensureRateLimitTable foi removida: o schema passa a vir das migrations em
+// db/migrations-pg/, aplicadas antes da aplicacao subir. Criar tabela em
+// runtime escondia divergencia de schema — a tabela nascia com a forma que
+// o codigo supunha, mesmo quando a migration dizia outra coisa.
 
 /**
  * Consome uma unidade da cota de `identifier` no `scope`. Retorna false quando a
@@ -55,26 +44,29 @@ export function ensureRateLimitTable() {
  * de formato de data ou de função específica do dialeto, o que mantém o mesmo
  * código válido em SQLite e Postgres.
  */
-export function checkRateLimit(identifier: string, scope = 'login'): boolean {
+export async function checkRateLimit(identifier: string, scope = 'login'): Promise<boolean> {
     // §8: desligado em dev. Nunca em production.
     if (controlesRelaxados()) return true;
 
-    ensureRateLimitTable();
 
     const now = Date.now();
     const cutoff = now - RATE_LIMIT_WINDOW_MS;
 
     // Poda global: mantém a tabela pequena sem precisar de job dedicado.
-    db.prepare('DELETE FROM rate_limit_hits WHERE hit_at < ?').run(cutoff);
+    await execute('DELETE FROM rate_limit_hits WHERE hit_at < $1', [cutoff]);
 
-    const { hits } = db.prepare(
-        'SELECT COUNT(*) as hits FROM rate_limit_hits WHERE scope = ? AND identifier = ? AND hit_at >= ?'
-    ).get(scope, identifier, cutoff) as { hits: number };
+    // count(*) volta como string no Postgres (bigint não cabe em number sem
+    // perda); converter explicitamente evita a comparação virar string vs número.
+    const linha = await queryOne<{ hits: string }>(
+        'SELECT COUNT(*) as hits FROM rate_limit_hits WHERE scope = $1 AND identifier = $2 AND hit_at >= $3',
+        [scope, identifier, cutoff],
+    );
+    const hits = Number(linha?.hits ?? 0);
 
     if (hits >= RATE_LIMIT_MAX) return false;
 
-    db.prepare('INSERT INTO rate_limit_hits (scope, identifier, hit_at) VALUES (?, ?, ?)')
-        .run(scope, identifier, now);
+    await execute('INSERT INTO rate_limit_hits (scope, identifier, hit_at) VALUES ($1, $2, $3)',
+        [scope, identifier, now]);
     return true;
 }
 
@@ -89,48 +81,39 @@ const LOCKOUT_MAX_ATTEMPTS = 5;
 export const IP_LOCKOUT_MAX_ATTEMPTS = 50;
 export const LOCKOUT_WINDOW_MINUTES = 15;
 
-export function ensureLoginAttemptsTable() {
-    try {
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS login_attempts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT,
-                ip TEXT,
-                success INTEGER,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-    } catch (error) {
-        console.error('Error ensuring login_attempts table:', error);
-    }
-}
+// ensureLoginAttemptsTable foi removida: o schema passa a vir das migrations em
+// db/migrations-pg/, aplicadas antes da aplicacao subir. Criar tabela em
+// runtime escondia divergencia de schema — a tabela nascia com a forma que
+// o codigo supunha, mesmo quando a migration dizia outra coisa.
 
 /** Início da janela de lockout, em ISO UTC — mesmo formato gravado por recordLoginAttempt. */
 function windowStartIso(): string {
     return new Date(Date.now() - LOCKOUT_WINDOW_MINUTES * 60 * 1000).toISOString();
 }
 
-export function recordLoginAttempt(username: string, ip: string, success: boolean) {
-    ensureLoginAttemptsTable();
+export async function recordLoginAttempt(username: string, ip: string, success: boolean) {
     // Timestamp explícito em ISO UTC (e não o CURRENT_TIMESTAMP do SQLite): mesmo
     // formato do resto das tabelas e comparável por faixa sem função de dialeto.
-    db.prepare('INSERT INTO login_attempts (username, ip, success, timestamp) VALUES (?, ?, ?, ?)').run(
-        username,
-        ip,
-        success ? 1 : 0,
-        new Date().toISOString()
+    // success passa a boolean: no Postgres a coluna é boolean de verdade
+    // (TASK-063), e mandar 0/1 seria erro de tipo.
+    await execute(
+        'INSERT INTO login_attempts (username, ip, success, timestamp) VALUES ($1, $2, $3, $4)',
+        [username, ip, success, new Date().toISOString()],
     );
 }
 
-function countFailures(column: 'username' | 'ip', value: string): number {
-    const row = db.prepare(`
+async function countFailures(column: 'username' | 'ip', value: string): Promise<number> {
+    // `column` é interpolado, e continua sendo a única exceção que a §1.3 admite:
+    // vem de um tipo-união fechado no próprio código, nunca de input. O VALOR vai
+    // parametrizado, como todo o resto.
+    const row = await queryOne<{ failures: string }>(`
         SELECT COUNT(*) as failures
         FROM login_attempts
-        WHERE ${column} = ?
-          AND success = 0
-          AND timestamp > ?
-    `).get(value, windowStartIso()) as { failures: number };
-    return row.failures;
+        WHERE ${column} = $1
+          AND NOT success
+          AND timestamp > $2
+    `, [value, windowStartIso()]);
+    return Number(row?.failures ?? 0);
 }
 
 /**
@@ -138,18 +121,17 @@ function countFailures(column: 'username' | 'ip', value: string): number {
  * o IP apresenta volume anômalo de falhas (força bruta distribuída) — este último
  * com limiar alto o bastante para não penalizar uma rede compartilhada legítima.
  */
-export function checkLockout(username: string | undefined | null, ip: string): boolean {
+export async function checkLockout(username: string | undefined | null, ip: string): Promise<boolean> {
     // §8: desligado em dev. O registro das tentativas continua sendo gravado —
     // relaxar o controle não apaga trilha de auditoria (REQ-010).
     if (controlesRelaxados()) return false;
 
-    ensureLoginAttemptsTable();
 
-    if (username && countFailures('username', username) >= LOCKOUT_MAX_ATTEMPTS) {
+    if (username && (await countFailures('username', username)) >= LOCKOUT_MAX_ATTEMPTS) {
         return true;
     }
 
-    return countFailures('ip', ip) >= IP_LOCKOUT_MAX_ATTEMPTS;
+    return (await countFailures('ip', ip)) >= IP_LOCKOUT_MAX_ATTEMPTS;
 }
 
 /**
@@ -158,6 +140,6 @@ export function checkLockout(username: string | undefined | null, ip: string): b
  * outras contas sob ataque sempre que qualquer pessoa do campus logasse.
  * A auditoria permanece integral em action_logs (REQ-010).
  */
-export function clearLoginAttempts(username: string) {
-    db.prepare('DELETE FROM login_attempts WHERE username = ?').run(username);
+export async function clearLoginAttempts(username: string) {
+    await execute('DELETE FROM login_attempts WHERE username = $1', [username]);
 }

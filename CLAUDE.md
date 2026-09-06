@@ -25,47 +25,61 @@ Estes dois comandos existem para que trocar de chat nunca signifique perder cont
 ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 
 ### Quando o usuário disser **"checkpoint"**:
-1. Atualize a seção `## Checkpoint Atual` abaixo com o estado exato desta sessão.
-2. Confirme em 1 linha: *"Checkpoint salvo — [resumo de 1 frase]."*
-3. Não faça mais nada além disso. Este comando não dispara Memory Sync nem commit.
-
-### Quando o usuário disser **"retoma"** (geralmente em um chat novo):
-1. Leia a seção `## Checkpoint Atual` abaixo.
-2. Resuma o estado em 2–3 linhas: onde paramos, o que falta, próxima ação.
-3. Se a seção estiver vazia ou desatualizada (sem checkpoint desde o último Memory Sync),
-   use a seção `## Estado atual do projeto` como fallback.
-4. Não releia `master-spec-core.md` ou módulos a menos que a próxima ação exija
-   especificamente uma regra deles — neste caso, leia apenas o módulo necessário.
-
----
-
-## Checkpoint Atual
+1. Atualize a seção `## Checkpoint Atual
 > Atualizado a qualquer momento via comando "checkpoint". Sobrescrito — não é histórico.
 > Se vazio, esta sessão ainda não gerou checkpoint intermediário — use "Estado atual do projeto" abaixo.
 
 ```
-- Fase: 8-10 (execução de sprint) — ADR-012 APROVADO; Sprint 20 concluída
-- Sprint/Task Ativa: Nenhuma. Sprints 16–20 concluídas.
-- Última Ação: Sprint 20 (Etapa 3 do ADR-012 — schema Postgres) fechada. TASK-063 a 067:
-  schema Postgres equivalente em db/migrations-pg/ (diretório próprio; Gate 2 estendido para
-  cobrir os dois — decisão D1), índices mínimos + timestamptz, imutabilidade do histórico em
-  PL/pgSQL com bypass por set_config transacional e superfície de escrita fechada (RLS nas 9
-  tabelas + REVOKE de anon/authenticated; 2 achados do get_advisors corrigidos), legado
-  employees/employee_id descartado (9 pontos de código; keys.db intacto — TASK-066), e loader
-  SQLite→Postgres com reconciliação de contagens (carga sintética — decisão D3). Tudo provado
-  no Supabase real (projeto nkhoyvgnevtwlkheknxu, sa-east-1). 197 testes, 6 gates verdes.
-- Próxima Ação: Sprint 21 — Etapa 4 (camada de dados assíncrona): TASK-068 a 071. A MAIOR das
-  sete (158 chamadas síncronas em 31 arquivos). Primeira decisão da sprint: banco dos testes
-  (recomendação do ADR: Postgres em container). Oráculo pronto: docs/migracao-dialeto-sql.md.
-- Decisões em aberto: (1) banco dos testes na Etapa 4 — decidir ao iniciar a Sprint 21;
-  (2) expurgar keys.db do histórico antigo do git exige reescrever história — baixo risco.
-- Estado do Supabase: schema das 9 tabelas + índices + triggers de imutabilidade + RLS
-  aplicados; dados SINTÉTICOS carregados (20 users, 5 keys, 92 tx, 30 history, 99 logs, 4
-  settings). PII real só entra na Etapa 7, com ciência formal da direção (constitution §0).
-- Arquivos não commitados: CLAUDE.md (este checkpoint) + memory sync
-- Branch atual: feature/sprint-16-correcoes-criticas (não publicada; Sprints 16–20)
-- Pendência de deploy: `node db/migrate.mjs up` no keys.db de produção
-- Atualizado em: 2026-09-03
+- Fase: 8-10 (execução de sprint) — ADR-012: Etapas 3, 4, 7a e 7b CONCLUÍDAS. Falta a 5.
+- Sprint/Task Ativa: Nenhuma. Sprints 16–23 concluídas.
+- Última Ação: Sprint 23 (Etapa 7b — Backup e Deploy) FECHADA.
+  TASK-078 backup por `pg_dump` diário no GitHub Actions, verificado por RESTAURAÇÃO num
+  Postgres descartável — reconcilia contagens E esquema (tabelas, índices, triggers, RLS,
+  funções) — enviado a repositório PRIVADO separado, com cada execução gravada em
+  `backup_runs` (imutável por trigger), inclusive as que falharam;
+  TASK-075 a métrica de confiabilidade saiu do `.jsonl` e lê `backup_runs`, distinguindo na
+  tela quatro estados: nunca rodou / rodou e parou / rodou e falhou / íntegro — mais
+  "não foi possível ler". `src/lib/backup.ts` perdeu TODO acesso a disco e a lista de
+  exceção da guarda de filesystem da TASK-074 ficou VAZIA;
+  TASK-079 `/api/health` público e pobre de propósito (dois campos, lista fechada, consulta
+  o banco, 503 se ele não responde), ping diário em `keepalive.yml`, e o aparato local
+  removido inteiro — 4 `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info` e o
+  card de IPs da rede interna. `docs/runbook-deploy.md` escrito para quem não conhece o
+  projeto; `docs/runbook.md` virou ponteiro (ensinava PM2 e restauração por botão).
+  Verificado: 404 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0
+  vulnerabilidades, `next build` verde SEM DATABASE_URL, e o sistema exercitado no
+  navegador de uma base VAZIA. O 503 do health foi conferido com o container REALMENTE
+  parado, e o curl do workflow saiu com código 22.
+- Próxima Ação: **O GO-LIVE É DO USUÁRIO.** Seguir `docs/runbook-deploy.md`: criar o projeto
+  na Vercel (§2), cadastrar variáveis e secrets (§3), aplicar as migrations no Supabase (§4),
+  criar o primeiro ADMIN (§5) e criar o repositório privado de backup (§6.1). Depois disso,
+  Sprint 24 — Etapa 5: Realtime (TASK-072, 073), que é melhoria e não condição.
+- ⚠️ PENDÊNCIA QUE BLOQUEIA O BACKUP: a migration `202609041800_backup_runs.up.sql` ainda
+  NÃO foi aplicada ao Supabase. Sem ela o job de backup falha no passo final.
+- ⚠️ NÃO EXISTE PRODUÇÃO (confirmado em 2026-09-04). Sem servidor PM2 — e agora sem nem o
+  aparato dele no repositório. O conteúdo do banco anterior era FICTÍCIO; não há migração de
+  dados no caminho do go-live.
+- Estado do Supabase: schema + índices + triggers + RLS aplicados; dados SINTÉTICOS da
+  TASK-067 ainda lá. Limpar `users` é pré-requisito do bootstrap, que recusa base povoada.
+  Falta aplicar a migration de `backup_runs`.
+- Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco baixíssimo —
+  aqueles arquivos nunca tiveram dado real); (b) **CR de faxina da tela de configurações** —
+  são QUATRO itens prometendo o que o sistema não faz: "Horário do Backup" e "Retenção"
+  inertes, botão "Gerar Backup Agora" que sempre 503, e o card "Importar Banco (.db)" com
+  as rotas restore/import; (c) CR para runner de migrations do Postgres.
+- ⚠️ TESTES: exigem Postgres em container — `npm run test:db:up` ANTES de `npx vitest`.
+  A suíte dá TRUNCATE no MESMO banco usado para verificar no navegador. Parece sempre
+  defeito de autenticação: o login recusa credencial que estava correta. REGRA: verificação
+  no navegador é o ÚLTIMO passo, depois da suíte e dos gates. Para semear: TRUNCATE +
+  `DATABASE_URL=... node db/bootstrap-admin.mjs` (o script NÃO lê o .env.local).
+- ⚠️ LIÇÃO DE DUAS SPRINTS SEGUIDAS: todo o retrabalho das Sprints 22 e 23 foi TESTE MEU que
+  não media o que dizia medir. Teste que varre texto precisa ser exercitado contra o caso
+  que deveria pegar, senão passa e não prova nada.
+- Arquivos não commitados: nenhum
+- Branch atual: feature/sprint-23-backup-deploy (Sprints 16–23, não publicada)
+- Pendências do usuário: o go-live inteiro (ver Próxima Ação). PR #14 (release v0.3.0)
+  merged em 03e4466.
+- Atualizado em: 2026-09-04
 ```
 
 ---
@@ -114,11 +128,14 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 20 concluída)
-Última sprint     : 20 ✅ (Etapa 3 do ADR-012 — Schema Postgres · TASK-063 a 067)
-Fase atual        : 8-10 (execução da migração ADR-012; Etapas 3–7 = Sprints 20–24, Etapa 3 fechada)
+Sprint atual      : — (nenhuma ativa; Sprint 23 concluída)
+Última sprint     : 23 ✅ (Etapa 7b do ADR-012 — Backup e Deploy · TASK-078, 075, 079)
+Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
+                    Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida.
+                    Etapas 3, 4, 7a e 7b fechadas — falta a 5, adiada para depois do go-live)
 Último commit     : (ver git log -1)
-Próxima ação      : Sprint 21 — Etapa 4 (camada de dados assíncrona · TASK-068 a 071)
+Próxima ação      : GO-LIVE, e ele é do usuário — `docs/runbook-deploy.md`. Depois,
+                    Sprint 24 — Etapa 5: Realtime (TASK-072, 073)
 ```
 
 ---
@@ -131,12 +148,23 @@ Próxima ação      : Sprint 21 — Etapa 4 (camada de dados assíncrona · TAS
 | Camada | Ferramenta padrão |
 |--------|------------------|
 | Frontend | Next.js + Tailwind CSS + Custom CSS |
-| Backend / ORM | SQLite (better-sqlite3) |
-| Auth | Baseada em sessão local/JWT |
-| Deploy | PM2 em servidor local |
+| Backend / dados | **Postgres (Supabase, `sa-east-1`) via `pg`** — `src/lib/pg.ts`. Sem ORM, sem prepared statement nomeado, `$n` sempre |
+| Auth | Sessão/JWT (`jose`) + `bcryptjs`. Segredo validado por `src/lib/secret-policy.ts` — o processo NÃO SOBE com segredo fraco. Cookie só por `src/lib/session-cookie.ts`, com `secure` incondicional em produção |
+| Deploy | **Vercel**. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi REMOVIDO na TASK-079. Saúde em `/api/health`, pública e de dois campos. Passo a passo em `docs/runbook-deploy.md` |
+| Testes | Vitest contra **Postgres real em container** (`npm run test:db:up`) + Playwright |
 | Secrets | .env local |
 | Erros | Sentry |
+| Autorização | `src/proxy.ts` NEGA por padrão (API 401, página 307). Papel continua sendo do handler — §3.2 |
+| Backup | **`pg_dump` diário no GitHub Actions** → repositório PRIVADO separado, verificado por RESTAURAÇÃO (contagens + esquema) numa base descartável. Cada execução é gravada em `backup_runs`. O plano gratuito do Supabase NÃO tem backup gerenciado — CR Tipo D `7770d2e` |
 | Agente de sprint | Antigravity |
+
+> ⚠️ `better-sqlite3` saiu do runtime na Sprint 21 e é **devDependency** — usado só pelas
+> ferramentas offline `db/migrate.mjs` e `db/load-pg.mjs`. Importá-lo em `src/` reprova a suíte.
+>
+> ⚠️ Promessa solta é **erro de lint** na superfície de servidor desde a TASK-081
+> (`@typescript-eslint/no-floating-promises`). Chamada assíncrona sem `await` em rota, lib,
+> proxy ou Server Component reprova o pre-commit — em serverless a instância congela quando
+> a resposta sai e a escrita pendente morre com ela.
 
 ---
 

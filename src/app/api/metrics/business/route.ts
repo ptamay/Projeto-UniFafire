@@ -19,5 +19,5 @@ export async function GET() {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json(computeBusinessMetrics(30));
+    return NextResponse.json(await computeBusinessMetrics(30));
 }

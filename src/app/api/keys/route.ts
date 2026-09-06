@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+import { query, queryOne, execute } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
@@ -12,7 +12,18 @@ interface KeyRow {
     status: 'available' | 'in_use';
     employee_name?: string | null;
     employee_role?: string | null;
-    pending_info: string | null;
+    // json_build_object devolve `json` e o driver entrega o objeto pronto — no
+    // SQLite era TEXTO, e por isso havia um JSON.parse do outro lado.
+    pending_info: {
+        transaction_id: number;
+        action: string;
+        user_confirmed: boolean;
+        porteiro_confirmed: boolean;
+        user_name: string | null;
+        user_role: string | null;
+        user_id: number | null;
+        porteiro_id: number | null;
+    } | null;
     in_use_since: string | null;
     withdraw_justification: string | null;
 }
@@ -33,9 +44,9 @@ export async function GET() {
         const user = await getUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const rawKeys = db.prepare(`
+        const rawKeys = await query<KeyRow>(`
             SELECT k.*, u.full_name as employee_name, u.role as employee_role,
-                   (SELECT json_object(
+                   (SELECT json_build_object(
                        'transaction_id', kt.id,
                        'action', kt.action,
                        'user_confirmed', kt.user_confirmed_at IS NOT NULL,
@@ -59,13 +70,13 @@ export async function GET() {
                     ORDER BY completed_at DESC LIMIT 1) as withdraw_justification
             FROM keys k 
             LEFT JOIN users u ON k.user_id = u.id
-            WHERE k.active = 1
-        `).all() as KeyRow[];
+            WHERE k.active
+        `);
 
-        const keys = rawKeys.map((k) => ({
-            ...k,
-            pending_info: k.pending_info ? JSON.parse(k.pending_info) : null
-        }));
+        // Sem JSON.parse: o driver ja entrega o objeto. Forcar ::text para
+        // preservar o parse carregaria para a stack nova uma volta que so
+        // existia por limitacao da antiga.
+        const keys = rawKeys;
 
         return NextResponse.json(keys);
     } catch {
@@ -89,19 +100,20 @@ export async function POST(request: Request) {
         const { name, room } = parseResult.data;
 
         // Check for duplicates
-        const existing = db.prepare('SELECT id FROM keys WHERE name = ?').get(name);
+        const existing = await queryOne('SELECT id FROM keys WHERE name = $1', [name]);
         if (existing) {
             return NextResponse.json({ error: 'Já existe uma chave com este nome.' }, { status: 400 });
         }
 
-        const stmt = db.prepare('INSERT INTO keys (name, room) VALUES (?, ?)');
-        const info = stmt.run(name, room || '');
+        const criada = await queryOne<{ id: number }>(
+            'INSERT INTO keys (name, room) VALUES ($1, $2) RETURNING id', [name, room || ''],
+        );
 
         if (user) {
-            logAction(user.id, user.username, 'CREATE_KEY', name, `Room: ${room || 'N/A'}`);
+            await logAction(user.id, user.username, 'CREATE_KEY', name, `Room: ${room || 'N/A'}`);
         }
 
-        return NextResponse.json({ id: info.lastInsertRowid, name, room, status: 'available' });
+        return NextResponse.json({ id: criada!.id, name, room, status: 'available' });
     } catch {
         return NextResponse.json({ error: 'Failed to create key' }, { status: 500 });
     }
@@ -125,18 +137,19 @@ export async function PUT(request: Request) {
         
         const { id, name, room } = parseResult.data;
 
-        const currentKey = db.prepare('SELECT * FROM keys WHERE id = ?').get(id) as KeyRow | undefined;
+        const currentKey = await queryOne<KeyRow>('SELECT * FROM keys WHERE id = $1', [id]);
 
-        const stmt = db.prepare('UPDATE keys SET name = ?, room = ? WHERE id = ?');
-        const info = stmt.run(name, room || '', id);
+        const alteradas = await execute(
+            'UPDATE keys SET name = $1, room = $2 WHERE id = $3', [name, room || '', id],
+        );
 
-        if (info.changes === 0) {
+        if (alteradas === 0) {
             return NextResponse.json({ error: 'Key not found' }, { status: 404 });
         }
 
         if (user && currentKey) {
             const details = `Changed from: ${currentKey.name} (${currentKey.room}) to ${name} (${room})`;
-            logAction(user.id, user.username, 'UPDATE_KEY', name, details);
+            await logAction(user.id, user.username, 'UPDATE_KEY', name, details);
         }
 
         return NextResponse.json({ success: true, id, name, room });
@@ -157,7 +170,7 @@ export async function DELETE(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-        const key = db.prepare('SELECT name, room, status FROM keys WHERE id = ?').get(id) as Pick<KeyRow, 'name' | 'room' | 'status'> | undefined;
+        const key = await queryOne<Pick<KeyRow, 'name' | 'room' | 'status'>>('SELECT name, room, status FROM keys WHERE id = $1', [id]);
 
         if (!key) return NextResponse.json({ error: 'Key not found' }, { status: 404 });
 
@@ -165,11 +178,10 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Não é possível apagar: Chave está em uso.' }, { status: 400 });
         }
 
-        const stmt = db.prepare('UPDATE keys SET active = 0 WHERE id = ?');
-        stmt.run(id);
+        await execute('UPDATE keys SET active = false WHERE id = $1', [id]);
 
         if (user) {
-            logAction(user.id, user.username, 'DELETE_KEY', key.name, `Deleted key ${key.name} - ${key.room}`);
+            await logAction(user.id, user.username, 'DELETE_KEY', key.name, `Deleted key ${key.name} - ${key.room}`);
         }
 
         return NextResponse.json({ success: true });

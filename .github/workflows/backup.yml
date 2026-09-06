@@ -1,0 +1,156 @@
+# TASK-078 (Sprint 23 · Etapa 7b do ADR-012) — backup diário verificado.
+# constitution §4.3, corrigida no CR Tipo D de 2026-09-04.
+#
+# ## Por que este workflow existe
+#
+# A §4.3 dizia "backup diário gerenciado pelo provedor, verificado por job
+# agendado". O plano gratuito do Supabase NÃO tem backup gerenciado — a própria
+# documentação recomenda `db dump` + off-site para esse plano. Este job é o meio;
+# o alvo (RPO 24 h, RTO 4 h, verificação obrigatória) não mudou.
+#
+# ## O que este arquivo NÃO decide
+#
+# Ele não decide se o backup prestou. Isso é `db/verify-dump.mjs`, que tem teste.
+# YAML não tem teste, e um erro de reconciliação escrito aqui só apareceria no
+# dia em que o backup fosse necessário.
+#
+# ## Antes da primeira execução (feito pelo usuário — ver docs/runbook-deploy.md)
+#
+#   1. Criar um repositório PRIVADO para os dumps.
+#      O repositório do CÓDIGO é público, e em repo público os artefatos de
+#      workflow são baixáveis por qualquer pessoa. O dump não pode encostar aqui.
+#   2. Cadastrar os secrets deste repositório:
+#      - PROD_DATABASE_URL  → string de conexão do Supabase (pooler)
+#      - BACKUP_REPO        → "usuario/nome-do-repo-privado"
+#      - BACKUP_REPO_TOKEN  → PAT com escrita APENAS nesse repositório
+#
+# Enquanto os secrets não existirem, o job falha na primeira etapa — o que é o
+# comportamento certo: um backup que não roda tem de ser barulhento.
+
+name: Backup diário verificado
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em America/Recife (UTC-3, sem horário de verão).
+    # Fora do horário letivo, então uma restauração de emergência não disputa
+    # banco com a portaria.
+    - cron: '0 6 * * *'
+  # Permite rodar à mão para testar sem esperar um dia — e para o ensaio de
+  # restauração que a §4.3 exige do responsável.
+  workflow_dispatch:
+
+# Um backup por vez. Duas execuções simultâneas escreveriam o mesmo arquivo no
+# repositório de destino e uma sobrescreveria a outra pela metade.
+concurrency:
+  group: backup-diario
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # Base DESCARTÁVEL onde o dump é restaurado para verificação. Precisa ser
+      # separada da origem: restaurar por cima da produção para "conferir" seria
+      # trocar o risco de perder dados pelo risco de destruí-los.
+      verificacao:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verificacao
+          POSTGRES_DB: verificacao
+        ports: ['55433:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # `pg_dump` 17 lê servidores 15 e 17 — cliente mais novo que o servidor é
+      # a direção compatível. O contrário não é.
+      PGDUMP_IMAGE: postgres:17
+      ARQUIVO: dump.sql.gz
+      # A URL da base de verificacao e montada por partes, e nao escrita inteira.
+      # Ela nao e segredo — e um container efemero, so alcancavel de dentro deste
+      # job —, mas string com forma de credencial num arquivo versionado e a
+      # coisa exata que uma varredura de secrets deve poder proibir sem excecao.
+      # Sem literal, nao ha excecao a manter.
+      VERIFICACAO_HOST: localhost
+      VERIFICACAO_PORTA: '55433'
+      VERIFICACAO_USUARIO: postgres
+      VERIFICACAO_BANCO: verificacao
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Montar a URL da base de verificacao
+        run: |
+          echo "VERIFICACAO_URL=postgresql://${VERIFICACAO_USUARIO}:${POSTGRES_PASSWORD}@${VERIFICACAO_HOST}:${VERIFICACAO_PORTA}/${VERIFICACAO_BANCO}" >> "$GITHUB_ENV"
+        env:
+          POSTGRES_PASSWORD: verificacao
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Gerar o dump
+        id: dump
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          docker run --rm --network host \
+            "$PGDUMP_IMAGE" pg_dump "$DATABASE_URL" \
+            --no-owner --no-privileges --format=plain \
+            | gzip -9 > "$ARQUIVO"
+          echo "size=$(stat -c%s "$ARQUIVO")" >> "$GITHUB_OUTPUT"
+
+      - name: Restaurar numa base descartável e reconciliar contagens
+        id: verificar
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          gunzip -c "$ARQUIVO" | docker run --rm -i --network host \
+            "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q
+          node db/verify-dump-cli.mjs "$DATABASE_URL" "$VERIFICACAO_URL"
+
+      - name: Enviar para o repositório privado
+        id: enviar
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
+        run: |
+          set -euo pipefail
+          DESTINO="backups/$(date -u +%Y/%m/%Y-%m-%d).sql.gz"
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${BACKUP_REPO}.git" destino
+          mkdir -p "destino/$(dirname "$DESTINO")"
+          cp "$ARQUIVO" "destino/$DESTINO"
+          cd destino
+          git config user.name  "backup-bot"
+          git config user.email "backup-bot@users.noreply.github.com"
+          git add "$DESTINO"
+          git commit -m "backup verificado $(date -u +%Y-%m-%d)"
+          git push
+          echo "destino=${BACKUP_REPO}:${DESTINO}" >> "$GITHUB_OUTPUT"
+
+      # `always()` é o que transforma falha em REGISTRO. Sem ele, um job que
+      # quebra no meio não deixa rastro, e a métrica da TASK-075 lê "nenhuma
+      # execução" — que é a leitura errada e tranquilizadora.
+      - name: Registrar a execução (sempre)
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            node db/backup-run.mjs --ok \
+              --size "${{ steps.dump.outputs.size }}" \
+              --dest "${{ steps.enviar.outputs.destino }}"
+          else
+            node db/backup-run.mjs --fail \
+              --error "job ${{ job.status }} — ver a execução ${{ github.run_id }}"
+          fi

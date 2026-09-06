@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET as UsersGET, POST as UsersPOST, DELETE as UsersDELETE } from '@/app/api/users/route';
 import { POST as KeysPOST } from '@/app/api/keys/route';
-import db from '@/lib/db';
+import { execute } from '@/lib/pg';
 
 // Mock cookies and session
 vi.mock('next/headers', () => {
@@ -28,15 +28,15 @@ vi.mock('@/lib/session', () => {
 
 describe('RBAC - Controle de Acesso', () => {
     
-    beforeEach(() => {
+    beforeEach(async () => {
         // Reset DB if needed, mas esses testes são puramente de status
         // exceto delete/create, onde podemos usar transactions
-        db.prepare("DELETE FROM users WHERE username = 'temp_user_rbac'").run();
-        db.prepare("DELETE FROM keys WHERE name = 'Chave RBAC'").run();
+        await execute("DELETE FROM users WHERE username = 'temp_user_rbac'");
+        await execute("DELETE FROM keys WHERE name = 'Chave RBAC'");
     });
 
     describe('Alunos / Usuários Comuns (Role: ALUNO, FUNCIONARIO)', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             currentSession = { id: 5, role: 'ALUNO', username: 'test_aluno' };
         });
 
@@ -65,7 +65,7 @@ describe('RBAC - Controle de Acesso', () => {
     });
 
     describe('Porteiros (Role: PORTEIRO)', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             currentSession = { id: 3, role: 'PORTEIRO', username: 'test_porteiro' };
         });
 
@@ -94,7 +94,7 @@ describe('RBAC - Controle de Acesso', () => {
     });
 
     describe('Gestores e Admins (Role: GESTOR, ADMIN)', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             currentSession = { id: 1, role: 'ADMIN', username: 'test_admin' };
         });
 

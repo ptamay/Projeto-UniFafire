@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
-import bcrypt from 'bcrypt';
+import { query, queryOne, execute } from '@/lib/pg';
+import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
 import { verifySession } from '@/lib/session';
@@ -24,7 +24,7 @@ export async function GET() {
         const session = await verifySession(sessionCookie.value);
         if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR' && session.role !== 'PORTEIRO')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        const users = db.prepare('SELECT id, username, full_name, matricula, phone, role FROM users WHERE active = 1').all();
+        const users = await query('SELECT id, username, full_name, matricula, phone, role FROM users WHERE active');
         return NextResponse.json(users);
     } catch {
         return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
             let found = false;
             for (let i = 1; i <= first.length; i++) {
                 const attempt = first.substring(0, i) + last;
-                if (!db.prepare('SELECT id FROM users WHERE username = ?').get(attempt)) {
+                if (!(await queryOne('SELECT id FROM users WHERE username = $1', [attempt]))) {
                     finalUsername = attempt;
                     found = true;
                     break;
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
                 let idx = 1;
                 while (true) {
                     const fallback = first.substring(0, 1) + last + idx;
-                    if (!db.prepare('SELECT id FROM users WHERE username = ?').get(fallback)) {
+                    if (!(await queryOne('SELECT id FROM users WHERE username = $1', [fallback]))) {
                         finalUsername = fallback;
                         break;
                     }
@@ -84,21 +84,23 @@ export async function POST(request: Request) {
 
         let finalPassword = password;
         if (!finalPassword) {
-            const settingsRow = db.prepare("SELECT value FROM settings WHERE key = 'default_reset_password'").get() as { value: string } | undefined;
+            const settingsRow = await queryOne<{ value: string }>("SELECT value FROM settings WHERE key = 'default_reset_password'");
             finalPassword = settingsRow ? settingsRow.value : 'unifafire123';
         }
 
-        const existing = db.prepare('SELECT id, active FROM users WHERE username = ?').get(finalUsername) as Pick<UserRow, 'id' | 'active'> | undefined;
+        const existing = await queryOne<Pick<UserRow, 'id' | 'active'>>('SELECT id, active FROM users WHERE username = $1', [finalUsername]);
         if (existing) {
-            if (existing.active === 1) {
+            if (existing.active) {
                 return NextResponse.json({ error: 'Este usuário já está cadastrado e ativo' }, { status: 400 });
             } else {
                 // Reactivate inactive user
                 const hash = await bcrypt.hash(finalPassword, 10);
-                db.prepare('UPDATE users SET active = 1, password_hash = ?, role = ?, full_name = ?, matricula = ?, phone = ?, requires_password_change = 1 WHERE id = ?')
-                    .run(hash, role, full_name || null, matricula || null, phone || null, existing.id);
+                await execute(
+                    'UPDATE users SET active = true, password_hash = $1, role = $2, full_name = $3, matricula = $4, phone = $5, requires_password_change = true WHERE id = $6',
+                    [hash, role, full_name || null, matricula || null, phone || null, existing.id],
+                );
 
-                logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
+                await logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
 
                 return NextResponse.json({
                     id: existing.id, username: finalUsername, role,
@@ -110,12 +112,14 @@ export async function POST(request: Request) {
         }
 
         const hash = await bcrypt.hash(finalPassword, 10);
-        const info = db.prepare('INSERT INTO users (username, password_hash, role, full_name, matricula, phone, requires_password_change) VALUES (?, ?, ?, ?, ?, ?, 1)')
-            .run(finalUsername, hash, role, full_name || null, matricula || null, phone || null);
+        const criado = await queryOne<{ id: number }>(
+            'INSERT INTO users (username, password_hash, role, full_name, matricula, phone, requires_password_change) VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING id',
+            [finalUsername, hash, role, full_name || null, matricula || null, phone || null],
+        );
 
-        logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
+        await logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
 
-        return NextResponse.json({ id: info.lastInsertRowid, username: finalUsername, role, full_name, matricula, generatedPassword: finalPassword });
+        return NextResponse.json({ id: criado!.id, username: finalUsername, role, full_name, matricula, generatedPassword: finalPassword });
     } catch (error) {
         console.error('Create user error:', error);
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
@@ -140,7 +144,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Você não pode excluir a si mesmo.' }, { status: 403 });
         }
 
-        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
+        const targetUser = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [id]);
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
         if (targetUser.username === 'admin') {
@@ -148,23 +152,27 @@ export async function DELETE(request: Request) {
         }
 
         if (targetUser.role === 'ADMIN') {
-            const result = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN'").get() as { count: number };
-            if (result.count <= 1) {
+            // count(*) volta STRING no Postgres — sem Number(), `'1' <= 1` seria
+            // falso e o ultimo admin poderia ser excluido.
+            const result = await queryOne<{ count: string }>("SELECT COUNT(*) as count FROM users WHERE role = 'ADMIN' AND active");
+            if (Number(result?.count) <= 1) {
                 return NextResponse.json({ error: 'Não é possível excluir o único administrador.' }, { status: 403 });
             }
         }
 
-        const keysInPossession = db.prepare("SELECT COUNT(*) as count FROM keys WHERE user_id = ? AND status = 'in_use'").get(id) as { count: number };
-        if (keysInPossession.count > 0) {
+        const keysInPossession = await queryOne<{ count: string }>(
+            "SELECT COUNT(*) as count FROM keys WHERE user_id = $1 AND status = 'in_use'", [id],
+        );
+        if (Number(keysInPossession?.count) > 0) {
             return NextResponse.json({ error: 'Não é possível excluir: o usuário possui chaves em sua posse.' }, { status: 400 });
         }
 
-        const info = db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(id);
-        if (info.changes === 0) {
+        const desativadas = await execute('UPDATE users SET active = false WHERE id = $1', [id]);
+        if (desativadas === 0) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
+        await logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -186,17 +194,19 @@ export async function PUT(request: Request) {
 
         if (!id) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
 
-        const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
+        const targetUser = await queryOne<UserRow>('SELECT * FROM users WHERE id = $1', [id]);
         if (!targetUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
         if (targetUser.username === 'admin' && role && role !== 'ADMIN') {
             return NextResponse.json({ error: 'O perfil do administrador principal do sistema não pode ser rebaixado.' }, { status: 403 });
         }
 
-        db.prepare('UPDATE users SET full_name = ?, matricula = ?, phone = ?, role = ? WHERE id = ?')
-            .run(full_name || null, matricula || null, phone || null, role || targetUser.role, id);
+        await execute(
+            'UPDATE users SET full_name = $1, matricula = $2, phone = $3, role = $4 WHERE id = $5',
+            [full_name || null, matricula || null, phone || null, role || targetUser.role, id],
+        );
 
-        logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
+        await logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
 
         return NextResponse.json({ success: true });
     } catch (error) {

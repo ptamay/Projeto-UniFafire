@@ -1915,3 +1915,26 @@ textarea:focus-visible,
   font-weight: 600;
   color: var(--text-muted);
 }
+
+/* ── Status do backup (TASK-075) ──────────────────────────── */
+/* Os quatro estados da confiabilidade precisam ser distinguiveis SEM ler o
+   texto — "nunca rodou" e "rodou e falhou" sao ambos ruins, mas exigem acoes
+   diferentes, e o bloco antes simplesmente sumia quando nao havia dado. */
+.bkp-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 0.8125rem;
+}
+.bkp-status strong { color: var(--text-primary); font-weight: 700; }
+.bkp-status span { color: var(--text-muted); overflow-wrap: anywhere; }
+.bkp-status--bom { border-color: var(--green-400); background: var(--bg-selection); }
+.bkp-status--bom strong { color: var(--text-green); }
+.bkp-status--ruim { border-color: var(--danger); background: var(--danger-bg); }
+.bkp-status--ruim strong { color: var(--danger-text); }
+.bkp-status--alerta { border-color: var(--warning); background: var(--warning-bg); }
+.bkp-status--alerta strong { color: var(--warning-text); }

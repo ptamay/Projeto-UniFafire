@@ -3,18 +3,23 @@
 > Perspectiva de engenharia. Gerado na Fase 6. Toda mudança de escopo passa antes
 > pelo Changelog do `spec.md`. Decisões não-óbvias registradas na §2.
 
-## 1. Stack Aprovada (Fase 5 — legado mantido como baseline)
+## 1. Stack Aprovada
+
+> A tabela nasceu na Fase 5 descrevendo o legado mantido como baseline. O **ADR-012**
+> (aprovado em 2026-09-02) a substitui por etapas; a coluna "Observação" registra em que
+> ponto cada camada está. Camada já virada = a linha vale como está. Camada ainda em
+> transição = o legado continua vigente até a Etapa 7 (constitution §0).
 
 | Camada | Tecnologia | Observação |
 |---|---|---|
 | Full-stack | Next.js (App Router) + React 19 + TypeScript | já em produção local |
-| Banco | SQLite via better-sqlite3 (arquivo `keys.db`) | prepared statements obrigatórios |
-| Auth | JWT (`jose`, HS256) em cookie + `bcrypt` | segredo migra para `.env` (Sprint 1) |
+| Banco | **Postgres (Supabase, `sa-east-1`) via `pg`** — ver D-09 | ✅ virado na Sprint 21 (Etapa 4). `src/lib/db.ts` apagado; nada em `src/` importa `better-sqlite3`, que virou devDependency das ferramentas offline (`db/migrate.mjs`, `db/load-pg.mjs`). Parâmetro vinculado `$n` obrigatório; **sem prepared statement nomeado** (transaction mode) |
+| Auth | JWT (`jose`, HS256) em cookie + **`bcryptjs`** — ver D-10 | ✅ segredo em `.env` desde a Sprint 1; addon nativo trocado na Sprint 21 (TASK-071), mesmo formato de hash |
 | Validação | Zod (`src/lib/schemas.ts`) | fonte única de schemas e RBAC |
-| Jobs | node-cron (`src/lib/backup.ts`) | backup diário |
+| Jobs | ~~node-cron (`src/lib/backup.ts`)~~ | ⛔ **neutralizado na Sprint 21** — processo de longa duração não existe em execução serverless. Substituto é da **TASK-078** (Etapa 7), que é bloqueante para o go-live |
 | UI | CSS nativo estruturado + tokens do `ui-context.md` + react-hot-toast | sem migração para shadcn — ver D-03 |
-| Hospedagem | PM2 em servidor local (scripts `.bat` / `ecosystem.config.js`) | intranet |
-| Testes | Vitest (unit/integração) + Playwright (E2E smoke, recomendado) | a introduzir na Sprint 3 |
+| Hospedagem | **Vercel** (ADR-012) | ⏳ Etapa 7b (Sprint 23). O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) sai na TASK-079 **sem janela de retenção** — não existe servidor PM2 a manter ligado (Achados de 2026-09-04) |
+| Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
 
 ## 2. Decisões e Justificativas
@@ -29,6 +34,9 @@
 | D-06: Estabilizar antes de criar features | Entregar features novas direto | Sistema "vibecodado": sessão sem expiração, senha fraca e ausência de testes são riscos ativos; baseline segura primeiro (handoff §Pontos de Atenção) |
 | D-07: Migrações SQL manuais pareadas UP/DOWN em `db/migrations/` | Prisma Migrate | better-sqlite3 sem ORM no legado; introduzir Prisma agora = reescrita da camada de dados inteira; pareamento manual + teste em cópia do banco cumpre a constitution §4 |
 | D-08: Vitest para testes | Jest | Suporte nativo a TS/ESM no Next.js moderno, execução mais rápida, menos configuração |
+| D-09: `pg` (node-postgres) como driver | `postgres` (porsager); `@supabase/supabase-js` | Driver de referência do Postgres em Node e o que a documentação do Supabase assume. Funciona com o pooler em **transaction mode**, exigido por execução serverless. `postgres` é mais leve mas sua API de template tags esconde onde o parâmetro entra — o oposto do que se quer sob §1.3. `supabase-js` fala PostgREST, e a TASK-065 revogou `anon`/`authenticated` de propósito: a autorização deste sistema é a sessão da §3.2, não o JWT do Supabase. ⚠️ Transaction mode não suporta prepared statement **nomeado** — toda consulta usa `query(texto, valores)` sem `name`. Isso não afrouxa §1.3: `$n` é parâmetro vinculado. (Sprint 21 · TASK-068) |
+| D-10: `bcryptjs` no lugar de `bcrypt` | Manter o addon nativo | Addon nativo compila contra o Node do ambiente — em build serverless, falha por ABI incompatível ou binário ausente. Mesmo formato de hash: os hashes gravados continuam validando, sem reset de senha. Custo: mais lento, irrelevante para ~19 usuários. (Sprint 21 · TASK-071) |
+| D-11: Postgres real em container para os testes | SQLite em memória (duplo dialeto); schema de teste no próprio Supabase | Decisão pendente das Etapas 3–7, resolvida pelo usuário em 2026-09-03 conforme a recomendação do ADR-012. Testar contra dialeto diferente do de produção anularia a garantia justamente na sprint que reescreve 162 chamadas, e não exercitaria os triggers PL/pgSQL nem o `set_config` da TASK-065. Schema no Supabase dependeria de rede a cada execução e compartilharia o projeto com os dados carregados. (Sprint 21 · TASK-068) |
 
 ## 3. Roadmap — 6 Sprints de Estabilização
 
@@ -183,33 +191,106 @@
 - [x] TASK-066 → consolidação de legado: `employees` está morta (0 linhas) mas ainda é `LEFT JOIN`ada; `keys` tem `employee_id` e `user_id` convivendo. Decidir e consolidar antes de carregar dados.
 - [x] TASK-067 → carga dos dados de `keys.db` para o Postgres, com verificação de contagem por tabela. **Cópia, não movimentação** — o `keys.db` permanece íntegro (plano de reversão do ADR-012).
 
-### Sprint 21 — Etapa 4: Camada de Dados Assíncrona (ADR-012)
-> A maior das sete. 158 chamadas síncronas em 31 arquivos: `better-sqlite3` é síncrono
-> por design e qualquer driver Postgres é assíncrono — não há adaptador que evite isso.
-> Rede de segurança: a suíte de testes. Decisão pendente registrada abaixo.
-- [ ] TASK-068 → conexão via pooler (transaction mode). O proxy global e o `resetConnection()` de `src/lib/db.ts` não sobrevivem a instâncias efêmeras.
-- [ ] TASK-069 → conversão das consultas para assíncronas, incluindo os Server Components. `src/lib/history-query.ts` (TASK-056) já concentra a consulta do histórico.
-- [ ] TASK-070 → transações explícitas com client dedicado, no lugar de `db.transaction(() => ...)` (3 usos).
-- [ ] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`.
+### Sprint 21 ✅ — Etapa 4: Camada de Dados Assíncrona (ADR-012)
+> A maior das sete. A estimativa de 158 chamadas síncronas em 31 arquivos virou **162 em
+> 28** na execução: `better-sqlite3` é síncrono por design e qualquer driver Postgres é
+> assíncrono — não há adaptador que evite isso. Rede de segurança: a suíte de testes,
+> agora rodando contra Postgres real em container (D-11).
+- [x] TASK-068 → conexão via pooler (transaction mode). O proxy global e o `resetConnection()` de `src/lib/db.ts` não sobrevivem a instâncias efêmeras. Entregue como `src/lib/pg.ts`: `query`/`queryOne`/`execute`/`withTransaction`/`closePool`, tradução um-para-um do `.all()`/`.get()`/`.run()`, com **pool preguiçoso** (ver débito abaixo) e sem `name` em consulta alguma — transaction mode não suporta statement nomeado. Infra de teste junto: `docker-compose.test.yml` + `globalSetup` que reproduz a baseline da plataforma Supabase (papéis `anon`/`authenticated`) para que as migrations de `db/migrations-pg/` rodem no container **identicamente** à produção.
+- [x] TASK-069 → conversão das consultas para assíncronas, incluindo os Server Components. Executada em **5 fatias por fronteira de execução** (não por pasta — ver lição abaixo): (a) módulos de `src/lib`, (b) autenticação e conta, (c) ciclo de vida das chaves, (d) demais rotas de API, (e) Server Components + `src/lib/history-query.ts`.
+- [x] TASK-070 → transações explícitas com client dedicado, no lugar de `db.transaction(() => ...)`. O bypass da imutabilidade (`db-maintenance.ts`) deixou de ser uma linha numa tabela-flag e passou a ser `set_config(..., is_local = true)` — o Postgres o descarta no COMMIT/ROLLBACK, então não há estado que possa vazar. **`src/lib/db.ts` foi apagado** e nenhum arquivo de `src/` importa mais `better-sqlite3`, que virou devDependency (as ferramentas offline `db/migrate.mjs` e `db/load-pg.mjs` continuam usando).
+- [x] TASK-071 → trocar `bcrypt` (addon nativo) por `bcryptjs`. `postinstall` (que rodava `npm rebuild better-sqlite3 && node scripts/init-db.js`) removido: quebraria o build da hospedagem.
+- [x] **Fora do escopo original, decidido na execução:** `src/lib/backup.ts` e as rotas `backups/restore` e `backups/import` foram **neutralizados**, não convertidos. Backup por cópia de arquivo SQLite não tem equivalente em Postgres gerenciado, e `node-cron` exige processo de longa duração que não existe em execução serverless. `createBackup()` recusa explicitamente e as rotas devolvem 503, ambos citando a **TASK-078** (Etapa 7), que é a dona do desenho substituto. O 403 de não-ADMIN e a trilha de auditoria continuam antes da recusa. Agendar e nunca rodar seria pior do que não agendar.
 
-### Sprint 22 — Etapa 5: Realtime (ADR-012 · REQ-032)
-> Onde o requisito que motivou a migração é efetivamente entregue.
+> ## ⚠️ Reordenação aprovada em 2026-09-04
+>
+> **Objetivo declarado pelo usuário: fazer o sistema funcionar no Supabase + Vercel.**
+> Não há migração de dados — o conteúdo do `keys.db` anterior era fictício. A Etapa 7 foi
+> antecipada; Realtime (Etapa 5) é feature, não pré-requisito do go-live, e vai para o fim.
+>
+> **A Etapa 6 NÃO foi adiada junto, e o motivo é dela ser pré-requisito de verdade.**
+> `structured-logger.ts:51` faz `fs.mkdirSync` + `fs.appendFileSync` em `logs/`. No Vercel
+> o filesystem é efêmero e somente-leitura: a escrita falha, cai no `catch` e degrada para
+> `console` — **sem derrubar nada e sem alarme.** A constitution §7 já tinha antecipado
+> exatamente isso ("arquivo em `logs/` não serve à hospedagem serverless… a trilha se
+> perderia"), e o REQ-031 nomeia **o log estruturado** no critério de aceite (d), junto com
+> `history` e `action_logs`. Subir antes da TASK-074 seria reprovar o critério do próprio
+> requisito que motiva a etapa — e do jeito mais traiçoeiro, com a aplicação parecendo bem.
+> Por isso a TASK-074 sobe para a Sprint 22, e a TASK-075 acompanha a TASK-078, de que é
+> dependente. A Etapa 6 deixa de existir como sprint e se dissolve nas duas primeiras.
+
+### Sprint 22 ✅ — Etapa 7a: Pré-requisitos do Go-Live (ADR-012 · REQ-031)
+> Tudo que precisa estar de pé ANTES de existir uma URL pública. Nenhuma destas é
+> opcional: sem a 080 não se entra, sem a 074 a trilha se perde em silêncio, e a 076/077
+> são o que separa "acessível pela internet" de "exposto na internet".
+- [x] **TASK-080 → bootstrap do primeiro usuário ADMIN no Postgres. Precede a TASK-079: sem isto o sistema sobe inacessível.** REQ-001 + REQ-031. Numa base Supabase vazia não existe caminho para entrar — `scripts/init-db.js` só fala SQLite e saiu do `postinstall` na TASK-071, nenhuma migration de `db/migrations-pg/` insere usuário, e toda rota exige sessão (`/api/users` exige ADMIN). Desenho proposto — **script de operação, não rota**:
+  - Vive em `db/` (junto de `migrate.mjs` e `load-pg.mjs`), fora do bundle da aplicação. Uma rota de bootstrap seria superfície de ataque permanente para um uso único; um script não é alcançável por HTTP.
+  - **Recusa se `users` já tiver qualquer linha.** A garantia de "uma vez só" fica no estado do banco, não na disciplina de quem roda — mesma lógica pela qual o bypass da TASK-070 virou `set_config` transacional em vez de tabela-flag.
+  - Senha inicial **nunca embutida e nunca padrão**: lida de variável de ambiente ou gerada aleatoriamente e impressa uma vez. O `admin`/`admin` do `init-db.js` nasceu numa intranet; aqui a exposição é pública (constitution §2).
+  - Grava com `requires_password_change = true`. **Não inventa fluxo novo:** `login/route.ts:78` já devolve `REQUIRE_PASSWORD_CHANGE` (403) e força a troca na primeira entrada — caminho existente e testado.
+  - Hash com `bcryptjs` (D-10), nunca o addon nativo. Registra a criação em `audit_logs`.
+  - Teste contra o Postgres do container (D-11): cria numa base vazia; recusa numa base com usuário; a senha não aparece em log nem em `audit_logs` (constitution §6).
+- [x] **TASK-074 → `structured-logger` passa a gravar em `app_logs`** (constitution §7), com `REVOKE UPDATE, DELETE`. `app_logs` fora de `tablesToClear` — é o destino que precisa sobreviver ao REQ-014. **Trazida da Etapa 6 por ser pré-requisito do deploy** (ver quadro acima). Cuidado de teste: a falha atual é silenciosa por design (`catch` → `console`), então o teste tem de provar que a linha chega em `app_logs`, não que a chamada não lançou.
+- [x] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
+- [x] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão. Débito registrado desde a Sprint 9 como "tolerável em rede local; endereçar antes da exposição pública" — é agora.
+- [x] **TASK-081 → a trilha de auditoria é esperada, não largada.** REQ-010 + REQ-031(d). Achado durante a TASK-076: **26 chamadas de `logAction` sem `await`**, em 12 arquivos. `logAction` grava em `action_logs` e chama `logStructured`, que a TASK-074 tornou assíncrono — e em execução serverless a instância pode congelar assim que a resposta sai, matando a escrita pendente. **Consequência direta: o que a TASK-074 entregou não se sustenta enquanto os chamadores soltam a promessa.** O critério daquela task ("a linha chega em `app_logs`") foi verificado e passa; o REQUISITO (trilha sem perda) não está cumprido. Além de corrigir os 26 pontos, deixar uma guarda mecânica — promise solta desta família não pode voltar em revisão humana.
+
+### Sprint 23 ✅ — Etapa 7b: Backup e Deploy (ADR-012 · REQ-031)
+- [x] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). O endpoint de restore por cópia de arquivo **já foi desativado na Sprint 21** (503 citando esta task); aqui entra o substituto. Peso revisto: não há dado real a perder hoje, mas §4.3 exige verificação, não existência.
+- [x] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco. **Trazida da Etapa 6 para junto da TASK-078**, de que é dependente: a fonte que ela lia deixou de ser escrita quando o `backup.ts` foi neutralizado.
+- [x] TASK-079 → deploy e ping agendado contra a pausa por inatividade. **Remoção do aparato local revista:** não há mais "30 dias de retenção do PM2" a esperar — não existe servidor PM2 (ver Achados de 2026-09-04). Sai junto: `.bat`, `ecosystem.config.js`, `show-ip.js`, os scripts `dev`/`start` que o invocam, e a rota `/api/server-info`, que expõe IPs de rede local via `os.networkInterfaces()` — no Vercel ela devolveria endereços de container, informação sem sentido para o operador.
+
+> **Fechada em 2026-09-04.** Entregue: `pg_dump` diário no GitHub Actions verificado por
+> **restauração** (contagens **e esquema**) num Postgres descartável, com cada execução —
+> inclusive a que falhou — gravada em `backup_runs`; a métrica de confiabilidade lendo o banco
+> e distinguindo na tela quatro estados que antes eram um silêncio só; `/api/health` público e
+> pobre de propósito, com ping diário contra a pausa do Supabase; o aparato local removido por
+> inteiro; e `docs/runbook-deploy.md` escrito para quem não conhece o projeto.
+>
+> ⚠️ **O termo "backup gerenciado" no texto da TASK-078 acima está obsoleto** — o CR Tipo D
+> `7770d2e` apurou que o plano gratuito do Supabase não tem backup gerenciado e a §4.3 foi
+> corrigida. O alvo (RPO 24 h / RTO 4 h + verificação) não mudou; o meio virou `pg_dump`.
+>
+> **A sprint fecha SEM o sistema no ar, e isso é por desenho.** Criar o projeto na Vercel,
+> cadastrar os secrets, criar o repositório privado de backup e aplicar as migrations no
+> Supabase exigem credencial do usuário. Passo a passo em `docs/runbook-deploy.md`.
+
+### Sprint 24 — Etapa 5: Realtime (ADR-012 · REQ-032)
+> Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
+> go-live por decisão de 2026-09-04:** é melhoria de experiência sobre um sistema que já
+> funciona, não condição para ele funcionar. Até lá o polling de 3 s continua valendo.
 - [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
 - [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
 
-### Sprint 23 — Etapa 6: Logs Estruturados em Tabela (ADR-012)
-- [ ] TASK-074 → `structured-logger` passa a gravar em `app_logs` (constitution §7), com `REVOKE UPDATE, DELETE`. `app_logs` fora de `tablesToClear` — é o destino que precisa sobreviver ao REQ-014.
-- [ ] TASK-075 → métrica de confiabilidade de backup deixa de ler `backups/backup-history.jsonl` e passa a ler do banco.
+### Etapa 6 — dissolvida
+> Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
+> e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
+> que a numeração das etapas do ADR-012 continue rastreável.
 
-### Sprint 24 — Etapa 7: Deploy e Go-Live (ADR-012 · REQ-031)
-- [ ] TASK-076 → rotacionar `JWT_SECRET` com segredo aleatório real (o atual é UUID com sufixo, baixa entropia) e tornar `secure` incondicional no cookie (constitution §2.3).
-- [ ] TASK-077 → autorização com defesa em profundidade em `src/proxy.ts`, que hoje só renova cookie e deixa passar requisição sem sessão.
-- [ ] TASK-078 → backup gerenciado + verificação por job agendado (constitution §4.3). **Desativar** o endpoint de restore por cópia de arquivo, que deixa de funcionar — não deixar quebrado.
-- [ ] TASK-079 → deploy, ping agendado contra a pausa por inatividade, e remoção do aparato local (PM2, `.bat`, `show-ip.js`) apenas APÓS os 30 dias de retenção do plano de reversão.
+### Achados de 2026-09-04 — não existe produção (confirmado pelo usuário)
+
+> Não há servidor PM2 em uso, não há `keys.db` com dados reais e ninguém usa o sistema
+> hoje. Os dados reais ainda serão cadastrados ou importados de outra fonte, direto no
+> Postgres. Três coisas que este projeto vinha carregando como verdade caem com isso.
+
+1. **A pendência de deploy era fantasma.** `node db/migrate.mjs up` no "`keys.db` de produção" atravessou várias sprints no checkpoint descrevendo um banco que não existe — a mesma classe de erro do débito do `keys.db` rastreado no git, que a TASK-062 desmentiu. `db/migrations/` (SQLite) permanece como histórico; o Gate 2 e `tests/migrations.test.ts` seguem cobrindo o pareamento UP/DOWN. **Lição, de novo: pendência herdada se reverifica antes de ser repetida.**
+2. **O plano de reversão do ADR-012 está vazio.** Os itens 2, 3 e 4 (§Reversão) pressupõem `keys.db` de produção íntegro, ponto de não-retorno na primeira escrita e servidor PM2 ligado por 30 dias. Nada disso existe. Na prática o risco é **menor** do que o ADR supõe — sem estado anterior não há o que perder —, mas o documento declara uma rede de segurança inexistente, e isso é pior do que declarar que não há rede. **Correção pendente: CR Tipo C** (changelog no `spec.md` + atualização do ADR-012). Não aplicada sem confirmação.
+3. **A TASK-067 ficou sem origem.** `db/load-pg.mjs` foi construído para ler `keys.db` e reconciliar contagens. Sem `keys.db` real não há de onde carregar. O código continua correto e testado — o que falta é decidir de onde os dados reais vêm (ver Decisões pendentes).
+
+**🚨 Gap bloqueante do go-live, ainda sem task: bootstrap do primeiro ADMIN no Postgres.**
+`scripts/init-db.js` cria `admin`/`admin`, mas só fala SQLite e saiu do `postinstall` na
+TASK-071. Nenhuma migration de `db/migrations-pg/` insere usuário. Toda rota exige sessão
+e `/api/users` exige papel ADMIN. Numa base Supabase vazia, **ninguém consegue entrar** —
+não há caminho para criar o primeiro usuário. Precisa de task própria na Etapa 7, com dois
+cuidados: a senha inicial não pode ser previsível (o `admin`/`admin` do SQLite nasceu numa
+intranet; aqui a exposição é pública, constitution §2) e o procedimento tem de ser
+executável uma vez só, sem deixar caminho de escalada aberto depois.
 
 ### Decisões pendentes das Etapas 3–7
-- **Banco dos testes (Etapa 4).** Os 125 testes usam SQLite em memória (`MOCK_DB_IN_MEMORY`). Recomendação do ADR-012: Postgres real em container — testar contra dialeto diferente do de produção anula boa parte da garantia. Decidir ao iniciar a Sprint 21.
-- **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt.
+- ~~**Banco dos testes (Etapa 4).**~~ — **resolvida em 2026-09-03 (D-11):** Postgres real em container, conforme a recomendação do ADR-012. Implementada na TASK-068.
+- **`keys.db` no histórico do git.** Não está mais rastreado (TASK-062 confirmou), mas continua nos commits antigos. Expurgar exige reescrever história — decisão do usuário. Baixo risco: o banco não contém secret, apenas dados operacionais e hashes bcrypt. **Risco revisto para BAIXÍSSIMO em 2026-09-04:** aqueles arquivos nunca contiveram dados reais.
+- ~~**Origem dos dados reais (Etapa 7)**~~ — **não é bloqueio (esclarecido em 2026-09-04):** o conteúdo do `keys.db` anterior era **fictício**. Não há dado a preservar nem migração a fazer, e o objetivo declarado é fazer o sistema funcionar no Supabase + Vercel. O cadastro dos dados reais é operação posterior, pela própria UI, depois da TASK-080. **Consequência:** o `db/load-pg.mjs` da TASK-067 fica sem uso no caminho de produção — segue correto e testado, e é a ferramenta pronta caso um dia exista um SQLite de origem, mas não faz parte do go-live.
+- **Dados sintéticos no Supabase — limpeza operacional, não risco de PII.** As 20 users / 5 keys / 92 tx / 30 history / 99 logs / 4 settings da TASK-067 são fictícios, como o `keys.db` que os originou; não há urgência de expurgo. Ao limpar, lembrar que `history` é imutável (TASK-065): exige o bypass autorizado do REQ-014, não um `DELETE` solto. A TASK-080 recusa base com usuário, então a limpeza de `users` é pré-requisito de rodá-la contra o Supabase atual.
 
 ### Itens não bloqueantes
 - E2E smoke com Playwright para os 4 fluxos "que não podem falhar" (spec §4) — parcialmente coberto pelo setup da Sprint 4 real (login) e completado pela TASK-028.
@@ -223,6 +304,23 @@
 - **Autorização sem defesa em profundidade** — `src/proxy.ts` (ex-`middleware.ts`, convenção Next 16) só renova a expiração do cookie e limpa JWT inválido; requisição sem sessão segue adiante (`NextResponse.next()`). A verificação de papel é feita manualmente em cada handler, então uma rota nova esquecida nasce aberta. Tolerável em rede local; endereçar antes da exposição pública (Etapa 7).
 - ~~**Erro de hidratação pré-existente**~~ — **quitado (TASK-058, 2026-09-02):** dois pontos, ambos anteriores ao ciclo de migração. `HistoryClient` renderizava `new Date().toLocaleString()` direto no JSX (commit original `95af5ac`); `DashboardClient` calculava as chaves em atraso dentro de `useMemo` a partir de `new Date().getTime()`, e o `useMemo` roda no SSR. A regra de atraso saiu para `business-rules.findDelayedKeys(keys, now)` — pura, recebe o instante como argumento — e os dois componentes passaram a usar `useClientClock` (`useSyncExternalStore`), que devolve nulo no SSR e na hidratação. Medido antes do fix: três renders do servidor devolviam `14:01:38`, `:41` e `:43` contra `14:01:08` no cliente.
 - ~~**`keys.db` segue rastreado no git**~~ — **registro obsoleto, corrigido na TASK-062 (2026-09-03):** a remoção já havia sido feita em `23c6bcd`/`2e83857`/`5874d62` e nenhum `.db` é rastreado hoje. O débito permaneceu no `plan.md` por várias sprints descrevendo um problema inexistente — e chegou a ser propagado para o ADR-012. **Lição:** débito herdado deve ser reverificado antes de ser repetido em documento novo. Resta apenas o arquivo no histórico antigo de commits (ver decisão pendente).
+
+- ~~**Backup da aplicação sem substituto até a TASK-078 (Sprint 21 → Etapa 7).**~~ — **quitado no código (TASK-078, Sprint 23), com uma ressalva que não é detalhe.** O registro anterior dizia que "a única proteção de dados é o backup gerenciado do provedor — que existe, mas não foi verificado". A primeira metade era **falsa**: o plano gratuito do Supabase não tem backup gerenciado, e a própria documentação recomenda `db dump` + off-site para esse plano (verificado no CR Tipo D `7770d2e`). Entre a Sprint 21 e hoje não havia proteção nenhuma — só a suposição. Entregue: `pg_dump` diário no GitHub Actions, verificado por restauração numa base descartável com reconciliação de contagens **e de esquema**, dump em repositório privado separado, e cada execução — inclusive a que falhou — gravada em `backup_runs`. **A ressalva:** o mecanismo só passa a proteger quando o usuário criar o repositório privado e cadastrar os três secrets. Até lá o job falha na primeira etapa, que é o comportamento certo, mas continua não havendo backup. Este débito só fecha de verdade na primeira execução verde.
+- **Lição de execução (Sprint 21) — fatia se desenha por fronteira de execução, não por pasta.** As 5 fatias da TASK-069 foram desenhadas por diretório e isso produziu **4 correções de escopo**: `history-query.ts`, `db-maintenance.ts` e `backup.ts` saíram das fatias em que estavam, e `user-confirm` voltou para a fatia (c) depois de ter saído — o teste provou que a dupla confirmação atravessa `transactions/route.ts` e `user-confirm` **em tempo de execução**, e converter um sem o outro deixa o fluxo pela metade. Converter é uma operação sobre o grafo de chamadas; a árvore de pastas é só uma projeção dele.
+- **Lição de execução (Sprint 21) — a suíte cobre funções, não o sistema.** Dois defeitos passaram por 270+ testes verdes: (1) o pool criado no topo de `src/lib/pg.ts` quebrava `npm run build` (o Next importa cada rota para coletar dados da página, e ali não há `DATABASE_URL`; em teste ela sempre existe); (2) `normalizeTimestamp` recebia `Date` do driver e chamava `.trim()` nele — a página de histórico quebrava no navegador, mas nenhum teste passava valor lido do banco pela formatação que a tela usa. Ambos foram cobertos test-first depois do fato, e **`npm run build` + render no navegador entraram na verificação de cada fatia**. Nota operacional: a verificação no navegador e a suíte compartilham o mesmo container, e `tests/setup.ts` dá `TRUNCATE` — semear para verificação e rodar `vitest` na sequência apaga a semente. **Reincidiu 3x na Sprint 22**, sempre com a mesma aparência enganosa: o login passa a recusar credencial que estava correta, e o primeiro palpite é defeito no código de autenticação que se acabou de escrever. Regra prática adotada: **verificação no navegador é sempre o ÚLTIMO passo**, depois da suíte e dos gates. Se voltar a atrapalhar, a correção de verdade é um segundo banco no mesmo container só para verificação manual.
+
+- **25 promessas soltas em componentes de cliente (achado da TASK-081, Sprint 22).** Ao ligar `@typescript-eslint/no-floating-promises` em todo o `src/`, 25 pontos acusaram em `DashboardClient`, `KeysClient`, `PendingInline`, `Sidebar`, `ConfirmClient`, `LogsClient`, `SettingsClient` e `UsersClient`. **Não são o defeito da TASK-081:** no navegador a página continua viva e a promessa liquida; o risco de a instância congelar com a escrita pendente é do servidor. O sintoma aqui é outro e mais brando — `fetch` em handler de evento sem tratamento de rejeição, então quando a chamada falha a tela simplesmente não reage e o usuário não sabe por quê. A regra foi escopada para a superfície de servidor de propósito: a correção honesta no cliente é **mostrar o erro ao usuário**, não calar o lint com `void` em 25 lugares. Task de UI, a ser criada quando alguém tocar essas telas.
+- **Gate 1 não varre arquivos de configuração.** A TASK-081 descobriu `typescript-eslint` sendo importado pelo `eslint.config.mjs` sem ser dependência declarada — resolvia por ser transitiva do `eslint-config-next`, e uma atualização futura teria quebrado o lint sem aviso. É exatamente a classe que o Gate 1 existe para impedir, e ele passou porque só varre `src/`. Corrigido o caso concreto (declarado em devDependencies); o gate continua cego para `*.config.*` na raiz. Estender exige mexer em `scripts/ci-gates.sh`, que é zona somente leitura — CR à parte.
+
+- **A verificação restaura, mas ninguém ensaiou a RESTAURAÇÃO EM PRODUÇÃO (TASK-078, Sprint 23).** O job prova que o dump volta idêntico numa base descartável — que é o que a §4.3 pede como *verificação*. Não prova o RTO de 4 h: ninguém cronometrou pegar o dump do repositório privado, criar a base e subir a aplicação apontada para ela. O ensaio pertence ao responsável nomeado no runbook, depois do primeiro backup real, e o `workflow_dispatch` existe para isso.
+- **`contarLinhas` consulta a lista de tabelas da ORIGEM contra a restauração (TASK-078).** Se uma tabela sumir inteira do dump, a consulta estoura em `relation does not exist` antes de a reconciliação montar o relatório — o job reprova do mesmo jeito (é o que importa), mas com a mensagem crua do Postgres em vez do `"(tabela ausente)"` que `reconciliarContagens` sabe produzir. Esse caminho, hoje, só é exercitado pelo teste unitário. Custo baixo, correção óbvia (consultar `information_schema` nos dois lados antes de contar) — não feita aqui para não crescer o escopo da task depois do ciclo fechado.
+
+- **"Horário do Backup" e "Retenção (quantidade de backups)" continuam na tela sem controlar nada (achado da TASK-075, Sprint 23).** Os dois campos são salvos em `settings` e não são lidos por ninguém desde que o agendamento saiu do `node-cron` (TASK-070). Hoje o horário é o `cron` do workflow, e a retenção é o histórico do repositório privado de dumps. A tela chega a prometer que "backups mais antigos serão removidos automaticamente" — nada remove. Não foi tocado nesta task porque nenhum critério da TASK-075 alcança esses campos e removê-los mexe também na rota de settings, mas **é mentira em tela**, da mesma família do que a task veio corrigir. Vale como CR pequeno: ou os campos saem, ou passam a ser texto informativo apontando o workflow.
+- **O botão "Gerar Backup Agora" continua na tela devolvendo 503 (TASK-075).** A mensagem foi corrigida — antes mandava esperar o backup gerenciado do provedor, que não existe; agora aponta o `workflow_dispatch` do job. Mas o botão segue oferecendo uma ação que nunca funciona. Mesmo tratamento e mesma decisão do item acima: fica para um CR de tela, junto com os campos inertes.
+
+- **Não há runner de migrations para Postgres, nem registro do que já foi aplicado (achado da TASK-079, Sprint 23).** `db/migrate.mjs` é o runner do SQLite antigo: usa `better-sqlite3`, escreve numa tabela `_migrations` daquele banco e não serve para produção. Hoje as migrations de `db/migrations-pg/` são aplicadas à mão por `psql`, na ordem do nome, e **nada registra quais foram aplicadas** — a única forma de saber é inspecionar o schema. Numa base só e com um mantenedor, funciona; com duas bases (produção e uma restaurada) ou seis meses de intervalo, é como se perde uma migration. O Gate 2 continua garantindo o PAREAMENTO UP/DOWN, que é outra coisa. Documentado no runbook §4 como procedimento manual — mas procedimento manual não é o mesmo que garantia. Vale um CR próprio.
+- **Os scripts legados de `scripts/` ainda falam SQLite (achado da TASK-079).** `add_active_column_to_users.js`, `add_ip_to_logs.js`, `add_settings_table.js`, `migrate_keys.js`, `migrate_keys_soft_delete.js`, `migrate-employees-soft-delete.js`, `migrate-to-user-system.js` e `reset-db.js` são de antes das migrations pareadas e operam sobre `keys.db`, que não existe. Não foram removidos nesta task porque nenhum critério os alcança e `.bat`/`ecosystem`/`show-ip` estavam nomeados na micro-spec — mas são a mesma classe: instrução que não funciona esperando alguém tentar. CR de limpeza.
+- **`/api/backups/restore`, `/api/backups/import` e o card "Importar Banco (.db)" continuam na tela (achado da TASK-079).** As rotas respondem 503 desde a TASK-068 e a tela ainda oferece "Substitua o banco de dados atual por um arquivo externo (.db)" — arquivo `.db` é SQLite, que saiu da stack na Sprint 21. Mesma família dos débitos da TASK-075 (campos de agendamento e retenção inertes, botão "Gerar Backup Agora"): **tela prometendo o que o sistema não faz**. Já são quatro itens do mesmo tipo na mesma tela — vale um CR único de faxina da tela de configurações, em vez de quatro correções soltas.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
@@ -266,3 +364,6 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 13 (devolução REQ-028) | 2026-07-07 | 2026-07-07 | 1 | 2 tasks | 2 | 1 (TASK-047: seletor e2e ambíguo + stash interrompido pelo lock do keys.db do dev server — recuperado sem perda) | 0 | — | — |
 | 14 (fluxo unificado REQ-029) | 2026-07-10 | 2026-07-10 | 1 | 4 tasks | 4 | 0 | 0 (todos os gates verdes em cada task) | — | — |
 | 20 (schema Postgres · Etapa 3 ADR-012) | 2026-09-03 | 2026-09-03 | 1 | 5 tasks | 5 | 1 (TASK-065: search_path mutavel em history_imutavel introduzido pela propria task, achado do get_advisors e corrigido em test->fix; e o criterio de EXPLAIN da TASK-064 reescrito na execucao — Index Cond vs Filter no lugar de Seq Scan) | 1 (Gate 5 type-check: literal BigInt e counts sem tipo em pg-load.test — corrigido com .d.mts) | — | — |
+| 21 (camada async · Etapa 4 ADR-012) | 2026-09-03 | 2026-09-04 | 2 | 4 tasks | 5 (as 4 + neutralizacao do backup, fora do escopo original) | 2 (TASK-068: pool criado no topo do modulo quebrou `npm run build` — refeito preguicoso em fix; TASK-069: 4 correcoes de escopo entre fatias — history-query, db-maintenance e backup sairam, user-confirm voltou — mais o `Date` do driver na formatacao, corrigido em test->fix) | 2 (Gate 5 type-check: `if (checkLockout(...))` com Promise<boolean> sempre verdadeiro em login/route — travaria todo usuario, pego antes do commit; `npm run build`: pool no topo do modulo) | — | — |
+| 22 (pre-requisitos do go-live · Etapa 7a ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 4 tasks | 5 (as 4 + TASK-081, aberta em CR no meio da sprint) | 3 (TASK-074: meu proprio teste BDD 7 cobria so escrita em disco e deixava passar leitura e unlinkSync — verde sem provar o que dizia; TASK-076: a varredura de emissores de cookie ficou cega quando o literal 'session' saiu dos call sites, e so nao passou despercebido porque eu tinha posto uma asercao de "pelo menos um emissor encontrado"; TASK-077: quebrei o hot reload ao manter o matcher excluindo apenas _next/static e _next/image) | 1 (Gate 5 type-check: `unknown[]` vs `Param[]` no mock de execute em app-logs.test) | — | — |
+| 23 (backup e deploy · Etapa 7b ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 3 tasks | 3 | 3 (TASK-078: a verificacao por contagem de linhas aprovou um dump truncado no ensaio — perdeu o RLS de `users` e as contagens bateram; entrou `compararEsquema` num segundo commit vermelho. TASK-075 e TASK-079: quatro varreduras de fonte MINHAS escritas errado — tres proibiam ate o comentario que explica o codigo morto, e uma exigia "responsavel" no singular contra um cabecalho "Responsaveis") | 0 (todos os gates verdes em cada task) | — | — |

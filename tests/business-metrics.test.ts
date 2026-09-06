@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import db from '@/lib/db';
+import { execute } from '@/lib/pg';
 
 // TASK-034 — métricas de negócio (spec §5) + threshold de atraso do spec (12h).
 import { OVERDUE_HOURS, DOUBLE_CONFIRMATION_TARGET_MINUTES } from '@/lib/business-rules';
@@ -20,44 +20,45 @@ vi.mock('@/lib/session', () => ({
 const minAgo = (m: number) => new Date(Date.now() - m * 60000).toISOString();
 
 describe('TASK-034 — métricas de negócio (spec §5)', () => {
-    beforeEach(() => {
-        db.prepare('DELETE FROM key_transactions').run();
+    beforeEach(async () => {
+        await execute('DELETE FROM key_transactions');
     });
 
-    it('BDD 2: threshold de atraso é o do spec — 12h (não os 4h hardcoded do legado)', () => {
+    it('BDD 2: threshold de atraso é o do spec — 12h (não os 4h hardcoded do legado)', async () => {
         expect(OVERDUE_HOURS).toBe(12);
         expect(DOUBLE_CONFIRMATION_TARGET_MINUTES).toBe(10);
     });
 
-    it('BDD 1: taxa de dupla confirmação (≤10min) e tempo mediano de balcão calculados de key_transactions', () => {
-        const insert = db.prepare(`
+    it('BDD 1: taxa de dupla confirmação (≤10min) e tempo mediano de balcão calculados de key_transactions', async () => {
+        const inserir = (status: string, inicio: string, confirmado: string | null) => execute(`
             INSERT INTO key_transactions (key_id, user_id, action, status, initiated_at, user_confirmed_at)
-            VALUES (1, 1, 'withdraw', ?, ?, ?)
-        `);
-        insert.run('completed', minAgo(20), minAgo(15)); // confirmada em 5min (≤10) ✓
-        insert.run('completed', minAgo(60), minAgo(25)); // confirmada em 35min (>10) ✗
-        insert.run('pending', minAgo(5), null);          // nunca confirmada ✗
+            VALUES (1, 1, 'withdraw', $1, $2, $3)
+        `, [status, inicio, confirmado]);
 
-        const m = computeBusinessMetrics(30);
+        await inserir('completed', minAgo(20), minAgo(15)); // confirmada em 5min (≤10) ✓
+        await inserir('completed', minAgo(60), minAgo(25)); // confirmada em 35min (>10) ✗
+        await inserir('pending', minAgo(5), null);          // nunca confirmada ✗
+
+        const m = await computeBusinessMetrics(30);
         expect(m.totalTransactions).toBe(3);
         expect(m.doubleConfirmationRate).toBeCloseTo(33.3, 0); // 1 de 3
         expect(m.medianCounterMinutes).toBeCloseTo(20, 0);     // mediana de [5, 35]
     });
 
-    it('BDD 3: sem transações no período → estado vazio claro, sem NaN', () => {
-        const m = computeBusinessMetrics(30);
+    it('BDD 3: sem transações no período → estado vazio claro, sem NaN', async () => {
+        const m = await computeBusinessMetrics(30);
         expect(m.totalTransactions).toBe(0);
         expect(m.doubleConfirmationRate).toBeNull();
         expect(m.medianCounterMinutes).toBeNull();
     });
 
-    it('BDD 1b: transações fora da janela não entram no cálculo', () => {
-        db.prepare(`
+    it('BDD 1b: transações fora da janela não entram no cálculo', async () => {
+        await execute(`
             INSERT INTO key_transactions (key_id, user_id, action, status, initiated_at, user_confirmed_at)
-            VALUES (1, 1, 'withdraw', 'completed', ?, ?)
-        `).run(minAgo(60 * 24 * 40), minAgo(60 * 24 * 40 - 5)); // 40 dias atrás
+            VALUES (1, 1, 'withdraw', 'completed', $1, $2)
+        `, [minAgo(60 * 24 * 40), minAgo(60 * 24 * 40 - 5)]); // 40 dias atrás
 
-        const m = computeBusinessMetrics(30);
+        const m = await computeBusinessMetrics(30);
         expect(m.totalTransactions).toBe(0);
     });
 

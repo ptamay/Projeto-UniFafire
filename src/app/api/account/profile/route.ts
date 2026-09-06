@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
+import { queryOne, execute } from '@/lib/pg';
 import { verifySession } from '@/lib/session';
 import { logAction } from '@/lib/logger';
 import { z } from 'zod';
@@ -19,8 +19,9 @@ export async function GET() {
         const payload = await verifySession(sessionCookie);
         if (!payload) return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 });
 
-        const stmt = db.prepare('SELECT username, role, full_name, matricula, phone FROM users WHERE id = ?');
-        const user = stmt.get(payload.id);
+        const user = await queryOne(
+            'SELECT username, role, full_name, matricula, phone FROM users WHERE id = $1', [payload.id],
+        );
 
         if (!user) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
 
@@ -49,15 +50,14 @@ export async function PUT(request: Request) {
         
         const { full_name, matricula, phone } = parsed.data;
 
-        const stmt = db.prepare('UPDATE users SET full_name = ?, matricula = ?, phone = ? WHERE id = ?');
-        stmt.run(
+        await execute('UPDATE users SET full_name = $1, matricula = $2, phone = $3 WHERE id = $4', [
             full_name || null,
             matricula || null,
             phone || null,
-            payload.id
-        );
+            payload.id,
+        ]);
 
-        logAction(Number(payload.id), String(payload.username), 'UPDATE_PROFILE', 'Self', 'User updated their own profile');
+        await logAction(Number(payload.id), String(payload.username), 'UPDATE_PROFILE', 'Self', 'User updated their own profile');
 
         return NextResponse.json({ success: true });
     } catch (error) {

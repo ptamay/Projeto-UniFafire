@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import db from '@/lib/db';
+
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
 import { withMaintenanceMode } from '@/lib/db-maintenance';
@@ -18,8 +18,9 @@ export async function POST() {
 
         // TASK-031 (REQ-014): registro PRÉVIO em destino que sobrevive à limpeza —
         // esta operação apaga as próprias tabelas de auditoria, então a trilha
-        // obrigatória vai para o log estruturado em arquivo ANTES de qualquer DELETE.
-        logStructured('warn', 'destructive_operation', {
+        // obrigatória vai para `app_logs` ANTES de qualquer DELETE (TASK-074: o
+        // destino era arquivo em `logs/`, que não sobrevive a filesystem efêmero).
+        await logStructured('warn', 'destructive_operation', {
             op: 'clear-database',
             phase: 'pre',
             user_id: session.id,
@@ -29,28 +30,27 @@ export async function POST() {
 
         // Bypass de manutenção (REQ-014): history tem triggers de imutabilidade
         // (TASK-030) que bloqueiam DELETE fora deste fluxo.
-        withMaintenanceMode(() => {
-            for (const table of tablesToClear) {
-                try {
-                    // Check if table exists first to avoid error noise
-                    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
-                    if (tableExists) {
-                        db.prepare(`DELETE FROM ${table}`).run();
-                        db.prepare(`DELETE FROM sqlite_sequence WHERE name = ?`).run(table);
-                    }
-                } catch (err) {
-                    console.error(`Error clearing table ${table}:`, err);
-                }
-            }
-        });
+        // TRUNCATE ... RESTART IDENTITY CASCADE faz num comando o que antes eram
+        // tres por tabela: apaga, zera a sequencia de ids e resolve as chaves
+        // estrangeiras entre elas. A checagem em sqlite_master saiu junto — aquele
+        // catalogo nao existe no Postgres, e consultar tabela inexistente aqui
+        // seria erro em tempo de execucao dentro da operacao destrutiva.
+        //
+        // Os nomes vem de `tablesToClear`, constante do proprio codigo — a unica
+        // interpolacao de identificador que a §1.3 admite, e por isso ela esta
+        // aqui e nao vinda de request.
+        await withMaintenanceMode(tx =>
+            tx.execute(`TRUNCATE ${tablesToClear.join(', ')} RESTART IDENTITY CASCADE`),
+        );
 
-        logStructured('warn', 'destructive_operation', {
+        await logStructured('warn', 'destructive_operation', {
             op: 'clear-database',
             phase: 'done',
             user_id: session.id,
             username: session.username,
         });
-        // Registro pós-operação no banco recém-limpo — a trilha prévia está no arquivo
+        // Registro pós-operação no banco recém-limpo — a trilha prévia está em app_logs,
+        // que fica fora de `tablesToClear` justamente para sobreviver a este TRUNCATE.
         await logAction(session.id, session.username, 'CLEAR_DATABASE', 'Database',
             'Banco de dados limpo (trilha prévia no log estruturado)');
 

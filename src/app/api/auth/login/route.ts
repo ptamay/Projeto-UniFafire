@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import db from '@/lib/db';
-import bcrypt from 'bcrypt';
+import { queryOne, execute } from '@/lib/pg';
+import bcrypt from 'bcryptjs';
 import { logAction } from '@/lib/logger';
 import { signSession } from '@/lib/session';
 import {
@@ -9,6 +9,7 @@ import {
     RATE_LIMIT_WINDOW_MS, LOCKOUT_WINDOW_MINUTES,
 } from '@/lib/security-profile';
 import { logTiming } from '@/lib/structured-logger';
+import { opcoesCookieSessao } from '@/lib/session-cookie';
 
 interface LoginUserRow {
     id: number;
@@ -26,10 +27,9 @@ export async function POST(request: Request) {
         // Pega IP do client. Em ambiente local pode vir do cabeçalho ou fallback genérico.
         // O header 'x-forwarded-for' é o padrão se houver reverse proxy (Nginx).
         const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-        const isHttps = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https://');
         
-        if (!checkRateLimit(ip)) {
-            logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
+        if (!(await checkRateLimit(ip))) {
+            await logAction(0, body.username || 'unknown', 'RATE_LIMIT_EXCEEDED', 'System', `IP ${ip} limit exceeded`);
             // TASK-061 (constitution §2.6): 429 tem de dizer quando voltar; sem o
             // header o cliente só pode adivinhar e tende a insistir em vão.
             return NextResponse.json(
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
             );
         }
 
-        if (checkLockout(body.username, ip)) {
-            logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
+        if (await checkLockout(body.username, ip)) {
+            await logAction(0, body.username || 'unknown', 'ACCOUNT_LOCKOUT', 'System', `Account locked out for IP ${ip}`);
             return NextResponse.json(
                 { error: 'Conta bloqueada temporariamente. Tente em 15 minutos.' },
                 { status: 423, headers: { 'Retry-After': String(LOCKOUT_WINDOW_MINUTES * 60) } }
@@ -47,15 +47,17 @@ export async function POST(request: Request) {
         }
 
         if (!body.username || !body.password) {
-            recordLoginAttempt(body.username || 'empty', ip, false);
+            await recordLoginAttempt(body.username || 'empty', ip, false);
             return NextResponse.json({ error: 'Usuário e senha são obrigatórios' }, { status: 400 });
         }
 
-        const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1');
-        const user = stmt.get(body.username) as LoginUserRow | undefined;
+        // `active` sem comparacao: boolean de verdade no Postgres (TASK-063).
+        const user = await queryOne<LoginUserRow>(
+            'SELECT * FROM users WHERE username = $1 AND active', [body.username],
+        );
 
         if (!user) {
-            recordLoginAttempt(body.username, ip, false);
+            await recordLoginAttempt(body.username, ip, false);
             // Prevenindo enumeração
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
@@ -63,13 +65,13 @@ export async function POST(request: Request) {
         const match = await bcrypt.compare(body.password, user.password_hash);
 
         if (!match) {
-            recordLoginAttempt(user.username, ip, false);
-            logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
+            await recordLoginAttempt(user.username, ip, false);
+            await logAction(user.id, user.username, 'LOGIN_FAILED', 'System', 'Invalid password');
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
         // --- Fluxo de sucesso ---
-        clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
+        await clearLoginAttempts(user.username); // Reseta as falhas da conta (TASK-053: nunca por IP)
 
         let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova
@@ -81,8 +83,11 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'A nova senha deve ter no mínimo 8 caracteres' }, { status: 400 });
             }
             const hashedNew = await bcrypt.hash(body.newPassword, 10);
-            db.prepare('UPDATE users SET password_hash = ?, requires_password_change = 0 WHERE id = ?').run(hashedNew, user.id);
-            logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
+            await execute(
+                'UPDATE users SET password_hash = $1, requires_password_change = false WHERE id = $2',
+                [hashedNew, user.id],
+            );
+            await logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
             currentHash = hashedNew;
         }
 
@@ -91,21 +96,15 @@ export async function POST(request: Request) {
         const payloadParams = { id: user.id, username: user.username, role: user.role, pwd_hash };
         const sessionToken = await signSession(payloadParams);
 
-        (await cookies()).set('session', sessionToken, {
-            httpOnly: true,
-            secure: isHttps,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 24 // 24 hours idle expiration
-        });
+        (await cookies()).set(opcoesCookieSessao(sessionToken));
 
-        logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
+        await logAction(user.id, user.username, 'LOGIN_SUCCESS', 'System', 'User logged in');
 
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     } finally {
-        logTiming('POST /api/auth/login', performance.now() - started);
+        await logTiming('POST /api/auth/login', performance.now() - started);
     }
 }

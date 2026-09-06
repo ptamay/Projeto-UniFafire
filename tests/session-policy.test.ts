@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { jwtVerify } from 'jose';
-import db from '@/lib/db';
+import { queryOne } from '@/lib/pg';
 
 // TASK-035 — reativação (ex src/lib/session.test.old + session-expiration.test.old):
 // política de sessão do REQ-011, agora como testes Vitest.
@@ -45,7 +45,9 @@ describe('TASK-035 — política de sessão (REQ-011)', () => {
         const { signSession } = await import('@/lib/session-edge');
         const { verifySession } = await import('@/lib/session');
 
-        const admin = db.prepare("SELECT id, password_hash FROM users WHERE username = 'test_admin'").get() as { id: number; password_hash: string };
+        const admin = (await queryOne<{ id: number; password_hash: string }>(
+            "SELECT id, password_hash FROM users WHERE username = 'test_admin'",
+        ))!;
 
         // Token válido: pwd_hash bate com o hash atual do banco
         const validToken = await signSession({ id: admin.id, username: 'test_admin', role: 'ADMIN', pwd_hash: admin.password_hash.slice(-10) });
