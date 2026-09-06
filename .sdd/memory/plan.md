@@ -322,6 +322,25 @@
 > verdadeiros. Até que haja um número aqui, **o REQ-032 está entregue em código e não em
 > fato**.
 
+### Sprint 26 ✅ — Autorização de métricas e contrato de API (CR Tipo C · ADR-014)
+> Aberta pelo Change Request de 2026-09-06. Uma rota expõe dados pessoais a qualquer usuário
+> autenticado, e o exercício que achou isso — enumerar a superfície de API — vira o
+> documento que faltava.
+- [x] **TASK-085 → `/api/metrics/frequent-users` passa a validar papel.** ADR-014. Hoje a rota só chama `verifySession`: qualquer autenticado, **inclusive ALUNO**, recebe nome, username, papel e frequência de retirada dos cinco maiores usuários de uma chave, com `keyId` sequencial e portanto enumerável. As duas rotas irmãs (`business`, `frequent-keys`) já restringem a ADMIN/GESTOR/PORTEIRO; esta passa a restringir igual. O consumidor único já chama dentro de `if (isPorteiroOrAdmin)`, então **nenhum uso legítimo muda** — o que muda é o servidor garantir o que a tela presumia (§3.2). O teste tem de provar que ALUNO recebe **403**, e uma guarda deve varrer as demais rotas para que nenhuma outra fique só com checagem de sessão sem declarar que é pública.
+- [x] **TASK-086 → `docs/api-contract.md`, com a superfície real.** Débito da Sprint 24: o arquivo está no mapa do projeto (`CLAUDE.md`) e nunca existiu, e um critério da TASK-082 ficou sem alvo por isso. Deve listar as 24 rotas com métodos, papéis exigidos e o que cada uma devolve — gerado a partir do código, não de memória. E deve registrar as três rotas públicas (`/login`, `/api/auth/login`, `/api/auth/logout`, `/api/health`) como lista fechada, casando com `ROTAS_PUBLICAS` do `proxy.ts`.
+- [x] **TASK-087 → `GET /api/settings` para de entregar a senha padrão de reset a quem não pode resetar senha.** ADR-014 achado 2, encontrado minutos depois do primeiro e pelo mesmo método. O handler não tinha checagem **nenhuma** — nem de sessão — e devolvia `defaultResetPassword` a qualquer autenticado. Não era só exposição: em `login/route.ts`, com `requires_password_change` ligado, o login aceita a senha atual mais uma nova e troca na hora, então quem soubesse a senha padrão poderia tomar a conta de alguém na janela entre um reset legítimo e o primeiro acesso da vítima — **herdando o papel dela**. A correção OMITE O CAMPO em vez de recusar a requisição: `autoLogoutTime` é legítimo para todo papel, e negar o GET quebraria o logout automático de todo mundo (§2) para proteger um campo que papéis baixos nunca leram.
+
+> **Fechada em 2026-09-06.** Três tasks: 085 (métricas), 087 (senha padrão) e 086 (contrato).
+> **Duas falhas de autorização vivas em produção**, ambas encontradas pelo mesmo método —
+> enumerar a superfície e comparar rotas irmãs — e nenhuma com sintoma. A segunda era
+> escalada de privilégio.
+>
+> **A lição do achado, e é reutilizável:** a rota foi escrita com checagem de sessão e sem
+> a de papel, e **nada acusou**. Não há teste que exija papel por rota, o proxy por desenho
+> não cobre, e a tela nunca a chamou de um perfil baixo — o defeito não tinha sintoma. Foi
+> preciso **enumerar a superfície inteira e comparar rotas irmãs**. O débito do
+> `api-contract.md` se pagou antes mesmo de o arquivo existir.
+
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
 > e a TASK-075 foi para a Sprint 23 (dependente da TASK-078). Mantido aqui o registro para
@@ -438,3 +457,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 23 (backup e deploy · Etapa 7b ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 3 tasks | 3 | 3 (TASK-078: a verificacao por contagem de linhas aprovou um dump truncado no ensaio — perdeu o RLS de `users` e as contagens bateram; entrou `compararEsquema` num segundo commit vermelho. TASK-075 e TASK-079: quatro varreduras de fonte MINHAS escritas errado — tres proibiam ate o comentario que explica o codigo morto, e uma exigia "responsavel" no singular contra um cabecalho "Responsaveis") | 0 (todos os gates verdes em cada task) | — | — |
 | 24 (faxina da tela · CR Tipo C ADR-013) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 3 (a TASK-084 nasceu ao preparar a micro-spec, e virou a primeira da fila) | 3 (TASK-082: duas regex minhas — uma proibia a palavra "Retencao" e reprovava a propria correcao, outra exigia uma unica forma de escrever o cleanup; TASK-083: o cenario de literal espalhado achou um QUINTO ponto com a senha padrao, nao previsto no ADR) | 0 (todos os gates verdes em cada task) | — | — |
 | 25 (Realtime · Etapa 5 ADR-012) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 2 | 2 (TASK-072: a tabela do stub de `realtime.send` foi parar em `public` e quebrou a verificacao de esquema do backup — pega por um teste EXISTENTE, escrito na Sprint 23 para outra coisa; e o `globalSetup` nao derrubava o schema `realtime`, colidindo em 42P07 na segunda execucao) | 0 (todos os gates verdes em cada task) | — | — |
+| 26 (autorizacao e contrato de API · CR Tipo C ADR-014) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 3 (a TASK-087 nasceu de um SEGUNDO achado, minutos depois do primeiro e pelo mesmo metodo) | 2 (minha guarda anti-reincidencia nasceu CEGA — usava `role`, que casa com `u.role` do SQL, e passava COM O DEFEITO PRESENTE; e escrevi o contrato ANTES dos cenarios, invertendo a ordem TDD, corrigido tirando o arquivo do lugar para obter o vermelho de verdade) | 0 (todos os gates verdes) | — | — |

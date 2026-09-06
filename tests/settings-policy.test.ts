@@ -75,9 +75,17 @@ describe('TASK-083 — valor inválido herdado não quebra mais o logout', () =>
         });
 
         vi.resetModules();
+        vi.doMock('next/headers', () => ({
+            cookies: () => Promise.resolve({ get: () => ({ value: 'token' }) }),
+        }));
+        vi.doMock('@/lib/session', () => ({
+            verifySession: () => Promise.resolve({ id: 3, username: 'test_porteiro', role: 'PORTEIRO' }),
+        }));
         const { GET } = await import('@/app/api/settings/route');
         const corpo = await (await GET()).json();
 
+        // PORTEIRO de proposito: `autoLogoutTime` vale para TODO papel, e a
+        // TASK-087 nao pode ter estreitado isso.
         expect(corpo.autoLogoutTime, 'a rota repassou o lixo do banco para a tela')
             .toBe(AUTO_LOGOUT_PADRAO);
     });
@@ -155,6 +163,16 @@ describe('TASK-083 — a senha padrão de reset tem UMA fonte', () => {
         // Sem registro em `settings`, os dois caminhos precisam concordar. Era
         // exatamente aqui que divergiam.
         vi.resetModules();
+        // A TASK-087 passou a exigir sessao neste GET, e o papel decide se o
+        // campo da senha padrao vem na resposta. O cenario continua afirmando a
+        // MESMA coisa — que a tela e o sistema concordam —, agora sob o papel que
+        // de fato ve o campo.
+        vi.doMock('next/headers', () => ({
+            cookies: () => Promise.resolve({ get: () => ({ value: 'token' }) }),
+        }));
+        vi.doMock('@/lib/session', () => ({
+            verifySession: () => Promise.resolve({ id: 1, username: 'test_admin', role: 'ADMIN' }),
+        }));
         const { GET } = await import('@/app/api/settings/route');
         const corpo = await (await GET()).json();
 
