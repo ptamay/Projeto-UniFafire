@@ -235,17 +235,10 @@ describe('TASK-070 — o SQLite sai do runtime', () => {
     });
 });
 
-describe('TASK-070 — o backup por cópia de arquivo não finge funcionar', () => {
-    it('createBackup recusa explicitamente, citando a TASK-078', async () => {
-        const { createBackup } = await import('@/lib/backup');
-        const r = await createBackup();
-        expect(r.success, 'nao pode responder sucesso').toBe(false);
-        expect(r.error).toMatch(/TASK-078/);
-    });
-
-    // O cenario `startCronJobs nao agenda nada` saiu na TASK-084 (Sprint 24): a
-    // funcao foi REMOVIDA, junto com `src/instrumentation.ts` e a dependencia
-    // `node-cron`. Ela existia para gravar um log dizendo que nao fazia nada, e
-    // isso custava 87% das linhas de `app_logs` em producao. As guardas de que
-    // nada disso voltou estao em `tests/backup.test.ts`.
-});
+// O describe `TASK-070 — o backup por cópia de arquivo não finge funcionar` saiu
+// na TASK-082 (Sprint 24): `createBackup()` foi REMOVIDA. Ela existia para
+// recusar uma operação que ninguém mais consegue disparar — o botão que a
+// chamava e o `POST /api/backups` saíram junto. Função cujo único propósito é
+// recusar o impossível é código morto, e o teste que a guardava mantinha o
+// código morto vivo. As guardas de que nada disso voltou estão em
+// `tests/settings-sem-promessa.test.ts`.
