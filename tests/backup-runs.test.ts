@@ -263,6 +263,48 @@ describe('TASK-078 — o workflow', () => {
         expect(yml(), 'o script de verificação não é invocado').toMatch(/verify-dump/);
     });
 
+    it('BDD 5: o dump é escopado ao schema `public` — senão a restauração aborta', () => {
+        // Descoberto na PRIMEIRA execução real, em 2026-09-06 (run 34037968370):
+        //
+        //   ERROR: extension "supabase_vault" is not available
+        //
+        // `pg_dump` do banco inteiro emite `CREATE EXTENSION` para as extensões
+        // da PLATAFORMA Supabase. A base de verificação é um `postgres:17` puro,
+        // que não as tem, e o `psql -v ON_ERROR_STOP=1` aborta ali — antes de
+        // restaurar uma linha sequer.
+        //
+        // É a mesma cegueira que `tests/global-setup-pg.ts` já tinha resolvido
+        // para a suíte, provisionando a base da plataforma (papéis `anon` e
+        // `authenticated`, a função `rls_auto_enable`) para que as migrations
+        // rodassem idênticas. O job de verificação nasceu sem esse cuidado, e o
+        // limite honesto registrado no `tasks.md` — "o ciclo completo não roda
+        // aqui, depende de secrets" — é exatamente onde o defeito se escondeu.
+        //
+        // ## Por que escopar, e não tolerar o erro
+        //
+        // A correção tentadora é tirar o `ON_ERROR_STOP=1` e deixar o `psql`
+        // engolir o que não entende. Isso destruiria a garantia inteira: um dump
+        // TRUNCADO passaria a "restaurar com sucesso", que é precisamente o caso
+        // que esta verificação existe para pegar.
+        //
+        // As 11 tabelas da aplicação vivem todas em `public`. As extensões da
+        // plataforma vivem em `extensions`/`vault`/`auth`, não são nossas, e
+        // qualquer projeto Supabase novo já as traz. Escopar torna o dump
+        // portátil nos dois destinos que importam numa recuperação: um Postgres
+        // puro e um projeto Supabase novo.
+        expect(
+            yml(),
+            'pg_dump sem --schema=public arrasta as extensões da plataforma e a verificação aborta',
+        ).toMatch(/--schema=public/);
+    });
+
+    it('BDD 5: a restauração continua parando no primeiro erro', () => {
+        // Guarda do parágrafo acima: se alguém "consertar" um dump problemático
+        // afrouxando o psql, o dump truncado volta a passar.
+        expect(yml(), 'ON_ERROR_STOP saiu — restauração parcial passaria por boa')
+            .toMatch(/ON_ERROR_STOP=1/);
+    });
+
     it('BDD 7: nenhum segredo literal — tudo por secrets (§6.2)', () => {
         const fonte = yml();
         expect(fonte, 'string de conexão literal no workflow').not.toMatch(/postgresql:\/\/[^$\s]*:[^$\s]*@/);
