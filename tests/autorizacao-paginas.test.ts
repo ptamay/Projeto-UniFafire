@@ -95,12 +95,20 @@ describe('TASK-088 — /history e /keys verificam papel antes de consultar', () 
         expect(verificaPapel(p.fonte), 'consulta as chaves sem olhar o papel').toBe(true);
     });
 
-    it('BDD 1: as duas redirecionam, como `/logs` e `/users` já fazem', () => {
-        // O padrão já existe no projeto. A correção é aplicá-lo, não inventar um.
-        for (const rota of ['/history', '/keys']) {
-            const p = listarPaginas().find(x => x.rota === rota)!;
-            expect(p.fonte, `${rota} verifica o papel e não redireciona`).toMatch(/redirect\s*\(/);
-        }
+    it('BDD 1: `/keys` redireciona, como `/logs` e `/users` já fazem', () => {
+        // Não há leitura legítima do inventário alheio por FUNCIONARIO ou ALUNO:
+        // as chaves que importam a eles já aparecem no dashboard. O padrão já
+        // existe no projeto — a correção é aplicá-lo, não inventar um.
+        const p = listarPaginas().find(x => x.rota === '/keys')!;
+        expect(p.fonte, '/keys verifica o papel e não redireciona').toMatch(/redirect\s*\(/);
+    });
+
+    it('BDD 1: `/history` NÃO bloqueia — escopa', () => {
+        // Emenda do ADR-015: "quando peguei a chave da sala 12" é dado do próprio
+        // usuário. Bloquear seria proteger a pessoa dela mesma.
+        const p = listarPaginas().find(x => x.rota === '/history')!;
+        expect(p.fonte, 'a página passa a restrição ao construtor da consulta')
+            .toMatch(/restritoAoUsuarioId/);
     });
 });
 
@@ -156,5 +164,51 @@ describe('TASK-090 — nenhuma página consulta o banco sem verificar papel', ()
         for (const rota of Object.keys(EXCECOES)) {
             expect(listarPaginas().some(p => p.rota === rota), `exceção obsoleta: ${rota}`).toBe(true);
         }
+    });
+});
+
+describe('TASK-088 — o escopo do histórico é TETO, não padrão', () => {
+    // A armadilha, e ela não é óbvia: `buildHistoryQuery` já aceita `userId` como
+    // filtro vindo da QUERY STRING. Se a restrição do servidor for aplicada como
+    // valor padrão desse mesmo campo, um FUNCIONARIO passa `?userId=outro` e lê o
+    // histórico alheio — trocaríamos uma exposição por outra, mais difícil de
+    // enxergar porque a página PARECERIA escopada.
+
+    it('BDD 1: a restrição sobrescreve o `userId` vindo da URL', async () => {
+        const { buildHistoryQuery } = await import('@/lib/history-query');
+        const q = buildHistoryQuery({
+            date: '', month: '', hour: '', keyId: '', action: '', page: 1,
+            userId: '9',              // o que o atacante manda na URL
+            restritoAoUsuarioId: 7,   // o que o servidor impõe
+        });
+        expect(q.params, 'o filtro da URL venceu a restrição do servidor').toContain(7);
+        expect(q.params, 'o id de outro usuário sobreviveu na consulta').not.toContain(9);
+    });
+
+    it('BDD 1: sem restrição, o filtro da URL continua valendo', () => {
+        // A/G/P precisam poder filtrar por usuário — é a pergunta central do
+        // controle de chaves ("quem pegou a chave X?"). A correção não pode
+        // matar isso.
+        return import('@/lib/history-query').then(({ buildHistoryQuery }) => {
+            const q = buildHistoryQuery({
+                date: '', month: '', hour: '', keyId: '', action: '', page: 1,
+                userId: '9',
+            });
+            expect(q.params, 'o filtro por usuário deixou de funcionar para quem pode usá-lo')
+                .toContain(9);
+        });
+    });
+
+    it('BDD 1: a restrição também vale na contagem, não só na listagem', () => {
+        // A paginação usa `countSql` com params próprios. Escopar só a listagem
+        // esconderia as linhas e revelaria QUANTAS existem.
+        return import('@/lib/history-query').then(({ buildHistoryQuery }) => {
+            const q = buildHistoryQuery({
+                date: '', month: '', hour: '', keyId: '', action: '', page: 1,
+                restritoAoUsuarioId: 7,
+            });
+            expect(q.countParams, 'a contagem ignora a restrição e vaza o total alheio')
+                .toContain(7);
+        });
     });
 });
