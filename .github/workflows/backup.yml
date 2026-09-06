@@ -126,6 +126,14 @@ jobs:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
         run: |
           set -euo pipefail
+          # A base de verificacao precisa estar VAZIA, e nao so parecer vazia.
+          # Duas razoes, e a segunda importa mais: (1) o dump escopado emite
+          # `CREATE SCHEMA public` e o container ja nasce com um; (2) a
+          # reconciliacao trata objeto a mais no destino como divergencia,
+          # supondo base limpa — isto passa a garantir a suposicao. Mesmo gesto
+          # do `tests/global-setup-pg.ts`.
+          docker run --rm --network host "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q -c 'DROP SCHEMA IF EXISTS public CASCADE;'
+
           gunzip -c "$ARQUIVO" | docker run --rm -i --network host \
             "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q
           node db/verify-dump-cli.mjs "$DATABASE_URL" "$VERIFICACAO_URL"
