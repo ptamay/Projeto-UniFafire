@@ -1,7 +1,7 @@
 # ADR-015 — Server Components consultam o banco sem verificar papel
 
 - **Status:** Aceito
-- **Data:** 2026-09-06
+- **Data:** 2026-09-06 · **emendado no mesmo dia** (decisão 1: `/history` escopa em vez de bloquear)
 - **Tipo de Change Request:** C (mudança em feature já implementada)
 - **Relacionado:** constitution §3.2, ADR-014, REQ-005, REQ-010
 - **Origem:** varredura lateral de migrations, workflows e telas, pedida após o ADR-014
@@ -61,9 +61,25 @@ toda a camada de API onde as checagens vivem. Nenhum teste de rota alcançaria.
 
 ## Decisão
 
-**1. Toda página que consulta dados de terceiros verifica papel no servidor**, e
-redireciona quem não pode — o mesmo padrão que `/logs`, `/settings` e `/users` já
-usam. Aplica-se a `/history` e `/keys`.
+**1. Toda página que consulta dados de terceiros verifica papel no servidor.** O
+que ela faz com o resultado depende de haver ou não uso legítimo para o papel
+menor:
+
+- **`/keys` bloqueia.** Não há leitura legítima do inventário alheio por
+  FUNCIONARIO ou ALUNO — as chaves que importam a eles aparecem no dashboard.
+  Redireciona, como `/logs`, `/settings` e `/users` já fazem.
+
+- **`/history` ESCOPA.** *(Emenda de 2026-09-06, por decisão do usuário.)* "Quando
+  peguei a chave da sala 12 e quando devolvi" é dado do próprio usuário, e negá-lo
+  seria proteger a pessoa dela mesma. ADMIN, GESTOR e PORTEIRO veem tudo; os
+  demais veem **apenas as próprias movimentações**.
+
+  ⚠️ **E o escopo não pode ser um padrão — tem de ser um teto.** `buildHistoryQuery`
+  já aceita `userId` como filtro **vindo da query string**. Se a restrição for
+  aplicada como valor default desse mesmo campo, um FUNCIONARIO passa
+  `?userId=outro` e lê o histórico alheio — trocaríamos uma exposição por outra,
+  mais difícil de enxergar. A restrição entra como parâmetro separado, imposto
+  pelo servidor, que **sobrescreve** o filtro da URL em vez de preenchê-lo.
 
 **2. O dashboard escopa o que entrega, em vez de bloquear.** Ele é legitimamente
 para todos os papéis: FUNCIONARIO e ALUNO precisam ver as próprias chaves. O que
@@ -112,7 +128,8 @@ que a decisão 3 vale mais que as duas primeiras.
 
 ## Implementação
 
-- **TASK-088** — `/history` e `/keys` verificam papel no servidor
+- **TASK-088** — `/keys` bloqueia; `/history` escopa ao próprio usuário, com a
+  restrição imposta pelo servidor e não sobrescrevível pela query string
 - **TASK-089** — o dashboard escopa a lista de usuários ao papel que a usa
 - **TASK-090** — guarda que varre as `page.tsx`
 
