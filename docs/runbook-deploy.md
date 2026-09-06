@@ -46,7 +46,7 @@ docker run --rm -i postgres:17 psql "<URL>" -v ON_ERROR_STOP=1
 | **GitHub** | `ptamay` — dono de `ptamay/Projeto-UniFafire` | Precisa de permissão de administrador para cadastrar secrets |
 | **Vercel** | Escopo **`projeto-uni-fafire`** (`team_WIfabVaM7632RsSQheQDTEbW`), projeto `projeto-uni-fafire` | ⚠️ **É uma conta Vercel DIFERENTE da que está ligada ao GitHub `ptamay`.** Decisão de 2026-09-05: fica como está |
 | **Supabase** | Projeto em `sa-east-1` | — |
-| _(preencher)_ | E-mail da conta Vercel dona do projeto: `________________` | **Preencha esta linha.** Deixei em branco de propósito em vez de chutar |
+| **Vercel — login** | `unifafiregc@gmail.com` | A conta que criou e é dona do projeto. Senha no gerenciador da instituição |
 
 ⚠️ **A pegadinha:** o `vercel` CLI autenticado como `ptamay` **não enxerga** esse
 projeto — `vercel teams ls` lista só `ptamays-projects`, e qualquer
@@ -116,12 +116,33 @@ nova não é aplicada pelo deploy** — veja §4.
 
 ### 3.1 Na Vercel (Settings → Environment Variables)
 
-| Nome | Valor | Observação |
-|---|---|---|
-| `DATABASE_URL` | String de conexão do Supabase, **modo pooler / transaction** | Serverless devolve a conexão a cada transação; o modo direto esgota o limite |
-| `JWT_SECRET` | Segredo forte, ≥ 32 caracteres | **Recusado** se for UUID, caractere repetido ou o exemplo do `.env.example` (`src/lib/secret-policy.ts`) |
-| `APP_TIMEZONE` | `America/Recife` | Sem ela, datas na tela saem no fuso do servidor |
-| `APP_ENV` | `production` | O cookie de sessão passa a exigir HTTPS (`secure`) incondicionalmente |
+Entre com a conta do §0, abra o projeto `projeto-uni-fafire` →
+**Settings** → **Environment Variables** → *Add Another*. Para cada variável:
+nome, valor, e **marque os ambientes** em que ela vale.
+
+A coluna dos ambientes não é detalhe — ela decide se o build do PR passa e se um
+preview público alcança os dados reais:
+
+| Nome | Valor | Ambientes | Por quê |
+|---|---|---|---|
+| `JWT_SECRET` | Segredo forte, ≥ 32 caracteres | **Production + Preview + Development** | É exigido em tempo de **BUILD**: `session-edge.ts` valida na importação do módulo, e o Next importa as rotas ao coletar dados das páginas. Faltando em Preview, **o build do PR falha** |
+| `APP_TIMEZONE` | `America/Recife` | Production + Preview + Development | Sem ela, datas na tela saem no fuso do servidor |
+| `APP_ENV` | `production` | Production + Preview | O cookie de sessão passa a exigir HTTPS (`secure`) incondicionalmente |
+| `DATABASE_URL` | String de conexão do Supabase, **modo pooler / transaction** | **SÓ Production** | Ver o aviso abaixo. Serverless devolve a conexão a cada transação; o modo direto esgota o limite do plano |
+
+> ⚠️ **Por que `DATABASE_URL` fica fora de Preview.** Todo PR ganha uma URL de
+> preview **pública**. Apontá-la para o banco de produção põe os dados reais
+> atrás de um endereço que qualquer pessoa com o link alcança, e um preview de
+> branch pode conter código não revisado. Sem a variável, o preview constrói
+> normalmente (o build não precisa do banco) e o `/api/health` dele responde
+> `503` — o que é a resposta honesta: aquela instância não tem banco.
+
+Marque `JWT_SECRET` e `DATABASE_URL` como **Sensitive** ao salvar: o valor deixa
+de ser legível de volta no painel.
+
+**Variável cadastrada não se aplica sozinha a um deploy que já existe.** Depois
+de salvar, vá em *Deployments*, abra o mais recente e use **Redeploy** — ou
+empurre um commit novo.
 
 Onde achar a string de conexão: Supabase → *Project Settings* → *Database* →
 *Connection string* → aba **Transaction pooler**.
