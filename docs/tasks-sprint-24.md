@@ -1,3 +1,7 @@
+<!-- Snapshot da micro-spec da Sprint 24, arquivado no Memory Sync (Step 10) de
+     2026-09-06. `.sdd/memory/tasks.md` é sobrescrito a cada sprint; este arquivo
+     é o registro do que foi combinado e do que foi entregue. Não editar. -->
+
 # tasks.md — Micro-spec da Sprint Ativa (Sprint 24 · 🟡 padrão, com uma task 🔴)
 
 > **Faxina da tela de configurações — CR Tipo C, ADR-013.** A primeira sprint depois do
@@ -222,39 +226,7 @@ padrão (constitution §2).
 - [ ] **Verificação em PRODUÇÃO após o deploy:** `app_logs` para de receber
       `cron_desativado`. É a única prova de que a TASK-084 funcionou, e ela só existe
       depois do merge.
-- [x] Fase 11 + Memory Sync
-
----
-
-## Sprint 24 — FECHADA em 2026-09-06
-
-2 tasks planejadas, **3 entregues** — a TASK-084 nasceu ao preparar a micro-spec e
-virou a primeira da fila. 10 commits: a micro-spec com a emenda do ADR e os três
-pares `test` → `feat` → `refactor`.
-
-Verificado no fecho: **427 testes / 44 arquivos**, 6 gates, `tsc` 0, `eslint` 0,
-`npm audit` 0 vulnerabilidades, `next build` verde **sem `DATABASE_URL`**, e a
-tela exercitada no navegador **com o valor quebrado de produção semeado**.
-
-**Dois itens seguem abertos, e é assim de propósito:**
-
-1. **A verificação em produção** — `app_logs` parar de receber `cron_desativado`.
-   Só existe depois do merge e do deploy. É a lição das três falhas do backup:
-   comportamento de runtime só está verificado depois de rodar de verdade.
-2. **O critério do `docs/api-contract.md`**, marcado como não cumprido porque o
-   arquivo não existe. Virou débito no `plan.md`.
-
-**O padrão do retrabalho mudou, e vale registrar.** Nas Sprints 22 e 23, todo o
-retrabalho foi teste meu que não media o que dizia medir. Aqui foram três, mas de
-duas naturezas diferentes: **duas regex minhas largas demais** (uma chegou a
-reprovar a própria correção) e **um achado legítimo** — o cenário de literal
-espalhado encontrou um quinto ponto com a senha padrão, que nem o ADR nem eu
-tínhamos mapeado. O segundo tipo é o teste funcionando como deveria.
-
-**A lição da sprint, em uma frase:** *validação só na fronteira de entrada assume
-que a fronteira sempre existiu.* Foi assim que um `"30"` de um seed de teste
-manteve um controle de segurança da §2 inerte em produção sem sintoma nenhum.
-
+- [ ] Fase 11 + Memory Sync
 
 > **Fora da DoD, porque é operação e não deploy:** corrigir as linhas sintéticas de
 > `settings` em produção. Entra no runbook.

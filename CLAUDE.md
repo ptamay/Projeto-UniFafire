@@ -40,16 +40,28 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: Change Request Tipo C registrado (ADR-013) — faxina da tela de
-  configurações. SEIS afirmações falsas na `/settings`, sendo DUAS defeitos vivos:
-  o logout automático não dispara (`auto_logout_time` = "30", comparado com
-  "HH:MM") e `default_reset_password` tem padrões divergentes entre a rota que lê
-  e as que aplicam. Geradas TASK-082 e TASK-083.
-- Próxima Ação: **Sprint 24 — Faxina da tela de configurações** (TASK-082, 083),
-  pelo ciclo TDD. Depois, Sprint 25 — Etapa 5: Realtime (TASK-072, 073).
-  As sprints foram RENUMERADAS em 2026-09-06: a faxina virou 24 e o Realtime 25,
-  para o número acompanhar a ordem de execução. O vínculo com o ADR-012 é a
-  Etapa 5, que não muda.
+- Última Ação: **Sprint 24 EXECUTADA e FECHADA** (faxina da tela · ADR-013) —
+  PR #21 aberto, aguardando merge.
+  TASK-084 saíram `startCronJobs()`, `src/instrumentation.ts` e a dependência
+  `node-cron`: 52 das 60 linhas de `app_logs` em produção eram `cron_desativado`,
+  87% da trilha, e a §7.1 proíbe limpá-la;
+  TASK-082 a tela perdeu os quatro controles inertes, o card de importar `.db`, as
+  rotas `restore`/`import`, o `POST /api/backups` e o `createBackup()` — e ganhou
+  o arranjo real do backup em texto;
+  TASK-083 a leitura de `auto_logout_time` passa a recusar valor herdado inválido
+  (o `"30"` mantinha o logout automático inerte), o gatilho virou CRUZAMENTO do
+  horário em vez de igualdade exata, o vazamento de `setInterval` foi corrigido, e
+  a senha padrão de reset passou a ter UMA fonte — eram CINCO lugares, dois já
+  divergindo.
+  Verificado: 427 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0,
+  `next build` sem DATABASE_URL, e a tela exercitada no navegador COM o valor
+  quebrado de produção semeado.
+- Próxima Ação: **merge do PR #21** e, logo depois, a verificação que só existe em
+  produção: `app_logs` PARAR de receber `cron_desativado`. É item da DoD da
+  Sprint 24 e está aberto até o deploy. Depois disso, **Sprint 25 — Etapa 5:
+  Realtime** (TASK-072, 073).
+- ⚠️ Enquanto o PR #21 não entra, seguem vivos em produção: o logout automático
+  inerte e os quatro controles que não fazem nada na tela.
 - ⚠️ Fora das sprints e ainda pendente: o ENSAIO DE RESTAURAÇÃO (runbook §6.6). O
   job prova que o dump volta numa base descartável, mas o RTO de 4 h NUNCA foi
   cronometrado — é o único item da §4.3 ainda não demonstrado.
@@ -83,7 +95,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   limpeza do go-live achando que eram configuração legítima, e errei.
   `auto_logout_time` = "30" é a causa do logout quebrado. Corrigir pela tela ou
   por SQL, e revisar `default_reset_password` (hoje "trocar123").
-- Branch atual: main (Sprints 21–23 publicadas; PRs #15–#19 merged)
+- ⚠️ DÉBITO NOVO: `docs/api-contract.md` está no mapa do projeto (logo abaixo, em
+  "Localização dos artefatos principais") e NÃO EXISTE. Um critério da TASK-082
+  ficou sem alvo por isso. Ou o contrato é criado, ou sai do mapa.
+- ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
+  fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
+  da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
+- Branch atual: feature/sprint-24-faxina-configuracoes (PR #21 aberto).
+  PRs #15–#20 merged na main.
 - Atualizado em: 2026-09-06
 ```
 
@@ -133,16 +152,16 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 23 concluída e PUBLICADA)
-Última sprint     : 23 ✅ (Etapa 7b do ADR-012 — Backup e Deploy · TASK-078, 075, 079)
+Sprint atual      : — (nenhuma ativa; Sprint 24 concluída, PR #21 aguardando merge)
+Última sprint     : 24 ✅ (Faxina da tela · CR Tipo C, ADR-013 · TASK-084, 082, 083)
 Produção          : NO AR desde 2026-09-06 — https://projeto-uni-fafire.vercel.app
 Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
                     Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida.
                     Etapas 3, 4, 7a e 7b fechadas — falta a 5, adiada para depois do go-live)
 Último commit     : (ver git log -1)
-Próxima ação      : Nada bloqueante. Ensaio de restauração (runbook §6.6, RTO não
-                    medido) · CR de faxina da tela de configurações · Sprint 24
-                    (Realtime, TASK-072 e 073)
+Próxima ação      : Merge do PR #21 + verificação em produção (app_logs parar de
+                    receber cron_desativado) · Sprint 25 — Etapa 5: Realtime ·
+                    Ensaio de restauração (runbook §6.6, RTO não medido)
 ```
 
 ---
