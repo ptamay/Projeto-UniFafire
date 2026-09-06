@@ -197,10 +197,63 @@ Regras que não se negociam:
   UP/DOWN em `db/migrations-pg/` — o Gate 2 reprova UP sem DOWN.
 - Para reverter, aplique o `.down.sql` correspondente.
 
-> ⚠️ **Pendência conhecida:** a migration `202609041800_backup_runs.up.sql`
-> (TASK-078) precisa ser aplicada ao Supabase **antes** da primeira execução do
-> job de backup — é ela que cria a tabela onde cada execução é registrada. Sem
-> ela o job falha no passo final e a tela de configurações fica sem métrica.
+### 4.1 Como descobrir o que já foi aplicado
+
+O Supabase mantém um registro próprio das migrations, no schema
+`supabase_migrations`. **Consulte-o antes de aplicar qualquer coisa** — é a única
+fonte confiável, já que o repositório não guarda esse estado:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
+```
+
+(Pelo painel: Supabase → *Database* → *Migrations*.)
+
+Duas ressalvas sobre esse registro, ambas descobertas em 2026-09-06:
+
+1. **Os nomes não batem com os arquivos.** O ledger guarda o nome que quem
+   aplicou digitou, não o nome do arquivo. Compare pelo **conteúdo** — qual
+   tabela ou índice cada migration cria —, nunca pelo nome.
+2. **Nem tudo que está no banco está no repositório.** Existe uma
+   `search_path_history_imutavel_task_065` aplicada durante a Sprint 20 que **não
+   tem arquivo em `db/migrations-pg/`**. Se você recriar a base do zero a partir
+   dos arquivos, ela não vem junto.
+
+Um segundo conferidor, independente do ledger, é olhar o schema em si — foi assim
+que se descobriu, no dia do go-live, que faltavam duas migrations que ninguém
+sabia estarem pendentes:
+
+```bash
+psql "$DATABASE_URL" -c "\dt public.*"
+```
+
+As **11 tabelas** esperadas estão listadas em `TABELAS_ESPERADAS`, no
+`db/backup-run.mjs`. Menos que isso significa migration faltando.
+
+### 4.2 Estado em 2026-09-06
+
+Todas as migrations conhecidas estão aplicadas. As 11 tabelas existem, com RLS
+ligado, e os triggers de imutabilidade de `history`, `app_logs` e `backup_runs`
+estão no lugar.
+
+| Aplicada | O que traz |
+|---|---|
+| `baseline_postgres_task_063` | As 9 tabelas de base |
+| `indices_task_064` | Índices de consulta |
+| `imutabilidade_historico_task_065` | Trigger de imutabilidade de `history` |
+| `search_path_history_imutavel_task_065` | Correção do `search_path` — **sem arquivo no repositório** |
+| `app_logs` | Tabela `app_logs` (TASK-074) |
+| `backup_runs` | Tabela `backup_runs` (TASK-078) |
+
+> **Por que `app_logs` quase passou batido, e o que isso ensina.** Ela ficou
+> pendente desde a Sprint 22 sem ninguém notar, porque a falta dela **não produz
+> erro visível**: o logger degrada para console e a requisição segue respondendo
+> 200 (é o desenho da TASK-074, e há teste afirmando isso). O sistema pareceria
+> saudável e a trilha de auditoria simplesmente não existiria. Já a falta de
+> `backup_runs` faz barulho — o job de backup falha no passo final.
+>
+> A lição para a próxima migration: **conferir o schema depois de aplicar, não
+> só o código de saída do comando.** Migration que falta cala em vez de gritar.
 
 ---
 
