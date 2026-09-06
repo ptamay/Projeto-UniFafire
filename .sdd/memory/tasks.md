@@ -219,9 +219,14 @@ padrão (constitution §2).
 - [x] `npm audit` sem HIGH/CRITICAL — lido inteiro
 - [x] `npm run build` verde **sem `DATABASE_URL` definida**
 - [x] App exercitado no navegador — **último passo, depois da suíte**
-- [ ] **Verificação em PRODUÇÃO após o deploy:** `app_logs` para de receber
-      `cron_desativado`. É a única prova de que a TASK-084 funcionou, e ela só existe
-      depois do merge.
+- [x] **Verificação em PRODUÇÃO após o deploy:** `app_logs` para de receber
+      `cron_desativado`. **Feita em 2026-09-06, e confirmada.** O deploy do merge
+      concluiu às 16:14:46 UTC; 36 requisições em três rotas distintas depois disso
+      atingiram instâncias novas — cold start garantido. A contagem ficou em **61
+      linhas, a última às 15:53:02**, antes do merge. **Zero linhas novas.** Sob o
+      código antigo, a primeira requisição a um deploy novo já escrevia uma. As 61
+      já gravadas permanecem: a §7.1 proíbe limpar `app_logs` e o trigger recusa
+      `DELETE` sem o bypass.
 - [x] Fase 11 + Memory Sync
 
 ---

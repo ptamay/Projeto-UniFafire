@@ -56,12 +56,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Verificado: 427 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0,
   `next build` sem DATABASE_URL, e a tela exercitada no navegador COM o valor
   quebrado de produção semeado.
-- Próxima Ação: **merge do PR #21** e, logo depois, a verificação que só existe em
-  produção: `app_logs` PARAR de receber `cron_desativado`. É item da DoD da
-  Sprint 24 e está aberto até o deploy. Depois disso, **Sprint 25 — Etapa 5:
-  Realtime** (TASK-072, 073).
-- ⚠️ Enquanto o PR #21 não entra, seguem vivos em produção: o logout automático
-  inerte e os quatro controles que não fazem nada na tela.
+- Próxima Ação: **Sprint 25 — Etapa 5: Realtime** (TASK-072, 073). É o requisito
+  que motivou a migração inteira, e a última etapa aberta do ADR-012.
+- ✅ PR #21 merged (`d79020a`) e a Sprint 24 está VERIFICADA EM PRODUÇÃO: o deploy
+  concluiu 16:14:46 UTC e, com 36 requisições em instâncias novas depois disso,
+  `app_logs` NÃO recebeu nenhuma linha `cron_desativado` (parou em 61, a última
+  às 15:53:02). O logout automático e a faxina da tela também estão no ar.
 - ⚠️ Fora das sprints e ainda pendente: o ENSAIO DE RESTAURAÇÃO (runbook §6.6). O
   job prova que o dump volta numa base descartável, mas o RTO de 4 h NUNCA foi
   cronometrado — é o único item da §4.3 ainda não demonstrado.
