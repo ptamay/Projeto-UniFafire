@@ -16,9 +16,10 @@
 | Banco | **Postgres (Supabase, `sa-east-1`) via `pg`** — ver D-09 | ✅ virado na Sprint 21 (Etapa 4). `src/lib/db.ts` apagado; nada em `src/` importa `better-sqlite3`, que virou devDependency das ferramentas offline (`db/migrate.mjs`, `db/load-pg.mjs`). Parâmetro vinculado `$n` obrigatório; **sem prepared statement nomeado** (transaction mode) |
 | Auth | JWT (`jose`, HS256) em cookie + **`bcryptjs`** — ver D-10 | ✅ segredo em `.env` desde a Sprint 1; addon nativo trocado na Sprint 21 (TASK-071), mesmo formato de hash |
 | Validação | Zod (`src/lib/schemas.ts`) | fonte única de schemas e RBAC |
-| Jobs | ~~node-cron (`src/lib/backup.ts`)~~ | ⛔ **neutralizado na Sprint 21** — processo de longa duração não existe em execução serverless. Substituto é da **TASK-078** (Etapa 7), que é bloqueante para o go-live |
+| Jobs | ~~node-cron~~ → **GitHub Actions** | ✅ `node-cron` neutralizado na Sprint 21 e **removido do `package.json` na Sprint 24** (TASK-084), junto com `src/instrumentation.ts`: a função sobrevivente só gravava um log dizendo que não fazia nada, e produzia 87% das linhas de `app_logs` em produção. Agendamento real: `backup.yml` e `keepalive.yml` |
+| Sincronismo | **`@supabase/supabase-js`, e SÓ para o canal Realtime** (Sprint 25, TASK-072) | ✅ O cliente **não lê tabela**: assina um sinal vazio e a tela refaz a busca pelas rotas autenticadas. `postgres_changes` está FORA — ele autoriza por RLS, e abrir RLS para `anon` exporia as tabelas à chave anônima que vai no bundle (§3.2). O acesso a dados continua sendo `pg` |
 | UI | CSS nativo estruturado + tokens do `ui-context.md` + react-hot-toast | sem migração para shadcn — ver D-03 |
-| Hospedagem | **Vercel** (ADR-012) | ⏳ Etapa 7b (Sprint 23). O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) sai na TASK-079 **sem janela de retenção** — não existe servidor PM2 a manter ligado (Achados de 2026-09-04) |
+| Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
 
