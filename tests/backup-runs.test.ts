@@ -298,6 +298,27 @@ describe('TASK-078 — o workflow', () => {
         ).toMatch(/--schema=public/);
     });
 
+    it('BDD 5: a base de verificação e ESVAZIADA antes de restaurar', () => {
+        // Segunda falha da execucao real, em 2026-09-06 (run 34038390932):
+        //
+        //   ERROR: schema "public" already exists
+        //
+        // Com `--schema=public`, o `pg_dump` passa a emitir `CREATE SCHEMA
+        // public` — e o container `postgres:17` ja nasce com um. A restauracao
+        // aborta na primeira instrucao.
+        //
+        // Derrubar o schema antes nao e so contornar esse erro: e o que torna
+        // VERDADEIRA uma garantia que a reconciliacao ja assumia. O
+        // `compararEsquema` trata objeto A MAIS no destino como divergencia,
+        // dizendo que "a base de verificacao tinha residuo" — mas nada garantia
+        // que ela estivesse limpa. Agora garante, e pelo mesmo gesto que o
+        // `tests/global-setup-pg.ts` ja usava na suite.
+        expect(
+            yml(),
+            'sem esvaziar a base, a restauracao aborta e um residuo passaria por dado restaurado',
+        ).toMatch(/DROP SCHEMA IF EXISTS public CASCADE/);
+    });
+
     it('BDD 5: a restauração continua parando no primeiro erro', () => {
         // Guarda do parágrafo acima: se alguém "consertar" um dump problemático
         // afrouxando o psql, o dump truncado volta a passar.
