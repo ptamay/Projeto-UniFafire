@@ -40,7 +40,19 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: **Sprint 24 EXECUTADA e FECHADA** (faxina da tela · ADR-013) —
+- Última Ação: **Sprint 25 EXECUTADA e FECHADA — Etapa 5 do ADR-012 (Realtime).**
+  O caminho literal do ADR (`postgres_changes`) foi REJEITADO com base em
+  verificação: ele autoriza por RLS, e este sistema tem RLS negando tudo a `anon`
+  e não usa Supabase Auth — usá-lo exigiria abrir as tabelas de chaves à chave
+  anônima do bundle (§3.2). O Realtime passou a carregar **sinal vazio** por
+  trigger (`realtime.send`), e o cliente refaz a busca pelas rotas autenticadas.
+  TASK-073 dá a rede de segurança: sem sinal, polling de 30 s em vez de tela
+  congelada. Medido no cenário degradado: 12 requisições de API em 89 s, contra
+  ~145 do polling de 3 s. PR #23 merged.
+- ⚠️ **O REQ-032 NÃO ESTÁ DEMONSTRADO.** A defasagem de ≤ 500 ms exige Realtime de
+  verdade. Enquanto não houver um número medido no `plan.md`, o requisito que
+  motivou a migração inteira está entregue em CÓDIGO e não em FATO. Ver Próxima Ação.
+- Ação anterior: **Sprint 24** (faxina da tela · ADR-013) (faxina da tela · ADR-013) —
   PR #21 aberto, aguardando merge.
   TASK-084 saíram `startCronJobs()`, `src/instrumentation.ts` e a dependência
   `node-cron`: 52 das 60 linhas de `app_logs` em produção eram `cron_desativado`,
@@ -56,8 +68,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Verificado: 427 testes / 44 arquivos, 6 gates, tsc 0, eslint 0, npm audit 0,
   `next build` sem DATABASE_URL, e a tela exercitada no navegador COM o valor
   quebrado de produção semeado.
-- Próxima Ação: **Sprint 25 — Etapa 5: Realtime** (TASK-072, 073). É o requisito
-  que motivou a migração inteira, e a última etapa aberta do ADR-012.
+- Próxima Ação: **FECHAR O REQ-032, e é do usuário + medição.**
+  (1) cadastrar `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` na
+  Vercel — nos três ambientes, como as outras;
+  (2) aplicar `db/migrations-pg/202609061800_sinal_realtime.up.sql` no Supabase
+  (runbook §4);
+  (3) medir a defasagem entre dois dispositivos e registrar o número no `plan.md`.
+  Até lá produção roda em polling de 30 s — comportamento desenhado, não falha.
+- ⚠️ Também aberto, e independente de sprint: o ENSAIO DE RESTAURAÇÃO (runbook
+  §6.6). O RTO de 4 h nunca foi cronometrado.
+- ✅ **TODAS as etapas do ADR-012 estão fechadas em código** (3, 4, 5, 7a, 7b; a 6
+  foi dissolvida). Não há sprint planejada. O que vier agora entra por Change
+  Request.
 - ✅ PR #21 merged (`d79020a`) e a Sprint 24 está VERIFICADA EM PRODUÇÃO: o deploy
   concluiu 16:14:46 UTC e, com 36 requisições em instâncias novas depois disso,
   `app_logs` NÃO recebeu nenhuma linha `cron_desativado` (parou em 61, a última
@@ -152,16 +174,17 @@ Você é o **agente de arquitetura e desbloqueio**, não o agente de execução 
 
 ```
 Modo do projeto   : EXPRESSO
-Sprint atual      : — (nenhuma ativa; Sprint 24 concluída, PR #21 aguardando merge)
-Última sprint     : 24 ✅ (Faxina da tela · CR Tipo C, ADR-013 · TASK-084, 082, 083)
+Sprint atual      : — (nenhuma ativa, e nenhuma planejada)
+Última sprint     : 25 ✅ código (Etapa 5 do ADR-012 — Realtime · TASK-072, 073).
+                    REQ-032 pendente de MEDIÇÃO em produção
 Produção          : NO AR desde 2026-09-06 — https://projeto-uni-fafire.vercel.app
-Fase atual        : 8-10 (migração ADR-012 REORDENADA em 2026-09-04 — Sprint 22 = Etapa 7a,
-                    Sprint 23 = Etapa 7b, Sprint 24 = Etapa 5; Etapa 6 dissolvida.
-                    Etapas 3, 4, 7a e 7b fechadas — falta a 5, adiada para depois do go-live)
+Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em código:
+                    3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
+                    o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : Merge do PR #21 + verificação em produção (app_logs parar de
-                    receber cron_desativado) · Sprint 25 — Etapa 5: Realtime ·
-                    Ensaio de restauração (runbook §6.6, RTO não medido)
+Próxima ação      : Fechar o REQ-032 (variáveis NEXT_PUBLIC_SUPABASE_* + migration
+                    do sinal + MEDIR a defasagem) · Ensaio de restauração
+                    (runbook §6.6, RTO não medido)
 ```
 
 ---

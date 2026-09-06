@@ -1,3 +1,12 @@
+<!-- Snapshot da micro-spec da Sprint 25, arquivado no Memory Sync (Step 10) de
+     2026-09-06. `.sdd/memory/tasks.md` é sobrescrito a cada sprint; este arquivo
+     é o registro do que foi combinado e do que foi entregue. Não editar.
+
+     ⚠️ Um item da DoD ficou ABERTO de propósito: a medição da defasagem de
+     ≤ 500 ms (REQ-032). Ela exige Realtime configurado em produção. Se este
+     arquivo for lido no futuro, o REQ-032 só está cumprido se houver um número
+     registrado no plan.md. -->
+
 # tasks.md — Micro-spec da Sprint Ativa (Sprint 25 · 🔴 crítica)
 
 > **Etapa 5 do ADR-012 — Realtime. REQ-032.** A última etapa aberta, e o requisito que
@@ -166,39 +175,7 @@ pior caso vira **defasagem infinita**, e o usuário não tem como saber.
       de rodar em produção. **O REQ-032 não está demonstrado até isto acontecer.**
 - [x] **A degradação é exercitada de verdade:** derrubar a conexão e confirmar que a tela
       volta a atualizar por polling largo.
-- [x] Fase 11 + Memory Sync
-
----
-
-## Sprint 25 — FECHADA em 2026-09-06, com um item em aberto
-
-2 tasks, 2 entregues, 7 commits. **445 testes / 46 arquivos**, 6 gates, `tsc` 0,
-`eslint` 0, `npm audit` 0 vulnerabilidades, `next build` verde sem `DATABASE_URL`.
-
-**O REQ-032 está entregue em CÓDIGO e não em FATO.** A defasagem de ≤ 500 ms não
-foi medida porque exige Realtime de verdade — variáveis na Vercel e migration
-aplicada. Enquanto não houver um número no `plan.md`, o requisito que motivou a
-migração inteira segue sem demonstração. Está escrito assim na DoD, no `plan.md` e
-no snapshot arquivado, nos três lugares onde alguém pode vir procurar.
-
-**A decisão que definiu a sprint foi tomada ANTES de escrever código.** Verificar
-o estado real do Supabase — RLS sem políticas, publicação vazia, sem Supabase Auth
-— mostrou que `postgres_changes` entregaria nada e que fazê-lo entregar custaria a
-autorização inteira. Se a implementação tivesse começado pelo caminho literal do
-ADR, o custo apareceria já com código escrito, e a pressão seria para "só abrir
-uma politiquinha".
-
-**Dois retrabalhos, ambos de infraestrutura de teste**, e um deles é o achado mais
-interessante da sprint: o stub de `realtime.send` criou sua tabela em `public`, e
-**a verificação de esquema do backup — escrita na Sprint 23 para pegar dump
-truncado — acusou a divergência**. Uma guarda serviu para um caso que ninguém
-imaginou ao escrevê-la.
-
-**E uma lição de método:** a primeira medição do fallback deu ZERO requisições. A
-conclusão apressada seria "o fallback não funciona", e a task teria sido reescrita
-para consertar o que não estava quebrado. Era a instrumentação perdida numa
-navegação. **Medição que contradiz o esperado se repete antes de virar diagnóstico.**
-
+- [ ] Fase 11 + Memory Sync
 
 > **Fora da DoD, porque é do usuário:** cadastrar `NEXT_PUBLIC_SUPABASE_URL` e
 > `NEXT_PUBLIC_SUPABASE_ANON_KEY` na Vercel, e aplicar a migration do trigger no Supabase
