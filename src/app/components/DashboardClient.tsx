@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import PendingInline from './PendingInline';
@@ -306,14 +307,20 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     useEffect(() => {
         const handleUpdate = () => refreshData();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        // Não reordena a lista se o usuário está no meio de uma ação (dropdown/modal
-        // aberto ou campo preenchido) — evita que a linha "pule" sob o cursor.
-        const interval = setInterval(() => { if (!interactingRef.current) refreshData(); }, 3000);
+        // TASK-072: o polling de 3 s saiu. O que atualiza esta tela quando a
+        // mudanca vem de OUTRO dispositivo e o sinal do banco (`useSinalDeMudanca`,
+        // abaixo). O listener de evento continua: ele cobre a acao feita NESTA
+        // aba, que nao precisa esperar viagem nenhuma.
         return () => {
             window.removeEventListener('pending-transactions-updated', handleUpdate);
-            clearInterval(interval);
         };
     }, [refreshData]);
+
+    // A guarda de interacao continua: nao reordena a lista se o usuario esta no
+    // meio de uma acao (dropdown/modal aberto ou campo preenchido) — evita que a
+    // linha "pule" sob o cursor. O que mudou foi a origem do gatilho, de relogio
+    // para sinal.
+    useAtualizacaoDeChaves(() => { if (!interactingRef.current) refreshData(); });
 
     // Normalização para busca ignorando acentos
     // const normalize = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();

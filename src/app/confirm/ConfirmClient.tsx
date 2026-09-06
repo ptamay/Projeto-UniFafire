@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
@@ -64,12 +65,16 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
         // (retirada/devolução/confirmação/cancelamento) — fluxo de balcão sem F5.
         const handleUpdate = () => fetchPending();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        const interval = setInterval(fetchPending, 3000);
+        // TASK-072: o polling de 3 s saiu. O que atualiza esta tela quando a
+        // mudanca vem de OUTRO dispositivo e o sinal do banco (`useSinalDeMudanca`,
+        // abaixo). O listener de evento continua: ele cobre a acao feita NESTA
+        // aba, que nao precisa esperar viagem nenhuma.
         return () => {
             window.removeEventListener('pending-transactions-updated', handleUpdate);
-            clearInterval(interval);
         };
     }, []);
+
+    useAtualizacaoDeChaves(fetchPending);
 
     const confirmTransaction = async (txId: number) => {
         setActionLoading(txId);

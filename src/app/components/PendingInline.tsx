@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import toast from 'react-hot-toast';
 
 // TASK-049 (REQ-029b, ADR-010) — painel compacto de pendências no Dashboard:
@@ -47,12 +48,16 @@ export default function PendingInline({ userRole, userId }: Props) {
         fetchPending();
         const handleUpdate = () => fetchPending();
         window.addEventListener('pending-transactions-updated', handleUpdate);
-        const interval = setInterval(fetchPending, 3000);
+        // TASK-072: o polling de 3 s saiu. O que atualiza esta tela quando a
+        // mudanca vem de OUTRO dispositivo e o sinal do banco (`useSinalDeMudanca`,
+        // abaixo). O listener de evento continua: ele cobre a acao feita NESTA
+        // aba, que nao precisa esperar viagem nenhuma.
         return () => {
             window.removeEventListener('pending-transactions-updated', handleUpdate);
-            clearInterval(interval);
         };
     }, [fetchPending]);
+
+    useAtualizacaoDeChaves(fetchPending);
 
     const act = async (txId: number, endpoint: 'user-confirm' | 'cancel', successMsg: string) => {
         setActionLoading(txId);

@@ -96,6 +96,51 @@ export async function setup(): Promise<void> {
             AS $$ BEGIN END $$;
         `);
 
+        // TASK-072 — o schema `realtime` e a funcao `send` sao da PLATAFORMA
+        // Supabase, e nao existem num postgres:17 puro. Mesma razao dos papeis
+        // acima: sem eles, a migration do sinal rodaria DIFERENTE aqui e em
+        // producao, e o teste validaria um banco que nao existe em lugar nenhum.
+        //
+        // A assinatura abaixo e a REAL, conferida no projeto de producao em
+        // 2026-09-06: `send(payload jsonb, event text, topic text, private
+        // boolean)`. Se ela divergir, o trigger falha em producao e passa aqui —
+        // exatamente o tipo de cegueira que fez o job de backup falhar tres vezes
+        // na Sprint 23.
+        //
+        // O stub REGISTRA em vez de descartar: e o que permite afirmar, em teste,
+        // que o sinal foi emitido uma vez por instrucao e que a carga esta vazia.
+        await client.query(`
+            -- Derrubado junto com o public, e pelo mesmo motivo: do zero a cada
+            -- execucao. Sem isto, a segunda rodada colide em 42P07 (relacao ja
+            -- existe) — o globalSetup limpava o public e deixava este de pe.
+            DROP SCHEMA IF EXISTS realtime CASCADE;
+            CREATE SCHEMA realtime;
+
+            -- No schema realtime, e NAO em public: uma tabela de teste em
+            -- public entra na contagem do que a aplicacao possui, e a
+            -- verificacao de backup (TABELAS_ESPERADAS) passou a acusar
+            -- divergencia de schema. Foi um teste existente que pegou.
+            CREATE TABLE realtime.sinais_enviados (
+                id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                enviado_em timestamptz NOT NULL DEFAULT now(),
+                payload jsonb,
+                event text,
+                topic text,
+                private boolean
+            );
+
+            CREATE OR REPLACE FUNCTION realtime.send(
+                payload jsonb, event text, topic text, private boolean
+            ) RETURNS void
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                INSERT INTO realtime.sinais_enviados (payload, event, topic, private)
+                VALUES (payload, event, topic, private);
+            END;
+            $$;
+        `);
+
         const ups = fs.readdirSync(MIGRATIONS_PG).filter(f => f.endsWith('.up.sql')).sort();
         if (ups.length === 0) throw new Error(`nenhuma migration encontrada em ${MIGRATIONS_PG}`);
 
