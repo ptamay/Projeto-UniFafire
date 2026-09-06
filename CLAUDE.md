@@ -78,8 +78,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   gravando registros sintéticos e PERMANENTES na trilha imutável (§7.1). Fica para
   a primeira operação real do dia a dia. **Até haver um número no `plan.md`, o
   REQ-032 está entregue em código e não em fato.**
-- ⚠️ Também aberto, e independente de sprint: o ENSAIO DE RESTAURAÇÃO (runbook
-  §6.6). O RTO de 4 h nunca foi cronometrado.
+- ✅ ENSAIO DE RESTAURAÇÃO feito em 2026-09-06: dump baixado do repositório
+  privado, restaurado e conferido em **72 s**, sem erro, com estrutura e contagens
+  idênticas ao registrado — e os guardas de imutabilidade EXERCITADOS na base
+  restaurada, não só contados. Tabela no runbook §6.6.
+- ⚠️ O RTO de 4 h ainda NÃO está medido por inteiro: faltam provisionar um projeto
+  Supabase novo, repontar a aplicação e o tempo humano de perceber e decidir — as
+  três etapas que exigem credencial de produção e que na prática dominam o número.
+  O ensaio removeu a maior incógnita: a parte técnica leva segundos.
 - ✅ **TODAS as etapas do ADR-012 estão fechadas em código** (3, 4, 5, 7a, 7b; a 6
   foi dissolvida). Não há sprint planejada. O que vier agora entra por Change
   Request.
