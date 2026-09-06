@@ -271,7 +271,7 @@
 > tabela de configuração povoada por seed carrega valor de teste para produção sem sintoma
 > nenhum no momento da carga.
 
-### Sprint 25 — Etapa 5: Realtime (ADR-012 · REQ-032)
+### Sprint 25 ✅ (código) — Etapa 5: Realtime (ADR-012 · REQ-032)
 > Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
 > go-live por decisão de 2026-09-04:** é melhoria de experiência sobre um sistema que já
 > funciona, não condição para ele funcionar. Até lá o polling de 3 s continua valendo.
@@ -279,8 +279,48 @@
 > **Renumerada de 24 para 25 em 2026-09-06**, por decisão do usuário de executar a faxina
 > da tela (ADR-013) primeiro. O número da sprint acompanha a ordem de execução; o vínculo
 > com o ADR-012 é a **Etapa 5**, que não muda.
-- [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
-- [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
+- [x] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
+- [x] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
+
+> **Fechada em 2026-09-06 — com uma ressalva que não é detalhe.** O código está entregue e
+> em `main`, mas **o REQ-032 NÃO está demonstrado**: a defasagem de ≤ 500 ms exige Realtime
+> de verdade (variáveis `NEXT_PUBLIC_SUPABASE_*` na Vercel e a migration
+> `202609061800_sinal_realtime` aplicada no Supabase). O container de teste não tem o
+> serviço. **Enquanto não houver um número medido registrado aqui, o requisito está
+> entregue em código e não em fato.**
+>
+> O mecanismo mudou em relação ao que o ADR-012 sugeria, e a razão está no ADR e na
+> micro-spec: `postgres_changes` autoriza por RLS, e este sistema tem RLS negando tudo a
+> `anon` e não usa Supabase Auth. Usá-lo exigiria abrir as tabelas de chaves à chave
+> anônima do bundle — trocar 3 s de defasagem por leitura pública (§3.2). O Realtime passou
+> a carregar **sinal vazio**, e o dado continua saindo pelas rotas autenticadas.
+>
+> Medido no fecho, no cenário degradado (sem Realtime configurado): 12 requisições de API
+> em 89 s, contra ~145 do polling de 3 s.
+>
+> **Mecanismo VALIDADO em produção em 2026-09-06**, sem escrever dado nenhum. O trigger é
+> `FOR EACH STATEMENT`, então dispara com zero linhas afetadas — o que permitiu emitir o
+> sinal com `UPDATE keys SET name = name WHERE false` e observá-lo chegar a um cliente real:
+>
+> ```
+> 17:39:28  canal: SUBSCRIBED     (chave publicável aceita pelo Realtime)
+> 17:39:53  UPDATE ... WHERE false (zero linhas)
+> 17:39:55  SINAL RECEBIDO
+> ```
+>
+> Provado: a chave publicável funciona, o canal público aceita assinatura sem JWT do
+> Supabase, o trigger dispara e o sinal chega. **Não provado: a defasagem.** Os dois
+> instantes vieram de relógios diferentes (servidor do Supabase e máquina local), com
+> desvio desconhecido, mais a ida e volta da chamada MCP — o intervalo observado não é
+> medida de nada.
+>
+> **A MEDIÇÃO DE ≤ 500 ms FOI ADIADA por decisão do usuário em 2026-09-06**, e a razão é
+> boa: medi-la exigiria criar usuário e chave de teste e operar em produção, gravando em
+> `key_transactions`, `history` e `action_logs` — trilha **imutável por trigger**, que a
+> §7.1 proíbe limpar. Os primeiros registros do histórico do sistema seriam sintéticos e
+> permanentes. A medição fica para a **primeira operação real do dia a dia**, com dados
+> verdadeiros. Até que haja um número aqui, **o REQ-032 está entregue em código e não em
+> fato**.
 
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
@@ -396,3 +436,4 @@ Opcional em MODO EXPRESSO — não definido. Se sprints agentic forem executadas
 | 22 (pre-requisitos do go-live · Etapa 7a ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 4 tasks | 5 (as 4 + TASK-081, aberta em CR no meio da sprint) | 3 (TASK-074: meu proprio teste BDD 7 cobria so escrita em disco e deixava passar leitura e unlinkSync — verde sem provar o que dizia; TASK-076: a varredura de emissores de cookie ficou cega quando o literal 'session' saiu dos call sites, e so nao passou despercebido porque eu tinha posto uma asercao de "pelo menos um emissor encontrado"; TASK-077: quebrei o hot reload ao manter o matcher excluindo apenas _next/static e _next/image) | 1 (Gate 5 type-check: `unknown[]` vs `Param[]` no mock de execute em app-logs.test) | — | — |
 | 23 (backup e deploy · Etapa 7b ADR-012) | 2026-09-04 | 2026-09-04 | 1 | 3 tasks | 3 | 3 (TASK-078: a verificacao por contagem de linhas aprovou um dump truncado no ensaio — perdeu o RLS de `users` e as contagens bateram; entrou `compararEsquema` num segundo commit vermelho. TASK-075 e TASK-079: quatro varreduras de fonte MINHAS escritas errado — tres proibiam ate o comentario que explica o codigo morto, e uma exigia "responsavel" no singular contra um cabecalho "Responsaveis") | 0 (todos os gates verdes em cada task) | — | — |
 | 24 (faxina da tela · CR Tipo C ADR-013) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 3 (a TASK-084 nasceu ao preparar a micro-spec, e virou a primeira da fila) | 3 (TASK-082: duas regex minhas — uma proibia a palavra "Retencao" e reprovava a propria correcao, outra exigia uma unica forma de escrever o cleanup; TASK-083: o cenario de literal espalhado achou um QUINTO ponto com a senha padrao, nao previsto no ADR) | 0 (todos os gates verdes em cada task) | — | — |
+| 25 (Realtime · Etapa 5 ADR-012) | 2026-09-06 | 2026-09-06 | 1 | 2 tasks | 2 | 2 (TASK-072: a tabela do stub de `realtime.send` foi parar em `public` e quebrou a verificacao de esquema do backup — pega por um teste EXISTENTE, escrito na Sprint 23 para outra coisa; e o `globalSetup` nao derrubava o schema `realtime`, colidindo em 42P07 na segunda execucao) | 0 (todos os gates verdes em cada task) | — | — |
