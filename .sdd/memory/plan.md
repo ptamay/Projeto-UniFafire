@@ -255,14 +255,7 @@
 > cadastrar os secrets, criar o repositório privado de backup e aplicar as migrations no
 > Supabase exigem credencial do usuário. Passo a passo em `docs/runbook-deploy.md`.
 
-### Sprint 24 — Etapa 5: Realtime (ADR-012 · REQ-032)
-> Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
-> go-live por decisão de 2026-09-04:** é melhoria de experiência sobre um sistema que já
-> funciona, não condição para ele funcionar. Até lá o polling de 3 s continua valendo.
-- [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
-- [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
-
-### Sprint 25 — Faxina da tela de configurações (CR Tipo C · ADR-013)
+### Sprint 24 — Faxina da tela de configurações (CR Tipo C · ADR-013)
 > Aberta pelo Change Request de 2026-09-06, depois do go-live. A tela `/settings` faz seis
 > afirmações falsas, todas resíduo da topologia desmontada nas Sprints 21–23. **Nenhum
 > requisito muda** — a tela passa a refletir o sistema que existe.
@@ -275,6 +268,17 @@
 > e é a causa direta do logout quebrado. **"Configuração" não é sinônimo de "legítimo"** —
 > tabela de configuração povoada por seed carrega valor de teste para produção sem sintoma
 > nenhum no momento da carga.
+
+### Sprint 25 — Etapa 5: Realtime (ADR-012 · REQ-032)
+> Onde o requisito que motivou a migração é efetivamente entregue. **Adiada para depois do
+> go-live por decisão de 2026-09-04:** é melhoria de experiência sobre um sistema que já
+> funciona, não condição para ele funcionar. Até lá o polling de 3 s continua valendo.
+>
+> **Renumerada de 24 para 25 em 2026-09-06**, por decisão do usuário de executar a faxina
+> da tela (ADR-013) primeiro. O número da sprint acompanha a ordem de execução; o vínculo
+> com o ADR-012 é a **Etapa 5**, que não muda.
+- [ ] TASK-072 → substituir os 4 pollings de 3 s por assinatura Realtime. Critério de aceite do REQ-032: defasagem típica ≤ 500 ms, medida entre dispositivos.
+- [ ] TASK-073 → degradação graciosa: sem WebSocket, cair para polling em intervalo largo em vez de deixar a tela parada.
 
 ### Etapa 6 — dissolvida
 > Não existe mais como sprint. A TASK-074 subiu para a Sprint 22 (pré-requisito do deploy)
