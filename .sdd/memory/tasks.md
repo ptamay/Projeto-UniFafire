@@ -65,23 +65,40 @@ por ser a única com efeito imediato em produção — e porque cada dia que pas
 que a §7 proíbe limpar.
 
 **Critérios BDD**:
-- [ ] **Cenário**: O agendador que não existe deixa de se anunciar
+- [x] **Cenário**: O agendador que não existe deixa de se anunciar
       Dado que `node-cron` não agenda nada desde a TASK-070
       Então `startCronJobs()` não existe mais em `src/lib/backup.ts`
       E `src/instrumentation.ts` não a invoca
       E nenhuma inicialização de instância escreve em `app_logs`.
-- [ ] **Cenário**: A dependência morta sai do `package.json`
+- [x] **Cenário**: A dependência morta sai do `package.json`
       Dado que nada mais importa `node-cron`
       Então `node-cron` e `@types/node-cron` saem das dependências
       E o Gate 1 continua verde (nenhum import sem pacote declarado).
-- [ ] **Cenário**: O que a trilha deve registrar continua registrando
+- [x] **Cenário**: O que a trilha deve registrar continua registrando
       Dado um `audit_action` e um `route_timing`
       Quando eles ocorrem
       Então continuam gravando em `app_logs` normalmente
       E a remoção não tocou no `structured-logger`.
-- [ ] **Cenário**: O `instrumentation.ts` some se não sobrar nada nele
+- [x] **Cenário**: O `instrumentation.ts` some se não sobrar nada nele
       Dado que a única coisa que ele fazia era chamar `startCronJobs`
       Então o arquivo é removido inteiro, e não deixado como casca vazia.
+
+**O que a execução ensinou:**
+
+- **As 52 linhas já escritas ficam.** A §7.1 proíbe rotina de limpeza em `app_logs`, e o
+  trigger de imutabilidade recusa `DELETE` sem o bypass de manutenção. A task estanca a
+  fonte; não desfaz o que já foi gravado — e não deveria. Consequência prática: a trilha
+  de produção carrega para sempre um bloco de ruído do primeiro dia, e quem a ler daqui a
+  um ano precisa saber que ele é de 2026-09-06 e tem causa conhecida. Fica aqui o registro.
+- **A prova real ainda não existe.** Tudo o que os testes garantem é que o código não emite
+  mais. Que `app_logs` **para de receber** `cron_desativado` só se verifica em produção,
+  depois do merge — está na DoD, e é a mesma lição das três falhas do backup.
+- **Achado lateral, para a TASK-082:** `next.config.ts` ainda tem
+  `allowedDevOrigins: ['192.168.0.206']` — resíduo do acesso pela rede interna da
+  instituição, topologia removida na TASK-079. É config de desenvolvimento e inofensiva,
+  mas é da mesma família das seis mentiras: descreve um mundo que não existe. **Entra no
+  escopo da TASK-082**, registrado aqui em vez de corrigido em silêncio no meio de outra
+  task.
 
 ---
 
