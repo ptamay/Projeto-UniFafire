@@ -153,16 +153,18 @@ export async function createBackup(): Promise<{ success: false; error: string }>
     return { success: false, error };
 }
 
-/**
- * DESATIVADO na TASK-070. `node-cron` precisa de um processo de longa duração,
- * que não existe em execução serverless: o agendamento nunca dispararia.
+/*
+ * `startCronJobs()` foi REMOVIDA na TASK-084 (Sprint 24), junto com
+ * `src/instrumentation.ts` e a dependência `node-cron`.
  *
- * Agendar e nunca rodar seria pior do que não agendar — daria a impressão de que
- * há backup automático. O agendamento é do GitHub Actions (TASK-078).
+ * Ela já não agendava nada desde a TASK-070 — `node-cron` exige processo de
+ * longa duração, que não existe em execução serverless. O que restou foi uma
+ * função cujo corpo inteiro era gravar um log dizendo que não fazia nada,
+ * chamada a cada inicialização de instância.
+ *
+ * O custo, medido em produção duas horas depois do go-live: 52 das 60 linhas de
+ * `app_logs` eram `cron_desativado`. A constitution §7.1 proíbe limpar essa
+ * tabela, então o ruído seria permanente.
+ *
+ * O agendamento real é do GitHub Actions (`.github/workflows/backup.yml`).
  */
-export async function startCronJobs(): Promise<void> {
-    await logStructured('info', 'cron_desativado', {
-        motivo: 'node-cron exige processo de longa duração (TASK-070)',
-        substituta: 'TASK-078',
-    });
-}
