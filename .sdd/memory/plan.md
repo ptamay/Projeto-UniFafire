@@ -269,6 +269,12 @@
 
 ### Achados de 2026-09-04 — não existe produção (confirmado pelo usuário)
 
+> ⚠️ **SUPERADO EM 2026-09-06: a produção passou a existir.** O sistema está no ar em
+> https://projeto-uni-fafire.vercel.app, com banco Supabase, backup diário verificado e
+> ADMIN criado. O que esta seção descreve continua **historicamente correto** — não havia
+> produção quando foi escrita, e as três conclusões abaixo guiaram as Sprints 22 e 23 —,
+> mas não vale mais como estado do projeto. Estado atual: `CLAUDE.md ## Checkpoint Atual`.
+
 > Não há servidor PM2 em uso, não há `keys.db` com dados reais e ninguém usa o sistema
 > hoje. Os dados reais ainda serão cadastrados ou importados de outra fonte, direto no
 > Postgres. Três coisas que este projeto vinha carregando como verdade caem com isso.
