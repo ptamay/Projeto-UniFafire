@@ -119,11 +119,33 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   intencional) e a migration do sinal aplicada no Supabase. **Mecanismo validado
   em produção** sem escrever dado: canal SUBSCRIBED, trigger disparado com
   `UPDATE ... WHERE false` (zero linhas) e sinal recebido por um cliente real.
-- Próxima Ação: **MEDIR a defasagem de ≤ 500 ms — ADIADA por decisão do usuário.**
-  Medi-la agora exigiria criar usuário e chave de teste e operar em produção,
-  gravando registros sintéticos e PERMANENTES na trilha imutável (§7.1). Fica para
-  a primeira operação real do dia a dia. **Até haver um número no `plan.md`, o
-  REQ-032 está entregue em código e não em fato.**
+- ⚠️ **REQ-032 MEDIDO EM PARTE em 2026-09-07, e ele NÃO ESTÁ SENDO CUMPRIDO.**
+  Duas das três pernas se medem sem operação nenhuma, e foram, em produção, sem
+  escrever nada: **B) Realtime → navegador = 64 ms** (broadcast para si mesmo no
+  canal de produção) e **C) refetch = 335 ms por rota** (`/api/health`, que é
+  pública e consulta o banco). O dashboard de PORTEIRO/ADMIN faz DUAS buscas EM
+  SÉRIE → **~734 ms observáveis contra 500 ms de orçamento**, e a perna A
+  (commit → Realtime) ainda por cima.
+- ⚠️ **A CAUSA NÃO É O REALTIME** — a perna que a Sprint 25 inteira construiu
+  custa 64 ms dos 734. São duas coisas banais, e as duas estão medidas:
+  1. **A função roda no continente errado.** `X-Vercel-Id: gru1::iad1::…` — entra
+     em São Paulo e executa em Washington, com o banco em `sa-east-1`, São Paulo.
+     `/login` (não toca o banco) responde em 86 ms; `/api/health` (um `SELECT 1`)
+     em 335 ms. A diferença é **249 ms, IDÊNTICA na mediana e no mínimo** — que é
+     assinatura de distância, não de trabalho. Não há `vercel.json`; a região
+     nunca foi escolhida. Corrigir = fixar `gru1`, que muda a topologia do
+     ADR-012 → **Change Request**, e antes é preciso confirmar que o plano
+     gratuito deixa escolher a região.
+  2. **`refreshData` serializa duas buscas independentes** (`await /api/keys` e
+     depois `await /api/users`). Um `Promise.all` devolve uma perna C inteira. É
+     completar a TASK-072, não escopo novo.
+  Com as duas, a soma cai para a casa dos 150 ms — **projeção, não medida**.
+- Próxima Ação: decidir sobre as duas correções acima (a região é CR). O que
+  continua sem número é a perna A e o total de ponta a ponta, que exigem a
+  **primeira operação real** — e o aparato para captá-la deixou de ser trabalho:
+  `scripts/medir-req032.mjs --operacao` fica ouvindo e cronometra sozinho. O que
+  fazia esta medição escorregar de sprint em sprint não era a medição, era montar
+  o aparato toda vez.
 - ✅ ENSAIO DE RESTAURAÇÃO feito em 2026-09-06: dump baixado do repositório
   privado, restaurado e conferido em **72 s**, sem erro, com estrutura e contagens
   idênticas ao registrado — e os guardas de imutabilidade EXERCITADOS na base
