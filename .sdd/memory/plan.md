@@ -315,12 +315,79 @@
 > medida de nada.
 >
 > **A MEDIÇÃO DE ≤ 500 ms FOI ADIADA por decisão do usuário em 2026-09-06**, e a razão é
-> boa: medi-la exigiria criar usuário e chave de teste e operar em produção, gravando em
-> `key_transactions`, `history` e `action_logs` — trilha **imutável por trigger**, que a
-> §7.1 proíbe limpar. Os primeiros registros do histórico do sistema seriam sintéticos e
-> permanentes. A medição fica para a **primeira operação real do dia a dia**, com dados
-> verdadeiros. Até que haja um número aqui, **o REQ-032 está entregue em código e não em
-> fato**.
+> boa: medi-la **por inteiro** exigiria criar usuário e chave de teste e operar em produção,
+> gravando em `key_transactions`, `history` e `action_logs` — trilha **imutável por
+> trigger**, que a §7.1 proíbe limpar. Os primeiros registros do histórico do sistema seriam
+> sintéticos e permanentes.
+>
+> ---
+>
+> ## MEDIÇÃO PARCIAL — 2026-09-07, em produção, sem escrever nada
+>
+> A defasagem tem três pernas, e **duas delas se medem sem operação nenhuma**:
+>
+> | Perna | O que é | Medida |
+> |---|---|---|
+> | **A** | commit no Postgres → serviço Realtime | **não medida** — exige um cliente que dispare E observe, num relógio só, e disparar é escrever |
+> | **B** | serviço Realtime → navegador (WebSocket) | **64 ms** (mediana; min 63, p90 66, n=15) |
+> | **C** | sinal no navegador → dado novo em mãos | **335 ms por rota** (mediana; min 331, p90 346, n=25) |
+>
+> A perna B foi medida mandando *broadcast* para si mesmo no canal `chaves` de produção,
+> com a chave publicável: mesmo caminho que o sinal do trigger percorre, ida e volta no
+> mesmo relógio. A perna C, com `GET /api/health` — pública, e **consulta o banco**.
+>
+> ### O que a perna C revelou, e não era o que se esperava
+>
+> `/login` (renderiza na Vercel, **não toca o banco**) responde em **86 ms**.
+> `/api/health` (um `SELECT 1`) responde em **335 ms**. A diferença é **249 ms — idêntica
+> na mediana e no mínimo**, que é a assinatura de distância, não de trabalho.
+>
+> O cabeçalho diz por quê: `X-Vercel-Id: gru1::iad1::…`. A requisição **entra** em São
+> Paulo e a função **executa em Washington** (`iad1`), enquanto o banco está em
+> **`sa-east-1`, São Paulo**. Cada ida ao banco atravessa as Américas duas vezes, para
+> voltar a 15 km de onde saiu. Não há `vercel.json`, e a região nunca foi escolhida — é o
+> padrão da plataforma.
+>
+> ### O orçamento, somado
+>
+> O consumidor real do sinal é `refreshData` do `DashboardClient`, e para PORTEIRO/ADMIN
+> — justamente quem opera o balcão — ele faz **duas buscas EM SÉRIE**
+> (`await /api/keys` e depois `await /api/users`), que não dependem uma da outra:
+>
+> ```
+>   B) sinal chega ao navegador          64 ms
+>   C) GET /api/keys                    335 ms
+>   C) GET /api/users  (serial)         335 ms
+>   ------------------------------------------
+>   observável                          734 ms      orçamento do REQ-032: 500 ms
+>   + perna A (não medida)                  ?
+> ```
+>
+> **O REQ-032 NÃO É CUMPRIDO como está no ar**, e por uma margem que não é ruído: ~734 ms
+> contra 500 ms, sem contar a perna A. E a causa **não é o Realtime** — a perna que a
+> Sprint 25 inteira construiu custa 64 ms dos 734. São duas coisas banais:
+>
+> 1. **A função roda no continente errado.** ~249 ms por ida ao banco. Corrigir é fixar a
+>    região em `gru1`. Muda a topologia de deploy do ADR-012 → **Change Request**, e é
+>    preciso confirmar antes que o plano gratuito permite escolher a região.
+> 2. **`refreshData` serializa duas buscas independentes.** Um `Promise.all` devolve uma
+>    perna C inteira. É completar a TASK-072, não escopo novo.
+>
+> Com as duas, a soma observável cai para a casa dos 150 ms e o requisito passa a caber
+> com folga — **projeção, não medida**.
+>
+> ### O que continua sem número
+>
+> A perna A e o total de ponta a ponta. Ambos exigem a **primeira operação real**, e o
+> harness para captá-la está **versionado** em `scripts/medir-req032.mjs`. O custo que
+> fazia esta medição escorregar de sprint em sprint nunca foi a medição — era montar o
+> aparato toda vez. Com `--operacao` ele fica ouvindo e cronometra a primeira retirada de
+> chave de verdade, sem nada a preparar:
+>
+> ```bash
+> NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... >   node scripts/medir-req032.mjs --operacao
+> ``` Até haver esse número aqui, **o REQ-032 continua entregue em código e não em
+> fato** — e agora sabe-se, além disso, que **em fato ele está falhando**.
 
 ### Sprint 26 ✅ — Autorização de métricas e contrato de API (CR Tipo C · ADR-014)
 > Aberta pelo Change Request de 2026-09-06. Uma rota expõe dados pessoais a qualquer usuário
