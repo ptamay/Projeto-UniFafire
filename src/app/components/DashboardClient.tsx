@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
+import { buscarDadosDoDashboard } from '@/lib/dashboard-refresh';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import PendingInline from './PendingInline';
@@ -263,15 +264,15 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
     const refreshData = useCallback(async () => {
         try {
-            const kRes = await fetch('/api/keys');
-            let uRes = null;
-            if (isPorteiroOrAdmin) {
-                uRes = await fetch('/api/users');
-            }
+            // TASK-091: as duas buscas saiam EM SERIE, e nao dependem uma da
+            // outra — a tela esperava as duas viagens somadas. Em producao cada
+            // rota que toca o banco custa ~335 ms (medicao do REQ-032 no
+            // `plan.md`), entao eram 670 ms num orcamento de 500 ms.
+            const { chaves: newKeys, usuarios } = await buscarDadosDoDashboard<Key>(
+                isPorteiroOrAdmin,
+            );
 
-            if (kRes.ok) {
-                const newKeys = await kRes.json();
-                
+            if (newKeys) {
                 // Checar se alguma chave nossa foi aprovada
                 if (!isPorteiroOrAdmin) {
                     setKeys(prevKeys => {
@@ -291,9 +292,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     setKeys(newKeys);
                 }
             }
-            if (uRes && uRes.ok) {
-                const uData = await uRes.json() as { id: number; username: string; full_name: string | null; role: string }[];
-                setEmployees(uData.map((u) => ({ ...u, full_name: u.full_name ?? undefined, name: u.full_name || u.username || '' })));
+            if (usuarios) {
+                setEmployees(usuarios.map((u) => ({ ...u, full_name: u.full_name ?? undefined, name: u.full_name || u.username || '' })));
             }
             router.refresh();
         } catch (e) {

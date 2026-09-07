@@ -136,10 +136,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
      nunca foi escolhida. Corrigir = fixar `gru1`, que muda a topologia do
      ADR-012 → **Change Request**, e antes é preciso confirmar que o plano
      gratuito deixa escolher a região.
-  2. **`refreshData` serializa duas buscas independentes** (`await /api/keys` e
-     depois `await /api/users`). Um `Promise.all` devolve uma perna C inteira. É
-     completar a TASK-072, não escopo novo.
-  Com as duas, a soma cai para a casa dos 150 ms — **projeção, não medida**.
+  2. ~~`refreshData` serializa duas buscas independentes.~~ **FEITO — TASK-091,
+     2026-09-07.** As duas saem juntas; verificado no navegador com `fetch`
+     instrumentado (sobrepostas, 44 ms locais em vez da soma). Ficou
+     `Promise.allSettled`: `all` rejeita na primeira falha e deixa a segunda
+     rejeição órfã, e numa rede oscilando as duas falham juntas.
+  Sobra a região. Com ela, a soma cai para a casa dos 150 ms — **projeção**.
 - Próxima Ação: decidir sobre as duas correções acima (a região é CR). O que
   continua sem número é a perna A e o total de ponta a ponta, que exigem a
   **primeira operação real** — e o aparato para captá-la deixou de ser trabalho:

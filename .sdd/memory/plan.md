@@ -370,11 +370,15 @@
 > 1. **A função roda no continente errado.** ~249 ms por ida ao banco. Corrigir é fixar a
 >    região em `gru1`. Muda a topologia de deploy do ADR-012 → **Change Request**, e é
 >    preciso confirmar antes que o plano gratuito permite escolher a região.
-> 2. **`refreshData` serializa duas buscas independentes.** Um `Promise.all` devolve uma
->    perna C inteira. É completar a TASK-072, não escopo novo.
+> 2. ~~**`refreshData` serializa duas buscas independentes.**~~ **CORRIGIDO em 2026-09-07
+>    (TASK-091).** As duas saem juntas. Verificado no navegador, logado como PORTEIRO e
+>    com `fetch` instrumentado: `/api/keys` e `/api/users` sobrepostas, 44 ms no total
+>    local em vez da soma. Ficou `Promise.allSettled` e não `Promise.all` — `all` rejeita
+>    na primeira falha e deixa a segunda rejeição órfã, e numa rede oscilando as duas
+>    falham juntas.
 >
-> Com as duas, a soma observável cai para a casa dos 150 ms e o requisito passa a caber
-> com folga — **projeção, não medida**.
+> Sobra a região. Com ela, a soma observável cai para a casa dos 150 ms e o requisito
+> passa a caber com folga — **projeção, não medida**.
 >
 > ### O que continua sem número
 >
