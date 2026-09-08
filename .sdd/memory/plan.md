@@ -87,6 +87,15 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — Higiene de carga e deploy (CR Tipo C · ADR-019)
+> Sem sprint atribuída. Quita o débito de limpeza registrado desde a TASK-079.
+- **TASK-099 → `jspdf` carrega sob demanda em `/history`.** Hoje o import é ESTÁTICO num componente de cliente, e o chunk que o contém tem **459 KB — o maior do app**, baixado por todo mundo que abre a tela, tenha ou não intenção de exportar. `await import()` no handler tira isso do carregamento inicial.
+  > Critério de aceite é NÚMERO: o chunk com jsPDF fora do grafo de carregamento inicial de `/history`. E precisa de indicação visual no clique, senão o botão parece morto enquanto baixa.
+- **TASK-100 → higiene de dependências, arquivos e deploy.** `server-only` sai (zero importações); `@types/pg` vai para `devDependencies` (é tipo). Saem dez arquivos mortos: oito scripts que abrem `keys.db` com `better-sqlite3`, `scripts/replace_colors.js` sem referências, e `tests/forgot-password.test.ts`, cujo corpo é `expect(true).toBe(true)`. Entra `.vercelignore` — ~1,47 MB de 4,1 MB (35%) sobem hoje sem o build ler.
+  > ⚠️ **Duas guardas, e a segunda é a que importa:** (a) nenhum arquivo de `scripts/` pode mencionar `better-sqlite3` ou `keys.db`, senão o próximo script legado nasce igual; (b) **nenhum caminho excluído do deploy pode ser referenciado por `src/`** — excluir diretório é seguro hoje, e o dia em que alguém importar de `db/` num Server Component o build local passa e a PRODUÇÃO quebra. É a mesma classe de falha da migration da TASK-093, registrada no runbook §4.2.
+  > A contagem da suíte cai de 491 para 490. É melhora, não regressão.
+  > **Fora desta task, registrado:** três majors pendentes — `typescript` 5→7, `eslint` 9→10, `vitest` 4→5. Mudam regras e diagnósticos; misturá-las com limpeza tornaria impossível dizer o que quebrou o quê.
+
 ### Aberta por Change Request — Usabilidade e fim de sessão (CR Tipo C · ADR-018)
 > Sem sprint atribuída. Quatro tasks, e **a ordem importa**: a 095 primeiro, porque é ela
 > que transforma o relato em dado; a 097 depois da TASK-094, senão mexe num card prestes a mudar.
