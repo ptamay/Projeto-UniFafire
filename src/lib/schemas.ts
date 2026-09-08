@@ -68,9 +68,13 @@ export const ROLE_PERMISSIONS: Record<Role, {
 };
 
 // Users
+// TASK-093 (ADR-017) — `password` saiu daqui, e o único consumidor é
+// `POST /api/users`. Criar usuário deixou de aceitar senha: a conta nasce com um
+// código de uso único e a pessoa define a própria senha no primeiro acesso.
+// Manter o campo faria a API aceitar e IGNORAR o que lhe mandam, que é a mesma
+// mentira de tela que o ADR-013 veio combater — só que no contrato.
 export const UserSchema = z.object({
     username: z.string().min(3, "O usuário deve ter pelo menos 3 caracteres.").max(50, "Máximo de 50 caracteres.").optional(),
-    password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres.").max(128).optional().or(z.literal('')),
     role: z.enum(ROLES).default('FUNCIONARIO'),
     full_name: z.string().min(2, "Nome completo deve ter ao menos 2 caracteres.").optional(),
     matricula: z.string().optional(),

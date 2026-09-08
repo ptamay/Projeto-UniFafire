@@ -180,10 +180,20 @@ describe('TASK-083 — a senha padrão de reset tem UMA fonte', () => {
             .toBe(SENHA_PADRAO_RESET);
     });
 
-    it('BDD 4: as rotas que aplicam a senha consomem a mesma fonte', () => {
+    it('BDD 4: NENHUMA rota aplica mais uma senha padrão compartilhada', () => {
+        // Esta guarda INVERTEU de sentido na TASK-093 (ADR-017), e a inversão é o
+        // registro do que mudou: antes ela exigia que as duas rotas lessem a MESMA
+        // senha padrão, porque o defeito da TASK-083 era haver duas fontes
+        // divergindo. Agora não pode haver fonte nenhuma — a senha compartilhada
+        // deixou de ser aplicada em qualquer lugar.
+        //
+        // Não é a mesma afirmação com o sinal trocado: a antiga admitia o conceito
+        // e exigia consistência; esta nega o conceito. Deixá-la como estava, só
+        // com menos rotas na lista, a tornaria vácua — que é como uma guarda morre
+        // sem ninguém notar.
         for (const rota of ['src/app/api/users/route.ts', 'src/app/api/users/reset-password/route.ts']) {
-            expect(semComentarios(rota), `${rota} não usa a fonte única`)
-                .toMatch(/SENHA_PADRAO_RESET/);
+            expect(semComentarios(rota), `${rota} ainda aplica a senha padrão compartilhada`)
+                .not.toMatch(/SENHA_PADRAO_RESET/);
         }
     });
 });

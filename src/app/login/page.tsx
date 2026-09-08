@@ -90,7 +90,12 @@ export default function LoginPage() {
                                 <span>Criar Nova Senha</span>
                             </div>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', marginBottom: '0.5rem' }}>
-                                É necessário redefinir a senha padrão do sistema.
+                                {/* TASK-093: nao ha mais "senha padrao do sistema" — o
+                                    que se digitou foi um codigo de uso unico, e ele
+                                    acaba de ser consumido. Manter o texto antigo seria
+                                    a tela afirmando um mecanismo que deixou de existir. */}
+                                Você entrou com um código de acesso. Defina agora a sua senha —
+                                ela será sua a partir daqui, e só você a conhecerá.
                             </p>
                             <div className="input-group">
                                 <label className="input-label" htmlFor="newPassword">Nova Senha</label>

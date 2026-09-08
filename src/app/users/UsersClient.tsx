@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { SENHA_PADRAO_RESET } from '@/lib/settings-policy';
 import Sidebar from '../components/Sidebar';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -56,16 +55,19 @@ export default function UsersClient({ userRole, username }: Props) {
     const [saving, setSaving] = useState(false);
     const [deleteModal, setDeleteModal] = useState<User | null>(null);
     const [resetModal, setResetModal] = useState<User | null>(null);
-    const [newUserPassword, setNewUserPassword] = useState<{username: string, password?: string, reactivated?: boolean} | null>(null);
-    const [sysDefaultPass, setSysDefaultPass] = useState(SENHA_PADRAO_RESET);
+    // TASK-093 (ADR-017) — o que se revela aqui e um CODIGO DE USO UNICO, nao
+    // uma senha. Mesmo modal para criar, reativar e resetar: os tres passaram a
+    // produzir a mesma coisa, e o ADMIN precisa ver o valor UMA vez para
+    // entregar em maos.
+    const [codigoRevelado, setCodigoRevelado] = useState<{username: string, codigo?: string, validadeMinutos?: number, motivo: 'criado' | 'reativado' | 'resetado'} | null>(null);
     const [filterRole, setFilterRole] = useState('all');
     const [search, setSearch] = useState('');
 
     useEffect(() => {
         fetch('/api/users').then(r => r.json()).then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });
-        fetch('/api/settings').then(r => r.json()).then(d => {
-            if (d.defaultResetPassword) setSysDefaultPass(d.defaultResetPassword);
-        });
+        // A busca da senha padrao saiu com a TASK-093: esta tela nao tem mais o
+        // que fazer com ela. O campo em si so desaparece de `/api/settings` e da
+        // tela de Configuracoes na TASK-094.
     }, []);
 
     const openNew = () => {
@@ -111,7 +113,8 @@ export default function UsersClient({ userRole, username }: Props) {
                 const data = await res.json();
                 if (res.ok) {
                     setUsers(prev => [...prev, { id: data.id, ...formData, username: data.username }]);
-                    setNewUserPassword({ username: data.username, password: data.generatedPassword, reactivated: data.reactivated });
+                    setCodigoRevelado({ username: data.username, codigo: data.codigoDeAcesso,
+                        validadeMinutos: data.validadeMinutos, motivo: data.reactivated ? 'reativado' : 'criado' });
                     setShowForm(false);
                 } else { toast.error(data.error || 'Erro ao criar usuário.'); }
             }
@@ -140,7 +143,15 @@ export default function UsersClient({ userRole, username }: Props) {
                 body: JSON.stringify({ userId: resetModal.id })
             });
             const data = await res.json();
-            if (res.ok) { toast.success('Senha redefinida para o padrão!'); }
+            if (res.ok) {
+                // Antes: toast dizendo "Senha redefinida para o padrão!". Agora ha um
+                // valor que so existe nesta resposta — engoli-lo num toast deixaria o
+                // ADMIN sem o que entregar, e a pessoa sem como entrar.
+                setCodigoRevelado({
+                    username: resetModal.username, codigo: data.codigoDeAcesso,
+                    validadeMinutos: data.validadeMinutos, motivo: 'resetado',
+                });
+            }
             else { toast.error(data.error || 'Erro.'); }
         } catch { toast.error('Erro de conexao.'); }
         setResetModal(null);
@@ -335,41 +346,48 @@ export default function UsersClient({ userRole, username }: Props) {
             {resetModal && (
                 <ConfirmModal 
                     isOpen={true} 
-                    title="Redefinir Senha" 
-                    message={`A senha do usuário "${resetModal.full_name || resetModal.username}" será redefinida para a senha padrão do sistema (${sysDefaultPass}). O usuário precisará criar uma nova senha no próximo acesso.`} 
+                    title="Gerar Código de Acesso" 
+                    message={`O acesso de "${resetModal.full_name || resetModal.username}" será invalidado e um código de uso único será gerado. Você verá o código UMA vez e deverá entregá-lo em mãos; com ele, a pessoa define a própria senha no primeiro acesso.`} 
                     confirmText="Redefinir" 
                     onConfirm={handleResetPass} 
                     onCancel={() => setResetModal(null)} 
                 />
             )}
             
-            {/* Modal de Senha do Novo Usuário */}
-            {newUserPassword && (
-                <div className="modal-overlay" onClick={() => setNewUserPassword(null)}>
+            {/* Codigo de acesso — unica vez que este valor aparece (TASK-093) */}
+            {codigoRevelado && (
+                <div className="modal-overlay" onClick={() => setCodigoRevelado(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
                         <div style={{ width: '48px', height: '48px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         </div>
                         <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                            {newUserPassword.reactivated ? 'Usuário Reativado' : 'Usuário Criado'}!
+                            Código de Acesso Gerado
                         </h2>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            O usuário <strong>@{newUserPassword.username}</strong> foi {newUserPassword.reactivated ? 'reativado' : 'criado'} com sucesso.
+                            O usuário <strong>@{codigoRevelado.username}</strong> foi {codigoRevelado.motivo} com sucesso.
                         </p>
-                        
-                        {newUserPassword.password && (
+
+                        {codigoRevelado.codigo && (
                             <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px dashed var(--border-strong)' }}>
-                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Senha de Acesso Gerada</div>
-                                <div style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '2px' }}>{newUserPassword.password}</div>
+                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Código de uso único</div>
+                                {/* Fonte monoespaçada e espaçamento largo: este valor é
+                                    DITADO e transcrito à mão. O alfabeto já exclui os
+                                    caracteres ambíguos; a tipografia faz a outra metade. */}
+                                <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: '1.75rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '4px' }}>{codigoRevelado.codigo}</div>
                             </div>
                         )}
-                        
+
                         <div style={{ padding: '0.75rem', background: 'var(--orange-50)', color: 'var(--orange-600)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            <span>Por segurança, o sistema exigirá que o usuário <strong>cadastre uma nova senha</strong> no primeiro acesso.</span>
+                            <span>
+                                Anote agora: <strong>este código não será exibido de novo</strong>.
+                                Vale por <strong>{codigoRevelado.validadeMinutos ?? 30} minutos</strong> e serve
+                                <strong> uma vez só</strong>. Com ele, a pessoa cadastra a própria senha no primeiro acesso.
+                            </span>
                         </div>
-                        
-                        <button className="btn btn-green w-full" onClick={() => setNewUserPassword(null)}>
+
+                        <button className="btn btn-green w-full" onClick={() => setCodigoRevelado(null)}>
                             Concluído
                         </button>
                     </div>
