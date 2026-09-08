@@ -90,7 +90,7 @@
 ### Aberta por Change Request — Região da função (CR Tipo C · ADR-016 · REQ-032)
 > Sem sprint atribuída. Entra pelo ciclo TDD normal. É a **segunda e maior** das duas causas
 > que a medição de 2026-09-07 apontou; a primeira caiu na TASK-091.
-- **TASK-092 → REQ-032: fixar `regions: ["gru1"]` em `vercel.json`.** ADR-016. Hoje a função executa em `iad1` (Washington) com o banco em `sa-east-1` (São Paulo), e cada ida ao banco custa **249 ms** — medido em duas rotas nas mesmas condições, e idêntico na mediana e no mínimo, que é assinatura de distância. Em arquivo e não no painel: configuração que só existe no painel não aparece em revisão de PR e some se o projeto for recriado — foi assim que a região errada passou dois meses sem ninguém notar. O teste deve reprovar a ausência do arquivo **e** a alteração silenciosa da região.
+- [x] **TASK-092 → REQ-032: fixar `regions: ["gru1"]` em `vercel.json`.** ✅ **FEITA em 2026-09-08, e o critério de aceite foi cumprido: o número caiu** — 249 ms → 19 ms, medido em produção depois do deploy. Registro completo na Sprint 25, seção da medição. ADR-016. Hoje a função executa em `iad1` (Washington) com o banco em `sa-east-1` (São Paulo), e cada ida ao banco custa **249 ms** — medido em duas rotas nas mesmas condições, e idêntico na mediana e no mínimo, que é assinatura de distância. Em arquivo e não no painel: configuração que só existe no painel não aparece em revisão de PR e some se o projeto for recriado — foi assim que a região errada passou dois meses sem ninguém notar. O teste deve reprovar a ausência do arquivo **e** a alteração silenciosa da região.
   > ⚠️ **O critério de aceite não é o arquivo existir, é o número cair.** A verificação tem de repetir a medição com `scripts/medir-req032.mjs` depois do deploy e registrar o resultado aqui, ao lado do antigo. Se os 249 ms não desaparecerem, a hipótese estava errada e o ADR-016 precisa ser revisto — não o número, escondido.
 
 ### Sprint 7 — Dívida de Estabilização (reconciliação ADR-002 — EXECUTAR ANTES do mobile)
@@ -373,9 +373,9 @@
 > contra 500 ms, sem contar a perna A. E a causa **não é o Realtime** — a perna que a
 > Sprint 25 inteira construiu custa 64 ms dos 734. São duas coisas banais:
 >
-> 1. **A função roda no continente errado.** ~249 ms por ida ao banco. Corrigir é fixar a
->    região em `gru1`. Muda a topologia de deploy do ADR-012 → **Change Request**, e é
->    preciso confirmar antes que o plano gratuito permite escolher a região.
+> 1. ~~**A função roda no continente errado.**~~ **CORRIGIDO em 2026-09-08 (TASK-092,
+>    ADR-016).** `vercel.json` com `regions: ["gru1"]`. Os 249 ms viraram **19 ms** —
+>    medição completa mais abaixo.
 > 2. ~~**`refreshData` serializa duas buscas independentes.**~~ **CORRIGIDO em 2026-09-07
 >    (TASK-091).** As duas saem juntas. Verificado no navegador, logado como PORTEIRO e
 >    com `fetch` instrumentado: `/api/keys` e `/api/users` sobrepostas, 44 ms no total
@@ -385,6 +385,53 @@
 >
 > Sobra a região. Com ela, a soma observável cai para a casa dos 150 ms e o requisito
 > passa a caber com folga — **projeção, não medida**.
+>
+> ---
+>
+> ## MEDIÇÃO DEPOIS DA TASK-092 — 2026-09-08, e a hipótese estava certa
+>
+> `X-Vercel-Id: gru1::gru1::…` — a função passou a executar em São Paulo. Mesmo
+> harness, mesmos parâmetros (n=25), mesma máquina:
+>
+> | | antes (`iad1`) | depois (`gru1`) |
+> |---|---|---|
+> | `/login` (estática, servida da borda) | 86 ms | 92 ms |
+> | `/api/health` (função + `SELECT 1`) | **335 ms** | **112 ms** |
+> | diferença entre as duas | **249 ms** | **19 ms** |
+> | B) Realtime → navegador | 64 ms | 51 ms |
+> | **B + uma perna C** | **399 ms** | **162 ms** |
+>
+> Os 249 ms viraram 19. E continuam com a assinatura de distância — 19 ms na
+> mediana contra 22 no mínimo —, só que agora a distância é dentro de São Paulo.
+>
+> ### ⚠️ Correção de uma imprecisão do registro de 2026-09-07
+>
+> Aquele registro chamou os 249 ms de "custo de UMA ida ao banco". **Não era só
+> isso**, e a diferença importa para quem for ler isto depois. `/login` é
+> **estática** (`○` no `next build`): ela é servida da borda e nunca executa
+> função. A diferença entre as duas rotas mede, portanto, *chegar à função e dali
+> ao banco* — e antes as duas pernas eram transcontinentais:
+>
+> ```
+>   antes:  navegador → borda gru1 → função iad1 → banco sa-east-1 → volta
+>   depois: navegador → borda gru1 → função gru1 → banco sa-east-1 → volta
+> ```
+>
+> Eram **duas** travessias das Américas por requisição, não uma. Isso não muda a
+> decisão nem o resultado — só explica por que a queda (230 ms) foi maior do que
+> um único salto explicaria, e por que `/login` não melhorou: ela já estava na
+> borda o tempo todo.
+>
+> ### Onde o REQ-032 está agora
+>
+> Com a TASK-091 (buscas em paralelo) as duas rotas do dashboard saem juntas, então
+> o observável é **B + uma perna C ≈ 162 ms**, contra 500 ms de orçamento —
+> **338 ms de folga** para a perna A. Antes das duas tasks eram ~734 ms.
+>
+> **Ainda não é o cumprimento demonstrado do requisito**, e a distinção não é
+> formalidade: o REQ-032 mede da *confirmação da operação* até a tela do outro
+> dispositivo, e a perna A (commit → serviço Realtime) segue sem número. O que
+> mudou é que ela deixou de precisar caber em 100 ms para caber em 338.
 >
 > ### O que continua sem número
 >
