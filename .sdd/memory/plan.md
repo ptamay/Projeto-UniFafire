@@ -87,6 +87,26 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — Usabilidade e fim de sessão (CR Tipo C · ADR-018)
+> Sem sprint atribuída. Quatro tasks, e **a ordem importa**: a 095 primeiro, porque é ela
+> que transforma o relato em dado; a 097 depois da TASK-094, senão mexe num card prestes a mudar.
+- **TASK-095 → o fim de sessão entra na trilha, com motivo.** (Tipo B — lacuna do REQ-010.) `POST /api/auth/logout` não chama `logAction`: o login entra na trilha e a saída não, nem a manual, nem a automática das 18:30, nem a expiração. Uma trilha que registra entradas e não saídas descreve metade do que aconteceu.
+  > ⚠️ **É esta task que destrava a decisão da §2.2.** Hoje "a sessão cai demais" é relato: os LOGIN_SUCCESS de produção têm um intervalo de ~32 h (cabe no idle de 24 h) e outro de ~17 h (não deveria ter derrubado nada). Três hipóteses compatíveis — logout das 18:30 numa aba aberta, cookies separados do PWA no iOS, idle — e nenhuma verificável sem o registro da saída.
+  > ⚠️ Ao escrever o ADR quase concluí "não há registro de LOGOUT, logo o automático nunca disparou". A ausência é do INSTRUMENTO, não do evento.
+- **TASK-096 → `<Link>` com prefetch e `loading.tsx` por rota.** Nenhuma rota tem loading boundary hoje, e todas são dinâmicas (leem o cookie): sem boundary, a tela anterior fica PARADA até o servidor responder, e parece travamento. O menu ainda navega com `router.push()`, que não faz prefetch. As duas se reforçam — com `loading.tsx` presente, o prefetch de rota dinâmica busca só até o boundary.
+  > O critério de aceite é NÚMERO, não "parece mais rápido" — mesmo padrão do ADR-016. E as requisições têm de ser observadas: prefetch aumenta tráfego, o plano é gratuito, e o REQ-032 nasceu de um desenho que projetava ~10,5 mi de requisições/mês.
+- **TASK-097 → tela de Configurações reequilibrada.** **Depende da TASK-094**, que remove o campo da senha padrão e deixa o card "Sistema e Segurança" com um item só. Entram: estado da atualização em tempo real (sinal conectado ou polling largo — a resposta para "por que a tela demorou a mudar"), botão de rever tutorial, e a zona destrutiva separada (hoje "Limpar Banco de Dados" é um botão vermelho no meio da tela, com o mesmo peso de um campo de horário).
+  > ⚠️ **NÃO entra painel de sistema** — versão, host, uptime, contagens, região. A TASK-079 removeu `/api/server-info` exatamente por isso: cada campo é reconhecimento gratuito. A resposta óbvia a "adicionar elementos do sistema" já foi rejeitada uma vez neste projeto.
+- **TASK-098 → tutorial de primeiro acesso, pt-BR, por papel.** (Tipo A — feature nova.) PORTEIRO precisa aprender o balcão; ALUNO precisa saber onde vê as próprias chaves e como confirmar — o mesmo tutorial para os dois ensina a pessoa errada. O "já viu" vai em **coluna de `users`, não `localStorage`**: a pessoa é a mesma em qualquer aparelho, e no computador compartilhado do balcão o `localStorage` erra nos dois sentidos. Pulável, navegável por teclado, e não pode bloquear a primeira retirada de chave.
+
+> ⚠️ **DECISÃO TIPO D EM ABERTO — persistência de sessão.** Aumentar o idle de 24 h ou o
+> absoluto de 7 dias emenda a §2.2 e afrouxa um controle de segurança para TODOS os
+> usuários. Fica gated na TASK-095, por decisão do usuário em 2026-09-08: se a causa for o
+> logout das 18:30 (que não tem requisito nenhum por trás) ou o cookie separado do PWA,
+> **não há §2.2 a emendar**. Candidata registrada para depois da medição: "manter
+> conectado" opcional, que deixa o balcão compartilhado no padrão curto e o celular
+> pessoal no longo, com consentimento explícito.
+
 ### Aberta por Change Request — Código de uso único no reset (CR Tipo C · ADR-017)
 > Sem sprint atribuída. Fecha pela raiz a fragilidade que a TASK-087 registrou e não pôde
 > resolver. 🔴 **crítica**: mexe no caminho de login, que é o Fluxo 1 da spec §4.
