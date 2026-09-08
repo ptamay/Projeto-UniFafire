@@ -119,7 +119,21 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   intencional) e a migration do sinal aplicada no Supabase. **Mecanismo validado
   em produção** sem escrever dado: canal SUBSCRIBED, trigger disparado com
   `UPDATE ... WHERE false` (zero linhas) e sinal recebido por um cliente real.
-- ⚠️ **REQ-032 MEDIDO EM PARTE em 2026-09-07, e ele NÃO ESTÁ SENDO CUMPRIDO.**
+- ✅ **REQ-032 — AS DUAS CAUSAS CAÍRAM. 734 ms → ~162 ms observáveis** (medido em
+  produção em 2026-09-08, depois da TASK-092). `X-Vercel-Id: gru1::gru1::…`: a
+  função executa em São Paulo, junto do banco. A diferença entre a rota que toca o
+  banco e a que não toca caiu de **249 ms para 19 ms**. Com as buscas em paralelo
+  (TASK-091), o observável é B + uma perna C ≈ **162 ms contra 500 ms** de
+  orçamento — **338 ms de folga** para a perna A, que segue sem número.
+  ⚠️ **Não é o requisito demonstrado**: o REQ-032 mede da confirmação da operação
+  até a tela do outro dispositivo, e a perna A (commit → Realtime) só a primeira
+  operação real fecha. O que mudou é que ela deixou de precisar caber em 100 ms.
+  ⚠️ **Correção de atribuição:** o registro de 2026-09-07 chamou os 249 ms de
+  "custo de uma ida ao banco". Eram **duas** travessias — `/login` é ESTÁTICA e
+  nunca executa função, então a diferença entre as rotas media *chegar à função e
+  dali ao banco*, e as duas pernas eram transcontinentais. Não muda a decisão;
+  explica a queda maior e por que `/login` não melhorou.
+- Histórico do diagnóstico (2026-09-07), que continua valendo como método:
   Duas das três pernas se medem sem operação nenhuma, e foram, em produção, sem
   escrever nada: **B) Realtime → navegador = 64 ms** (broadcast para si mesmo no
   canal de produção) e **C) refetch = 335 ms por rota** (`/api/health`, que é
@@ -135,11 +149,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
      assinatura de distância, não de trabalho. Não há `vercel.json`; a região
      nunca foi escolhida. Corrigir = fixar `gru1`, que muda a topologia do
      ADR-012 → **Change Request**.
-     ✅ **O PLANO GRATUITO PERMITE**, verificado na documentação da Vercel em
-     2026-09-07: o limite do Hobby é o *número* de regiões (uma), não a escolha,
-     e `gru1` É `sa-east-1` — a mesma região AWS do Supabase. Nenhuma região é
-     restrita a plano pago. Basta `vercel.json` com `{"regions": ["gru1"]}` ou o
-     painel (Settings → Functions). Não há obstáculo técnico; falta a decisão.
+     ✅ **FEITO — TASK-092, 2026-09-08.** `vercel.json` versionado, e o critério
+     de aceite do ADR-016 (o número cair, não o arquivo existir) foi verificado
+     em produção depois do deploy: 249 ms → 19 ms.
   2. ~~`refreshData` serializa duas buscas independentes.~~ **FEITO — TASK-091,
      2026-09-07.** As duas saem juntas; verificado no navegador com `fetch`
      instrumentado (sobrepostas, 44 ms locais em vez da soma). Ficou
@@ -197,11 +209,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ✅ **O backup diário está rodando de verdade** — 06, 07 e 08 de setembro, três
   execuções verdes consecutivas depois das três falhas do go-live. O `keepalive`
   também. A lição continua: job de CI só está verificado depois de rodar.
-- ✅ (a) **A REGIÃO VIROU CR — ADR-016, TASK-092, escrito em 2026-09-08.** Não
-  implementado: entra pelo ciclo TDD. ⚠️ O critério de aceite **não é o arquivo
-  `vercel.json` existir, é o número cair** — a verificação repete a medição com
-  `scripts/medir-req032.mjs` e registra ao lado do antigo. Se os 249 ms não
-  sumirem, a hipótese estava errada e o ADR-016 é que precisa ser revisto.
+- ✅ (a) **REGIÃO — FECHADA em 2026-09-08.** CR (ADR-016) → TASK-092 pelo ciclo
+  TDD → deploy → **medição refeita em produção**: 249 ms → 19 ms. O critério de
+  aceite era o número cair, e ele caiu.
 - Decisões ainda em aberto, na ordem em que eu faria: (b) **correção operacional em produção** —
   `auto_logout_time` = "30" e `default_reset_password` = "trocar123", resíduo da
   carga sintética da TASK-067, corrigível pela tela; (c) emendar a §3.2 (Tipo D);
@@ -231,7 +241,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-016-regiao-gru1 (PR a abrir). PRs #15–#30 merged na main.
+- Branch atual: docs/task-092-medicao (PR a abrir). PRs #15–#32 merged na main.
 - Atualizado em: 2026-09-08
 ```
 
@@ -291,10 +301,11 @@ Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em cód
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : TASK-092 (ADR-016) — fixar a região `gru1`, pelo ciclo TDD.
-                    É a maior das duas causas do REQ-032 não ser cumprido; a outra
-                    caiu na TASK-091. O que continua sem número é a perna A e o
-                    total de ponta a ponta, que só a primeira operação real fecha
+Próxima ação      : nada planejado. As duas causas do REQ-032 caíram (TASK-091 e
+                    092) e o observável está em ~162 ms contra 500 ms. Falta só a
+                    perna A e o total de ponta a ponta, que a PRIMEIRA OPERAÇÃO
+                    REAL fecha — `scripts/medir-req032.mjs --operacao`. O resto
+                    entra por Change Request (seis em aberto no checkpoint)
 ```
 
 ---
