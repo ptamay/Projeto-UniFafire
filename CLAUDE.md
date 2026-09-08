@@ -134,8 +134,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
      em 335 ms. A diferença é **249 ms, IDÊNTICA na mediana e no mínimo** — que é
      assinatura de distância, não de trabalho. Não há `vercel.json`; a região
      nunca foi escolhida. Corrigir = fixar `gru1`, que muda a topologia do
-     ADR-012 → **Change Request**, e antes é preciso confirmar que o plano
-     gratuito deixa escolher a região.
+     ADR-012 → **Change Request**.
+     ✅ **O PLANO GRATUITO PERMITE**, verificado na documentação da Vercel em
+     2026-09-07: o limite do Hobby é o *número* de regiões (uma), não a escolha,
+     e `gru1` É `sa-east-1` — a mesma região AWS do Supabase. Nenhuma região é
+     restrita a plano pago. Basta `vercel.json` com `{"regions": ["gru1"]}` ou o
+     painel (Settings → Functions). Não há obstáculo técnico; falta a decisão.
   2. ~~`refreshData` serializa duas buscas independentes.~~ **FEITO — TASK-091,
      2026-09-07.** As duas saem juntas; verificado no navegador com `fetch`
      instrumentado (sobrepostas, 44 ms locais em vez da soma). Ficou
@@ -169,8 +173,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   lógica pura de reconciliação; o que quebrou foi a orquestração em volta dela, que
   nenhum teste alcança. O `tasks.md` da Sprint 23 tinha registrado esse limite com
   todas as letras. **Job de CI só está verificado depois de rodar de verdade.**
-- ⚠️ O que NÃO está demonstrado: o RTO de 4 h (ver Próxima Ação (a)). E a tabela de
-  ensaios do runbook §6.6 continua com a linha em branco.
+- ⚠️ O que NÃO está demonstrado: o RTO de 4 h. (A nota que dizia que a tabela do
+  runbook §6.6 estava em branco está VENCIDA — ela foi preenchida em 2026-09-06.)
 - ⚠️ Credenciais: precisam estar no gerenciador de senhas da instituição — conta
   Vercel, JWT_SECRET, senha do Supabase e o ADMIN. Sem isso o §8 (incidentes) não é
   executável por quem estiver de plantão. A senha do Supabase FOI ROTACIONADA em
@@ -180,16 +184,30 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Parece sempre defeito de autenticação. Verificação no navegador é o ÚLTIMO passo.
   Para semear: TRUNCATE + `DATABASE_URL=... node db/bootstrap-admin.mjs` (o script
   NÃO lê o .env.local). O Docker Desktop costuma estar parado — subir antes.
-- ⚠️ Migrations em produção: NÃO há runner. Aplicar à mão por `psql`, em ordem de
-  nome. O que já foi aplicado se consulta em `supabase_migrations.schema_migrations`
-  — mas os nomes do ledger não batem com os dos arquivos, e existe uma
-  `search_path_history_imutavel_task_065` no banco SEM arquivo no repositório.
-  Runbook §4.1. Migration que falta CALA em vez de gritar: conferir o schema.
-- Decisões em aberto: (a) expurgar keys.db do histórico antigo do git (risco
-  baixíssimo); (b) CR para runner de migrations do Postgres; (c) emendar a §3.2
-  (Tipo D — ver acima); (d) senha aleatória por reset no lugar da padrão
-  compartilhada (Tipo A); (e) `ALTER DEFAULT PRIVILEGES` + teste de RLS por tabela
-  e `permissions:` nos workflows — endurecimento, cabe numa sprint só.
+- ⚠️ **O LEDGER DE MIGRATIONS NÃO DESCREVE O QUE ESTÁ NO BANCO** (medido em
+  2026-09-07). Não há runner: as migrations são aplicadas à mão por `psql`, em
+  ordem de nome. O ledger tem 6 entradas e `db/migrations-pg/` tem 6 arquivos, e o
+  número igual esconde que divergem **nos dois sentidos**:
+  `search_path_history_imutavel_task_065` está no ledger e não tem arquivo;
+  `202609061800_sinal_realtime` tem arquivo, **ESTÁ APLICADA** (o sinal funciona em
+  produção) e não está no ledger. Ele não é limite inferior nem superior.
+  O runbook §4.1 chamava o ledger de "única fonte confiável" — **corrigido em
+  2026-09-07**. O conferidor que vale é o schema, e não só as tabelas:
+  **trigger ausente não se manifesta**, a escrita proibida simplesmente passa.
+- ✅ **O backup diário está rodando de verdade** — 06, 07 e 08 de setembro, três
+  execuções verdes consecutivas depois das três falhas do go-live. O `keepalive`
+  também. A lição continua: job de CI só está verificado depois de rodar.
+- Decisões em aberto, na ordem em que eu faria: (a) **fixar a região `gru1`**
+  (CR Tipo C — maior ganho isolado que resta, 249 ms por ida ao banco, e já
+  confirmado que o plano permite); (b) **correção operacional em produção** —
+  `auto_logout_time` = "30" e `default_reset_password` = "trocar123", resíduo da
+  carga sintética da TASK-067, corrigível pela tela; (c) emendar a §3.2 (Tipo D);
+  (d) CR para runner de migrations do Postgres — a divergência do ledger cresce a
+  cada aplicação manual; (e) endurecimento: `ALTER DEFAULT PRIVILEGES` + teste de
+  RLS por tabela, e `permissions:` nos workflows (**confirmado ausente nos dois**
+  em 2026-09-07); (f) senha aleatória por reset (Tipo A); (g) expurgar keys.db do
+  histórico antigo do git (**confirmado que está lá**; risco baixíssimo — era
+  SQLite de desenvolvimento).
 - Arquivos não commitados: nenhum
 - ⚠️ CORREÇÃO OPERACIONAL PENDENTE, independente de sprint: as 4 linhas de
   `settings` em produção são da carga SINTÉTICA da TASK-067 — eu as preservei na

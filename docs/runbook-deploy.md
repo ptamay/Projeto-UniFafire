@@ -199,9 +199,13 @@ Regras que não se negociam:
 
 ### 4.1 Como descobrir o que já foi aplicado
 
+> ⚠️ **NÃO CONFIE NO LEDGER DO SUPABASE.** Até 2026-09-07 esta seção mandava
+> consultá-lo e o chamava de "única fonte confiável". **Ele não é**, e a medição
+> daquele dia provou nos dois sentidos ao mesmo tempo. Leia o resto desta seção
+> antes de tomar qualquer decisão a partir dele.
+
 O Supabase mantém um registro próprio das migrations, no schema
-`supabase_migrations`. **Consulte-o antes de aplicar qualquer coisa** — é a única
-fonte confiável, já que o repositório não guarda esse estado:
+`supabase_migrations`:
 
 ```bash
 psql "$DATABASE_URL" -c "SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;"
@@ -209,41 +213,74 @@ psql "$DATABASE_URL" -c "SELECT version, name FROM supabase_migrations.schema_mi
 
 (Pelo painel: Supabase → *Database* → *Migrations*.)
 
-Duas ressalvas sobre esse registro, ambas descobertas em 2026-09-06:
+**Por que ele não serve como fonte de verdade.** Conferido em 2026-09-07: o ledger
+tem seis entradas e `db/migrations-pg/` tem seis arquivos — e o número igual
+esconde que os conjuntos **divergem nos dois sentidos**:
 
-1. **Os nomes não batem com os arquivos.** O ledger guarda o nome que quem
-   aplicou digitou, não o nome do arquivo. Compare pelo **conteúdo** — qual
-   tabela ou índice cada migration cria —, nunca pelo nome.
-2. **Nem tudo que está no banco está no repositório.** Existe uma
-   `search_path_history_imutavel_task_065` aplicada durante a Sprint 20 que **não
-   tem arquivo em `db/migrations-pg/`**. Se você recriar a base do zero a partir
-   dos arquivos, ela não vem junto.
+| | no repositório | no ledger | está no banco? |
+|---|---|---|---|
+| `search_path_history_imutavel_task_065` | **não existe** | sim | sim |
+| `202609061800_sinal_realtime` | sim | **não** | **sim** — o sinal do Realtime funciona em produção |
 
-Um segundo conferidor, independente do ledger, é olhar o schema em si — foi assim
-que se descobriu, no dia do go-live, que faltavam duas migrations que ninguém
-sabia estarem pendentes:
+Ou seja: o ledger **mostra o que não tem arquivo e esconde o que está aplicado**.
+Quem contar as linhas conclui "seis e seis, está tudo certo" e erra duas vezes. E
+não se pode nem tratá-lo como limite inferior nem superior do que está no banco.
+
+Some-se a isso que **os nomes não batem com os arquivos** — o ledger guarda o nome
+que quem aplicou digitou. Comparar por nome não funciona em nenhuma direção.
+
+A causa é conhecida e está registrada como Change Request em aberto: **não há
+runner de migrations**. Elas são aplicadas à mão, e o ledger só recebe entrada
+quando quem aplicou se lembra de escrevê-la — ou quando usa uma ferramenta que a
+escreve por ele. Enquanto o runner não existir, a divergência tende a crescer a
+cada migration aplicada.
+
+#### O conferidor que vale: o schema
+
+**Pergunte ao banco o que ele tem, não ao registro do que disseram que ele tem.**
+Foi assim que se descobriu, no dia do go-live, que faltavam duas migrations que
+ninguém sabia estarem pendentes:
 
 ```bash
+# as tabelas
 psql "$DATABASE_URL" -c "\dt public.*"
+
+# os triggers — é aqui que mora a imutabilidade da §7.1, e um trigger ausente
+# NÃO se manifesta: a escrita proibida simplesmente passa
+psql "$DATABASE_URL" -c "SELECT tgname, tgrelid::regclass FROM pg_trigger WHERE NOT tgisinternal ORDER BY 2, 1;"
+
+# as funções
+psql "$DATABASE_URL" -c "\df public.*"
 ```
 
 As **11 tabelas** esperadas estão listadas em `TABELAS_ESPERADAS`, no
-`db/backup-run.mjs`. Menos que isso significa migration faltando.
+`db/backup-run.mjs`. Menos que isso significa migration faltando. O ensaio de
+restauração do §6.6 registra o esperado completo: 11 tabelas, 23 índices, 6
+triggers, 11 sob RLS, 4 funções.
 
-### 4.2 Estado em 2026-09-06
+> **Migration que falta CALA em vez de gritar.** Uma tabela ausente quebra na
+> primeira consulta e você descobre em minutos. Um TRIGGER ausente não quebra
+> nada — só deixa de proibir o que deveria proibir, e você descobre quando alguém
+> já apagou a trilha. Confira os triggers, não só as tabelas.
+
+### 4.2 Estado em 2026-09-07
 
 Todas as migrations conhecidas estão aplicadas. As 11 tabelas existem, com RLS
 ligado, e os triggers de imutabilidade de `history`, `app_logs` e `backup_runs`
 estão no lugar.
 
-| Aplicada | O que traz |
-|---|---|
-| `baseline_postgres_task_063` | As 9 tabelas de base |
-| `indices_task_064` | Índices de consulta |
-| `imutabilidade_historico_task_065` | Trigger de imutabilidade de `history` |
-| `search_path_history_imutavel_task_065` | Correção do `search_path` — **sem arquivo no repositório** |
-| `app_logs` | Tabela `app_logs` (TASK-074) |
-| `backup_runs` | Tabela `backup_runs` (TASK-078) |
+A coluna **onde aparece** é o ponto do §4.1: nenhuma das duas fontes, sozinha,
+descreve o que está no banco.
+
+| Aplicada | Onde aparece | O que traz |
+|---|---|---|
+| `baseline_postgres_task_063` | ledger + repositório | As 9 tabelas de base |
+| `indices_task_064` | ledger + repositório | Índices de consulta |
+| `imutabilidade_historico_task_065` | ledger + repositório | Trigger de imutabilidade de `history` |
+| `search_path_history_imutavel_task_065` | **só no ledger** | Correção do `search_path` — sem arquivo no repositório |
+| `app_logs` | ledger + repositório | Tabela `app_logs` (TASK-074) |
+| `backup_runs` | ledger + repositório | Tabela `backup_runs` (TASK-078) |
+| `202609061800_sinal_realtime` | **só no repositório** | Trigger de sinal do Realtime (TASK-072). **Está no banco** — validado em produção em 2026-09-06, com `UPDATE ... WHERE false` e o sinal recebido por um cliente real |
 
 > **Por que `app_logs` quase passou batido, e o que isso ensina.** Ela ficou
 > pendente desde a Sprint 22 sem ninguém notar, porque a falta dela **não produz
