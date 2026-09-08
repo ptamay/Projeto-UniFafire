@@ -222,11 +222,22 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   histórico antigo do git (**confirmado que está lá**; risco baixíssimo — era
   SQLite de desenvolvimento).
 - Arquivos não commitados: nenhum
-- ⚠️ CORREÇÃO OPERACIONAL PENDENTE, independente de sprint: as 4 linhas de
-  `settings` em produção são da carga SINTÉTICA da TASK-067 — eu as preservei na
-  limpeza do go-live achando que eram configuração legítima, e errei.
-  `auto_logout_time` = "30" é a causa do logout quebrado. Corrigir pela tela ou
-  por SQL, e revisar `default_reset_password` (hoje "trocar123").
+- ⚠️ HIGIENE DE DADOS em produção, e a nota anterior estava VENCIDA: as 4 linhas
+  de `settings` são da carga SINTÉTICA da TASK-067 — eu as preservei na limpeza do
+  go-live achando que eram configuração legítima, e errei.
+  · `auto_logout_time` = "30" **NÃO é mais a causa de logout quebrado.** A
+    TASK-083 (Sprint 24, no ar desde `d79020a`) fez a LEITURA recusar valor
+    inválido: `lerAutoLogoutTime` devolve `AUTO_LOGOUT_PADRAO` = 18:30, e o
+    logout automático **funciona hoje**. O que sobra é lixo no banco e uma MINA —
+    o dia em que alguém "simplificar" a validação da leitura, o defeito volta
+    inteiro. Corrigir é abrir `/settings` (o campo já EXIBE 18:30, porque a
+    leitura sanitiza) e salvar.
+  · `default_reset_password` = "trocar123" é diferente e **não tem sanitização**:
+    a linha SOBRESCREVE o padrão do código (`unifafire123`), então o que está
+    gravado é o que o sistema aplica de fato.
+  · Pela TELA e não por SQL: `action_logs` registra mudança de configuração feita
+    pela tela, e `UPDATE` por fora não deixa rastro de quem mudou o quê (§7.1).
+    A consulta a `settings` por MCP também foi bloqueada pelo classificador.
 - ✅ DÉBITO QUITADO: `docs/api-contract.md` existe desde 2026-09-06 (TASK-086), e
   escrevê-lo é o que revelou as duas falhas de autorização acima. **O débito se
   pagou antes de o arquivo existir.**
