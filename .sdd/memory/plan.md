@@ -87,6 +87,17 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — Runner de migrations (CR Tipo D · ADR-021)
+> Sem sprint atribuída. **A ordem não é preferência**: a 102 é a que pode quebrar produção
+> e depende da 101; a 104 é a única que não pode vir primeiro.
+- **TASK-101 → o runner.** Aplicação idempotente e ordenada por prefixo, registro em tabela PRÓPRIA (não o ledger do Supabase) escrito na MESMA transação da migration, e um comando de conferência: arquivos × registro × schema. Falha ruidosa e para na primeira que não aplicar. Migration UP/DOWN para a tabela de controle.
+  > Por que registro próprio e não o do Supabase: aplicar SQL pelo editor não escreve no ledger e nada avisa. Disputar com ele é perder; o que se pode ter é um registro que só existe se a migration foi aplicada por quem sabe escrevê-lo.
+- **TASK-102 → a ADOÇÃO, e é o passo perigoso.** As sete migrations já aplicadas têm de ser marcadas como tal SEM reexecutar. O registro nasce vazio e o banco não: sem isso o runner tenta reaplicar, e a primeira a rodar duas vezes é um `ALTER TABLE ADD COLUMN` que falha — ou pior, um `CREATE TRIGGER` que duplica.
+  > ⚠️ **Verificado contra uma base RESTAURADA DO BACKUP**, não contra uma vazia. Base vazia não exercita o caminho real, que é justamente "o banco já tem tudo e o registro não sabe".
+- **TASK-103 → a aplicação verifica pendências ao subir e AVISA.** Nunca aplica. Aplicar schema no boot de função serverless é várias instâncias correndo o mesmo DDL em paralelo, e um `ALTER TABLE` que falha pela metade em produção é pior que a janela que se quer fechar.
+- **TASK-104 → a §4.1 passa a descrever `db/migrations-pg/*.up.sql` e a exigir o registro.** SÓ depois de 101–103 no ar: emendar antes deixaria a lei descrevendo algo que ainda não existe, que é exatamente o defeito que ela veio corrigir.
+
+
 ### Emenda de constitution — a §3.2 nomeia a FRONTEIRA (CR Tipo D · ADR-020) ✅
 > Aprovada pelo usuário em 2026-09-08 e **aplicada**. Sem task de código: as três páginas
 > foram corrigidas na Sprint 27 e a guarda existe desde então — o que faltava era a letra.
