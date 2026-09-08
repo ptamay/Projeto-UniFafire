@@ -65,11 +65,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `userRole={session.role}`, que é repassar o papel ao cliente, exatamente o que as
   páginas desprotegidas faziam. **Só apareceram porque rodei o vermelho e conferi
   QUAIS cenários passavam, em vez de contar quantos falhavam.**
-- ⚠️ DECISÃO SUA, e ainda em aberto: a §3.2 diz "toda **rota de API** valida a sessão
-  E a permissão". As três falhas desta sprint estavam em Server Components, que a
-  letra não alcança e a intenção sim. O código foi corrigido e a guarda existe, mas
-  **a cláusula continua com o texto antigo** — quem a ler e escrever uma página nova
-  vai concluir que ela não se aplica. Emendar é CR **Tipo D** (constitution).
+- ✅ **§3.2 EMENDADA em 2026-09-08 (CR Tipo D, ADR-020).** Ela
+  dizia "toda **rota de API**" e agora diz **fronteira** — rota de API e Server
+  Component igualmente —, nomeando os dois casos concretos. Lista enumerada
+  envelhece: a próxima superfície que o framework inventar nasceria fora dela.
+  Nenhum comportamento mudou; mudou o que um leitor futuro conclui, que é o ponto
+  inteiro de uma regra de segurança.
 - Ação anterior: **Sprint 26 — DUAS falhas de autorização corrigidas, e o contrato de
   API criado.** Ambas encontradas pelo mesmo método (enumerar a superfície e comparar
   rotas irmãs) e **nenhuma tinha sintoma**:
@@ -265,7 +266,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/cr-019-higiene (PR a abrir). PRs #15–#39 merged na main.
+- Branch atual: docs/cr-020-021-constitution (PR a abrir). PRs #15–#40 merged na main.
+- ⚠️ **A §2.2 NÃO foi emendada, e não pode ser ainda.** Você mesmo a condicionou à
+  TASK-095, que não foi implementada — sem o registro do fim de sessão não dá para
+  distinguir logout automático de expiração de troca de aparelho, e emendar seria
+  afrouxar um controle de segurança com base numa hipótese entre três. Ver ADR-018.
+- 📋 **ADR-021 (runner de migrations) escrito, TASK-101 a 104 no backlog.** Virou
+  Tipo D ao descobrir que **a §4.1 descreve um projeto que não existe**: manda
+  `db/migrations/NNNN_up_*.sql` e a realidade é `db/migrations-pg/*.up.sql` — nem o
+  diretório nem o padrão batem, e o Gate 2 passa porque verifica pareamento, não a
+  convenção. A emenda fica na TASK-104, DEPOIS do runner existir.
 - ✅ **HIGIENE (ADR-019, TASK-099/100)** — `jspdf` saiu do carregamento inicial de
   `/history` (459 KB → fora do manifesto), `server-only` (morta) e `@types/pg`
   (tipo em `dependencies`) corrigidas, dez arquivos mortos removidos e
