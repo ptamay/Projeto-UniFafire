@@ -265,8 +265,22 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-018-usabilidade (PR a abrir). PRs #15–#36 merged na main;
-  #37 (TASK-093) aberto.
+- Branch atual: docs/ledger-task-093 (PR a abrir). PRs #15–#38 merged na main.
+- ✅ **TASK-093 NO AR (2026-09-08)** — o reset emite código de uso único. A migration
+  `202609081200_codigo_de_reset` foi aplicada à mão pelo usuário, e as duas colunas
+  mais o índice parcial estão conferidos em produção.
+- ⚠️ **MERGE NÃO APLICA MIGRATION, e desta vez custou.** O código subiu antes das
+  colunas: o login seguiu funcionando (`SELECT *` devolve coluna ausente como
+  `undefined`), mas **resetar acesso e criar usuário responderam 500** na janela
+  entre o deploy e a aplicação manual. Registrado no runbook §4.2. Enquanto não
+  houver runner, a ordem é responsabilidade de quem faz o merge.
+- ⚠️ **A divergência do ledger CRESCEU no mesmo dia em que foi documentada** — a
+  migration nova não entrou nele (aplicar SQL pelo editor não escreve no ledger, e
+  nada avisa). Agora são 7 arquivos, 6 entradas, 3 divergências. Reforça o CR (d).
+- ✅ **A incógnita da TASK-094 tem resposta: ZERO contas** com
+  `requires_password_change` em produção (de 2 ativas). A guarda continua necessária
+  — alguém pode ser resetado até lá —, mas "provavelmente nenhuma" virou "nenhuma,
+  verificado em 2026-09-08".
 - ⚠️ **A SESSÃO JÁ PERSISTE — a premissa do relato estava errada.** Idle de 24 h
   renovado a cada requisição pelo proxy, absoluto de 7 dias no JWT, e os dois são
   TEXTO LITERAL da §2.2. Os LOGIN_SUCCESS de produção têm um intervalo de ~32 h
