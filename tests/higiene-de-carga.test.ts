@@ -70,11 +70,21 @@ describe('TASK-100 — dependências dizem a verdade', () => {
         const tudo = arquivos.join('\n') + ler('next.config.ts');
 
         // `@types/*` não são importados por nome: são resolvidos pelo compilador.
+        // Exceções em LISTA, com o motivo escrito — nunca embutidas na regex. Há
+        // pacote que o projeto usa sem nenhum arquivo nosso importar, e a varredura
+        // ingênua o acusa: foi o que aconteceu na primeira versão deste cenário.
+        const EXCECOES: Record<string, string> = {
+            'react-dom': 'renderizador do React — o Next o exige, e nenhum arquivo nosso o importa por nome',
+        };
+
         const orfas = Object.keys(pkg.dependencies)
             .filter(d => !d.startsWith('@types/'))
+            .filter(d => !(d in EXCECOES))
             .filter(d => !new RegExp(`['"]${d.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}(/|['"])`).test(tudo));
 
         expect(orfas, `declaradas em dependencies e nunca importadas:\n${orfas.join('\n')}`).toEqual([]);
+        // A lista de exceções não cresce sem alguém decidir.
+        expect(Object.keys(EXCECOES).sort()).toEqual(['react-dom']);
     });
 
     it('BDD 2: pacote de tipos não fica em `dependencies`', () => {
@@ -103,7 +113,12 @@ describe('TASK-100 — arquivos que descrevem um sistema que não existe', () =>
         const dir = path.resolve(RAIZ, 'tests');
         const tautologicos = fs.readdirSync(dir)
             .filter(f => f.endsWith('.test.ts'))
-            .filter(f => /expect\(\s*true\s*\)\s*\.toBe\(\s*true\s*\)/.test(fs.readFileSync(path.join(dir, f), 'utf-8')));
+            // `semComentarios` não é detalhe: a primeira versão deste cenário
+            // reprovou ESTE arquivo, porque o comentário acima cita a tautologia
+            // que ele procura. Varredura de texto que lê comentário acusa quem a
+            // descreve — e o sintoma é o teste dizer que ele mesmo é o problema.
+            .filter(f => /expect\(\s*true\s*\)\s*\.toBe\(\s*true\s*\)/
+                .test(semComentarios(fs.readFileSync(path.join(dir, f), 'utf-8'))));
         expect(tautologicos, `testes que não podem falhar:\n${tautologicos.join('\n')}`).toEqual([]);
     });
 });

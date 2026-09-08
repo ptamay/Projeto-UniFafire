@@ -1,0 +1,43 @@
+# TASK-100 (ADR-019) — o que NÃO sobe para a Vercel.
+#
+# Medido em 2026-09-08: o repositório versionado tem ~4,1 MB e ~1,47 MB deles
+# (35%) nunca são lidos pelo `next build`. Isso subia a cada deploy.
+#
+# ## O critério
+#
+# Sai daqui o que o BUILD não lê. Não é "o que parece supérfluo": documentação e
+# testes são essenciais ao projeto e continuam versionados — só não têm o que
+# fazer dentro do artefato de deploy.
+#
+# ## O perigo, e por que há um teste guardando isto
+#
+# Este arquivo está certo hoje e fica errado sozinho. No dia em que alguém
+# importar algo de `db/` num Server Component, o `next build` LOCAL passa — porque
+# na máquina o arquivo está lá — e a PRODUÇÃO quebra, com uma mensagem que não
+# aponta para cá.
+#
+# É a mesma classe de falha que a migration da TASK-093 produziu em 2026-09-08: o
+# que existe na máquina de quem publica não é o que existe no ambiente que serve.
+# `tests/higiene-de-carga.test.ts` reprova se qualquer caminho abaixo passar a ser
+# referenciado por `src/`.
+
+# Processo e memória do framework — nada disso participa do build
+.sdd/
+.agents/
+.claude/
+.semgrep/
+
+# Testes e documentação
+tests/
+docs/
+playwright.config.*
+vitest.config.*
+docker-compose.test.yml
+
+# Ferramentas de linha de comando: migrations, backup, medição.
+# Rodam na máquina do mantenedor ou no GitHub Actions, nunca na Vercel.
+db/
+scripts/
+
+# Material de marca em formato de origem; o que a aplicação serve está em public/
+assets/
