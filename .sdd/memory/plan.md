@@ -87,6 +87,12 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — Região da função (CR Tipo C · ADR-016 · REQ-032)
+> Sem sprint atribuída. Entra pelo ciclo TDD normal. É a **segunda e maior** das duas causas
+> que a medição de 2026-09-07 apontou; a primeira caiu na TASK-091.
+- **TASK-092 → REQ-032: fixar `regions: ["gru1"]` em `vercel.json`.** ADR-016. Hoje a função executa em `iad1` (Washington) com o banco em `sa-east-1` (São Paulo), e cada ida ao banco custa **249 ms** — medido em duas rotas nas mesmas condições, e idêntico na mediana e no mínimo, que é assinatura de distância. Em arquivo e não no painel: configuração que só existe no painel não aparece em revisão de PR e some se o projeto for recriado — foi assim que a região errada passou dois meses sem ninguém notar. O teste deve reprovar a ausência do arquivo **e** a alteração silenciosa da região.
+  > ⚠️ **O critério de aceite não é o arquivo existir, é o número cair.** A verificação tem de repetir a medição com `scripts/medir-req032.mjs` depois do deploy e registrar o resultado aqui, ao lado do antigo. Se os 249 ms não desaparecerem, a hipótese estava errada e o ADR-016 precisa ser revisto — não o número, escondido.
+
 ### Sprint 7 — Dívida de Estabilização (reconciliação ADR-002 — EXECUTAR ANTES do mobile)
 > Tasks planejadas nas Sprints 4–6 originais e não entregues. Prioridade máxima: contém
 > violações ativas de constitution. Detalhamento BDD em `docs/tasks-sprint-7.md`.
