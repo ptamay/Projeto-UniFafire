@@ -218,7 +218,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   (d) CR para runner de migrations do Postgres — a divergência do ledger cresce a
   cada aplicação manual; (e) endurecimento: `ALTER DEFAULT PRIVILEGES` + teste de
   RLS por tabela, e `permissions:` nos workflows (**confirmado ausente nos dois**
-  em 2026-09-07); (f) senha aleatória por reset (Tipo A); (g) expurgar keys.db do
+  em 2026-09-07); (f) ✅ **VIROU CR — ADR-017, TASK-093/094, 2026-09-08**, e mudou de
+  forma no caminho: não é "senha aleatória exibida uma vez" (aquilo transmitiria
+  senha em claro na resposta, o que a §2.1 proíbe, e faria o ADMIN saber a senha
+  de outra pessoa) e sim **código de uso único** — a pessoa entra com
+  `username + código` e define a própria senha. Tipo C, não D, por causa disso.
+  Resolve junto o `default_reset_password = "trocar123"`; (g) expurgar keys.db do
   histórico antigo do git (**confirmado que está lá**; risco baixíssimo — era
   SQLite de desenvolvimento).
 - Arquivos não commitados: nenhum
@@ -252,7 +257,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/task-092-medicao (PR a abrir). PRs #15–#32 merged na main.
+- Branch atual: docs/cr-017-codigo-de-reset (PR a abrir). PRs #15–#34 merged na main.
 - Atualizado em: 2026-09-08
 ```
 
@@ -312,11 +317,10 @@ Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em cód
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : nada planejado. As duas causas do REQ-032 caíram (TASK-091 e
-                    092) e o observável está em ~162 ms contra 500 ms. Falta só a
-                    perna A e o total de ponta a ponta, que a PRIMEIRA OPERAÇÃO
-                    REAL fecha — `scripts/medir-req032.mjs --operacao`. O resto
-                    entra por Change Request (seis em aberto no checkpoint)
+Próxima ação      : TASK-093/094 (ADR-017) — código de uso único no reset, pelo
+                    ciclo TDD. 🔴 crítica: mexe no login, que é o Fluxo 1 da spec
+                    §4. Fora isso, o REQ-032 espera a PRIMEIRA OPERAÇÃO REAL para
+                    fechar a perna A (`medir-req032.mjs --operacao`)
 ```
 
 ---
