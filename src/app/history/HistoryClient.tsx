@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
 import PrintButton from '../components/PrintButton';
 import Sidebar from '../components/Sidebar';
@@ -151,8 +149,36 @@ export default function HistoryClient({
         router.push(`/history?${params.toString()}`);
     };
 
-    const handleExportPDF = () => {
-        if (history.length === 0) return;
+    const [gerandoPDF, setGerandoPDF] = useState(false);
+
+    // TASK-099 (ADR-019) — `jspdf` e `jspdf-autotable` eram import ESTATICO. Como
+    // este e um componente de cliente, os dois entravam no bundle da rota: 459 KB
+    // no maior chunk do app, baixados por todo mundo que abre /history, com ou sem
+    // intencao de exportar. Agora descem no clique, que e quando servem.
+    //
+    // O estado `gerandoPDF` nao e polimento: o download acontece ENTRE o clique e
+    // o PDF, e sem indicacao o botao parece morto em rede ruim — trocariamos 459 KB
+    // de espera invisivel por um segundo de espera que parece defeito.
+    const handleExportPDF = async () => {
+        if (history.length === 0 || gerandoPDF) return;
+        setGerandoPDF(true);
+        try {
+            const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+                import('jspdf'),
+                import('jspdf-autotable'),
+            ]);
+            gerarPDF(jsPDF, autoTable);
+        } catch {
+            toast.error('Não foi possível carregar o gerador de PDF. Verifique a conexão.');
+        } finally {
+            setGerandoPDF(false);
+        }
+    };
+
+    type ConstrutorPDF = typeof import('jspdf').default;
+    type TabelaPDF = typeof import('jspdf-autotable').default;
+
+    const gerarPDF = (jsPDF: ConstrutorPDF, autoTable: TabelaPDF) => {
         const doc = new jsPDF();
         doc.text('Relatório de Movimentações de Chaves', 14, 15);
         doc.setFontSize(10);
@@ -238,8 +264,8 @@ export default function HistoryClient({
                                         Limpar Histórico
                                     </button>
                                 )}
-                                <button className="btn btn-blue" onClick={handleExportPDF} style={{ fontSize: '0.9rem' }}>
-                                    Exportar PDF
+                                <button className="btn btn-blue" onClick={handleExportPDF} disabled={gerandoPDF} style={{ fontSize: '0.9rem' }}>
+                                    {gerandoPDF ? 'Gerando…' : 'Exportar PDF'}
                                 </button>
                                 <PrintButton />
                             </div>
