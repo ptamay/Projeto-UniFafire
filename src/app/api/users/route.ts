@@ -3,7 +3,7 @@ import { query, queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
-import { SENHA_PADRAO_RESET } from '@/lib/settings-policy';
+import { gerarCodigoDeAcesso, expiracaoDoCodigo, VALIDADE_DO_CODIGO_MINUTOS } from '@/lib/reset-code';
 import { verifySession } from '@/lib/session';
 import { UserSchema } from '@/lib/schemas';
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: parseResult.error.issues[0]?.message || 'Dados inválidos' }, { status: 400 });
         }
         
-        const { username, password, role, full_name, matricula, phone } = parseResult.data;
+        const { username, role, full_name, matricula, phone } = parseResult.data;
 
         let finalUsername = username;
         if (!finalUsername && full_name) {
@@ -83,22 +83,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Nome Completo é obrigatório para gerar o usuário.' }, { status: 400 });
         }
 
-        let finalPassword = password;
-        if (!finalPassword) {
-            const settingsRow = await queryOne<{ value: string }>("SELECT value FROM settings WHERE key = 'default_reset_password'");
-            finalPassword = settingsRow ? settingsRow.value : SENHA_PADRAO_RESET;
-        }
+        // TASK-093 (ADR-017) — usuário novo nasce com CÓDIGO, não com senha.
+        //
+        // Antes, toda conta criada recebia a mesma senha padrão compartilhada, e a
+        // resposta a devolvia em claro. Era o defeito do reset num caminho que
+        // ninguém tinha olhado: dezenas de contas nascendo com o mesmo segredo, e
+        // cada uma aberta até o dono entrar pela primeira vez.
+        const codigo = gerarCodigoDeAcesso();
+        const codigoHash = await bcrypt.hash(codigo, 10);
+        const codigoExpira = expiracaoDoCodigo();
 
         const existing = await queryOne<Pick<UserRow, 'id' | 'active'>>('SELECT id, active FROM users WHERE username = $1', [finalUsername]);
         if (existing) {
             if (existing.active) {
                 return NextResponse.json({ error: 'Este usuário já está cadastrado e ativo' }, { status: 400 });
             } else {
-                // Reactivate inactive user
-                const hash = await bcrypt.hash(finalPassword, 10);
+                // Reativar tem de MATAR a senha antiga. A conta já existiu: seu
+                // `password_hash` anterior continua no lugar, e reativar sem
+                // zerá-lo devolveria acesso a quem quer que soubesse a senha de
+                // antes — inclusive a pessoa que teve o acesso removido.
                 await execute(
-                    'UPDATE users SET active = true, password_hash = $1, role = $2, full_name = $3, matricula = $4, phone = $5, requires_password_change = true WHERE id = $6',
-                    [hash, role, full_name || null, matricula || null, phone || null, existing.id],
+                    `UPDATE users SET active = true, password_hash = NULL, reset_code_hash = $1,
+                     reset_code_expires_at = $2, role = $3, full_name = $4, matricula = $5,
+                     phone = $6, requires_password_change = true WHERE id = $7`,
+                    [codigoHash, codigoExpira, role, full_name || null, matricula || null, phone || null, existing.id],
                 );
 
                 await logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
@@ -107,20 +115,27 @@ export async function POST(request: Request) {
                     id: existing.id, username: finalUsername, role,
                     message: 'Usuário reativado com sucesso',
                     reactivated: true,
-                    generatedPassword: finalPassword
+                    codigoDeAcesso: codigo,
+                    validadeMinutos: VALIDADE_DO_CODIGO_MINUTOS,
                 });
             }
         }
 
-        const hash = await bcrypt.hash(finalPassword, 10);
         const criado = await queryOne<{ id: number }>(
-            'INSERT INTO users (username, password_hash, role, full_name, matricula, phone, requires_password_change) VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING id',
-            [finalUsername, hash, role, full_name || null, matricula || null, phone || null],
+            `INSERT INTO users (username, password_hash, reset_code_hash, reset_code_expires_at, role, full_name, matricula, phone, requires_password_change)
+             VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, true) RETURNING id`,
+            [finalUsername, codigoHash, codigoExpira, role, full_name || null, matricula || null, phone || null],
         );
 
         await logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
 
-        return NextResponse.json({ id: criado!.id, username: finalUsername, role, full_name, matricula, generatedPassword: finalPassword });
+        // O código sai daqui uma vez e nunca mais. Não é senha — é bilhete de
+        // entrada, de uso único e prazo curto (§2.1 intacta).
+        return NextResponse.json({
+            id: criado!.id, username: finalUsername, role, full_name, matricula,
+            codigoDeAcesso: codigo,
+            validadeMinutos: VALIDADE_DO_CODIGO_MINUTOS,
+        });
     } catch (error) {
         console.error('Create user error:', error);
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });

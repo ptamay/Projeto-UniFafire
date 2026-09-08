@@ -148,8 +148,17 @@ describe('TASK-069(b) — rotas de conta gravam no Postgres', () => {
         await expect(bcrypt.compare('outra-senha-999', linha!.password_hash)).resolves.toBe(true);
     });
 
-    it('o reset lê a senha padrão de settings no Postgres e marca a troca obrigatória', async () => {
+    // TASK-093 (ADR-017) — este cenário afirmava que o reset LIA a senha padrão de
+    // `settings` e a gravava na conta. Era verdade, e era o defeito: a senha é a
+    // mesma para todos e nunca muda, então quem a conhece entra em qualquer conta
+    // recém-resetada. Agora o reset emite um código de uso único.
+    //
+    // A fatia continua provando o que existe para provar — que a rota escreve no
+    // Postgres e deixa a conta no estado certo. O que mudou é qual estado é o certo.
+    it('o reset emite código no Postgres e deixa a conta SEM senha utilizável', async () => {
         await semearNoPostgres(807, 'alvo_do_reset_pg');
+        // A linha de `settings` continua semeada de propósito: o cenário prova que
+        // ela deixou de ter efeito, e não apenas que sumiu.
         await execute(
             `INSERT INTO settings (key, value) VALUES ('default_reset_password', 'padrao-do-postgres')
              ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
@@ -168,12 +177,21 @@ describe('TASK-069(b) — rotas de conta gravam no Postgres', () => {
         }) as never);
 
         expect(res.status).toBe(200);
-        const linha = await queryOne<{ password_hash: string; requires_password_change: boolean }>(
-            'SELECT password_hash, requires_password_change FROM users WHERE id = $1', [807],
+        const corpo = await res.json();
+        expect(typeof corpo.codigoDeAcesso).toBe('string');
+
+        const linha = await queryOne<{
+            password_hash: string | null;
+            reset_code_hash: string | null;
+            requires_password_change: boolean;
+        }>(
+            `SELECT password_hash, reset_code_hash, requires_password_change
+             FROM users WHERE id = $1`, [807],
         );
         expect(linha?.requires_password_change).toBe(true);
+        expect(linha?.password_hash, 'a conta continua com senha depois do reset').toBeNull();
         await expect(
-            bcrypt.compare('padrao-do-postgres', linha!.password_hash),
+            bcrypt.compare(corpo.codigoDeAcesso, linha!.reset_code_hash!),
         ).resolves.toBe(true);
     });
 });

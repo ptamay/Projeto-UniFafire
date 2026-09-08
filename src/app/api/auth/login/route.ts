@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { logAction } from '@/lib/logger';
+import { codigoExpirou } from '@/lib/reset-code';
 import { signSession } from '@/lib/session';
 import {
     checkRateLimit, checkLockout, recordLoginAttempt, clearLoginAttempts,
@@ -14,9 +15,15 @@ import { opcoesCookieSessao } from '@/lib/session-cookie';
 interface LoginUserRow {
     id: number;
     username: string;
-    password_hash: string;
+    // Anulável desde a TASK-093: o reset MATA a senha em vez de trocá-la por uma
+    // conhecida, então entre o reset e o primeiro acesso a conta não tem senha
+    // nenhuma. O tipo diz isso para que ninguém volte a passá-la a `bcrypt`
+    // sem olhar.
+    password_hash: string | null;
     role: string;
     requires_password_change: number;
+    reset_code_hash: string | null;
+    reset_code_expires_at: Date | string | null;
 }
 
 export async function POST(request: Request) {
@@ -62,7 +69,24 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
-        const match = await bcrypt.compare(body.password, user.password_hash);
+        // TASK-093 (ADR-017) — dois caminhos de entrada, e a ordem importa.
+        //
+        // `password_hash` passa a poder ser NULL: o reset MATA a senha antiga em
+        // vez de trocá-la por uma conhecida. `bcrypt.compare(x, null)` LANÇA, e
+        // sem esta guarda uma conta em reset viraria 500 no login — que é
+        // indistinguível de indisponibilidade para quem está tentando entrar.
+        const senhaConfere = user.password_hash
+            ? await bcrypt.compare(body.password, user.password_hash)
+            : false;
+
+        // O código só é considerado se a senha não serviu. Caminho comum primeiro:
+        // quem não está em reset nem chega a pagar esta comparação.
+        const codigoConfere = !senhaConfere
+            && !!user.reset_code_hash
+            && !codigoExpirou(user.reset_code_expires_at)
+            && await bcrypt.compare(body.password, user.reset_code_hash);
+
+        const match = senhaConfere || codigoConfere;
 
         if (!match) {
             await recordLoginAttempt(user.username, ip, false);
@@ -75,7 +99,7 @@ export async function POST(request: Request) {
 
         let currentHash = user.password_hash;
         // Se o usuário precisa trocar a senha inicial e enviou uma nova
-        if (user.requires_password_change) {
+        if (user.requires_password_change || codigoConfere) {
             if (!body.newPassword) {
                 return NextResponse.json({ error: 'REQUIRE_PASSWORD_CHANGE' }, { status: 403 });
             }
@@ -83,8 +107,13 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: 'A nova senha deve ter no mínimo 8 caracteres' }, { status: 400 });
             }
             const hashedNew = await bcrypt.hash(body.newPassword, 10);
+            // O código é CONSUMIDO aqui, na mesma instrução que grava a senha.
+            // Código reutilizável seria a senha compartilhada de novo, só que com
+            // outro nome — e limpá-lo numa segunda instrução abriria uma janela
+            // entre as duas em que ele ainda valeria.
             await execute(
-                'UPDATE users SET password_hash = $1, requires_password_change = false WHERE id = $2',
+                `UPDATE users SET password_hash = $1, requires_password_change = false,
+                 reset_code_hash = NULL, reset_code_expires_at = NULL WHERE id = $2`,
                 [hashedNew, user.id],
             );
             await logAction(user.id, user.username, 'CHANGE_PASSWORD', 'System', 'User changed default password on first login');
