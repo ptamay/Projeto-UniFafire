@@ -197,9 +197,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ✅ **O backup diário está rodando de verdade** — 06, 07 e 08 de setembro, três
   execuções verdes consecutivas depois das três falhas do go-live. O `keepalive`
   também. A lição continua: job de CI só está verificado depois de rodar.
-- Decisões em aberto, na ordem em que eu faria: (a) **fixar a região `gru1`**
-  (CR Tipo C — maior ganho isolado que resta, 249 ms por ida ao banco, e já
-  confirmado que o plano permite); (b) **correção operacional em produção** —
+- ✅ (a) **A REGIÃO VIROU CR — ADR-016, TASK-092, escrito em 2026-09-08.** Não
+  implementado: entra pelo ciclo TDD. ⚠️ O critério de aceite **não é o arquivo
+  `vercel.json` existir, é o número cair** — a verificação repete a medição com
+  `scripts/medir-req032.mjs` e registra ao lado do antigo. Se os 249 ms não
+  sumirem, a hipótese estava errada e o ADR-016 é que precisa ser revisto.
+- Decisões ainda em aberto, na ordem em que eu faria: (b) **correção operacional em produção** —
   `auto_logout_time` = "30" e `default_reset_password` = "trocar123", resíduo da
   carga sintética da TASK-067, corrigível pela tela; (c) emendar a §3.2 (Tipo D);
   (d) CR para runner de migrations do Postgres — a divergência do ledger cresce a
@@ -228,9 +231,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feature/sprint-27-autorizacao-paginas (PR a abrir).
-  PRs #15–#26 merged na main.
-- Atualizado em: 2026-09-06
+- Branch atual: docs/cr-016-regiao-gru1 (PR a abrir). PRs #15–#30 merged na main.
+- Atualizado em: 2026-09-08
 ```
 
 ---
@@ -289,10 +291,10 @@ Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em cód
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : MEDIR a defasagem do REQ-032 (≤ 500 ms) na primeira operação
-                    real — adiada por decisão do usuário para não gravar registro
-                    sintético na trilha imutável. Fora isso, nada planejado: o que
-                    vier entra por Change Request (cinco em aberto no checkpoint)
+Próxima ação      : TASK-092 (ADR-016) — fixar a região `gru1`, pelo ciclo TDD.
+                    É a maior das duas causas do REQ-032 não ser cumprido; a outra
+                    caiu na TASK-091. O que continua sem número é a perna A e o
+                    total de ponta a ponta, que só a primeira operação real fecha
 ```
 
 ---
