@@ -265,7 +265,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-017-codigo-de-reset (PR a abrir). PRs #15–#34 merged na main.
+- Branch atual: docs/cr-018-usabilidade (PR a abrir). PRs #15–#36 merged na main;
+  #37 (TASK-093) aberto.
+- ⚠️ **A SESSÃO JÁ PERSISTE — a premissa do relato estava errada.** Idle de 24 h
+  renovado a cada requisição pelo proxy, absoluto de 7 dias no JWT, e os dois são
+  TEXTO LITERAL da §2.2. Os LOGIN_SUCCESS de produção têm um intervalo de ~32 h
+  (cabe no idle) e outro de ~17 h (**não deveria ter derrubado nada**). Três
+  hipóteses compatíveis: logout das 18:30 numa aba aberta, cookies separados do PWA
+  no iOS, idle. **Nenhuma verificável, porque `/api/auth/logout` não registra nada
+  na trilha** — lacuna do REQ-010 por si só. Decisão sua em 2026-09-08:
+  INSTRUMENTAR (TASK-095) antes de emendar a §2.2, que é Tipo D. Ver ADR-018.
 - Atualizado em: 2026-09-08
 ```
 
