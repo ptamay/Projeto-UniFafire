@@ -267,10 +267,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
 - Branch atual: docs/cr-020-021-constitution (PR a abrir). PRs #15–#40 merged na main.
-- ⚠️ **A §2.2 NÃO foi emendada, e não pode ser ainda.** Você mesmo a condicionou à
-  TASK-095, que não foi implementada — sem o registro do fim de sessão não dá para
-  distinguir logout automático de expiração de troca de aparelho, e emendar seria
-  afrouxar um controle de segurança com base numa hipótese entre três. Ver ADR-018.
+- ✅ **TASK-095 FEITA em 2026-09-08** — a saída entra na trilha com motivo (lista
+  fechada; sem sessão verificável não registra; o registro nunca impede de sair).
+  Verificado no navegador nos dois caminhos, e o automático exercitado de verdade:
+  **o mecanismo das 18:30 FUNCIONA**, então a hipótese 1 do ADR-018 é real.
+- ⚠️ **A §2.2 AINDA não pode ser emendada — falta o DADO, não o instrumento.** A
+  TASK-095 entrega o instrumento; a resposta exige **deixar rodar em produção
+  alguns dias**. Como ler: `LOGOUT` automático perto das quedas → é o horário;
+  `LOGIN_SUCCESS` sem `LOGOUT` anterior → expiração ou outro aparelho (a expiração
+  é impossível de registrar no instante: quem recusa é o `proxy.ts`, no Edge, sem
+  banco). Só com a causa nomeada a emenda sai.
 - 📋 **ADR-021 (runner de migrations) escrito, TASK-101 a 104 no backlog.** Virou
   Tipo D ao descobrir que **a §4.1 descreve um projeto que não existe**: manda
   `db/migrations/NNNN_up_*.sql` e a realidade é `db/migrations-pg/*.up.sql` — nem o
