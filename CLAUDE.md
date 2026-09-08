@@ -196,6 +196,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Parece sempre defeito de autenticação. Verificação no navegador é o ÚLTIMO passo.
   Para semear: TRUNCATE + `DATABASE_URL=... node db/bootstrap-admin.mjs` (o script
   NÃO lê o .env.local). O Docker Desktop costuma estar parado — subir antes.
+- ⚠️ Se o `test:db:up` falhar com **"bind: An attempt was made to access a socket
+  in a way forbidden by its access permissions"**, NÃO é defeito do projeto: é o
+  Windows (WinNAT/Hyper-V) tendo reservado a porta. Confira com
+  `netsh interface ipv4 show excludedportrange protocol=tcp`. Foi o que engoliu a
+  antiga 55432 em 2026-09-08; a porta virou **15432**, abaixo da faixa dinâmica
+  (49152-65535), onde o WinNAT não chega. Contorno imediato para qualquer porta
+  ocupada: subir o container à mão em outra e exportar `DATABASE_URL` —
+  `tests/pg-test-config.ts` honra a variável.
 - ⚠️ **O LEDGER DE MIGRATIONS NÃO DESCREVE O QUE ESTÁ NO BANCO** (medido em
   2026-09-07). Não há runner: as migrations são aplicadas à mão por `psql`, em
   ordem de nome. O ledger tem 6 entradas e `db/migrations-pg/` tem 6 arquivos, e o

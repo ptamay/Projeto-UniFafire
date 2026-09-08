@@ -8,8 +8,19 @@
 #   npm run test:db:up     sobe (idempotente)
 #   npm run test:db:down   derruba e apaga o volume
 #
-# Porta 55432 de propósito: não colide com um Postgres que já esteja instalado
-# na máquina na 5432.
+# Porta 15432 de propósito, por DOIS motivos — o segundo custou uma manhã:
+#
+#   1. Não colide com um Postgres que já esteja instalado na máquina na 5432.
+#   2. Está FORA da faixa dinâmica do Windows (49152-65535, confira com
+#      `netsh interface ipv4 show dynamicport tcp`). O WinNAT/Hyper-V reserva
+#      blocos DENTRO dessa faixa e os remaneja a cada reinício do host ou do
+#      Docker. Em 2026-09-08 a porta antiga, 55432, caiu dentro do bloco
+#      55373-55472 e o `up` passou a falhar com "bind: An attempt was made
+#      to access a socket in a way forbidden by its access permissions".
+#      Escolher outro número acima de 49152 só adiaria o mesmo dia; abaixo
+#      dela o WinNAT não chega.
+#
+# Diagnóstico: `netsh interface ipv4 show excludedportrange protocol=tcp`.
 
 services:
   postgres-test:
@@ -25,7 +36,7 @@ services:
     command: >
       postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
     ports:
-      - "55432:5432"
+      - "15432:5432"
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
