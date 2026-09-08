@@ -213,18 +213,24 @@ psql "$DATABASE_URL" -c "SELECT version, name FROM supabase_migrations.schema_mi
 
 (Pelo painel: Supabase → *Database* → *Migrations*.)
 
-**Por que ele não serve como fonte de verdade.** Conferido em 2026-09-07: o ledger
-tem seis entradas e `db/migrations-pg/` tem seis arquivos — e o número igual
-esconde que os conjuntos **divergem nos dois sentidos**:
+**Por que ele não serve como fonte de verdade.** Os conjuntos **divergem nos dois
+sentidos**:
 
 | | no repositório | no ledger | está no banco? |
 |---|---|---|---|
 | `search_path_history_imutavel_task_065` | **não existe** | sim | sim |
 | `202609061800_sinal_realtime` | sim | **não** | **sim** — o sinal do Realtime funciona em produção |
+| `202609081200_codigo_de_reset` | sim | **não** | **sim** — aplicada à mão em 2026-09-08 |
 
-Ou seja: o ledger **mostra o que não tem arquivo e esconde o que está aplicado**.
-Quem contar as linhas conclui "seis e seis, está tudo certo" e erra duas vezes. E
-não se pode nem tratá-lo como limite inferior nem superior do que está no banco.
+Ou seja: o ledger **mostra o que não tem arquivo e esconde o que está aplicado**, e
+não se pode tratá-lo nem como limite inferior nem como superior do que está no banco.
+
+> **A divergência cresceu no mesmo dia em que foi documentada.** Em 2026-09-07 este
+> texto dizia "seis entradas e seis arquivos", e observava que o número igual escondia
+> duas divergências. Em 2026-09-08 a migration do código de reset foi aplicada pelo
+> painel do Supabase e **não entrou no ledger** — sete arquivos, seis entradas, três
+> divergências. Não é descuido de quem aplicou: aplicar SQL pelo editor não escreve no
+> ledger, e nada avisa. É a previsão do parágrafo abaixo se cumprindo em 24 horas.
 
 Some-se a isso que **os nomes não batem com os arquivos** — o ledger guarda o nome
 que quem aplicou digitou. Comparar por nome não funciona em nenhuma direção.
@@ -281,6 +287,19 @@ descreve o que está no banco.
 | `app_logs` | ledger + repositório | Tabela `app_logs` (TASK-074) |
 | `backup_runs` | ledger + repositório | Tabela `backup_runs` (TASK-078) |
 | `202609061800_sinal_realtime` | **só no repositório** | Trigger de sinal do Realtime (TASK-072). **Está no banco** — validado em produção em 2026-09-06, com `UPDATE ... WHERE false` e o sinal recebido por um cliente real |
+| `202609081200_codigo_de_reset` | **só no repositório** | `users.reset_code_hash` e `users.reset_code_expires_at` + índice parcial (TASK-093, ADR-017). Aplicada à mão em 2026-09-08, **depois** de o código já estar no ar — ver o aviso abaixo |
+
+> ⚠️ **MERGE NÃO APLICA MIGRATION — e o intervalo entre os dois é uma janela quebrada.**
+> Em 2026-09-08 a TASK-093 foi mergeada e a Vercel publicou o código antes de as colunas
+> existirem. O login continuou funcionando (o `SELECT *` devolve coluna ausente como
+> `undefined` e a checagem do código simplesmente não casa), mas **resetar acesso e criar
+> usuário responderam 500** até a migration ser aplicada à mão — `UPDATE` referenciando
+> coluna inexistente.
+>
+> Nada se perdeu e ninguém ficou sem acesso; o que parou foi o balcão conseguir cadastrar
+> gente nova ou resetar quem esqueceu a senha. **Ao mergear um PR que traga migration,
+> aplique-a ANTES ou imediatamente depois**, e confira o schema (§4.1) em vez de supor.
+> Enquanto não houver runner, a ordem é responsabilidade de quem faz o merge.
 
 > **Por que `app_logs` quase passou batido, e o que isso ensina.** Ela ficou
 > pendente desde a Sprint 22 sem ninguém notar, porque a falta dela **não produz
