@@ -42,7 +42,7 @@
 ## 3. Strict Rules — RBAC
 
 1. A fonte única de autorização é `ROLE_PERMISSIONS` em `src/lib/schemas.ts` (ADMIN, GESTOR, PORTEIRO, FUNCIONARIO, ALUNO).
-2. **Toda rota de API valida a sessão E a permissão no servidor.** Checagem só no client = vulnerabilidade, não feature.
+2. **Toda fronteira entre quem pede e o dado valida a sessão E a permissão no servidor** — rota de API e Server Component igualmente. Checagem só no client = vulnerabilidade, não feature. No App Router a **página também é fronteira**: ela consulta o banco diretamente e entrega o resultado ao navegador. Quando verifica só a sessão, **não há 403 possível** — não existe handler no caminho, e a camada onde as checagens vivem é contornada inteira. *(Emenda de 2026-09-08, CR Tipo D, ADR-020: o texto anterior dizia "toda rota de API", e as três falhas do ADR-015 estavam em Server Components, que a letra não alcançava.)*
 3. Logs de auditoria: acesso restrito a `canViewLogs` (apenas ADMIN).
 4. Escalação de papel (`/api/users/role`): apenas quem tem `canManageUsers`; ninguém altera o próprio papel.
 5. **Endpoints destrutivos** (`/api/history/clear`, `/api/settings/clear-database`, restore de backup): exclusivos de ADMIN, exigem confirmação explícita na UI (modal destrutivo) e geram entrada imutável no log de auditoria ANTES de executar. A existência desses endpoints é uma exceção consciente ao threat model e está documentada no `spec.md` (REQ-014).

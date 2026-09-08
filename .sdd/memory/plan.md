@@ -87,6 +87,14 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Emenda de constitution — a §3.2 nomeia a FRONTEIRA (CR Tipo D · ADR-020) ✅
+> Aprovada pelo usuário em 2026-09-08 e **aplicada**. Sem task de código: as três páginas
+> foram corrigidas na Sprint 27 e a guarda existe desde então — o que faltava era a letra.
+> A cláusula dizia "toda **rota de API**", e as três falhas do ADR-015 estavam em Server
+> Components, onde **não há 403 possível** porque não existe handler no caminho. O novo
+> texto fala em fronteira e nomeia os dois casos: lista enumerada envelhece, e a próxima
+> superfície que o framework inventar nasceria fora dela.
+
 ### Aberta por Change Request — Higiene de carga e deploy (CR Tipo C · ADR-019)
 > Sem sprint atribuída. Quita o débito de limpeza registrado desde a TASK-079.
 - **TASK-099 → `jspdf` carrega sob demanda em `/history`.** Hoje o import é ESTÁTICO num componente de cliente, e o chunk que o contém tem **459 KB — o maior do app**, baixado por todo mundo que abre a tela, tenha ou não intenção de exportar. `await import()` no handler tira isso do carregamento inicial.
