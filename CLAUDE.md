@@ -265,7 +265,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/ledger-task-093 (PR a abrir). PRs #15–#38 merged na main.
+- Branch atual: feat/cr-019-higiene (PR a abrir). PRs #15–#39 merged na main.
+- ✅ **HIGIENE (ADR-019, TASK-099/100)** — `jspdf` saiu do carregamento inicial de
+  `/history` (459 KB → fora do manifesto), `server-only` (morta) e `@types/pg`
+  (tipo em `dependencies`) corrigidas, dez arquivos mortos removidos e
+  `.vercelignore` criado (~35% do repositório deixa de subir).
+  ⚠️ **O `.vercelignore` não se verifica localmente** — só afeta o upload para a
+  Vercel. A prova é o build de preview do PR.
+  ⚠️ Registrado e FORA de escopo: três majors pendentes — `typescript` 5→7,
+  `eslint` 9→10, `vitest` 4→5. Mudam regras e diagnósticos; misturá-las com
+  limpeza tornaria impossível dizer o que quebrou o quê.
 - ✅ **TASK-093 NO AR (2026-09-08)** — o reset emite código de uso único. A migration
   `202609081200_codigo_de_reset` foi aplicada à mão pelo usuário, e as duas colunas
   mais o índice parcial estão conferidos em produção.
