@@ -266,7 +266,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-020-021-constitution (PR a abrir). PRs #15–#40 merged na main.
+- Branch atual: feat/task-094-sem-senha-compartilhada (PR a abrir). PRs #15–#42
+  merged na main.
+- ✅ **TASK-094 FEITA em 2026-09-09 — o ADR-017 está fechado.** Não existe mais
+  senha compartilhada em lugar nenhum. O `default_reset_password = "trocar123"` de
+  produção deixa de precisar de correção manual: a migration apaga a linha.
+- ⚠️ **A TASK-094 TRAZ MIGRATION `202609090900`, e merge não aplica schema.** Foi o
+  que quebrou reset e criação de usuário por alguns minutos na TASK-093. Aplicar
+  logo após o merge — e rodar ANTES a consulta de conferência que está no próprio
+  SQL: um ADMIN de `bootstrap-admin.mjs` que nunca logou cairia na condição de
+  invalidação, e a senha dele é aleatória, não a compartilhada. Em produção são
+  zero contas nessa situação (verificado em 08/09).
 - ✅ **TASK-095 FEITA em 2026-09-08** — a saída entra na trilha com motivo (lista
   fechada; sem sessão verificável não registra; o registro nunca impede de sair).
   Verificado no navegador nos dois caminhos, e o automático exercitado de verdade:

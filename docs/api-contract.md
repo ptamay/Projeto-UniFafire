@@ -17,10 +17,11 @@ autorização vivas em produção**, nenhuma das quais tinha sintoma:
 1. `/api/metrics/frequent-users` validava sessão e não papel — qualquer usuário
    autenticado, inclusive ALUNO, obtinha nome, username, papel e frequência de
    retirada dos maiores usuários de qualquer chave.
-2. `GET /api/settings` não validava **nada** no handler e devolvia
-   `defaultResetPassword` a todos — o que, combinado com o fluxo de troca
-   obrigatória do login, permitia **tomar a conta de alguém** na janela entre um
-   reset e o primeiro acesso da vítima.
+2. `GET /api/settings` não validava **nada** no handler e devolvia a senha padrão
+   de reset a todos — o que, combinado com o fluxo de troca obrigatória do login,
+   permitia **tomar a conta de alguém** na janela entre um reset e o primeiro
+   acesso da vítima. *(A TASK-087 fechou o acesso ao valor; a **TASK-094** eliminou
+   o valor — não existe mais senha compartilhada. Ver "O que NÃO existe".)*
 
 As duas foram corrigidas antes deste arquivo ser escrito (ADR-014, TASK-085 e
 TASK-087), para que ele nascesse descrevendo a superfície certa. **O débito se
@@ -107,8 +108,8 @@ alcançam nenhuma rota de operação — apenas as de conta própria acima.
 
 | Rota | Métodos | Papéis | Observação |
 |---|---|---|---|
-| `/api/settings` | `GET` | **sessão** | ⚠️ `autoLogoutTime` vai para **todo papel** — o `Sidebar` precisa. `defaultResetPassword` **só para A · G** desde a TASK-087 |
-| `/api/settings` | `POST` | A · G | Grava as configurações numa transação |
+| `/api/settings` | `GET` | **sessão** | Devolve **um campo só**: `autoLogoutTime`, e vai para **todo papel** — o `Sidebar` precisa. A senha padrão saiu na TASK-094 |
+| `/api/settings` | `POST` | A · G | Grava numa transação. Aceita **só** `autoLogoutTime`; um cliente antigo que mande a senha padrão não a persiste (TASK-094) |
 | `/api/settings/clear-database` | `POST` | **A** | Destrutivo. `app_logs` sobrevive por desenho (§7.1) |
 | `/api/history/clear` | `DELETE` | **A** | Destrutivo. Usa o bypass transacional de manutenção |
 | `/api/logs` | `GET` | A · G | Trilha de auditoria |
@@ -123,6 +124,7 @@ Registrado para que ninguém procure — ou reconstrua achando que faltou:
 
 | Rota | Saiu em | Por quê |
 |---|---|---|
+| **campo `defaultResetPassword`** em `GET`/`POST /api/settings` | TASK-094 | Não há mais senha compartilhada. O reset emite **código de uso único**, devolvido uma vez em `codigoDeAcesso` por `POST /api/users/reset-password` e `POST /api/users`. A TASK-087 havia fechado o ACESSO ao valor e registrado que não fechava a fragilidade: A · G o conheciam, e ele nunca mudava |
 | `POST /api/backups` | TASK-082 | Gerar backup é o job agendado. Handler que responde 503 para sempre sugere capacidade em manutenção |
 | `DELETE /api/backups` | TASK-075 | Não há arquivo local, e a trilha é imutável por trigger |
 | `POST /api/backups/restore` | TASK-082 | Restaurar é procedimento com credencial — `docs/runbook-deploy.md` §6.5 |

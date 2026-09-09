@@ -167,10 +167,15 @@ describe('TASK-070 — as duas operações destrutivas do REQ-014', () => {
 
 describe('TASK-070 — settings grava tudo ou nada', () => {
     it('as configurações entram juntas', async () => {
-        // Eram QUATRO até a TASK-082. `backupTime` e `backupCount` saíram: eram
-        // gravadas e nunca lidas, e mantê-las na API só serviria para reencher a
-        // tabela com configuração que nada consome. A garantia sob teste é a
-        // atomicidade da escrita, e ela não depende da contagem de campos.
+        // Eram QUATRO até a TASK-082, DUAS até a TASK-094, e agora UMA. A garantia
+        // sob teste sempre foi a atomicidade da escrita, e ela não depende da
+        // contagem de campos — mas com um campo só o nome "entram juntas" descreve
+        // o que sobrou de um cenário, e não o que ele afirma.
+        //
+        // Por isso o cenário passou a afirmar as DUAS coisas que ainda são
+        // verificáveis: que o campo vivo é gravado, e que um campo REMOVIDO enviado
+        // por um cliente antigo não ressuscita a linha. A segunda é a que teria
+        // sintoma se alguém "restaurasse" o `gravar` da senha padrão sem pensar.
         const { POST } = await import('@/app/api/settings/route');
         const res = await POST(new Request('http://localhost/api/settings', {
             method: 'POST',
@@ -181,10 +186,15 @@ describe('TASK-070 — settings grava tudo ou nada', () => {
 
         expect(res.status).toBe(200);
         const linhas = await query<{ key: string; value: string }>('SELECT key, value FROM settings ORDER BY key');
-        expect(Object.fromEntries(linhas.map(l => [l.key, l.value]))).toEqual({
-            auto_logout_time: '45',
-            default_reset_password: 'trocar-070',
-        });
+        expect(Object.fromEntries(linhas.map(l => [l.key, l.value])), 'a senha compartilhada voltou a ser gravada')
+            .toEqual({ auto_logout_time: '45' });
+
+        // A transação continua sendo a proteção real, e ela some sem barulho: um
+        // `execute` solto no lugar do `withTransaction` passa em tudo aqui.
+        const fonte = fs.readFileSync(
+            path.resolve(process.cwd(), 'src/app/api/settings/route.ts'), 'utf-8');
+        expect(fonte, 'a escrita das configurações deixou de ser transacional')
+            .toMatch(/withTransaction/);
     });
 });
 

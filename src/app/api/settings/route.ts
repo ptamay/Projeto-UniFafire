@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, withTransaction } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { verifySession } from '@/lib/session';
-import { AUTO_LOGOUT_PADRAO, SENHA_PADRAO_RESET, lerAutoLogoutTime } from '@/lib/settings-policy';
+import { AUTO_LOGOUT_PADRAO, lerAutoLogoutTime } from '@/lib/settings-policy';
 
 // TASK-087 (ADR-014, achado 2) — este GET não tinha checagem NENHUMA e devolvia
 // `defaultResetPassword` a qualquer usuário autenticado, inclusive ALUNO.
@@ -28,10 +28,6 @@ export async function GET() {
         const session = await verifySession(sessionCookie.value);
         if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-        // Mesmo conjunto do POST e das rotas de reset: quem pode DEFINIR a senha
-        // padrão é quem pode vê-la.
-        const podeVerSenhaPadrao = session.role === 'ADMIN' || session.role === 'GESTOR';
-
         const settingsArr = await query<{ key: string; value: string }>('SELECT key, value FROM settings');
 
         const settingsMap: Record<string, string> = {};
@@ -39,11 +35,12 @@ export async function GET() {
 
         // `lerAutoLogoutTime` recusa valor herdado invalido — o POST valida o
         // que entra, e nao o que ja estava la (TASK-083).
+        // TASK-094 (ADR-017): `defaultResetPassword` saiu daqui. A TASK-087 o
+        // escondeu dos papéis baixos e registrou que fechava o ACESSO e não a
+        // fragilidade — ADMIN e GESTOR continuavam conhecendo uma senha que nunca
+        // mudava. Agora não há o que conhecer: o reset emite código de uso único.
         return NextResponse.json({
             autoLogoutTime: lerAutoLogoutTime(settingsMap['auto_logout_time']),
-            ...(podeVerSenhaPadrao
-                ? { defaultResetPassword: settingsMap['default_reset_password'] || SENHA_PADRAO_RESET }
-                : {}),
         });
     } catch {
         // A degradação também não pode vazar: sem saber o papel, devolve só o que
@@ -77,7 +74,10 @@ export async function POST(req: Request) {
             // Suporta 'time' (antigo) ou 'autoLogoutTime'
             const logoutTime = body.autoLogoutTime || body.time;
             if (logoutTime) await gravar('auto_logout_time', String(logoutTime));
-            if (body.defaultResetPassword) await gravar('default_reset_password', String(body.defaultResetPassword));
+            // `defaultResetPassword` NÃO é gravado (TASK-094). Um cliente antigo
+            // que ainda o mande recebe sucesso pelo que É salvo — o horário —, e o
+            // campo simplesmente não existe mais para ser persistido.
+
         });
 
         return NextResponse.json({ success: true });

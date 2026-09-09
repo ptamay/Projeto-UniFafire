@@ -21,9 +21,14 @@
 /** Horário em que o sistema força o logout de todos. */
 export const AUTO_LOGOUT_PADRAO = '18:30';
 
-/** Senha aplicada quando um usuário é criado sem senha ou tem o acesso resetado.
- *  UM valor, consumido pela rota que o exibe e pelas duas que o aplicam. */
-export const SENHA_PADRAO_RESET = 'unifafire123';
+// A senha padrão de reset MORREU aqui na TASK-094 (ADR-017). A TASK-083 a trouxe
+// para este módulo porque ela tinha CINCO fontes, duas já divergindo; a 093 fez o
+// reset emitir código de uso único, e ela deixou de ser aplicada; a 094 tirou o que
+// sobrou — a linha em `settings`, o campo da tela e esta constante.
+//
+// O comentário fica porque o cabeçalho acima cita o caso como exemplo de dispersão,
+// e apagar a citação sem explicação deixaria o texto falando de um defeito sem
+// nome. O que substituiu: `src/lib/reset-code.ts`.
 
 const HORA_VALIDA = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

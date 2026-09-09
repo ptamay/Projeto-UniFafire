@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
-import { AUTO_LOGOUT_PADRAO, SENHA_PADRAO_RESET } from '@/lib/settings-policy';
+import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -33,7 +33,6 @@ interface Props {
 export default function SettingsClient({ userRole, username }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [autoLogoutTime, setAutoLogoutTime] = useState(AUTO_LOGOUT_PADRAO);
-    const [defaultResetPassword, setDefaultResetPassword] = useState(SENHA_PADRAO_RESET);
     const [runs, setRuns] = useState<BackupRun[]>([]);
     const [loadingBkp, setLoadingBkp] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
@@ -63,7 +62,6 @@ export default function SettingsClient({ userRole, username }: Props) {
     useEffect(() => {
         fetch('/api/settings').then(r => r.json()).then(d => {
             if (d.autoLogoutTime) setAutoLogoutTime(d.autoLogoutTime);
-            if (d.defaultResetPassword) setDefaultResetPassword(d.defaultResetPassword);
         });
         // loadingBkp já inicia true — busca direta evita setState síncrono no effect
         fetchBackups();
@@ -75,10 +73,7 @@ export default function SettingsClient({ userRole, username }: Props) {
             const res = await fetch('/api/settings', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ 
-                    autoLogoutTime, 
-                    defaultResetPassword 
-                }) 
+                body: JSON.stringify({ autoLogoutTime }) 
             });
             if (res.ok) toast.success('Configurações salvas!');
             else { const d = await res.json(); toast.error(d.error || 'Erro ao salvar.'); }
@@ -145,11 +140,14 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 <input className="input" type="time" value={autoLogoutTime} onChange={e => setAutoLogoutTime(e.target.value)} />
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Horário em que o sistema força o logout de todos os usuários.</span>
                             </div>
-                            <div className="input-group">
-                                <label className="input-label">Senha Padrão de Reset</label>
-                                <input className="input" type="text" value={defaultResetPassword} onChange={e => setDefaultResetPassword(e.target.value)} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Senha utilizada ao resetar o acesso de um usuário.</span>
-                            </div>
+                            {/* TASK-094 (ADR-017) — o campo "Senha Padrao de Reset" saiu, e
+                                NADA ocupou o lugar. Cheguei a por aqui um card explicando
+                                que nao existe senha padrao; saiu por decisao do usuario, e
+                                a razao e a mesma do ADR-013: a tela reflete o sistema que
+                                EXISTE, nao narra o que foi removido. Um aviso sobre a
+                                ausencia mantem o assunto vivo numa tela onde ele acabou.
+                                Onde o codigo de uso unico precisa ser explicado e em
+                                Usuarios, no momento do reset — e la o modal ja explica. */}
                             <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings} style={{ alignSelf: 'flex-start' }}>
                                 {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Sistema'}
                             </button>

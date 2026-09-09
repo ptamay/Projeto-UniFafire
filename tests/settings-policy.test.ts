@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { execute, withTransaction } from '@/lib/pg';
 import {
-    AUTO_LOGOUT_PADRAO, SENHA_PADRAO_RESET,
+    AUTO_LOGOUT_PADRAO,
     lerAutoLogoutTime, cruzouOHorario,
 } from '@/lib/settings-policy';
 
@@ -159,26 +159,16 @@ describe('TASK-083 — a senha padrão de reset tem UMA fonte', () => {
         expect(achados, `nome antigo do projeto ainda presente:\n${achados.join('\n')}`).toEqual([]);
     });
 
-    it('BDD 4: o ADMIN lê na tela a senha que o sistema realmente aplica', async () => {
-        // Sem registro em `settings`, os dois caminhos precisam concordar. Era
-        // exatamente aqui que divergiam.
-        vi.resetModules();
-        // A TASK-087 passou a exigir sessao neste GET, e o papel decide se o
-        // campo da senha padrao vem na resposta. O cenario continua afirmando a
-        // MESMA coisa — que a tela e o sistema concordam —, agora sob o papel que
-        // de fato ve o campo.
-        vi.doMock('next/headers', () => ({
-            cookies: () => Promise.resolve({ get: () => ({ value: 'token' }) }),
-        }));
-        vi.doMock('@/lib/session', () => ({
-            verifySession: () => Promise.resolve({ id: 1, username: 'test_admin', role: 'ADMIN' }),
-        }));
-        const { GET } = await import('@/app/api/settings/route');
-        const corpo = await (await GET()).json();
-
-        expect(corpo.defaultResetPassword, 'a tela mostra uma senha e o sistema aplica outra')
-            .toBe(SENHA_PADRAO_RESET);
-    });
+    // O cenário "o ADMIN lê na tela a senha que o sistema realmente aplica"
+    // MORREU na TASK-094 (ADR-017), e não por ter ficado chato: **o objeto dele
+    // deixou de existir**. Não há mais senha compartilhada para a tela e o sistema
+    // concordarem sobre — o reset emite código de uso único.
+    //
+    // O que ele protegia — dois caminhos lendo valores diferentes — está protegido
+    // de forma mais forte pelo cenário abaixo, que proíbe o conceito inteiro, e por
+    // `tests/senha-compartilhada-sai.test.ts`, que exige que NENHUM papel receba o
+    // campo. Apagar sem esta nota faria parecer que a divergência da TASK-083
+    // deixou de importar; ela deixou de ser POSSÍVEL.
 
     it('BDD 4: NENHUMA rota aplica mais uma senha padrão compartilhada', () => {
         // Esta guarda INVERTEU de sentido na TASK-093 (ADR-017), e a inversão é o
