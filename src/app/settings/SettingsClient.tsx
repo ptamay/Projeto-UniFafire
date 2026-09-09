@@ -140,18 +140,14 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 <input className="input" type="time" value={autoLogoutTime} onChange={e => setAutoLogoutTime(e.target.value)} />
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Horário em que o sistema força o logout de todos os usuários.</span>
                             </div>
-                            {/* TASK-094 (ADR-017) — o campo "Senha Padrao de Reset" saiu.
-                                Nao ha mais senha compartilhada: o reset emite um codigo
-                                de uso unico, mostrado UMA vez a quem reseta. No lugar,
-                                a tela explica onde o acesso e recuperado, para nao
-                                sobrar so o vazio de um controle removido. */}
-                            <div style={{ padding: '0.75rem', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                <strong style={{ color: 'var(--text-primary)' }}>Recuperação de acesso</strong><br />
-                                Não existe senha padrão. Ao redefinir o acesso de alguém em{' '}
-                                <strong>Usuários</strong>, o sistema gera um <strong>código de uso único</strong>,
-                                exibido uma vez para você entregar em mãos. Com ele, a pessoa cadastra
-                                a própria senha no primeiro acesso.
-                            </div>
+                            {/* TASK-094 (ADR-017) — o campo "Senha Padrao de Reset" saiu, e
+                                NADA ocupou o lugar. Cheguei a por aqui um card explicando
+                                que nao existe senha padrao; saiu por decisao do usuario, e
+                                a razao e a mesma do ADR-013: a tela reflete o sistema que
+                                EXISTE, nao narra o que foi removido. Um aviso sobre a
+                                ausencia mantem o assunto vivo numa tela onde ele acabou.
+                                Onde o codigo de uso unico precisa ser explicado e em
+                                Usuarios, no momento do reset — e la o modal ja explica. */}
                             <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings} style={{ alignSelf: 'flex-start' }}>
                                 {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Sistema'}
                             </button>
