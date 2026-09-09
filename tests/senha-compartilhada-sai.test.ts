@@ -100,6 +100,22 @@ describe('TASK-094 — a senha compartilhada some da superfície', () => {
             .not.toMatch(/defaultResetPassword/);
     });
 
+    it('BDD 2: o GET continua verificando a sessão por conta própria', () => {
+        // HERDADO da TASK-087, cujo arquivo de teste esta task substitui.
+        //
+        // Aquele cenário verificava duas coisas: que o `GET` chama `verifySession`,
+        // e que olha o PAPEL para decidir o que devolver. A segunda morreu com o
+        // campo — a resposta passou a ter um item só, legítimo para todo papel.
+        //
+        // A primeira **não morreu**, e é defesa em profundidade (§3.2): a rota não
+        // pode depender do proxy para saber que há alguém do outro lado. Trazida
+        // para cá em vez de perdida junto com o arquivo antigo.
+        const fonte = semComentarios('src/app/api/settings/route.ts');
+        const get = fonte.slice(fonte.indexOf('export async function GET'),
+                                fonte.indexOf('export async function POST'));
+        expect(get, 'o GET voltou a se apoiar só no proxy').toMatch(/verifySession/);
+    });
+
     it('BDD 2: o contrato de API não promete mais o campo', () => {
         const contrato = fs.readFileSync(path.resolve(RAIZ, 'docs/api-contract.md'), 'utf-8');
         const secaoViva = contrato.slice(0, contrato.indexOf('## O que NÃO existe'));
