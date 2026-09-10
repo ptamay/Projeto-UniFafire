@@ -97,13 +97,23 @@ describe('TASK-097 — o que a tela NÃO pode voltar a ser', () => {
         }
     });
 
-    it('BDD 3: nada é oferecido antes de existir', () => {
-        // O ADR-018 pediu um botão de "rever tutorial" nesta task. O tutorial é a
-        // TASK-098 e não existe — botão que abre coisa nenhuma é a mentira em tela
-        // que o ADR-013 veio combater. Este cenário CAI quando a 098 chegar, e é
-        // assim que ele avisa que a hora chegou.
+    it('BDD 3: nada é oferecido sem existir', () => {
+        // ⚠️ ESTE CENÁRIO JÁ CUMPRIU UM PAPEL E MUDOU DE FORMA, e o registro fica.
+        //
+        // Na TASK-097 ele PROIBIA a palavra "tutorial" nesta tela: o ADR-018 pedira
+        // o botão de "rever tutorial" ali, mas a TASK-098 não existia, e botão que
+        // abre coisa nenhuma é a mentira em tela que o ADR-013 combate. Ele reprovou
+        // na TASK-098 — que é exatamente como avisou que a hora tinha chegado.
+        //
+        // Agora afirma o que continua valendo: a tela pode oferecer o tutorial
+        // PORQUE ele existe. Se o componente for removido e o botão ficar, reprova
+        // de novo.
         const fonte = semComentarios(TELA);
-        expect(fonte, 'a tela promete um tutorial que ainda não existe')
-            .not.toMatch(/tutorial/i);
+        if (/tutorial/i.test(fonte)) {
+            expect(
+                fs.existsSync(path.resolve(RAIZ, 'src/app/components/Tutorial.tsx')),
+                'a tela oferece um tutorial que não existe mais',
+            ).toBe(true);
+        }
     });
 });

@@ -7,6 +7,7 @@ import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-re
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
 import { useEstadoDoSinal, INTERVALO_POLLING_LARGO, type EstadoSinal } from '@/lib/realtime-sinal';
+import Tutorial from '@/app/components/Tutorial';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -100,6 +101,7 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [loadingBkp, setLoadingBkp] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
     const [isClearingDb, setIsClearingDb] = useState(false);
+    const [verTutorial, setVerTutorial] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
     const [bkpReliability, setBkpReliability] = useState<BackupReliability | null>(null);
     // Falha de LEITURA da metrica nao pode virar "nenhuma execucao": as duas
@@ -178,6 +180,8 @@ export default function SettingsClient({ userRole, username }: Props) {
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
             
 
+            <Tutorial papel={userRole} aberto={verTutorial} aoFechar={() => setVerTutorial(false)} />
+
             <main className="main-content animate-fade">
                 <div className="page-header">
                     <div>
@@ -211,9 +215,19 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 ausencia mantem o assunto vivo numa tela onde ele acabou.
                                 Onde o codigo de uso unico precisa ser explicado e em
                                 Usuarios, no momento do reset — e la o modal ja explica. */}
-                            <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings} style={{ alignSelf: 'flex-start' }}>
-                                {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Sistema'}
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings}>
+                                    {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Sistema'}
+                                </button>
+                                {/* TASK-098 — este botao so pode existir AGORA. A TASK-097
+                                    tinha um cenario PROIBINDO a palavra "tutorial" nesta
+                                    tela, porque oferecer o que nao existe e a mentira em
+                                    tela que o ADR-013 combate. Aquele cenario caiu para
+                                    este subir. */}
+                                <button className="btn" onClick={() => setVerTutorial(true)}>
+                                    Rever tutorial
+                                </button>
+                            </div>
                         </div>
                     </div>
 

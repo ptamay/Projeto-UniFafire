@@ -61,10 +61,15 @@ describe('TASK-098 — o "já viu" pertence à pessoa, não ao navegador', () =>
         }));
         const { POST } = await import('@/app/api/account/onboarding/route');
 
-        const res = await POST(new Request('http://localhost/api/account/onboarding', {
-            method: 'POST', body: JSON.stringify({ userId: 1 }),
-        }));
+        const res = await POST();
         expect(res.status).toBe(200);
+
+        // A ASSINATURA é a garantia: a rota não recebe requisição, então não há por
+        // onde um `userId` de fora entrar. Mais forte que mandar um corpo e conferir
+        // que foi ignorado — aquilo prova o comportamento de hoje, isto impede o de
+        // amanhã sem mudar a assinatura, que aparece em revisão.
+        const fonte = ler('src/app/api/account/onboarding/route.ts');
+        expect(fonte, 'a rota voltou a ler o corpo da requisição').not.toMatch(/request\.json|req\.json/);
 
         const alvo = await queryOne<{ onboarding_visto_em: Date | null }>(
             'SELECT onboarding_visto_em FROM users WHERE id = 3');
@@ -80,8 +85,7 @@ describe('TASK-098 — o "já viu" pertence à pessoa, não ao navegador', () =>
         vi.doMock('@/lib/session', () => ({ verifySession: () => Promise.resolve(null) }));
         const { POST } = await import('@/app/api/account/onboarding/route');
 
-        const res = await POST(new Request('http://localhost/api/account/onboarding', { method: 'POST' }));
-        expect(res.status).toBe(401);
+        expect((await POST()).status).toBe(401);
     });
 });
 
