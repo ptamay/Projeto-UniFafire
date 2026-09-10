@@ -87,7 +87,12 @@
 
 ## 4. Backlog — Próximas Sprints
 
-### Aberta por Change Request — Teste de migração de verdade (CR Tipo D · ADR-022)
+### Teste de migração de verdade (CR Tipo D · ADR-022) ✅ FECHADO em 2026-09-10
+> 106 (#53) e 107 (#54) merged; **108 — a §4.2 EMENDADA** (branch `feat/task-108-emenda-4-2`),
+> com guarda que confere que o que a cláusula afirma é o que a suíte e o runner fazem. Os 10
+> checksums de produção foram corrigidos pelo usuário (CRLF → LF) antes do merge do #54.
+> 590 testes / 64 arquivos.
+
 > Aprovado pelo usuário em 2026-09-10. Sem sprint atribuída. **A ordem não é preferência:**
 > a 108 (a emenda) é a única que não pode vir antes — emendar antes do teste existir
 > repetiria o defeito do texto atual, que afirma "UP + DOWN testados" sem que nenhum DOWN
