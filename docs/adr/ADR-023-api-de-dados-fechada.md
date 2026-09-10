@@ -1,6 +1,8 @@
 # ADR-023 — A API de dados do Supabase nasce fechada, e os workflows declaram o que podem
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-10; implementação nas TASK-109 e 110
+- **Status:** Implementado e verificado em 2026-09-10 — TASK-109 (migration aplicada pelo roteiro
+  do runner no editor; `pos-deploy` e health 200; tempo real "Ativa") e TASK-110 (keepalive e
+  backup rodados de verdade com o token mínimo)
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **C** (muda privilégio de banco e workflows já no ar; não toca a constitution)
 - **Relacionado:** ADR-012 · ADR-021 · ADR-022 · TASK-065 · TASK-106 · runbook §4

@@ -87,7 +87,39 @@
 
 ## 4. Backlog — Próximas Sprints
 
-### Aberta por Change Request — API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023)
+### Aberta por Change Request — Tela de Configurações e tutorial (CR Tipo C · ADR-025)
+> Aprovado pelo usuário em 2026-09-10. Independente do ADR-024; pode vir primeiro.
+- **TASK-111 →** botão "?" no cabeçalho (todos os papéis) abre o tutorial do papel; "Rever
+  tutorial" sai de Configurações; tempo real vira ponto na barra lateral (assinatura
+  COMPARTILHADA, sem segundo WebSocket) e o card sai; card de backup só com estado (último
+  backup + confiabilidade), sem lista rolável. Guardas da TASK-097 e 098 mudam de forma —
+  previsto. Verificar no navegador, inclusive celular.
+
+### Aberta por Change Request — Backup operado pela tela (CR Tipo D · ADR-024)
+> Aprovado pelo usuário em 2026-09-10. **Desfaz as decisões 1 e 2 do ADR-013** (os controles
+> eram inertes; agora serão reais). Ordem obrigatória: 112 → 113 → 114 → 115 → 116.
+- **TASK-112 → agenda configurável.** `settings`: hora (00–23, padrão 03), vezes/dia (1–4,
+  padrão 1), retenção (3–30 dias, padrão 7), validadas na escrita E na leitura. Workflow de hora
+  em hora; passo inicial lê a agenda e decide. Migration normaliza as linhas órfãs
+  `backup_time`/`backup_retention_count`. A tela diz que o horário é "por volta de" (o GitHub
+  atrasa agendas).
+- **TASK-113 → retenção de verdade.** Nome de arquivo com hora; poda reescrevendo o histórico do
+  repositório privado; nunca poda sem o dump novo verificado; nunca fica sem nenhum.
+- **TASK-114 → backup manual.** Rota ADMIN que dispara o workflow pela API do GitHub com token
+  fino (só `Actions: write` neste repositório) — **criado pelo usuário**, secret na Vercel. Estado
+  lido do `backup_runs`; entrada na trilha.
+- **TASK-115 → restaurar escolhendo da lista (sem upload).** Workflow de restauração: backup de
+  segurança antes; `TRUNCATE` + carga só das tabelas de NEGÓCIO numa transação; trilha
+  (`action_logs`, `audit_logs`, `app_logs`, `backup_runs`, `migracoes_aplicadas`) preservada e
+  registrando a restauração; recusa schema incompatível; modal destrutivo que diz a data e que
+  SENHAS voltam ao que eram. Ensaiada contra cópia antes de produção (ADR-022).
+- **TASK-116 → emenda da §3.5 e da §4.4** — só depois de 112–115 no ar.
+
+### API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023) ✅ FECHADO em 2026-09-10
+> #57 e #58 merged. Verificado de verdade: `pos-deploy` e health 200 com a migration no ar; card de
+> tempo real "Ativa" visto pelo usuário; keepalive e backup rodados à mão no commit do merge — token
+> com `Metadata: read` (keepalive) e `Contents: read` + `Metadata: read` (backup); backup verificado
+> (171 linhas / 12 tabelas / 25 índices / 8 triggers / 12 sob RLS).
 > Aprovado pelo usuário em 2026-09-10: fechar `anon` e `authenticated` (não `service_role`), com
 > o default privilege revogado para que o que vier nasça fechado. Sem sprint atribuída.
 - ✅ **TASK-109 FEITA em 2026-09-10** (branch `feat/task-109-api-fechada`). Produção lida ANTES
