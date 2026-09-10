@@ -103,6 +103,17 @@
 ### Aberta por Change Request — Backup operado pela tela (CR Tipo D · ADR-024)
 > Aprovado pelo usuário em 2026-09-10. **Desfaz as decisões 1 e 2 do ADR-013** (os controles
 > eram inertes; agora serão reais). Ordem obrigatória: 112 → 113 → 114 → 115 → 116.
+- ✅ **TASK-112 FEITA em 2026-09-10** (branch `feat/task-112-agenda-backup`). Política única em
+  `src/lib/agenda-backup.mjs` (tela, rota, workflow); portão "horário vencido sem backup depois
+  dele?" em `db/agenda-backup.mjs`; workflow de hora em hora com job `agenda` → `backup`; rota
+  ADMIN `/api/backups/agenda`; tela com hora e vezes ("por volta de"). **Retenção fica para a
+  TASK-113** (campo sem poda = controle inerte). Migration `202609101700_settings_orfas_de_backup`
+  ensaiada sobre o backup de produção (DELETE 2) — e o `conferir` na cópia confirmou os checksums
+  corrigidos. 638 testes / 69 arquivos.
+  > 🔎 Achados no dump de produção: `backup_time = "02:00"` (reaproveitar a chave mudaria o horário
+  > em silêncio — por isso chaves novas) e **`auto_logout_time = "30"` ainda lá** — o usuário corrige
+  > em Configurações clicando "Salvar Sistema" (a tela já mostra 18:30; fica na trilha).
+  > 🔴 Aplicar a `202609101700` em produção ANTES do merge (roteiro gerado e ensaiado).
 - **TASK-112 → agenda configurável.** `settings`: hora (00–23, padrão 03), vezes/dia (1–4,
   padrão 1), retenção (3–30 dias, padrão 7), validadas na escrita E na leitura. Workflow de hora
   em hora; passo inicial lê a agenda e decide. Migration normaliza as linhas órfãs

@@ -132,7 +132,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   com `pwd_hash` = últimos 10 chars do hash do banco; antes de gravar o cookie por JS, fazer
   `POST /api/auth/logout` — cookie httpOnly antigo não é sobrescrito por `document.cookie`. Com o
   painel do navegador OCULTO o layout volta zerado e a captura pode vir de quadro velho.
-- Próxima Ação: merge do PR da TASK-111 → TASK-112 (agenda do backup). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
+- ✅ #60 merged (TASK-111 no ar). ✅ **TASK-112 FEITA** (branch `feat/task-112-agenda-backup`, PR a
+  abrir): agenda do backup configurável e OBEDECIDA (workflow de hora em hora + portão que recupera
+  atraso do GitHub); migration das órfãs ensaiada sobre produção. 🔴 Aplicar a
+  `202609101700_settings_orfas_de_backup` pelo roteiro no editor ANTES do merge.
+  Achado: `auto_logout_time = "30"` ainda em produção — usuário corrige salvando pela tela.
+- Próxima Ação: usuário aplica o roteiro → merge → TASK-113 (retenção de verdade). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
   (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
@@ -363,7 +368,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-111-tela (PR a abrir). PRs #15–#59 merged; #43 do
+- Branch atual: feat/task-112-agenda-backup (PR a abrir). PRs #15–#60 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
