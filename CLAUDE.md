@@ -266,7 +266,20 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-096-navegacao (PR a abrir). PRs #15–#44 merged na main.
+- Branch atual: feat/task-097-configuracoes (PR a abrir). PRs #15–#45 merged; #46
+  aberto (registro da migration).
+- ✅ **TASK-097 FEITA em 2026-09-09** — card de atualização em tempo real (lendo de
+  assinatura COMPARTILHADA, sem abrir segundo WebSocket), zona de perigo separada
+  fora da grade, e o card de configurações reequilibrado. O botão de "rever
+  tutorial" NÃO entrou: a TASK-098 não existe, e há cenário proibindo a palavra na
+  tela — ele cai quando o tutorial chegar.
+- 🔴 **VAZAMENTO DE WEBSOCKET A CADA NAVEGAÇÃO — achado ao verificar a TASK-097.**
+  `useSinalDeMudanca` cria o cliente Supabase DENTRO do efeito, e cada página
+  renderiza o próprio `Sidebar`: toda navegação abre um socket novo. A limpeza
+  remove o canal e **não fecha o socket**. Medido: **3 navegações → 4 sockets, todos
+  ainda OPEN**. O plano gratuito tem limite de conexões simultâneas — o sintoma
+  seria o tempo real parar para todos, sem erro visível. **Anterior à TASK-096**
+  (vem da TASK-072). Registrado no `plan.md`; é a coisa mais urgente da fila.
 - ✅ **TASK-096 FEITA em 2026-09-09 — e a medição EMENDOU o ADR-018.** Nove
   `loading.tsx` (não havia nenhum) e as quatro superfícies de navegação em `<Link>`.
   **Mas o prefetch ficou DESLIGADO**, contra a prescrição original:
