@@ -22,7 +22,23 @@ export async function prepararBasePlataforma(client: Client): Promise<void> {
             IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
                 CREATE ROLE authenticated NOLOGIN;
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+                CREATE ROLE service_role NOLOGIN;
+            END IF;
         END $$;
+
+        -- TASK-106 (ADR-022) — no Supabase, toda tabela, sequência e função nova em
+        -- \`public\` NASCE concedida a anon, authenticated e service_role. Lido do
+        -- \`pg_default_acl\` de produção em 2026-09-10 (linha postgres | public).
+        -- Sem isto a suíte validava um banco em que \`anon\` não tem grant nenhum:
+        -- "anon não lê" passava trivialmente, as REVOKEs das migrations não eram
+        -- exercitadas, e o DOWN da imutabilidade — escrito para produção — parecia
+        -- errado. Antes do \`rls_auto_enable\`, porque em produção ela também nasce
+        -- sob esse padrão. Por base, e não por cluster: \`pg_default_acl\` é do banco,
+        -- e morre junto com o schema quando o \`public\` é recriado.
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role;
 
         CREATE OR REPLACE FUNCTION public.rls_auto_enable() RETURNS event_trigger
         LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'pg_catalog'
