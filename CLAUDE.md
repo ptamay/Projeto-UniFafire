@@ -285,12 +285,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ✅ **TASK-094 FEITA em 2026-09-09 — o ADR-017 está fechado.** Não existe mais
   senha compartilhada em lugar nenhum. O `default_reset_password = "trocar123"` de
   produção deixa de precisar de correção manual: a migration apaga a linha.
-- ⚠️ **A TASK-094 TRAZ MIGRATION `202609090900`, e merge não aplica schema.** Foi o
-  que quebrou reset e criação de usuário por alguns minutos na TASK-093. Aplicar
-  logo após o merge — e rodar ANTES a consulta de conferência que está no próprio
-  SQL: um ADMIN de `bootstrap-admin.mjs` que nunca logou cairia na condição de
-  invalidação, e a senha dele é aleatória, não a compartilhada. Em produção são
-  zero contas nessa situação (verificado em 08/09).
+- ✅ **MIGRATION `202609090900` APLICADA em 2026-09-09.** Conferência prévia rodada:
+  **0 contas** seriam invalidadas, e depois **0 contas sem senha** — ninguém ficou
+  sem acesso. O `trocar123` deixou de existir no banco. `settings` em produção agora
+  tem `auto_logout_time`, `backup_retention_count` e `backup_time`.
+- ⚠️ **DUAS LINHAS ÓRFÃS ficaram em `settings`** (achado ao aplicar): `backup_time` e
+  `backup_retention_count` são gravadas e **ninguém as lê desde a TASK-082**, que
+  tirou os dois controles da tela. Mesma família do `default_reset_password`. Não é
+  defeito ativo; sai por migration, não por SQL à mão. Registrado no `plan.md`.
+- ⚠️ **A DIVERGÊNCIA DO LEDGER CRESCEU PELA SEGUNDA VEZ EM DOIS DIAS.** Hoje são
+  **8 arquivos, 6 entradas, 4 divergências** — `202609081200` e `202609090900` estão
+  aplicadas e fora dele. Aplicar SQL fora da CLI do Supabase não escreve no ledger e
+  **nada avisa**. É o argumento inteiro do ADR-021, se cumprindo duas vezes seguidas.
 - ✅ **TASK-095 FEITA em 2026-09-08** — a saída entra na trilha com motivo (lista
   fechada; sem sessão verificável não registra; o registro nunca impede de sair).
   Verificado no navegador nos dois caminhos, e o automático exercitado de verdade:
