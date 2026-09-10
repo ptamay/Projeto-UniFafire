@@ -1,7 +1,8 @@
 # ADR-022 — A §4.2 exige ida e volta, e cópia de produção quando a migration toca dados
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-10; a emenda sai na TASK-108,
-  depois das TASK-106 e 107
+- **Status:** Aceito — aprovado pelo usuário em 2026-09-10. TASK-106 feita em 2026-09-10
+  (a base de teste reproduz o `pg_default_acl` lido em produção; a ida e volta achou o
+  `PUBLIC` que o DOWN da imutabilidade esquecia). A emenda sai na TASK-108, depois da 107
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (altera `constitution.md` §4.2)
 - **Relacionado:** constitution §4.1, §4.2 · ADR-021 · runbook §4, §6.5 · regra `20-migrations`

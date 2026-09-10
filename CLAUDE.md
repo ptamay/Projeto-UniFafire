@@ -74,7 +74,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   para TODAS (TASK-106, com o `global-setup` reproduzindo os privilégios de produção —
   valor conferido no `pg_default_acl` de produção, consulta que o USUÁRIO roda); cópia de
   produção só quando a migration toca dados (TASK-107); emenda por último (TASK-108).
-- Próxima Ação: merge do PR do CR; depois TASK-106 → 107 → 108, nessa ordem.
+- ✅ **TASK-106 FEITA em 2026-09-10** (PR #52 do CR merged). `tests/base-plataforma-pg.ts`
+  (extraído do global-setup) reproduz o `pg_default_acl` LIDO em produção pelo usuário, e
+  `tests/ida-e-volta-migracoes.test.ts` roda UP → DOWN → retrato igual → UP para as 10.
+  Achou defeito REAL: o DOWN da imutabilidade esquecia o `PUBLIC` no EXECUTE do
+  `rls_auto_enable` — corrigido. Nenhum teste quebrou com os grants novos. 572 / 62.
+  Medido de lado: anon sem privilégio em tabela, mas com SELECT/UPDATE/USAGE nas 11
+  sequências e EXECUTE nas 4 funções de trigger (sobra, não falha) → endurecimento.
+- Próxima Ação: merge do PR da TASK-106; depois TASK-107 → 108.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -304,7 +311,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-4-2 (PR a abrir). PRs #15–#51 merged; #43 do
+- Branch atual: feat/task-106-ida-e-volta (PR a abrir). PRs #15–#52 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
