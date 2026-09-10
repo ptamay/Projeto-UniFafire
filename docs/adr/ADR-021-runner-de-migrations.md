@@ -1,6 +1,7 @@
 # ADR-021 — Um runner de migrations, e uma §4.1 que descreve o que existe
 
-- **Status:** Proposto — aguarda implementação pelo ciclo TDD
+- **Status:** Aceito — TASK-101, 102 e 103 implementadas em 2026-09-10; TASK-104 (a
+  emenda) espera as três NO AR, o que inclui a adoção em produção
 - **Data:** 2026-09-08
 - **Tipo de Change Request:** **D** (altera `constitution.md` §4.1)
 - **Relacionado:** constitution §4.1 · ADR-012 · runbook §4.1/§4.2 · TASK-079, TASK-093
@@ -142,3 +143,21 @@ repositório diz e o que o banco tem.
 
 > A ordem 101 → 102 → 103 → 104 não é preferência. A 102 é a que pode quebrar
 > produção, e ela depende da 101 existir; a 104 é a única que não pode vir primeiro.
+
+## Notas de implementação (2026-09-10)
+
+Duas decisões acima foram cumpridas por um caminho diferente do texto, e o registro
+existe para que ninguém leia o texto e conclua que faltou algo.
+
+- **"arquivos × registro × schema" (TASK-101).** O `conferir` compara arquivos ×
+  registro. A perna do schema já é feita pelo job de backup (`compararEsquema`,
+  contra uma restauração real) e, na adoção, pela sonda da TASK-102 — que confere no
+  catálogo cada objeto declarado, **inclusive RLS**. Repeti-la no `conferir`
+  acoplaria o runner ao `backup-run.mjs`.
+- **"O deploy pergunta antes de servir" (decisão 4).** Pergunta logo **depois**. Antes
+  exigiria banco no `next build`, que é verde sem `DATABASE_URL` por decisão da
+  TASK-079 e roda também para preview. O que se implementou: `/api/health` responde
+  503 `schema_pendente` quando o registro não tem o que `src/lib/migracoes-esperadas.ts`
+  lista, e `.github/workflows/pos-deploy.yml` pergunta a ela a cada deploy de produção
+  (`deployment_status` da Vercel), minutos depois do merge. "Ao subir", em serverless,
+  não é um evento que alguém veja; o deploy é.

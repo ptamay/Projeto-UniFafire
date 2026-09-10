@@ -40,7 +40,30 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   · Backup: `ptamay/unifafire-backups` (privado), primeiro dump verificado em
     2026-09-06 — 67 linhas / 11 tabelas / 23 índices / 6 triggers / 11 sob RLS
   · ADMIN: usuário `admin`, senha já trocada pelo usuário na tela
-- Última Ação: **Sprint 27 — TRÊS páginas entregavam dados de terceiros a qualquer
+- Última Ação: **RUNNER DE MIGRATIONS — TASK-101, 102 e 103 feitas em 2026-09-10**
+  (ADR-021, branch `feat/task-101-runner`). `db/runner-migracoes.mjs` aplica em ordem,
+  cada migration + registro (`migracoes_aplicadas`) numa transação, para na primeira
+  falha; `conferir` acusa pendente, alterada e órfã. A suíte passou a ser MONTADA
+  PELO RUNNER. `adotar <ate>` marca sem executar e **prova antes**: confere no
+  catálogo tabela, índice, função, trigger (na tabela), coluna, restrição e RLS —
+  faltou um, recusa tudo. `/api/health` responde **503 `schema_pendente`** quando o
+  registro não tem o que `src/lib/migracoes-esperadas.ts` lista, e
+  `pos-deploy.yml` pergunta a ele a cada deploy de produção.
+  Verificado: 564 testes / 60 arquivos, 6 gates, tsc 0, eslint 0, `next build`
+  verde com `.env.local` FORA do caminho (o `env -u` não basta: o Next lê o
+  arquivo sozinho). Adoção contra o **backup de produção de 2026-09-10
+  restaurado**: 9 adotadas, dump antes/depois idêntico; sabotados trigger, RLS e
+  coluna, recusou nomeando os três. Health no dev server: 200 → 503 → 200.
+- 🔴 **ORDEM OBRIGATÓRIA PARA O MERGE:** ADOTAR EM PRODUÇÃO **ANTES** — sem registro,
+  o health da 103 responde 503 e o `pos-deploy` fica vermelho. Comando no runbook
+  §4.0 (`adotar 202609101000_tutorial_visto`, depois `conferir`). Exige a
+  `DATABASE_URL` de produção: **quem roda é o usuário**, eu não manejo credencial.
+- ⚠️ `pos-deploy.yml` só está verificado quando rodar no primeiro deploy de produção
+  (lição do go-live). A TASK-104 (emenda da §4.1) espera 101–103 NO AR.
+- ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
+  `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
+  a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
+- Ação anterior: **Sprint 27 — TRÊS páginas entregavam dados de terceiros a qualquer
   sessão, e a correção fechou a fronteira que a camada de API não alcança.** Terceiro
   CR de autorização do dia, achado pela varredura lateral aplicada às TELAS.
   As páginas são Server Components: consultam o banco direto, e quando verificam só
@@ -266,7 +289,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-098-tutorial (PR a abrir). PRs #15–#48 merged; #43 do
+- Branch atual: feat/task-101-runner (PR a abrir). PRs #15–#49 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
@@ -372,7 +395,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   no iOS, idle. **Nenhuma verificável, porque `/api/auth/logout` não registra nada
   na trilha** — lacuna do REQ-010 por si só. Decisão sua em 2026-09-08:
   INSTRUMENTAR (TASK-095) antes de emendar a §2.2, que é Tipo D. Ver ADR-018.
-- Atualizado em: 2026-09-08
+- Atualizado em: 2026-09-10
 ```
 
 ---

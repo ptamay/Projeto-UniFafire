@@ -88,8 +88,18 @@
 ## 4. Backlog — Próximas Sprints
 
 ### Aberta por Change Request — Runner de migrations (CR Tipo D · ADR-021)
-> Sem sprint atribuída. **A ordem não é preferência**: a 102 é a que pode quebrar produção
-> e depende da 101; a 104 é a única que não pode vir primeiro.
+> **101, 102 e 103 FEITAS em 2026-09-10** (branch `feat/task-101-runner`). **A ordem não é
+> preferência**: a 102 é a que pode quebrar produção e depende da 101; a 104 é a única que
+> não pode vir primeiro — e ela espera 101–103 NO AR, o que exige a ADOÇÃO EM PRODUÇÃO
+> (runbook §4.0) **antes** do merge: sem registro, o health da 103 responde 503.
+>
+> Resultado medido: suíte 564 testes / 60 arquivos, montada PELO RUNNER. Adoção verificada
+> contra o backup de produção de 2026-09-10 restaurado: 9 adotadas, dump antes/depois
+> idêntico linha a linha; com trigger, RLS e coluna sabotados, recusou nomeando os três.
+> A sonda confere tabela, índice, função, trigger (na tabela), coluna, restrição e **RLS**
+> — a RLS entrou depois de ler os `ALTER TABLE` reais: é estado, não objeto, e a primeira
+> versão não a via.
+> ⚠️ `pos-deploy.yml` só está verificado depois de rodar no primeiro deploy de produção.
 - **TASK-101 → o runner.** Aplicação idempotente e ordenada por prefixo, registro em tabela PRÓPRIA (não o ledger do Supabase) escrito na MESMA transação da migration, e um comando de conferência: arquivos × registro × schema. Falha ruidosa e para na primeira que não aplicar. Migration UP/DOWN para a tabela de controle.
   > Por que registro próprio e não o do Supabase: aplicar SQL pelo editor não escreve no ledger e nada avisa. Disputar com ele é perder; o que se pode ter é um registro que só existe se a migration foi aplicada por quem sabe escrevê-lo.
 - **TASK-102 → a ADOÇÃO, e é o passo perigoso.** As sete migrations já aplicadas têm de ser marcadas como tal SEM reexecutar. O registro nasce vazio e o banco não: sem isso o runner tenta reaplicar, e a primeira a rodar duas vezes é um `ALTER TABLE ADD COLUMN` que falha — ou pior, um `CREATE TRIGGER` que duplica.
