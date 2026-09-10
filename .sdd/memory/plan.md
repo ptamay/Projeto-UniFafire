@@ -660,6 +660,8 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 
   **É anterior à TASK-096:** `router.push` também remontava. Vem da TASK-072. Duas correções possíveis, e a segunda é a certa: (a) `supabase.realtime.disconnect()` no cleanup; (b) **criar o cliente UMA vez em escopo de módulo**, que elimina a rotatividade em vez de limpá-la. Precisa de vermelho que conte sockets, senão volta.
 
+- **Duas linhas ÓRFÃS em `settings` no banco de produção (achado ao aplicar a migration da TASK-094, 2026-09-09).** `backup_time` e `backup_retention_count` continuam gravadas e **ninguém as lê desde a TASK-082**, que tirou os dois controles da tela por serem inertes. São da mesma família do `default_reset_password` que a TASK-094 acabou de apagar: resíduo da carga sintética da TASK-067 que sobreviveu à limpeza do go-live. Não é defeito ativo — nada as consome, e a tela já não as promete. Mas enquanto estiverem lá, `settings` descreve um sistema com quatro configurações quando ele tem uma. Sai por migration, não por SQL à mão: apagar linha de produção fora de migration é exatamente o que o runbook §4.2 passou a desaconselhar.
+
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
 
 ## 7. Encerramento do Roadmap Inicial (Fase 11 — 2026-07-10)
