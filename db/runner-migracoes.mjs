@@ -210,6 +210,15 @@ export async function retratoDoSchema(client) {
         UNION ALL
         SELECT 'politica ' || tablename || ' ' || policyname || ' ' || cmd || ' ' || coalesce(qual, '')
           FROM pg_policies WHERE schemaname = 'public'
+        UNION ALL
+        -- TASK-109: o default privilege decide com que grants o objeto de AMANHÃ nasce.
+        -- Sem ele no retrato, um DOWN que esquecesse de restaurá-lo passaria na ida e
+        -- volta. O global (namespace 0) entra porque é por ele que se tira o EXECUTE
+        -- que toda função nova dá a PUBLIC.
+        SELECT 'default ' || pg_get_userbyid(defaclrole) || ' '
+               || CASE WHEN defaclnamespace = 0 THEN '(global)' ELSE defaclnamespace::regnamespace::text END
+               || ' ' || defaclobjtype::text || ' acl=' || ${aclOrdenada('defaclacl')}
+          FROM pg_default_acl WHERE defaclnamespace IN (0, 'public'::regnamespace)
     `);
     return r.rows.map(l => l.linha).sort();
 }
