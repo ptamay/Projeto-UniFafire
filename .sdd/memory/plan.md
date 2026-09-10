@@ -111,6 +111,17 @@
   > diverge em 81 linhas SÓ por ambiente (grants a anon/authenticated que o Supabase dá por
   > padrão). Aceite: as 10 passam. ⚠️ Pode quebrar teste que passava porque `anon` não tinha
   > grant nenhum — se quebrar, ele passava pelo motivo errado.
+- ✅ **TASK-107 FEITA em 2026-09-10** (branch `feat/task-107-ensaio-de-dados`). `tocaDados` (critério
+  objetivo; nas reais só a `202609090900`), `ensaiar <migration> <dump>` contra a CÓPIA (recusa
+  URL do Supabase antes de conectar), `<nome>.ensaio.md` com o sha256 do UP, guarda e runbook
+  §4.0.2. **Primeiro ensaio real, retroativo:** `sem_senha_compartilhada` sobre o backup de
+  09/09 — `DELETE 1`, `UPDATE 0`, ida e volta ok.
+  > 🐛 **Achado no caminho — defeito da TASK-101:** o checksum era dos bytes do DISCO, e com
+  > `autocrlf=true` este Windows tem CRLF onde o git guarda LF. Os 10 checksums de produção
+  > saíram daqui; `conferir` em Linux/Mac/Actions acusaria as 10 como alteradas. Corrigido
+  > (hash normaliza para LF). ⚠️ **Produção precisa de uma correção única dos 10 checksums**
+  > — SQL gerado e ensaiado (só troca onde o valor atual é o antigo; aborta se não forem 10).
+  > O USUÁRIO roda no editor, logo depois do merge.
 - **TASK-107 → o ensaio sobre cópia de produção fica verificável**, para migration que toca
   dados (`UPDATE`/`DELETE`/`INSERT`, `NOT NULL`, `UNIQUE`, `CHECK`, FK). Critério objetivo +
   registro que uma guarda confira + procedimento no runbook §4. ⚠️ O registro não pode ir no
