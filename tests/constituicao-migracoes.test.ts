@@ -29,12 +29,23 @@ import path from 'path';
 const RAIZ = process.cwd();
 const constituicao = fs.readFileSync(path.resolve(RAIZ, '.sdd/memory/constitution.md'), 'utf-8');
 
-/** O item 1 da seção 4, até o item 2. */
-function clausula41() {
+/** O item 1 da seção 4, até o item 2 — com a nota da emenda. */
+function clausulaInteira() {
     const secao = constituicao.slice(constituicao.indexOf('## 4.'));
     const inicio = secao.search(/^1\.\s/m);
     const fim = secao.search(/^2\.\s/m);
     return secao.slice(inicio, fim);
+}
+
+/**
+ * A REGRA, sem a nota da emenda `*(Emenda ...)*`. A nota cita o padrão antigo de
+ * propósito — é o registro do que mudou —, e a primeira versão destas guardas a
+ * lia como se fosse a regra e reprovava a emenda correta. Mesma lição das guardas
+ * de código que tiram comentário antes de varrer: o que se confere é o que a lei
+ * MANDA, não o que ela conta.
+ */
+function clausula41() {
+    return clausulaInteira().replace(/\*\(Emenda[\s\S]*?\)\*/g, '');
 }
 
 describe('TASK-104 — a §4.1 descreve o que existe', () => {
@@ -94,7 +105,7 @@ describe('TASK-104 — a §4.1 descreve o que existe', () => {
     });
 
     it('BDD 3: a emenda se identifica, como a da §3.2', () => {
-        expect(clausula41(), 'emenda sem data, tipo e ADR — um leitor não sabe que a letra mudou')
+        expect(clausulaInteira(), 'emenda sem data, tipo e ADR — um leitor não sabe que a letra mudou')
             .toMatch(/Emenda de 2026-09-10, CR Tipo D, ADR-021/);
     });
 });
