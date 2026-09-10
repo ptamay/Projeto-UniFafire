@@ -266,8 +266,22 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-094-sem-senha-compartilhada (PR a abrir). PRs #15–#42
-  merged na main.
+- Branch atual: feat/task-096-navegacao (PR a abrir). PRs #15–#44 merged na main.
+- ✅ **TASK-096 FEITA em 2026-09-09 — e a medição EMENDOU o ADR-018.** Nove
+  `loading.tsx` (não havia nenhum) e as quatro superfícies de navegação em `<Link>`.
+  **Mas o prefetch ficou DESLIGADO**, contra a prescrição original:
+
+      requisições no load       13 → 0
+      por router.refresh()       7 → 1
+      esqueleto aparece em   29–43 ms → 3–14 ms
+
+  O prefetch não comprava nada — o esqueleto vem do BUNDLE DA ROTA. E
+  `router.refresh()` invalida o cache e faz todos os links prefetcharem de novo; ele
+  é chamado pelo `refreshData` **a cada sinal do Realtime, em cada cliente aberto**.
+  Multiplicador ligado à ATIVIDADE, que é a forma do problema que criou o REQ-032.
+- ⚠️ **PREFETCH NÃO SE MEDE EM DEV.** O Next o desliga em desenvolvimento, então o
+  número lá é zero e parece que não há custo. Foi preciso `next start` sobre um
+  build de produção — entrada `prod-local` no `.claude/launch.json`.
 - ✅ **TASK-094 FEITA em 2026-09-09 — o ADR-017 está fechado.** Não existe mais
   senha compartilhada em lugar nenhum. O `default_reset_password = "trocar123"` de
   produção deixa de precisar de correção manual: a migration apaga a linha.
