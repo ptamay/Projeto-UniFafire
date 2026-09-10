@@ -92,6 +92,17 @@
 > a 108 (a emenda) é a única que não pode vir antes — emendar antes do teste existir
 > repetiria o defeito do texto atual, que afirma "UP + DOWN testados" sem que nenhum DOWN
 > jamais tenha rodado.
+- ✅ **TASK-106 FEITA em 2026-09-10** (branch `feat/task-106-ida-e-volta`). A base de teste
+  reproduz o `pg_default_acl` LIDO em produção (`postgres | public` → anon, authenticated,
+  service_role), e a ida e volta roda para as 10. **Achou um defeito real:** o DOWN da
+  imutabilidade devolvia o EXECUTE do `rls_auto_enable` sem o `PUBLIC` que o UP revoga —
+  corrigido. Nenhum teste existente quebrou com os grants novos. 572 testes / 62 arquivos.
+  > 📋 **Endurecimento, agora com números** (medido na base de teste com o padrão de
+  > produção, NÃO no banco de produção): depois de todas as migrations, `anon` não tem
+  > privilégio em tabela nenhuma e as 11 têm RLS — mas tem `SELECT, UPDATE, USAGE` nas **11
+  > sequências** e `EXECUTE` nas **4 funções de trigger**. Sobra de privilégio, não falha
+  > explorável (a chave pública não alcança sequência nem chama função de trigger). Fecha com
+  > `ALTER DEFAULT PRIVILEGES … REVOKE` + REVOKE dos existentes, por migration.
 - **TASK-106 → ida e volta na suíte, para todas as migrations.** UP → DOWN → comparar o
   schema com o de antes do UP → UP de novo, em base descartável. **Pré-requisito:** o
   `global-setup` reproduz os default privileges do Supabase, com o valor conferido no

@@ -19,7 +19,10 @@ DROP FUNCTION history_imutavel();
 -- Privilégios de volta ao padrão do template do Supabase, que concede às roles
 -- da API de dados e depende de RLS para a restrição efetiva.
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rls_auto_enable() TO anon, authenticated;
+-- PUBLIC incluído em 2026-09-10 (TASK-106): o UP revoga de PUBLIC, anon e
+-- authenticated, e este DOWN devolvia só aos dois últimos. A primeira ida e volta
+-- de verdade (ADR-022) acusou — antes dela, nenhum DOWN tinha rodado uma vez.
+GRANT EXECUTE ON FUNCTION public.rls_auto_enable() TO PUBLIC, anon, authenticated;
 
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ALTER TABLE keys DISABLE ROW LEVEL SECURITY;
