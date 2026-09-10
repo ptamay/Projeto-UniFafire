@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
+import { useEstadoDoSinal, INTERVALO_POLLING_LARGO, type EstadoSinal } from '@/lib/realtime-sinal';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -23,6 +24,68 @@ function formatBytes(b: number) {
     if (b < 1024) return `${b} B`;
     if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
     return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+/**
+ * TASK-097 (ADR-018) — o estado da atualizacao em tempo real.
+ *
+ * Responde a pergunta que o porteiro faz quando o balcao parece desatualizado:
+ * "por que a tela demorou a mudar?". O sistema ja sabia — `EstadoSinal` existe
+ * desde a TASK-073 — e nao contava a ninguem.
+ *
+ * ⚠️ Le de `useEstadoDoSinal`, que NAO cria assinatura: quem assina e o `Sidebar`,
+ * ja montado nesta tela. Assinar aqui abriria um segundo WebSocket na mesma aba
+ * para exibir o estado do primeiro.
+ *
+ * O texto e sobre CONSEQUENCIA, nao sobre mecanismo. "Canal Realtime SUBSCRIBED"
+ * nao diz nada a quem opera o balcao; "as mudancas aparecem na hora" diz.
+ */
+function EstadoDoTempoReal() {
+    const estado = useEstadoDoSinal();
+
+    const descricao: Record<EstadoSinal, { titulo: string; texto: string; cor: string }> = {
+        assinado: {
+            titulo: 'Ativa',
+            texto: 'As mudanças feitas em outro dispositivo aparecem aqui em segundos, sem recarregar a página.',
+            cor: 'var(--green-400)',
+        },
+        conectando: {
+            titulo: 'Conectando…',
+            texto: 'Estabelecendo a conexão. Enquanto isso, as telas se atualizam sozinhas a cada '
+                + `${INTERVALO_POLLING_LARGO / 1000} segundos.`,
+            cor: 'var(--text-muted)',
+        },
+        falhou: {
+            titulo: 'Em modo de espera',
+            texto: 'A conexão instantânea não está disponível — costuma ser rede ou firewall. '
+                + `Nada se perde: as telas se atualizam sozinhas a cada ${INTERVALO_POLLING_LARGO / 1000} segundos, `
+                + 'só com um pouco mais de atraso.',
+            cor: 'var(--orange-600)',
+        },
+        'sem-configuracao': {
+            titulo: 'Não configurada',
+            texto: 'A atualização instantânea não está configurada neste ambiente. '
+                + `As telas se atualizam sozinhas a cada ${INTERVALO_POLLING_LARGO / 1000} segundos.`,
+            cor: 'var(--text-muted)',
+        },
+    };
+
+    const { titulo, texto, cor } = descricao[estado];
+
+    return (
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+            <span
+                aria-hidden="true"
+                style={{ width: 10, height: 10, borderRadius: '50%', background: cor, marginTop: 5, flexShrink: 0 }}
+            />
+            <div>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{titulo}</div>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                    {texto}
+                </p>
+            </div>
+        </div>
+    );
 }
 
 interface Props {
@@ -156,36 +219,16 @@ export default function SettingsClient({ userRole, username }: Props) {
 
                     {/* Limpeza de dados — ONLY ADMIN. O bloco de importar .db saiu na
                         TASK-082: `.db` e SQLite, formato fora do runtime desde a Sprint 21. */}
-                    {userRole === 'ADMIN' && (
+                    {/* TASK-097 — a resposta para "por que a tela demorou a mudar".
+                        O sistema JA sabia (EstadoSinal) e nao contava a ninguem. */}
                     <div className="card">
                         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Gestão de Banco de Dados
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                            Atualização em Tempo Real
                         </h2>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {/* Clear Part */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Dados</label>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                    Exclui chaves, funcionários, históricos e logs. Mantém usuários e configurações.
-                                </p>
-                                <button 
-                                    className="btn btn-danger" 
-                                    onClick={() => setShowClearModal(true)} 
-                                    disabled={isClearingDb}
-                                    style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
-                                >
-                                    {isClearingDb ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
-                                        <>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                                            Limpar Banco de Dados
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                        <EstadoDoTempoReal />
                     </div>
-                    )}
+
 
                     {/* Manual Backup - ONLY ADMIN */}
                     {userRole === 'ADMIN' && (
@@ -264,7 +307,52 @@ export default function SettingsClient({ userRole, username }: Props) {
                     )}
                 </div>
 
-                <ConfirmModal 
+                
+                {/* ── ZONA DE PERIGO (TASK-097) ──
+                    Fora da grade, no fim da pagina, com moldura propria.
+                    Antes, "Limpar Banco de Dados" era um cartao como os outros: um
+                    botao vermelho com o MESMO PESO VISUAL de um campo de horario, ao
+                    lado de preferencias. Acao irreversivel nao divide espaco com
+                    preferencia — quem chega aqui tem de saber que mudou de assunto. */}
+                {userRole === 'ADMIN' && (
+                <section
+                    aria-labelledby="zona-perigo"
+                    style={{
+                        marginTop: '2.5rem', padding: '1.25rem',
+                        border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)',
+                        background: 'var(--danger-bg, transparent)',
+                    }}
+                >
+                    <h2 id="zona-perigo" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--danger-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Zona de Perigo
+                    </h2>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                        <div style={{ maxWidth: 520 }}>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Banco de Dados</div>
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                                Exclui chaves, funcionários, históricos e logs. Mantém usuários e configurações.{' '}
+                                <strong>Não há desfazer</strong> — a recuperação depende do backup diário.
+                            </p>
+                        </div>
+                        <button
+                            className="btn btn-danger"
+                            onClick={() => setShowClearModal(true)}
+                            disabled={isClearingDb}
+                            style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexShrink: 0 }}
+                        >
+                            {isClearingDb ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    Limpar Banco de Dados
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </section>
+                )}
+
+<ConfirmModal 
                     isOpen={showClearModal}
                     title="Limpar Banco de Dados?"
                     message="Esta ação irá excluir permanentemente todas as chaves, funcionários, históricos e logs de atividades. Esta ação não pode ser desfeita. Deseja continuar?"

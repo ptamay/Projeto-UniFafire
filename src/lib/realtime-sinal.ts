@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 
 // TASK-072 (Sprint 25 · Etapa 5 do ADR-012) — a assinatura do sinal de mudança.
@@ -149,10 +149,46 @@ export function deveFazerPollingLargo(estado: EstadoSinal): boolean {
  * cru ficaria congelada no dia em que o Realtime caísse, e o defeito só apareceria
  * naquele dia. Há teste reprovando quem faça isso.
  */
+// ── Estado compartilhado do sinal (TASK-097) ────────────────────────────────
+//
+// A tela de Configurações precisa EXIBIR se a atualização em tempo real está
+// funcionando. Assinar o canal lá abriria um SEGUNDO WebSocket na mesma aba — o
+// `Sidebar` já mantém um —, ou seja, uma conexão a mais para mostrar o estado de
+// uma conexão. Em vez disso, quem já assina PUBLICA o estado aqui, e quem quiser
+// exibir apenas lê.
+//
+// Store minúsculo em vez de Context: o Provider teria de embrulhar o layout
+// inteiro para servir uma linha de texto numa tela, e `useSyncExternalStore` é o
+// que o React oferece exatamente para estado externo — o projeto já o usa em
+// `use-client-clock`.
+
+let estadoCompartilhado: EstadoSinal = 'conectando';
+const ouvintes = new Set<() => void>();
+
+function publicarEstado(estado: EstadoSinal) {
+    if (estado === estadoCompartilhado) return;
+    estadoCompartilhado = estado;
+    ouvintes.forEach(f => f());
+}
+
+/** Lê o estado da assinatura que JÁ existe. Não cria assinatura nenhuma. */
+export function useEstadoDoSinal(): EstadoSinal {
+    return useSyncExternalStore(
+        (f) => { ouvintes.add(f); return () => ouvintes.delete(f); },
+        () => estadoCompartilhado,
+        // No servidor não há assinatura, e afirmar 'assinado' faria a tela nascer
+        // mentindo por um instante. `conectando` é o que de fato se sabe ali.
+        () => 'conectando' as EstadoSinal,
+    );
+}
+
 export function useAtualizacaoDeChaves(aoAtualizar: () => void) {
     const [estado, setEstado] = useState<EstadoSinal>('conectando');
 
-    useSinalDeMudanca(aoAtualizar, setEstado);
+    useSinalDeMudanca(aoAtualizar, (novo) => {
+        setEstado(novo);
+        publicarEstado(novo);
+    });
 
     const aoAtualizarRef = useRef(aoAtualizar);
     useEffect(() => {

@@ -648,6 +648,18 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 - **A região da função da Vercel nunca foi escolhida (medido em 2026-09-07 · REQ-032).** `X-Vercel-Id: gru1::iad1::…` — entra em São Paulo, executa em Washington, banco em `sa-east-1`, São Paulo. **249 ms por ida ao banco**, idêntico na mediana e no mínimo. **O plano gratuito PERMITE escolher**, verificado na documentação da Vercel em 2026-09-07: o limite do Hobby é o *número* de regiões (uma), não a escolha, e `gru1` é exatamente `sa-east-1` — nenhuma região é restrita a plano pago. Correção: `vercel.json` com `{"regions": ["gru1"]}` ou o painel (Settings → Functions → Function Regions). Muda a topologia de deploy do ADR-012 → **CR Tipo C**. Ressalva: `gru1` fica na ponta cara do preço regional, mas isso é cobrança acima da franquia (1 TB / 10 M edge requests) e o Hobby não cobra excedente — irrelevante para ~10 usuários. A confirmação final é o painel da conta `unifafiregc@gmail.com`, que o CLI logado como `ptamay` não enxerga (runbook §0).
 - **O backup diário está rodando de verdade (verificado em 2026-09-08).** Três execuções verdes consecutivas — 06, 07 e 08 de setembro — depois das três falhas do dia do go-live. O `keepalive` também. Isto **fecha a ressalva** do débito do backup, acima: ele só protegeria de fato na primeira execução verde, e agora há três. A lição que motivou o registro continua valendo: job de CI só está verificado depois de rodar de verdade.
 
+- 🔴 **VAZAMENTO DE WEBSOCKET a cada navegação (medido em 2026-09-09, durante a TASK-097).** `useSinalDeMudanca` chama `createClient(...)` **dentro do efeito**, então cada montagem cria um cliente Supabase novo com o **próprio WebSocket**. E cada página renderiza o próprio `Sidebar`, então **toda navegação remonta a assinatura**. A limpeza chama `supabase.removeChannel(canal)` — que tira o canal e **NÃO fecha o socket**.
+
+  Medido no navegador, com `window.WebSocket` instrumentado:
+
+  | navegações | sockets criados | ainda ABERTOS |
+  |---|---|---|
+  | 3 | 4 | **4** |
+
+  Nenhum fechou. Numa jornada de balcão com dezenas de navegações, uma aba sozinha acumula dezenas de conexões — e o plano gratuito do Supabase Realtime tem **limite de conexões simultâneas**. O sintoma seria o tempo real parar de funcionar para todo mundo, sem erro visível, exatamente como o REQ-032 previa que não deveria acontecer.
+
+  **É anterior à TASK-096:** `router.push` também remontava. Vem da TASK-072. Duas correções possíveis, e a segunda é a certa: (a) `supabase.realtime.disconnect()` no cleanup; (b) **criar o cliente UMA vez em escopo de módulo**, que elimina a rotatividade em vez de limpá-la. Precisa de vermelho que conte sockets, senão volta.
+
 - **Duas linhas ÓRFÃS em `settings` no banco de produção (achado ao aplicar a migration da TASK-094, 2026-09-09).** `backup_time` e `backup_retention_count` continuam gravadas e **ninguém as lê desde a TASK-082**, que tirou os dois controles da tela por serem inertes. São da mesma família do `default_reset_password` que a TASK-094 acabou de apagar: resíduo da carga sintética da TASK-067 que sobreviveu à limpeza do go-live. Não é defeito ativo — nada as consome, e a tela já não as promete. Mas enquanto estiverem lá, `settings` descreve um sistema com quatro configurações quando ele tem uma. Sai por migration, não por SQL à mão: apagar linha de produção fora de migration é exatamente o que o runbook §4.2 passou a desaconselhar.
 
 - *(novas ideias entram aqui via Change Request, nunca direto no código)*
