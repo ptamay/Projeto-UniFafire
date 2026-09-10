@@ -1630,6 +1630,13 @@ textarea:focus-visible,
   /* ── TASK-023: base ── */
   html, body { overflow-x: hidden; }
 
+  /* TASK-117 (REQ-016): .main-content é item flex do .page-wrapper, e item flex não
+     encolhe abaixo do min-content dos filhos (min-width: auto). A barra de filtros
+     de ALUNO/FUNCIONARIO (4 chips nowrap, 430 px) alargava o main para 462 px e o
+     overflow-x cortava título, cards e busca. Com min-width: 0 o main cabe na tela e
+     a barra rola sozinha, como o overflow-x: auto dela já pretendia. */
+  .main-content { min-width: 0; }
+
   /* Alvos de toque ≥ 44px (spec §6) */
   .btn { min-height: var(--touch-target); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }

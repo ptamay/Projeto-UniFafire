@@ -44,8 +44,7 @@ const CSS = fs.readFileSync(path.resolve(RAIZ, 'src/app/globals.css'), 'utf-8')
 function blocosMobile(css: string): string[] {
     const blocos: string[] = [];
     const abre = /@media\s*\(max-width:\s*768px\)\s*\{/g;
-    let m: RegExpExecArray | null;
-    while ((m = abre.exec(css))) {
+    while (abre.exec(css)) {
         let profundidade = 1;
         let i = abre.lastIndex;
         while (profundidade > 0 && i < css.length) {
