@@ -141,17 +141,15 @@ export async function setup(): Promise<void> {
             $$;
         `);
 
-        const ups = fs.readdirSync(MIGRATIONS_PG).filter(f => f.endsWith('.up.sql')).sort();
+        // TASK-101: a suíte monta o banco PELO RUNNER, e não por um laço próprio.
+        // É o teste de integração que o runner mais precisa — as migrations REAIS,
+        // na ordem real, a cada execução — e custa zero: o laço que estava aqui já
+        // fazia a mesma coisa sem registro. Se o runner quebrar, a suíte inteira
+        // quebra, alto e na primeira linha.
+        const ups = fs.readdirSync(MIGRATIONS_PG).filter(f => f.endsWith('.up.sql'));
         if (ups.length === 0) throw new Error(`nenhuma migration encontrada em ${MIGRATIONS_PG}`);
-
-        for (const arquivo of ups) {
-            const sql = fs.readFileSync(path.join(MIGRATIONS_PG, arquivo), 'utf-8');
-            try {
-                await client.query(sql);
-            } catch (e) {
-                throw new Error(`falha aplicando ${arquivo}: ${(e as Error).message}`);
-            }
-        }
+        const { aplicar } = await import('../db/runner-migracoes.mjs');
+        await aplicar(client, MIGRATIONS_PG);
 
         // As migrations revogam de `anon`/`authenticated` (TASK-065). Esses papéis
         // são do Supabase e não existem no container; a migration precisa criá-los

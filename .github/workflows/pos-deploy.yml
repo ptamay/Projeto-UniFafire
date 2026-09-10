@@ -1,0 +1,76 @@
+# TASK-103 (CR Tipo D · ADR-021) — depois de cada deploy de produção, pergunta ao
+# sistema se ele serve. Se não servir, este job falha e o GitHub avisa quem publicou.
+#
+# ## O incidente que motivou
+#
+# Em 2026-09-08 a TASK-093 foi mergeada e a Vercel publicou o código antes de as
+# colunas existirem no banco. Resetar acesso e criar usuário responderam 500 por
+# horas, e ninguém foi avisado — descobriu-se usando. Merge publica CÓDIGO, não
+# schema, e o runner (TASK-101) só é rodado por quem se lembra de rodá-lo.
+#
+# ## Por que um workflow novo, e não o keepalive
+#
+# O `keepalive.yml` já bate em `/api/health` e já falha quando ela não responde
+# `ok` — e desde a TASK-103 ela responde 503 quando falta migration. Mas ele roda
+# UMA VEZ POR DIA. A janela da TASK-093 foi de horas; um aviso que chega no dia
+# seguinte chega depois de o balcão ter descoberto sozinho.
+#
+# A Vercel registra cada deploy no GitHub (`vercel[bot]`, ambiente `Production`).
+# O evento `deployment_status` dispara quando ele termina — minutos depois do merge.
+#
+# ## O que ele NÃO faz
+#
+# Não aplica migration. Não tem credencial de banco para isso, e não deve ter:
+# aplicar schema é ato deliberado de quem publica (ADR-021, runbook §4).
+#
+# ## ⚠️ Verificado só depois de rodar de verdade
+#
+# Lição do go-live: o job de backup passou em 25 testes e falhou nas três primeiras
+# execuções reais. Os testes deste arquivo conferem a FORMA; a prova é o primeiro
+# deploy de produção depois do merge aparecer na aba Actions.
+
+name: Pós-deploy (o schema chegou junto com o código?)
+
+on:
+  deployment_status:
+
+# O job só faz um curl. O token padrão do Actions pode escrever no repositório, e
+# não há por que entregá-lo a quem não precisa.
+permissions: {}
+
+jobs:
+  saude:
+    # Só produção, e só deploy que terminou bem. Preview usa outro banco (ou
+    # nenhum), e um deploy que falhou não está servindo nada para conferir.
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Perguntar a /api/health
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HEALTH_URL:-}" ]; then
+            echo "::error::A variável HEALTH_URL não está configurada. Veja docs/runbook-deploy.md."
+            exit 1
+          fi
+
+          # --fail-with-body: sem falhar, um 503 com corpo JSON é "sucesso" para o
+          # curl, e o job fica verde exatamente no caso que existe para acusar. E
+          # `--fail` puro DESCARTA o corpo — justamente o `schema_pendente` que diz
+          # por que falhou. As tentativas cobrem a partida a frio da instância.
+          if ! curl --fail-with-body --silent --show-error --location \
+                    --retry 3 --retry-delay 15 --retry-all-errors \
+                    --max-time 30 \
+                    "$HEALTH_URL" -o resposta.json; then
+            cat resposta.json 2>/dev/null || true
+            echo "::error::O deploy de produção não está servindo. Se o corpo diz schema_pendente, falta aplicar migration: runbook §4 (node db/runner-migracoes.mjs conferir)."
+            exit 1
+          fi
+
+          cat resposta.json
+          grep -q '"status":"ok"' resposta.json \
+            || { echo "::error::A saúde respondeu 200 mas o corpo não é o esperado."; exit 1; }
