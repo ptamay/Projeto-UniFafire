@@ -117,14 +117,17 @@ describe('TASK-098 — ensina a pessoa certa', () => {
     });
 });
 
-describe('TASK-098 — a tela de Configurações passa a poder oferecer', () => {
+describe('TASK-098 — o tutorial pode ser revisto', () => {
     it('BDD 4: o botão de rever tutorial existe agora que o tutorial existe', () => {
         // ⚠️ Este cenário é o PAR do que a TASK-097 escreveu ao contrário. Lá,
         // `configuracoes-reequilibradas.test.ts` PROIBIA a palavra "tutorial" na
         // tela, porque oferecer o que não existe é a mentira em tela que o ADR-013
         // combate. Aquele cenário tinha de cair para este subir — e é assim que ele
         // avisou que a hora tinha chegado.
-        expect(semComentarios('src/app/settings/SettingsClient.tsx'), 'a tela não oferece rever o tutorial')
-            .toMatch(/tutorial/i);
+        //
+        // TASK-111 (ADR-025): o botão saiu de Configurações — que só ADMIN e GESTOR
+        // abrem — para o shell, como "?" alcançável por todos os papéis.
+        expect(semComentarios('src/app/components/Sidebar.tsx'), 'o shell não oferece rever o tutorial')
+            .toMatch(/<Tutorial\b/);
     });
 });

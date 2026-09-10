@@ -89,6 +89,11 @@
 
 ### Aberta por Change Request — Tela de Configurações e tutorial (CR Tipo C · ADR-025)
 > Aprovado pelo usuário em 2026-09-10. Independente do ADR-024; pode vir primeiro.
+- ✅ **TASK-111 FEITA em 2026-09-10** (branch `feat/task-111-tela`). "?" no rodapé da barra e na
+  barra superior do celular; tempo real como ponto no rodapé; backup só com o estado. Verificado
+  no navegador como ADMIN e ALUNO, desktop e celular. 617 testes / 68 arquivos.
+  > Achado de lado, ANTERIOR à task (conferido com a `main`): no celular 375×812 o título e os
+  > cards do Dashboard aparecem cortados à direita — chip de tarefa aberto para investigar.
 - **TASK-111 →** botão "?" no cabeçalho (todos os papéis) abre o tutorial do papel; "Rever
   tutorial" sai de Configurações; tempo real vira ponto na barra lateral (assinatura
   COMPARTILHADA, sem segundo WebSocket) e o card sai; card de backup só com estado (último

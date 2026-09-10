@@ -125,7 +125,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   segurança antes, só tabelas de negócio, trilha preservada; emenda da §3.5/§4.4 por último
   (TASK-116). Tela: "?" no cabeçalho, tempo real como ponto na barra, backup só com estado.
   Tasks: 111 (tela, independente) · 112 → 113 → 114 → 115 → 116.
-- Próxima Ação: merge do PR do CR → TASK-111. Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
+- ✅ #59 merged (CR). ✅ **TASK-111 FEITA** (branch `feat/task-111-tela`, PR a abrir): "?" no shell
+  (desktop + celular), tempo real como ponto, backup só com o estado. Verificado no navegador.
+- ⚠️ **COMO VERIFICAR TELA AUTENTICADA SEM DIGITAR SENHA:** assinar o JWT com o `JWT_SECRET`
+  carregado pelo `@next/env` (`loadEnvConfig` — ler o `.env.local` à mão deu segredo DIFERENTE),
+  com `pwd_hash` = últimos 10 chars do hash do banco; antes de gravar o cookie por JS, fazer
+  `POST /api/auth/logout` — cookie httpOnly antigo não é sobrescrito por `document.cookie`. Com o
+  painel do navegador OCULTO o layout volta zerado e a captura pode vir de quadro velho.
+- Próxima Ação: merge do PR da TASK-111 → TASK-112 (agenda do backup). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
   (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
@@ -356,7 +363,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-backup-e-tela (PR a abrir). PRs #15–#58 merged; #43 do
+- Branch atual: feat/task-111-tela (PR a abrir). PRs #15–#59 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

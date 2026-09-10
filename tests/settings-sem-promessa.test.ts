@@ -135,12 +135,16 @@ describe('TASK-082 — as rotas mortas somem', () => {
 });
 
 describe('TASK-082 — o que lê FATO permanece', () => {
-    it('BDD 5: o card de confiabilidade e a lista de execuções continuam', () => {
+    it('BDD 5: o card de confiabilidade e o último backup continuam', () => {
         // Guarda contra a faxina levar junto o que estava certo. Estes leem
         // `backup_runs`, e são o único lugar onde se descobre que o backup parou.
+        //
+        // TASK-111 (ADR-025): a LISTA de execuções saiu — fazia a página rolar, e o
+        // usuário pediu só o estado. O que esta guarda protege não era a lista, era o
+        // fato: o último backup, dito com o resultado, e a confiabilidade.
         const tela = semComentarios(TELA);
         expect(tela, 'o card de confiabilidade sumiu junto').toMatch(/descreverConfiabilidade/);
-        expect(tela, 'a lista de execuções sumiu junto').toMatch(/Últimas execuções/);
+        expect(tela, 'o último backup sumiu junto').toMatch(/Último backup/);
         expect(fs.existsSync(path.resolve(RAIZ, 'src/app/api/backups/reliability/route.ts'))).toBe(true);
     });
 
