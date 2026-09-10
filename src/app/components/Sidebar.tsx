@@ -1,10 +1,41 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
+import { useAtualizacaoDeChaves, useEstadoDoSinal, INTERVALO_POLLING_LARGO, type EstadoSinal } from '@/lib/realtime-sinal';
 import { cruzouOHorario } from '@/lib/settings-policy';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import Tutorial from './Tutorial';
+
+// TASK-111 (ADR-025) — o estado do tempo real, dito em poucas palavras.
+//
+// Era um card inteiro em Configurações (TASK-097), com o mesmo peso visual de uma
+// preferência, para dizer quase sempre "Ativa". Vira um ponto no rodapé do shell,
+// presente em toda tela. O texto curto diz o ESTADO; o tooltip, a CONSEQUÊNCIA — que
+// é o que responde "por que a tela demorou a mudar?".
+const SINAL: Record<EstadoSinal, { rotulo: string; detalhe: string; cor: string }> = {
+    assinado: {
+        rotulo: 'Tempo real ativo',
+        detalhe: 'As mudanças feitas em outro dispositivo aparecem aqui em segundos, sem recarregar a página.',
+        cor: 'var(--green-400)',
+    },
+    conectando: {
+        rotulo: 'Conectando…',
+        detalhe: `Estabelecendo a conexão. Enquanto isso, as telas se atualizam a cada ${INTERVALO_POLLING_LARGO / 1000} s.`,
+        cor: 'var(--text-muted)',
+    },
+    falhou: {
+        rotulo: 'Modo de espera',
+        detalhe: 'A conexão instantânea não está disponível — costuma ser rede ou firewall. Nada se perde: '
+            + `as telas se atualizam a cada ${INTERVALO_POLLING_LARGO / 1000} s, com um pouco mais de atraso.`,
+        cor: 'var(--orange-600)',
+    },
+    'sem-configuracao': {
+        rotulo: 'Tempo real desligado',
+        detalhe: `A atualização instantânea não está configurada neste ambiente. As telas se atualizam a cada ${INTERVALO_POLLING_LARGO / 1000} s.`,
+        cor: 'var(--text-muted)',
+    },
+};
 
 interface SidebarProps {
     userRole: string;
@@ -54,6 +85,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
         case 'sun': return <svg {...props}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
         case 'moon': return <svg {...props}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
         case 'more': return <svg {...props}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>;
+        case 'help': return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
         default: return null;
     }
 }
@@ -65,6 +97,11 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const [mounted, setMounted] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    // TASK-111 (ADR-025) — o tutorial mora no shell: toda página tem Sidebar, e todo
+    // papel chega aqui. Em Configurações, só ADMIN e GESTOR o alcançavam.
+    const [verTutorial, setVerTutorial] = useState(false);
+    // Lê a assinatura que `useAtualizacaoDeChaves` (abaixo) já mantém: não abre outra.
+    const sinal = SINAL[useEstadoDoSinal()];
     // TASK-023: o Sidebar é dono do próprio estado de drawer mobile — o botão da
     // topbar funciona em TODAS as telas, mesmo nas que não passam isOpen/onMobileClose.
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -329,8 +366,41 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     })}
                 </nav>
 
-                {/* Footer: tema + perfil + logout */}
+                {/* Footer: tempo real + ajuda + tema + perfil + logout */}
                 <div className="sidebar-footer">
+                    {/* TASK-111 — o estado do tempo real, discreto: um ponto e duas
+                        palavras; a consequência fica no tooltip. */}
+                    <div
+                        title={`${sinal.rotulo} — ${sinal.detalhe}`}
+                        aria-label={`${sinal.rotulo}. ${sinal.detalhe}`}
+                        role="note"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            justifyContent: isCollapsed ? 'center' : 'flex-start',
+                            padding: '0 0.875rem', marginBottom: '0.5rem',
+                            fontSize: '0.8125rem', color: 'var(--text-muted)', cursor: 'default',
+                        }}
+                    >
+                        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: sinal.cor, flexShrink: 0 }} />
+                        {!isCollapsed && <span className="nav-item-text" style={{ whiteSpace: 'nowrap' }}>{sinal.rotulo}</span>}
+                    </div>
+
+                    {/* TASK-111 — o "?". Fora de qualquer condição de papel: o
+                        tutorial já é por papel, e quem mais precisa revê-lo (PORTEIRO,
+                        ALUNO) é quem não abre Configurações. */}
+                    <button
+                        className="nav-item"
+                        onClick={() => { closeMobile(); setVerTutorial(true); }}
+                        aria-label="Rever tutorial (ajuda)"
+                        title={isCollapsed ? 'Como usar o sistema' : ''}
+                        style={{ marginBottom: '0.25rem', justifyContent: isCollapsed ? 'center' : 'flex-start' }}
+                    >
+                        <span className="nav-icon" style={{ width: 32, display: 'flex', justifyContent: 'center' }}>
+                            <Icon name="help" size={18} />
+                        </span>
+                        {!isCollapsed && <span className="nav-item-text" style={{ marginLeft: '0.75rem' }}>Como usar</span>}
+                    </button>
+
                     <button className="nav-item" onClick={toggleTheme} style={{ marginBottom: '0.5rem' }}>
                         <span className="nav-icon" style={{ width: 32, display: 'flex', justifyContent: 'center' }}>
                             {theme === 'dark' ? <Icon name="sun" size={18} /> : <Icon name="moon" size={18} />}
@@ -431,6 +501,18 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     <span key={currentPageTitle} className="mobile-topbar-title">{currentPageTitle}</span>
                 </div>
 
+                {/* TASK-111 — no celular a barra lateral é uma gaveta fechada: o "?" só
+                    lá ficaria a dois toques, que é onde ajuda deixa de ser usada. */}
+                <button
+                    onClick={() => setVerTutorial(true)}
+                    className="mobile-topbar-icon-btn"
+                    data-tooltip="Como usar"
+                    data-tooltip-pos="bottom"
+                    aria-label="Abrir tutorial (ajuda)"
+                >
+                    <Icon name="help" size={20} />
+                </button>
+
                 <button
                     onClick={toggleTheme}
                     className="mobile-topbar-icon-btn"
@@ -483,6 +565,10 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                 </button>
             </nav>
 
+            {/* TASK-111 — FORA do <aside>. No celular ele é uma gaveta com
+                `transform`, e `position: fixed` dentro de ancestral com transform é
+                relativo a ele: o modal ficaria preso na gaveta em vez de cobrir a tela. */}
+            <Tutorial papel={userRole} aberto={verTutorial} aoFechar={() => setVerTutorial(false)} />
         </>
     );
 }

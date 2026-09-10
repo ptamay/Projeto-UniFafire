@@ -1939,27 +1939,3 @@ textarea:focus-visible,
 .bkp-status--alerta { border-color: var(--warning); background: var(--warning-bg); }
 .bkp-status--alerta strong { color: var(--warning-text); }
 
-/* ── Como o backup funciona (TASK-082) ────────────────────── */
-/* Substitui os campos de agendamento e retenção, que gravavam e ninguém lia.
-   É texto porque a informação é verdadeira e imutável pela tela: quem muda o
-   agendamento é o workflow, não o operador. */
-.bkp-como {
-  margin: 1rem 0;
-  padding: 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
-  font-size: 0.8125rem;
-}
-.bkp-como strong { color: var(--text-primary); }
-.bkp-como > strong { display: block; margin-bottom: 0.5rem; font-weight: 700; }
-.bkp-como ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.375rem; }
-.bkp-como li { color: var(--text-muted); line-height: 1.45; }
-.bkp-como code {
-  font-size: 0.75rem;
-  padding: 0.05rem 0.3rem;
-  border-radius: 4px;
-  background: var(--bg-input);
-  color: var(--text-secondary);
-  overflow-wrap: anywhere;
-}

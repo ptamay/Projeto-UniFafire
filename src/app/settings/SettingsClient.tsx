@@ -6,8 +6,6 @@ import ConfirmModal from '../components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
-import { useEstadoDoSinal, INTERVALO_POLLING_LARGO, type EstadoSinal } from '@/lib/realtime-sinal';
-import Tutorial from '@/app/components/Tutorial';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -27,67 +25,9 @@ function formatBytes(b: number) {
     return `${(b / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-/**
- * TASK-097 (ADR-018) — o estado da atualizacao em tempo real.
- *
- * Responde a pergunta que o porteiro faz quando o balcao parece desatualizado:
- * "por que a tela demorou a mudar?". O sistema ja sabia — `EstadoSinal` existe
- * desde a TASK-073 — e nao contava a ninguem.
- *
- * ⚠️ Le de `useEstadoDoSinal`, que NAO cria assinatura: quem assina e o `Sidebar`,
- * ja montado nesta tela. Assinar aqui abriria um segundo WebSocket na mesma aba
- * para exibir o estado do primeiro.
- *
- * O texto e sobre CONSEQUENCIA, nao sobre mecanismo. "Canal Realtime SUBSCRIBED"
- * nao diz nada a quem opera o balcao; "as mudancas aparecem na hora" diz.
- */
-function EstadoDoTempoReal() {
-    const estado = useEstadoDoSinal();
-
-    const descricao: Record<EstadoSinal, { titulo: string; texto: string; cor: string }> = {
-        assinado: {
-            titulo: 'Ativa',
-            texto: 'As mudanças feitas em outro dispositivo aparecem aqui em segundos, sem recarregar a página.',
-            cor: 'var(--green-400)',
-        },
-        conectando: {
-            titulo: 'Conectando…',
-            texto: 'Estabelecendo a conexão. Enquanto isso, as telas se atualizam sozinhas a cada '
-                + `${INTERVALO_POLLING_LARGO / 1000} segundos.`,
-            cor: 'var(--text-muted)',
-        },
-        falhou: {
-            titulo: 'Em modo de espera',
-            texto: 'A conexão instantânea não está disponível — costuma ser rede ou firewall. '
-                + `Nada se perde: as telas se atualizam sozinhas a cada ${INTERVALO_POLLING_LARGO / 1000} segundos, `
-                + 'só com um pouco mais de atraso.',
-            cor: 'var(--orange-600)',
-        },
-        'sem-configuracao': {
-            titulo: 'Não configurada',
-            texto: 'A atualização instantânea não está configurada neste ambiente. '
-                + `As telas se atualizam sozinhas a cada ${INTERVALO_POLLING_LARGO / 1000} segundos.`,
-            cor: 'var(--text-muted)',
-        },
-    };
-
-    const { titulo, texto, cor } = descricao[estado];
-
-    return (
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-            <span
-                aria-hidden="true"
-                style={{ width: 10, height: 10, borderRadius: '50%', background: cor, marginTop: 5, flexShrink: 0 }}
-            />
-            <div>
-                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{titulo}</div>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
-                    {texto}
-                </p>
-            </div>
-        </div>
-    );
-}
+// TASK-111 (ADR-025): o card "Atualização em Tempo Real" (TASK-097) saiu desta tela.
+// O estado virou um ponto discreto no rodapé do shell (`Sidebar`), presente em toda
+// página — e continua lendo a assinatura compartilhada, sem abrir outra.
 
 interface Props {
     userRole: string;
@@ -101,7 +41,6 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [loadingBkp, setLoadingBkp] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
     const [isClearingDb, setIsClearingDb] = useState(false);
-    const [verTutorial, setVerTutorial] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
     const [bkpReliability, setBkpReliability] = useState<BackupReliability | null>(null);
     // Falha de LEITURA da metrica nao pode virar "nenhuma execucao": as duas
@@ -178,9 +117,6 @@ export default function SettingsClient({ userRole, username }: Props) {
     return (
         <div className="page-wrapper">
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
-            
-
-            <Tutorial papel={userRole} aberto={verTutorial} aoFechar={() => setVerTutorial(false)} />
 
             <main className="main-content animate-fade">
                 <div className="page-header">
@@ -215,32 +151,15 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 ausencia mantem o assunto vivo numa tela onde ele acabou.
                                 Onde o codigo de uso unico precisa ser explicado e em
                                 Usuarios, no momento do reset — e la o modal ja explica. */}
-                            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            {/* TASK-111 (ADR-025): o "Rever tutorial" que morava aqui
+                                virou o "?" do shell — alcançável de toda tela e por todos
+                                os papéis, e não só por quem abre Configurações. */}
+                            <div>
                                 <button className="btn btn-green" onClick={saveSettings} disabled={savingSettings}>
                                     {savingSettings ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar Sistema'}
                                 </button>
-                                {/* TASK-098 — este botao so pode existir AGORA. A TASK-097
-                                    tinha um cenario PROIBINDO a palavra "tutorial" nesta
-                                    tela, porque oferecer o que nao existe e a mentira em
-                                    tela que o ADR-013 combate. Aquele cenario caiu para
-                                    este subir. */}
-                                <button className="btn" onClick={() => setVerTutorial(true)}>
-                                    Rever tutorial
-                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Limpeza de dados — ONLY ADMIN. O bloco de importar .db saiu na
-                        TASK-082: `.db` e SQLite, formato fora do runtime desde a Sprint 21. */}
-                    {/* TASK-097 — a resposta para "por que a tela demorou a mudar".
-                        O sistema JA sabia (EstadoSinal) e nao contava a ninguem. */}
-                    <div className="card">
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                            Atualização em Tempo Real
-                        </h2>
-                        <EstadoDoTempoReal />
                     </div>
 
 
@@ -277,46 +196,43 @@ export default function SettingsClient({ userRole, username }: Props) {
                             );
                         })()}
 
-                        {/* No lugar do botão que sempre recusava e dos campos que
-                            ninguém lia: o arranjo real, verificável. */}
-                        <div className="bkp-como">
-                            <strong>Como o backup funciona</strong>
-                            <ul>
-                                <li>Diário, às <strong>03:00</strong> (horário de Recife), executado pelo <strong>GitHub Actions</strong>.</li>
-                                <li>Cada dump é <strong>verificado por restauração</strong> num banco descartável antes de ser guardado — contagens e estrutura conferidas contra a origem.</li>
-                                <li>Guardado num <strong>repositório privado separado</strong>; a retenção é o histórico dele.</li>
-                                <li>Para gerar fora de hora ou restaurar, veja <code>docs/runbook-deploy.md</code> — são operações com credencial, fora desta tela.</li>
-                            </ul>
-                        </div>
-
-                        <h3 style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Últimas execuções</h3>
-                        {loadingBkp ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '1.5rem' }}><div className="spinner" /></div>
-                        ) : runs.length === 0 ? (
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '1.5rem' }}>
-                                Nenhuma execução registrada ainda.
-                            </p>
-                        ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {runs.map(r => (
-                                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.75rem', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                                        <div style={{ minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                {formatTimestamp(r.ranAt)}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem', overflowWrap: 'anywhere' }}>
-                                                {r.succeeded
-                                                    ? `${r.sizeBytes !== null ? formatBytes(r.sizeBytes) : 'tamanho não registrado'}${r.destination ? ` — ${r.destination}` : ''}`
-                                                    : (r.error || 'falhou sem mensagem registrada')}
-                                            </div>
+                        {/* TASK-111 (ADR-025): só o estado. A lista de execuções —
+                            uma por dia — fazia a página rolar, e o que o ADMIN precisa
+                            aqui é saber se o backup está em dia. O fato que a lista
+                            protegia (TASK-082: é aqui que se descobre que o backup
+                            PAROU) sobrevive no último backup, dito com o resultado. */}
+                        {(() => {
+                            if (loadingBkp) return <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}><div className="spinner" /></div>;
+                            const ultimo = runs[0];
+                            if (!ultimo) {
+                                return <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginTop: '1rem' }}>Nenhuma execução registrada ainda.</p>;
+                            }
+                            return (
+                                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.75rem', marginTop: '1rem' }}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Último backup</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            {formatTimestamp(ultimo.ranAt)}
+                                            {ultimo.succeeded && ultimo.sizeBytes !== null && (
+                                                <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {formatBytes(ultimo.sizeBytes)}</span>
+                                            )}
                                         </div>
-                                        <span style={{ flexShrink: 0, fontSize: '0.75rem', fontWeight: 700, color: r.succeeded ? 'var(--green-400)' : 'var(--danger-text)' }}>
-                                            {r.succeeded ? 'verificado' : 'FALHOU'}
-                                        </span>
+                                        {!ultimo.succeeded && (
+                                            <div style={{ fontSize: '0.8125rem', color: 'var(--danger-text)', overflowWrap: 'anywhere' }}>
+                                                {ultimo.error || 'falhou sem mensagem registrada'}
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                    <span style={{ flexShrink: 0, fontSize: '0.8125rem', fontWeight: 700, color: ultimo.succeeded ? 'var(--green-400)' : 'var(--danger-text)' }}>
+                                        {ultimo.succeeded ? 'verificado' : 'FALHOU'}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '1rem' }}>
+                            Diário às 03:00 (horário de Recife), pelo GitHub Actions — cada dump é verificado por restauração antes de ser guardado.
+                        </p>
                     </div>
                     )}
                 </div>
