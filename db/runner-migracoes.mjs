@@ -51,8 +51,12 @@ function sqlDoRegistro() {
     return fs.readFileSync(path.join(DIR_PADRAO, `${MIGRACAO_DO_REGISTRO}.up.sql`), 'utf-8');
 }
 
+/** sha256 da forma CANÔNICA do arquivo: fim de linha LF, que é como o git o guarda.
+ *  Com `core.autocrlf=true` o Windows o põe em disco com CRLF; o hash dos bytes crus
+ *  variava com a máquina, e os checksums gravados neste Windows seriam acusados como
+ *  "alterados" por um `conferir` em Linux, Mac ou no Actions (achado em 2026-09-10). */
 function hash(conteudo) {
-    return crypto.createHash('sha256').update(conteudo).digest('hex');
+    return crypto.createHash('sha256').update(conteudo.replace(/\r\n/g, '\n')).digest('hex');
 }
 
 /** Migrations do diretório, em ordem de NOME. Só os UP: o DOWN é para reverter à
