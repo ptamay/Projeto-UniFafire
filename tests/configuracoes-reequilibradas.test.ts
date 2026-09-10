@@ -44,10 +44,12 @@ const semComentarios = (f: string) =>
         .replace(/^\s*\/\/.*$/gm, '');
 
 describe('TASK-097 — a tela conta o que o sistema sabe', () => {
-    it('BDD 1: mostra o estado da atualização em tempo real', () => {
-        const fonte = semComentarios(TELA);
-        expect(fonte, 'a tela não exibe o estado do sinal')
-            .toMatch(/EstadoSinal|estadoDoSinal|useEstadoDoSinal/);
+    it('BDD 1: o sistema mostra o estado da atualização em tempo real', () => {
+        // TASK-111 (ADR-025): o estado saiu do card de Configurações para um ponto
+        // discreto no shell — presente em toda tela, e não só na que ADMIN e GESTOR
+        // abrem. O que este cenário protege continua: o sistema CONTA o que sabe.
+        const fonte = semComentarios('src/app/components/Sidebar.tsx');
+        expect(fonte, 'o shell não exibe o estado do sinal').toMatch(/useEstadoDoSinal\(/);
     });
 
     it('BDD 1: o estado vem de uma assinatura COMPARTILHADA, não de outra própria', () => {
