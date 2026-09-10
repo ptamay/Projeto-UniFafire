@@ -152,6 +152,47 @@ describe('TASK-102 — recusa mentir', () => {
             comCliente(urlBase, c => adotar(c, dir, { ate: '202601010000_trg' })),
         ).rejects.toThrow(/t_imutavel/);
     });
+
+    it('BDD 2: RLS declarada e DESLIGADA → recusa', async () => {
+        // RLS não é objeto, é ESTADO da tabela — e a sonda que só procura objetos
+        // não a vê. É o controle que mais importa neste projeto: a chave anônima do
+        // Supabase está no bundle do navegador (Realtime), e RLS desligada entrega a
+        // tabela a quem a abrir. Sem sintoma nenhum na aplicação.
+        escrever('202601010000_rls', 'CREATE TABLE t (id int); ALTER TABLE t ENABLE ROW LEVEL SECURITY;');
+        await comCliente(urlBase, c => c.query('CREATE TABLE t (id int)'));  // RLS NÃO ligada
+
+        const { adotar } = await runner();
+        await expect(
+            comCliente(urlBase, c => adotar(c, dir, { ate: '202601010000_rls' })),
+        ).rejects.toThrow(/202601010000_rls[\s\S]*rls t\b/);
+    });
+
+    it('BDD 2: VÁRIAS colunas num único ALTER — confere todas, não só a primeira', async () => {
+        // `ADD COLUMN a, ADD COLUMN b` é SQL comum. Uma sonda que casa só a primeira
+        // afirmaria `b` sem tê-la procurado — a mentira que a task existe para
+        // impedir, pelo caminho mais discreto.
+        escrever('202601010000_duas', 'CREATE TABLE t (id int); ALTER TABLE t ADD COLUMN a text, ADD COLUMN b numeric(10, 2);');
+        await comCliente(urlBase, c => c.query('CREATE TABLE t (id int, a text)'));  // sem `b`
+
+        const { adotar } = await runner();
+        await expect(
+            comCliente(urlBase, c => adotar(c, dir, { ate: '202601010000_duas' })),
+        ).rejects.toThrow(/coluna t\.b\b/);
+    });
+
+    it('BDD 2: ADD CONSTRAINT é restrição, não uma coluna chamada "constraint"', async () => {
+        // O padrão de coluna aceita `ADD` sem `COLUMN`, então sem cuidado lê
+        // `ADD CONSTRAINT t_pk` como a coluna `constraint` — e a recusa sairia com o
+        // motivo errado, apontando para algo que ninguém declarou.
+        escrever('202601010000_pk', 'CREATE TABLE t (id int); ALTER TABLE t ADD CONSTRAINT t_pk PRIMARY KEY (id);');
+        await comCliente(urlBase, c => c.query('CREATE TABLE t (id int)'));  // sem a restrição
+
+        const { adotar } = await runner();
+        const erro = await comCliente(urlBase, c => adotar(c, dir, { ate: '202601010000_pk' }))
+            .then(() => null, (e: Error) => e.message);
+        expect(erro, 'adotou sem a restrição declarada').toMatch(/t_pk/);
+        expect(erro, 'leu ADD CONSTRAINT como coluna').not.toMatch(/coluna t\.constraint/i);
+    });
 });
 
 describe('TASK-102 — o que a adoção não consegue provar', () => {
