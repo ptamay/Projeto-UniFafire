@@ -557,19 +557,91 @@ export function registroDoEnsaio(r) {
     ].join('\n');
 }
 
+// ── Roteiro para o editor SQL (TASK-109) ────────────────────────────────────
+//
+// A §4.1 manda aplicar PELO RUNNER, que registra na mesma transação. Quem publica
+// prefere o editor SQL do Supabase a pôr a URL de produção num terminal — e colar o
+// `.up.sql` ali aplicaria SEM registrar, que é como o ledger do Supabase divergiu cinco
+// vezes em três dias. O runner escreve a transação inteira; o editor só a executa.
+
+const literal = (s) => `'${String(s).replace(/'/g, "''")}'`;
+
+/**
+ * Uma transação que faz o que `aplicar` faria para `nome`: confere que o registro
+ * existe, que `nome` ainda não está nele e que nada anterior está pendente; aplica o UP;
+ * grava o registro com o checksum canônico. Falhou qualquer passo, nada fica. Não
+ * conecta em nada — gerar não precisa de credencial.
+ */
+export function roteiroDeAplicacao(dir = DIR_PADRAO, nome) {
+    const todas = listarMigracoes(dir);
+    const i = todas.findIndex(m => m.nome === nome);
+    if (i === -1) throw new Error(`migration não encontrada: ${nome}`);
+    const m = todas[i];
+    const anteriores = todas.slice(0, i).map(x => literal(x.nome));
+
+    return [
+        `-- Roteiro gerado por \`node db/runner-migracoes.mjs roteiro ${nome}\` (TASK-109).`,
+        '-- Cole INTEIRO no editor SQL do Supabase. É uma transação: se qualquer passo',
+        '-- falhar, nada fica — nem a migration, nem o registro. Não edite: o checksum',
+        '-- gravado no fim é o do arquivo, e o `conferir` compara os dois.',
+        '',
+        'BEGIN;',
+        '',
+        'DO $roteiro$',
+        'DECLARE faltam text;',
+        'BEGIN',
+        `  IF to_regclass('public.${TABELA_REGISTRO}') IS NULL THEN`,
+        `    RAISE EXCEPTION 'sem registro de migrations: adote antes (runbook §4.0) — nada foi feito';`,
+        '  END IF;',
+        `  IF EXISTS (SELECT 1 FROM ${TABELA_REGISTRO} WHERE nome = ${literal(nome)}) THEN`,
+        `    RAISE EXCEPTION '${nome} já está aplicada — nada foi feito';`,
+        '  END IF;',
+        `  SELECT string_agg(n, ', ' ORDER BY n) INTO faltam`,
+        `    FROM unnest(ARRAY[${anteriores.join(', ')}]::text[]) AS n`,
+        `   WHERE NOT EXISTS (SELECT 1 FROM ${TABELA_REGISTRO} r WHERE r.nome = n);`,
+        '  IF faltam IS NOT NULL THEN',
+        `    RAISE EXCEPTION 'pendentes antes de ${nome}: % — aplique-as primeiro; nada foi feito', faltam;`,
+        '  END IF;',
+        'END',
+        '$roteiro$;',
+        '',
+        `-- ── ${nome}.up.sql ──`,
+        m.conteudo.replace(/\r\n/g, '\n').trimEnd(),
+        '',
+        `INSERT INTO ${TABELA_REGISTRO} (nome, checksum, modo)`,
+        `VALUES (${literal(nome)}, ${literal(m.checksum)}, 'aplicada');`,
+        '',
+        'COMMIT;',
+        '',
+        `SELECT nome, modo, left(checksum, 16) AS checksum FROM ${TABELA_REGISTRO} ORDER BY nome;`,
+        '',
+    ].join('\n');
+}
+
 // ── Linha de comando ────────────────────────────────────────────────────────
 //
 //   DATABASE_URL=... node db/runner-migracoes.mjs conferir
 //   DATABASE_URL=... node db/runner-migracoes.mjs aplicar
 //   DATABASE_URL=... node db/runner-migracoes.mjs adotar <ultima-migration-no-banco>
 //   DATABASE_URL=<cópia> node db/runner-migracoes.mjs ensaiar <migration> <dump>
+//   node db/runner-migracoes.mjs roteiro <migration>      (sem banco: imprime a transação
+//                                                        para colar no editor SQL)
 //
 // `conferir` sai com código 1 se houver qualquer coisa pendente, alterada ou
 // órfã — é o que a TASK-103 e um passo de CI usam para decidir.
 
 const ehEntrada = process.argv[1] && path.resolve(process.argv[1]) === ESTE_ARQUIVO;
 
-if (ehEntrada) {
+if (ehEntrada && process.argv[2] === 'roteiro') {
+    // Não conecta: gerar o roteiro não precisa — e não deve pedir — credencial.
+    try {
+        if (!process.argv[3]) throw new Error('uso: node db/runner-migracoes.mjs roteiro <migration>');
+        process.stdout.write(roteiroDeAplicacao(DIR_PADRAO, process.argv[3]));
+    } catch (e) {
+        console.error(e.message);
+        process.exitCode = 2;
+    }
+} else if (ehEntrada) {
     const { default: pg } = await import('pg');
     const comando = process.argv[2];
     const url = process.env.DATABASE_URL;
