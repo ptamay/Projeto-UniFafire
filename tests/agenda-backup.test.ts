@@ -210,6 +210,22 @@ describe('TASK-112 — só ADMIN lê e altera a agenda', () => {
     });
 });
 
+describe('TASK-112 — as linhas órfãs do ADR-013 saem', () => {
+    it('BDD 6: uma migration apaga `backup_time` e `backup_retention_count` — e só elas', async () => {
+        // Gravadas pela tela antiga e lidas por ninguém desde a TASK-082; vieram da carga
+        // sintética da TASK-067. Ficar com elas é deixar uma mina: o dia em que alguém
+        // "reaproveitar" a chave, um valor esquecido vira a agenda de produção.
+        const { listarMigracoes } = await import('../db/runner-migracoes.mjs');
+        const m = listarMigracoes(path.resolve(RAIZ, 'db/migrations-pg'))
+            .find(x => /backup_time/.test(x.conteudo) && /DELETE\s+FROM\s+settings/i.test(x.conteudo));
+        expect(m, 'nenhuma migration apaga as linhas órfãs').toBeTruthy();
+        const deletes = m!.conteudo.replace(/--[^\n]*/g, '').match(/DELETE\s+FROM\s+settings[^;]*;/gi) ?? [];
+        expect(deletes.join(' ')).toMatch(/backup_time/);
+        expect(deletes.join(' ')).toMatch(/backup_retention_count/);
+        expect(deletes.join(' '), 'apaga mais do que as órfãs').not.toMatch(/auto_logout_time|backup_hora|backup_vezes/);
+    });
+});
+
 describe('TASK-112 — a tela oferece o que o sistema faz, e só isso', () => {
     const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
 
