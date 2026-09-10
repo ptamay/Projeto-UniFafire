@@ -98,6 +98,34 @@ describe('TASK-096 — o menu navega com `<Link>`', () => {
             .not.toMatch(/router\.push\(/);
     });
 
+    it('BDD 2: os links do menu NÃO fazem prefetch — e isso foi medido', () => {
+        // ⚠️ ESTE CENÁRIO CONTRARIA A PRESCRIÇÃO ORIGINAL DO ADR-018, que pedia
+        // "`<Link>` com prefetch". O ADR também mandava OBSERVAR as requisições — e a
+        // observação mudou a decisão. Medido num build de produção local:
+        //
+        //                          com prefetch      sem prefetch
+        //   requisições no load         13                 0
+        //   por `router.refresh()`       7                 1
+        //   esqueleto aparece em     29–43 ms           3–14 ms
+        //
+        // O prefetch não compra nada aqui: o esqueleto vem do BUNDLE DA ROTA, não do
+        // payload prefetchado. Quem faz a transição parecer imediata é o
+        // `loading.tsx`, e ele funciona igual com prefetch desligado.
+        //
+        // E o custo não é por página: `router.refresh()` invalida o cache do
+        // roteador e TODOS os links prefetcham de novo. Ele é chamado pelo
+        // `refreshData` a cada sinal do Realtime — ou seja, a cada operação de
+        // chave, em cada cliente aberto. É um multiplicador ligado à ATIVIDADE, que
+        // é a forma exata do problema que criou o REQ-032 (polling de 3 s projetando
+        // ~10,5 mi de requisições/mês).
+        //
+        // Sem esta guarda, alguém lê o ADR, vê `prefetch={false}` e "corrige".
+        const fonte = sidebar();
+        const ocorrencias = (fonte.match(/prefetch=\{false\}/g) ?? []).length;
+        expect(ocorrencias, 'algum link de navegação voltou a fazer prefetch')
+            .toBeGreaterThanOrEqual(2);
+    });
+
     it('BDD 2: o drawer do mobile continua fechando ao navegar', () => {
         // ⚠️ Guarda contra a regressão específica desta troca. O `navigate()` antigo
         // fazia DUAS coisas: `router.push` e `closeMobile()`. Trocar por `<Link>` só

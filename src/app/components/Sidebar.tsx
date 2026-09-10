@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { cruzouOHorario } from '@/lib/settings-policy';
-import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 interface SidebarProps {
@@ -58,7 +59,6 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 }
 
 export default function Sidebar({ userRole, username, onMobileClose, isOpen }: SidebarProps) {
-    const router = useRouter();
     const pathname = usePathname();
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -182,10 +182,16 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
         };
     }, []);
 
-    const navigate = (href: string) => {
-        router.push(href);
-        closeMobile();
-    };
+    // TASK-096 (ADR-018) — `navigate()` saiu. Ele fazia `router.push`, que NAO faz
+    // prefetch: cada clique comecava do zero, e com todas as paginas dinamicas a
+    // tela anterior ficava parada ate o servidor responder.
+    //
+    // O `<Link>` prefetcha, e com os `loading.tsx` no lugar o prefetch de rota
+    // dinamica busca so ate o boundary — barato.
+    //
+    // ⚠️ `closeMobile` continua em CADA link: o `navigate()` antigo fazia duas
+    // coisas, e trocar por `<Link>` so resolve a navegacao. Sem isso o drawer fica
+    // aberto por cima da pagina nova, no aparelho onde ele ocupa a tela inteira.
 
     const roleBadgeMap: Record<string, string> = {
         ADMIN: 'badge-admin',
@@ -287,11 +293,14 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                             <div key={section.section}>
                                 <div className="nav-section-title">{section.section}</div>
                                 {visible.map(item => (
-                                    <button
+                                    <Link
                                         key={item.href}
+                                        href={item.href}
+                                        prefetch={false}
                                         className={`nav-item${pathname === item.href ? ' active' : ''}`}
-                                        onClick={() => navigate(item.href)}
+                                        onClick={closeMobile}
                                         title={isCollapsed ? item.label : ''}
+                                        aria-current={pathname === item.href ? 'page' : undefined}
                                     >
                                         <span className="nav-icon" style={{ position: 'relative' }}>
                                             <Icon name={item.icon} size={18} />
@@ -313,7 +322,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                                 </span>
                                             )}
                                         </span>
-                                    </button>
+                                    </Link>
                                 ))}
                             </div>
                         );
@@ -376,14 +385,14 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                 width: isCollapsed ? '200px' : '100%',
                                 zIndex: 50
                             }}>
-                                <button className="nav-item" onClick={() => navigate('/account/profile')} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
+                                <Link href="/account/profile" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="user" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Meu Perfil</span>
-                                </button>
-                                <button className="nav-item" onClick={() => navigate('/account/security')} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
+                                </Link>
+                                <Link href="/account/security" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="shield" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
-                                </button>
+                                </Link>
                                 <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
                                 <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
                                     <span className="nav-icon"><Icon name="log-out" size={16} /></span>
@@ -443,10 +452,12 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                     const isActive = pathname === item.href;
                     const showBadge = item.href === '/confirm' && pendingCount > 0;
                     return (
-                        <button
+                        <Link
                             key={item.href}
+                            href={item.href}
+                            prefetch={false}
                             className={`bottom-nav-item${isActive ? ' active' : ''}`}
-                            onClick={() => navigate(item.href)}
+                            onClick={closeMobile}
                             aria-current={isActive ? 'page' : undefined}
                             aria-label={showBadge ? `${item.label}, ${pendingCount} pendente${pendingCount > 1 ? 's' : ''}` : item.label}
                         >
@@ -457,7 +468,7 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
                                 </span>
                             )}
                             <span className="bottom-nav-label">{item.label}</span>
-                        </button>
+                        </Link>
                     );
                 })}
                 <button

@@ -94,6 +94,31 @@ novo. Ali a suspeita era o Realtime e a causa era a região da função.
 **2. A navegação ganha `<Link>` e `loading.tsx`.** Com critério de aceite **medido**, não
 "parece mais rápido" — o mesmo padrão do ADR-016.
 
+> ### ⚠️ Emenda de 2026-09-09 (TASK-096) — a medição derrubou metade desta decisão
+>
+> Esta decisão pedia "`<Link>` **com prefetch**", e mandava observar as requisições. A
+> observação, num build de produção local, disse para desligar o prefetch:
+>
+> | | com prefetch | sem prefetch |
+> |---|---|---|
+> | requisições no carregamento | **13** (14 KB) | **0** |
+> | por `router.refresh()` | **7** | **1** |
+> | esqueleto aparece em | 29–43 ms | **3–14 ms** |
+>
+> **O prefetch não comprava nada.** Quem faz a transição parecer imediata é o
+> `loading.tsx`: o esqueleto vem do *bundle da rota*, não do payload prefetchado. Para
+> rota dinâmica, o conteúdo é buscado fresco de qualquer maneira.
+>
+> E o custo não é por página. `router.refresh()` invalida o cache do roteador e **todos
+> os links prefetcham de novo** — e ele é chamado pelo `refreshData` a cada sinal do
+> Realtime, ou seja, **a cada operação de chave, em cada cliente aberto**. É um
+> multiplicador ligado à ATIVIDADE, que é a forma exata do problema que criou o REQ-032:
+> o polling de 3 s projetava ~10,5 mi de requisições/mês.
+>
+> Fica `<Link prefetch={false}>`: a navegação de cliente (sem recarregar a página) e o
+> `loading.tsx`, sem o tráfego. Há cenário guardando a decisão, porque sem ele alguém lê
+> o parágrafo acima, vê `prefetch={false}` e "corrige".
+
 **3. A tela de Configurações é reequilibrada, sem virar painel de sistema.**
 
 ⚠️ **O que NÃO entra: versão, host, uptime, contagens, região.** A TASK-079 removeu
