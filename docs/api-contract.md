@@ -57,7 +57,7 @@ portas se contam.**
 | `/login` | página de entrada |
 | `POST /api/auth/login` | autenticar |
 | `POST /api/auth/logout` | sair não pode exigir estar dentro — cookie corrompido deixaria o usuário preso |
-| `GET /api/health` | batida do ping agendado; responde dois campos e nada mais (TASK-079) |
+| `GET /api/health` | batida do ping agendado e do pós-deploy; responde dois campos e nada mais (TASK-079). `200 {ok, ok}` · `503 {degraded, down}` banco fora · `503 {degraded, schema_pendente}` o código espera migration que o registro não tem (TASK-103) — QUAL, só no log do servidor |
 
 ### Rotas de conta própria — sessão, sem papel
 

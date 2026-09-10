@@ -227,6 +227,26 @@ DATABASE_URL="<URL>" node db/runner-migracoes.mjs conferir   # tem de sair limpo
   **e dita como não conferida** na saída. Hoje é só a `202609090900`.
 - Uma recusa deixa a tabela `migracoes_aplicadas` criada e vazia de adoções. É
   inofensivo; a próxima tentativa segue dali.
+- ⚠️ **Adote ANTES de publicar o código da TASK-103.** Desde ela, `/api/health`
+  responde 503 `schema_pendente` quando o registro não tem o que o código espera —
+  e **sem registro nenhum, tudo está pendente**. Publicar antes da adoção deixa o
+  health vermelho (o sistema continua servindo; o que falha é o aviso).
+
+#### 4.0.1 Quem avisa quando o código chega antes do schema
+
+`/api/health` compara `src/lib/migracoes-esperadas.ts` com o registro e responde
+**503 `schema_pendente`** se faltar alguma; os nomes vão só para o log da função na
+Vercel. Dois workflows perguntam a ele e falham — o GitHub avisa por e-mail:
+
+- **`pos-deploy.yml`**, a cada deploy de produção bem-sucedido, minutos depois do
+  merge. É o que fecha a janela da TASK-093.
+- **`keepalive.yml`**, uma vez por dia, como rede.
+
+Viu `schema_pendente`? Rode `conferir` para ver quais, e `aplicar`. Nenhum dos dois
+workflows aplica nada — eles não têm credencial de banco, e não devem ter.
+
+Toda migration nova precisa entrar também em `src/lib/migracoes-esperadas.ts`; a
+suíte reprova se a lista e o diretório divergirem.
 
 > Verificado em 2026-09-10 contra o **backup de produção daquele dia**, restaurado numa
 > base descartável: 9 adotadas (8 conferidas + a de dados), `conferir` limpo,
