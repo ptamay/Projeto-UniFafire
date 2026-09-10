@@ -91,7 +91,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `corrigir-checksums.sql`** (gerado e ensaiado: troca só onde o valor é o antigo, aborta se
   não forem exatamente 10) — pelo USUÁRIO no editor, logo depois do merge. Até lá, o
   `conferir` do código novo acusa as 10 como alteradas (o health não usa checksum).
-- Próxima Ação: merge do PR da TASK-107 → usuário roda a correção dos checksums → TASK-108.
+- ✅ **ADR-022 FECHADO em 2026-09-10.** #54 merged; os 10 checksums de produção corrigidos
+  pelo usuário no editor (rodou ANTES do merge — inofensivo: nada em produção usa checksum).
+  **TASK-108: §4.2 EMENDADA** (branch `feat/task-108-emenda-4-2`, PR a abrir): ida e volta
+  pela suíte para todas + ensaio sobre a cópia quando toca dados; "produção nunca é o
+  primeiro banco". Guarda no molde da TASK-104. 590 testes / 64 arquivos.
+- Próxima Ação: merge do PR da TASK-108. Da fila que sobra: endurecimento (anon com
+  SELECT/UPDATE/USAGE nas 11 sequências e EXECUTE nas 4 funções de trigger — medido na base
+  de teste com o padrão de produção), `permissions:` no keepalive e backup, §0 da
+  constitution ("Transição em curso", vencida), §2.2 (espera dados), linhas órfãs de
+  `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -321,7 +330,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-107-ensaio-de-dados (PR a abrir). PRs #15–#53 merged; #43 do
+- Branch atual: feat/task-108-emenda-4-2 (PR a abrir). PRs #15–#54 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

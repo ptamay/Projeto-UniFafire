@@ -1,9 +1,13 @@
 # ADR-022 — A §4.2 exige ida e volta, e cópia de produção quando a migration toca dados
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-10. TASK-106 feita em 2026-09-10
-  (a base de teste reproduz o `pg_default_acl` lido em produção; a ida e volta achou o
-  `PUBLIC` que o DOWN da imutabilidade esquecia). TASK-107 feita em 2026-09-10 (primeiro
-  ensaio real, retroativo, da `202609090900`: `DELETE 1`, `UPDATE 0`). Falta a TASK-108
+- **Status:** Implementado em 2026-09-10 — TASK-106, 107 e 108. A base de teste reproduz o
+  `pg_default_acl` lido em produção; a ida e volta achou o `PUBLIC` que o DOWN da
+  imutabilidade esquecia; o primeiro ensaio real, retroativo, da `202609090900` deu
+  `DELETE 1`, `UPDATE 0`; e a §4.2 foi emendada por último. O texto emendado difere do da
+  decisão 4 só em nomear o comando (`ensaiar`), o runbook §4.0.2 e o `.ensaio.md`, que
+  não existiam quando este ADR foi escrito. No caminho, a TASK-107 achou um defeito da
+  TASK-101 (checksum dependente do fim de linha da máquina), corrigido, com os 10
+  checksums de produção acertados pelo usuário
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (altera `constitution.md` §4.2)
 - **Relacionado:** constitution §4.1, §4.2 · ADR-021 · runbook §4, §6.5 · regra `20-migrations`
