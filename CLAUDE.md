@@ -109,7 +109,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   default privilege. 594 / 65.
 - 🔴 **ORDEM: aplicar a `202609101600` em produção ANTES do merge** — senão o health (TASK-103)
   responde 503 e o `pos-deploy` fica vermelho. Pelo runner (§4.1): o usuário roda `aplicar` com a
-  URL de produção a partir da branch.
+  URL de produção a partir da branch — OU, como o usuário prefere, pelo EDITOR com o roteiro que o runner gera (`roteiro <migration>`, adicionado na TASK-109).
 - Próxima Ação: aplicação em produção pelo usuário → merge → verificar (health, conferir, card
   "Ativa") → TASK-110. Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
   (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
