@@ -88,12 +88,17 @@ describe('TASK-107 — o critério de "toca dados" é objetivo', () => {
         for (const sql of naoTocam) expect(tocaDados(sql), `acusou à toa: ${sql}`).toEqual([]);
     });
 
-    it('BDD 1: nas migrations reais, só a que zera senhas toca dados', async () => {
+    it('BDD 1: nas migrations reais, só as que apagam ou alteram linhas tocam dados', async () => {
         // Sanidade contra o repositório: se o critério acusasse metade das
-        // migrations, o ensaio viraria burocracia e seria contornado.
+        // migrations, o ensaio viraria burocracia e seria contornado. A lista cresce
+        // com cada migration de dados — e cada uma que entrar aqui tem de ter o seu
+        // `.ensaio.md` (cenário BDD 4).
         const { tocaDados, listarMigracoes } = await runner();
         const acusadas = listarMigracoes(DIR_REAL).filter(m => tocaDados(m.conteudo).length).map(m => m.nome);
-        expect(acusadas).toEqual(['202609090900_sem_senha_compartilhada']);
+        expect(acusadas).toEqual([
+            '202609090900_sem_senha_compartilhada',   // zera senhas (TASK-094)
+            '202609101700_settings_orfas_de_backup',  // apaga as órfãs do ADR-013 (TASK-112)
+        ]);
     });
 });
 

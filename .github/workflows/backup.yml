@@ -31,10 +31,17 @@ name: Backup diário verificado
 
 on:
   schedule:
-    # 06:00 UTC = 03:00 em America/Recife (UTC-3, sem horário de verão).
-    # Fora do horário letivo, então uma restauração de emergência não disputa
-    # banco com a portaria.
-    - cron: '0 6 * * *'
+    # TASK-112 (ADR-024) — de hora em hora, e quem decide se há backup é o job
+    # `agenda`, lendo o que o ADMIN configurou na tela (padrão: 03:00 de Recife, 1×
+    # por dia). O `cron` do Actions é fixo no arquivo; a agenda, não.
+    #
+    # Minuto 17, e não 0: o GitHub congestiona na virada da hora e atrasa agendas.
+    # O portão não depende da pontualidade — ele pergunta se há horário vencido sem
+    # backup —, mas quanto menos atraso, mais perto do horário que a tela mostra.
+    #
+    # Repositório público: os minutos de Actions são gratuitos. Nas horas sem
+    # backup, só o job `agenda` roda (e sai), e o Postgres de verificação nem sobe.
+    - cron: '17 * * * *'
   # Permite rodar à mão para testar sem esperar um dia — e para o ensaio de
   # restauração que a §4.3 exige do responsável.
   workflow_dispatch:
@@ -53,7 +60,35 @@ permissions:
   contents: read
 
 jobs:
+  # TASK-112 — o portão. Pergunta "há horário vencido sem backup bem-sucedido depois
+  # dele?" (e não "é a hora?", que perderia o dia inteiro quando o GitHub atrasa o
+  # disparo para depois da hora). Execução manual sempre passa. Se a agenda não puder
+  # ser lida, EXECUTA: portão que falha fechado deixa de fazer backup em silêncio.
+  agenda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      executar: ${{ steps.decisao.outputs.executar }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Conferir a agenda
+        id: decisao
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          EVENTO: ${{ github.event_name }}
+        run: node db/agenda-backup.mjs >> "$GITHUB_OUTPUT"
+
   backup:
+    # Só roda quando a agenda manda. Job separado, e não `if:` passo a passo: o
+    # passo "Registrar a execução (sempre)" usa `if: always()` e gravaria SUCESSO
+    # nas horas puladas — a métrica de confiabilidade leria backup onde não houve.
+    needs: agenda
+    if: needs.agenda.outputs.executar == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

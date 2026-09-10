@@ -23,6 +23,7 @@ export const MIGRACOES_ESPERADAS = [
     '202609101000_tutorial_visto',
     '202609101100_registro_de_migracoes',
     '202609101600_api_de_dados_fechada',
+    '202609101700_settings_orfas_de_backup',
 ] as const;
 
 /**

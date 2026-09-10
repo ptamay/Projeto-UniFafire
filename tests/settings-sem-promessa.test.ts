@@ -91,7 +91,9 @@ describe('TASK-082 — no lugar deles, o estado real', () => {
     it('BDD 2: a tela diz onde o backup realmente acontece', () => {
         const tela = fs.readFileSync(path.resolve(RAIZ, TELA), 'utf-8');
         expect(tela, 'a tela não informa o arranjo real de backup').toMatch(/GitHub Actions/);
-        expect(tela, 'a tela não informa o horário real').toMatch(/03:00/);
+        // TASK-112 (ADR-024): o horário deixou de ser o literal "03:00" — é a agenda
+        // configurada, descrita pela mesma política que o workflow obedece.
+        expect(tela, 'a tela não informa o horário real').toMatch(/descreverHorarios\(/);
     });
 });
 
