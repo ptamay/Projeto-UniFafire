@@ -1,7 +1,8 @@
 # ADR-021 — Um runner de migrations, e uma §4.1 que descreve o que existe
 
-- **Status:** Aceito — TASK-101, 102 e 103 implementadas em 2026-09-10; TASK-104 (a
-  emenda) espera as três NO AR, o que inclui a adoção em produção
+- **Status:** Implementado em 2026-09-10 — TASK-101 a 104. Produção adotada (48/48
+  objetos conferidos, 9 adotadas + o registro), health 200, `pos-deploy` verificado
+  nos dois caminhos, e a §4.1 emendada por último, como a ordem exigia
 - **Data:** 2026-09-08
 - **Tipo de Change Request:** **D** (altera `constitution.md` §4.1)
 - **Relacionado:** constitution §4.1 · ADR-012 · runbook §4.1/§4.2 · TASK-079, TASK-093
