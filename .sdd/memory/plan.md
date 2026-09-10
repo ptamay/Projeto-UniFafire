@@ -87,6 +87,26 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — Teste de migração de verdade (CR Tipo D · ADR-022)
+> Aprovado pelo usuário em 2026-09-10. Sem sprint atribuída. **A ordem não é preferência:**
+> a 108 (a emenda) é a única que não pode vir antes — emendar antes do teste existir
+> repetiria o defeito do texto atual, que afirma "UP + DOWN testados" sem que nenhum DOWN
+> jamais tenha rodado.
+- **TASK-106 → ida e volta na suíte, para todas as migrations.** UP → DOWN → comparar o
+  schema com o de antes do UP → UP de novo, em base descartável. **Pré-requisito:** o
+  `global-setup` reproduz os default privileges do Supabase, com o valor conferido no
+  `pg_default_acl` de PRODUÇÃO (consulta que o usuário roda — o conector é barrado).
+  > Medido em 2026-09-10 à mão: 9 de 10 DOWNs exatos; o da `imutabilidade_historico`
+  > diverge em 81 linhas SÓ por ambiente (grants a anon/authenticated que o Supabase dá por
+  > padrão). Aceite: as 10 passam. ⚠️ Pode quebrar teste que passava porque `anon` não tinha
+  > grant nenhum — se quebrar, ele passava pelo motivo errado.
+- **TASK-107 → o ensaio sobre cópia de produção fica verificável**, para migration que toca
+  dados (`UPDATE`/`DELETE`/`INSERT`, `NOT NULL`, `UNIQUE`, `CHECK`, FK). Critério objetivo +
+  registro que uma guarda confira + procedimento no runbook §4. ⚠️ O registro não pode ir no
+  `.up.sql` já aplicado: muda o checksum e o `conferir` acusa alteração.
+- **TASK-108 → a emenda da §4.2**, com o texto do ADR-022 (decisão 4), e guarda no molde da
+  TASK-104. Só depois de 106 e 107 no ar.
+
 ### Runner de migrations (CR Tipo D · ADR-021) ✅ FECHADO em 2026-09-10
 > **101, 102 e 103 no ar pelo PR #50; 104 (a emenda da §4.1) na branch
 > `feat/task-104-emenda-4-1`.** Em produção: sonda 48/48, adoção 9 + registro (feita pelo
@@ -95,9 +115,7 @@
 > O `pos-deploy` falhou na execução do merge PELO MOTIVO CERTO (503 `schema_pendente`,
 > antes da adoção) e passou na re-execução: verificado nos dois caminhos. A primeira
 > execução revelou o `::error::` grudado no corpo JSON — corrigido (fix TASK-103).
-> ⚠️ A §4.2 (teste de migração "contra CÓPIA… nunca direto em `keys.db`") ficou com o mesmo
-> tipo de envelhecimento — cita `keys.db`, que não é mais produção. FORA do escopo do
-> ADR-021; exige CR Tipo D próprio.
+> A §4.2 envelheceu do mesmo jeito — virou o CR do ADR-022 (acima).
 >
 > Resultado medido: suíte 564 testes / 60 arquivos, montada PELO RUNNER. Adoção verificada
 > contra o backup de produção de 2026-09-10 restaurado: 9 adotadas, dump antes/depois
