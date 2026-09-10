@@ -114,3 +114,12 @@ export const TransactionSchema = z.object({
 export const SettingsSchema = z.object({
     time: z.string().regex(/^([01]\d|2[0-3]):?([0-5]\d)$/, "Formato de hora inválido (HH:MM).").optional(),
 });
+
+// TASK-112 (ADR-024) — a agenda do backup. Os limites são os de
+// `src/lib/agenda-backup.mjs` (LIMITES), que o workflow também usa: mínimo de 1 vez
+// por dia é o RPO de 24 h da §4.3. Número de verdade, e não texto: "3" em string é
+// recusado, para o cliente não depender de conversão implícita.
+export const AgendaBackupSchema = z.object({
+    hora: z.number().int('A hora é um número inteiro.').min(0).max(23, 'A hora vai de 0 a 23.'),
+    vezes: z.number().int('Vezes por dia é um número inteiro.').min(1, 'Pelo menos 1 vez por dia (RPO de 24 h).').max(4, 'No máximo 4 vezes por dia.'),
+}).strict();

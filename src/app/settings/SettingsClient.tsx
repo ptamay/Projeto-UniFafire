@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
+import { AGENDA_PADRAO, LIMITES, descreverHorarios } from '@/lib/agenda-backup.mjs';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -46,6 +47,10 @@ export default function SettingsClient({ userRole, username }: Props) {
     // Falha de LEITURA da metrica nao pode virar "nenhuma execucao": as duas
     // aparecem iguais na tela e so uma delas significa que o backup parou.
     const [bkpIndisponivel, setBkpIndisponivel] = useState(false);
+    // TASK-112 (ADR-024) — a agenda do backup. O workflow a lê de hora em hora
+    // (`db/agenda-backup.mjs`), com a mesma política que valida aqui.
+    const [agenda, setAgenda] = useState(AGENDA_PADRAO);
+    const [salvandoAgenda, setSalvandoAgenda] = useState(false);
 
     const fetchBackups = () => {
         fetch('/api/backups')
@@ -69,7 +74,29 @@ export default function SettingsClient({ userRole, username }: Props) {
         });
         // loadingBkp já inicia true — busca direta evita setState síncrono no effect
         fetchBackups();
-    }, []);
+        // A agenda é só de ADMIN (a rota devolve 403 para os outros papéis).
+        if (userRole === 'ADMIN') {
+            fetch('/api/backups/agenda')
+                .then(r => (r.ok ? r.json() : null))
+                .then(d => { if (d && typeof d.hora === 'number') setAgenda({ hora: d.hora, vezes: d.vezes }); })
+                .catch(() => {});
+        }
+    }, [userRole]);
+
+    const salvarAgenda = async () => {
+        setSalvandoAgenda(true);
+        try {
+            const res = await fetch('/api/backups/agenda', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(agenda),
+            });
+            const d = await res.json();
+            if (res.ok) toast.success(`Backup agendado para ${descreverHorarios(d)}.`);
+            else toast.error(d.error || 'Erro ao salvar a agenda.');
+        } catch { toast.error('Erro de conexão.'); }
+        setSalvandoAgenda(false);
+    };
 
     const saveSettings = async () => {
         setSavingSettings(true);
@@ -230,9 +257,39 @@ export default function SettingsClient({ userRole, username }: Props) {
                             );
                         })()}
 
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '1rem' }}>
-                            Diário às 03:00 (horário de Recife), pelo GitHub Actions — cada dump é verificado por restauração antes de ser guardado.
+                        {/* TASK-112 (ADR-024) — a agenda VOLTA à tela porque agora é
+                            obedecida: o workflow roda de hora em hora e consulta estas
+                            linhas. A retenção NÃO está aqui: só é aplicada na TASK-113,
+                            e campo que nada obedece é o controle inerte do ADR-013. */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.25rem' }}>
+                            <div className="input-group">
+                                <label className="input-label" htmlFor="bkp-hora">Horário</label>
+                                <select id="bkp-hora" className="input" value={agenda.hora}
+                                    onChange={e => setAgenda(a => ({ ...a, hora: Number(e.target.value) }))}>
+                                    {Array.from({ length: LIMITES.hora[1] + 1 }, (_, h) => (
+                                        <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="input-group">
+                                <label className="input-label" htmlFor="bkp-vezes">Vezes por dia</label>
+                                <select id="bkp-vezes" className="input" value={agenda.vezes}
+                                    onChange={e => setAgenda(a => ({ ...a, vezes: Number(e.target.value) }))}>
+                                    {Array.from({ length: LIMITES.vezes[1] - LIMITES.vezes[0] + 1 }, (_, i) => i + LIMITES.vezes[0]).map(v => (
+                                        <option key={v} value={v}>{v}× por dia</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                            Pelo GitHub Actions, por volta de <strong style={{ color: 'var(--text-secondary)' }}>{descreverHorarios(agenda)}</strong> (horário
+                            de Recife) — o GitHub pode atrasar alguns minutos. Cada dump é verificado por restauração antes de ser guardado.
                         </p>
+                        <div style={{ marginTop: '0.75rem' }}>
+                            <button className="btn btn-green" onClick={salvarAgenda} disabled={salvandoAgenda}>
+                                {salvandoAgenda ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Salvar agenda'}
+                            </button>
+                        </div>
                     </div>
                     )}
                 </div>

@@ -43,9 +43,17 @@ function semComentarios(arquivo: string) {
 }
 
 describe('TASK-082 — os controles inertes saem da tela', () => {
-    it('BDD 1: não há mais campo de horário nem de retenção de backup', () => {
+    it('BDD 1: campo de agenda só existe se o workflow a lê; retenção, ainda não', () => {
         const tela = semComentarios(TELA);
-        expect(tela, 'campo "Horário do Backup" continua na tela').not.toMatch(/Horário do Backup/i);
+        // TASK-112 (ADR-024): o horário VOLTA, porque passou a ser obedecido — o
+        // workflow roda de hora em hora e consulta a agenda no banco. O que esta
+        // guarda proíbe é o controle INERTE, e não o campo: ela reprova a tela que
+        // oferece agenda sem que o workflow a leia.
+        if (/\/api\/backups\/agenda/.test(tela)) {
+            expect(semComentarios('.github/workflows/backup.yml'), 'a tela oferece agenda que o workflow não lê')
+                .toMatch(/node db\/agenda-backup\.mjs/);
+        }
+        expect(tela, 'campo "Horário do Backup" antigo, que gravava backup_time').not.toMatch(/backupTime/);
         // Precisa mirar o CAMPO, não a palavra: o texto que entra no lugar
         // explica que a retenção é o histórico do repositório privado, e essa
         // frase é verdadeira. Regex larga demais reprovaria a correção.
@@ -83,7 +91,9 @@ describe('TASK-082 — no lugar deles, o estado real', () => {
     it('BDD 2: a tela diz onde o backup realmente acontece', () => {
         const tela = fs.readFileSync(path.resolve(RAIZ, TELA), 'utf-8');
         expect(tela, 'a tela não informa o arranjo real de backup').toMatch(/GitHub Actions/);
-        expect(tela, 'a tela não informa o horário real').toMatch(/03:00/);
+        // TASK-112 (ADR-024): o horário deixou de ser o literal "03:00" — é a agenda
+        // configurada, descrita pela mesma política que o workflow obedece.
+        expect(tela, 'a tela não informa o horário real').toMatch(/descreverHorarios\(/);
     });
 });
 
