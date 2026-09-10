@@ -169,6 +169,56 @@ export async function conferir(client, dir = DIR_PADRAO) {
     return { registro: true, pendentes, alteradas, orfas };
 }
 
+// ── Retrato do schema (TASK-106) ────────────────────────────────────────────
+//
+// O schema `public` como linhas comparáveis: colunas, restrições, índices,
+// triggers, funções, RLS, políticas e privilégios. É o que um DOWN tem de
+// restaurar. Aqui, e não no teste, porque a ida e volta da suíte e o ensaio sobre
+// a cópia de produção (TASK-107) comparam a MESMA coisa — duas definições
+// divergiriam, e uma delas passaria a aceitar o que a outra recusa.
+
+/** Privilégio entra ORDENADO item a item: `{a,b}` e `{b,a}` são o mesmo acesso, e a
+ *  ordem do array muda com a sequência de GRANT/REVOKE. */
+const aclOrdenada = (col) =>
+    `coalesce((SELECT string_agg(x::text, ',' ORDER BY x::text) FROM unnest(${col}) x), 'padrao')`;
+
+export async function retratoDoSchema(client) {
+    const r = await client.query(`
+        SELECT 'coluna ' || table_name || '.' || column_name || ' ' || data_type
+               || ' null=' || is_nullable || ' default=' || coalesce(column_default, '') AS linha
+          FROM information_schema.columns WHERE table_schema = 'public'
+        UNION ALL
+        SELECT 'restricao ' || conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+          FROM pg_constraint WHERE connamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'indice ' || indexdef FROM pg_indexes WHERE schemaname = 'public'
+        UNION ALL
+        SELECT 'trigger ' || pg_get_triggerdef(g.oid)
+          FROM pg_trigger g JOIN pg_class k ON k.oid = g.tgrelid
+         WHERE NOT g.tgisinternal AND k.relnamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'funcao ' || p.oid::regprocedure || ' ' || md5(pg_get_functiondef(p.oid)) || ' acl=' || ${aclOrdenada('p.proacl')}
+          FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'relacao ' || relname || ' ' || relkind::text || ' rls=' || relrowsecurity
+               || ' force=' || relforcerowsecurity || ' acl=' || ${aclOrdenada('relacl')}
+          FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind IN ('r', 'S', 'v', 'm', 'p')
+        UNION ALL
+        SELECT 'politica ' || tablename || ' ' || policyname || ' ' || cmd || ' ' || coalesce(qual, '')
+          FROM pg_policies WHERE schemaname = 'public'
+    `);
+    return r.rows.map(l => l.linha).sort();
+}
+
+/** O que sumiu (−) e o que apareceu (+) entre dois retratos. Vazio = idênticos. */
+export function diferencaDeRetratos(antes, depois) {
+    const a = new Set(antes), d = new Set(depois);
+    return [
+        ...antes.filter(l => !d.has(l)).map(l => `  − ${l}`),
+        ...depois.filter(l => !a.has(l)).map(l => `  + ${l}`),
+    ];
+}
+
 // ── Adoção (TASK-102) ───────────────────────────────────────────────────────
 //
 // Marcar como aplicado o que JÁ está no banco, sem reexecutar. Existe porque o
