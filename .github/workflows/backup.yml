@@ -45,6 +45,13 @@ concurrency:
   group: backup-diario
   cancel-in-progress: false
 
+# TASK-110 (ADR-023) — só ler o próprio código, para o checkout. O push do dump vai para
+# o repositório PRIVADO com o BACKUP_REPO_TOKEN, e não com o token padrão do Actions —
+# que, sem esta linha, podia escrever neste repositório, e com ele qualquer passo do job
+# (inclusive uma dependência do `npm ci`).
+permissions:
+  contents: read
+
 jobs:
   backup:
     runs-on: ubuntu-latest

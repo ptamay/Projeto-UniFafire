@@ -50,6 +50,10 @@ concurrency:
   group: keepalive
   cancel-in-progress: true
 
+# TASK-110 (ADR-023) — nenhuma. O job só faz um curl; o token padrão do Actions pode
+# escrever no repositório, e não há por que entregá-lo a quem não o usa.
+permissions: {}
+
 jobs:
   ping:
     runs-on: ubuntu-latest
