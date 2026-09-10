@@ -103,8 +103,15 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   da TASK-106 + verificar Realtime em produção) e TASK-110 (`permissions:` no keepalive e no
   backup). ⚠️ Detalhe que muda a migration: função tem EXECUTE para PUBLIC por padrão, e o anon
   herda por aí — revogar de PUBLIC também, pela forma GLOBAL do ALTER DEFAULT PRIVILEGES.
-- Próxima Ação: merge do PR do CR; TASK-109 começa por uma consulta só-leitura em produção
-  (usuário roda). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
+- ✅ **TASK-109 FEITA em 2026-09-10** (#56 do CR merged). Produção lida pelo usuário: igual à
+  base de teste, + `ensure_rls` (event trigger que liga RLS sozinho — NÃO reproduzido na base
+  de teste, de propósito). Migration `202609101600_api_de_dados_fechada` + guarda + retrato com
+  default privilege. 594 / 65.
+- 🔴 **ORDEM: aplicar a `202609101600` em produção ANTES do merge** — senão o health (TASK-103)
+  responde 503 e o `pos-deploy` fica vermelho. Pelo runner (§4.1): o usuário roda `aplicar` com a
+  URL de produção a partir da branch — OU, como o usuário prefere, pelo EDITOR com o roteiro que o runner gera (`roteiro <migration>`, adicionado na TASK-109).
+- Próxima Ação: aplicação em produção pelo usuário → merge → verificar (health, conferir, card
+  "Ativa") → TASK-110. Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
   (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
@@ -335,7 +342,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: docs/cr-endurecimento (PR a abrir). PRs #15–#55 merged; #43 do
+- Branch atual: feat/task-109-api-fechada (PR a abrir). PRs #15–#56 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

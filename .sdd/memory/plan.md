@@ -90,6 +90,15 @@
 ### Aberta por Change Request — API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023)
 > Aprovado pelo usuário em 2026-09-10: fechar `anon` e `authenticated` (não `service_role`), com
 > o default privilege revogado para que o que vier nasça fechado. Sem sprint atribuída.
+- ✅ **TASK-109 FEITA em 2026-09-10** (branch `feat/task-109-api-fechada`). Produção lida ANTES
+  pelo usuário: idêntica à base de teste (0/12 tabelas, 11/11 sequências, 4/5 funções, nenhuma
+  tabela sem RLS) + 7 event triggers da plataforma, entre eles o `ensure_rls` (liga RLS sozinho
+  em tabela nova — a base de teste NÃO o reproduz, de propósito). Migration
+  `202609101600_api_de_dados_fechada`; retrato da ida e volta passou a incluir default privilege;
+  guarda com dente (inclusive por migration temporária). 594 testes / 65 arquivos.
+  > 🔴 **Aplicar em produção ANTES do merge** — com ela na lista esperada, o health responde 503
+  > até ela existir lá. Só muda privilégio. Depois: health 200, `conferir` limpo, card de tempo
+  > real "Ativa" e a próxima operação real propagando.
 - **TASK-109 → migration que fecha `public` para `anon`/`authenticated`, e a guarda.**
   1. ANTES: consulta só-leitura em produção, rodada pelo usuário — privilégios de anon/authenticated
      em tabelas, sequências e funções de `public` (esperado: nenhum em tabela, SELECT/UPDATE/USAGE

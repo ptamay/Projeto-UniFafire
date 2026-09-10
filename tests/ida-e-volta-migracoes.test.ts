@@ -48,14 +48,28 @@ const runner = () => import('../db/runner-migracoes.mjs');
 
 describe('TASK-106 — a base de teste tem os privilégios de produção', () => {
     it('BDD 1: default privileges de `public` iguais aos lidos em produção', async () => {
-        const linhas = await comCliente(TEST_DATABASE_URL, c => c.query<{ tipo: string; acl: string }>(`
-            SELECT d.defaclobjtype::text AS tipo,
-                   (SELECT string_agg(split_part(x::text, '/', 1), ',' ORDER BY x::text)
-                      FROM unnest(d.defaclacl) x) AS acl
-              FROM pg_default_acl d
-             WHERE d.defaclnamespace = 'public'::regnamespace
-               AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = current_user)
-        `));
+        // Numa base recém-preparada, ANTES das migrations: o que se compara é o padrão
+        // da PLATAFORMA. A primeira versão lia a base da suíte depois das migrations —
+        // e a `202609101600_api_de_dados_fechada` (TASK-109) revoga exatamente esse
+        // default, de propósito. O cenário passaria a medir a migration, não a base.
+        const PLATAFORMA = 'plataforma_teste';
+        await comCliente(urlAdmin, async c => {
+            await c.query(`DROP DATABASE IF EXISTS ${PLATAFORMA} WITH (FORCE)`);
+            await c.query(`CREATE DATABASE ${PLATAFORMA}`);
+        });
+        const linhas = await comCliente(TEST_DATABASE_URL.replace(/\/[^/]+$/, `/${PLATAFORMA}`), async c => {
+            await c.query('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+            await prepararBasePlataforma(c);
+            return c.query<{ tipo: string; acl: string }>(`
+                SELECT d.defaclobjtype::text AS tipo,
+                       (SELECT string_agg(split_part(x::text, '/', 1), ',' ORDER BY x::text)
+                          FROM unnest(d.defaclacl) x) AS acl
+                  FROM pg_default_acl d
+                 WHERE d.defaclnamespace = 'public'::regnamespace
+                   AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = current_user)
+            `);
+        });
+        await comCliente(urlAdmin, c => c.query(`DROP DATABASE IF EXISTS ${PLATAFORMA} WITH (FORCE)`));
         const porTipo = Object.fromEntries(linhas.rows.map(l => [l.tipo, l.acl.split(',')]));
 
         for (const [tipo, esperados] of Object.entries(PRODUCAO_2026_09_10)) {

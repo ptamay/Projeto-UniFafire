@@ -194,6 +194,19 @@ DATABASE_URL="<URL>" node db/runner-migracoes.mjs conferir
 DATABASE_URL="<URL>" node db/runner-migracoes.mjs aplicar
 ```
 
+**Pelo editor SQL do Supabase**, sem pôr a URL de produção num terminal: o runner gera
+o roteiro, e o editor só o executa.
+
+```bash
+node db/runner-migracoes.mjs roteiro <migration> > aplicar.sql
+```
+
+É uma transação que confere o que o `aplicar` conferiria (registro existe, a migration
+ainda não está nele, nada anterior pendente), aplica o UP e grava o registro com o
+checksum do arquivo. Cole **inteiro** no editor; se qualquer passo falhar, nada fica.
+**Nunca cole o `.up.sql` sozinho:** aplica sem registrar — é como o ledger do Supabase
+divergiu (§4.1).
+
 Regras que não se negociam:
 
 - **Gere um backup antes** (§6.3, "Rodar o backup à mão").
