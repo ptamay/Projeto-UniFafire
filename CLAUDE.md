@@ -96,11 +96,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   **TASK-108: §4.2 EMENDADA** (branch `feat/task-108-emenda-4-2`, PR a abrir): ida e volta
   pela suíte para todas + ensaio sobre a cópia quando toca dados; "produção nunca é o
   primeiro banco". Guarda no molde da TASK-104. 590 testes / 64 arquivos.
-- Próxima Ação: merge do PR da TASK-108. Da fila que sobra: endurecimento (anon com
-  SELECT/UPDATE/USAGE nas 11 sequências e EXECUTE nas 4 funções de trigger — medido na base
-  de teste com o padrão de produção), `permissions:` no keepalive e backup, §0 da
-  constitution ("Transição em curso", vencida), §2.2 (espera dados), linhas órfãs de
-  `settings`, PR #43 do Dependabot.
+- ✅ #55 merged — §4.2 emendada, ADR-022 fechado.
+- 📋 **CR do ENDURECIMENTO feito em 2026-09-10 (Tipo C, ADR-023), aprovado pelo usuário:**
+  fechar `anon` e `authenticated` em `public` (não `service_role`), com o default privilege
+  revogado para o que vier nascer fechado. TASK-109 (migration + guarda + ajuste do cenário 1
+  da TASK-106 + verificar Realtime em produção) e TASK-110 (`permissions:` no keepalive e no
+  backup). ⚠️ Detalhe que muda a migration: função tem EXECUTE para PUBLIC por padrão, e o anon
+  herda por aí — revogar de PUBLIC também, pela forma GLOBAL do ALTER DEFAULT PRIVILEGES.
+- Próxima Ação: merge do PR do CR; TASK-109 começa por uma consulta só-leitura em produção
+  (usuário roda). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
+  (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -330,7 +335,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-108-emenda-4-2 (PR a abrir). PRs #15–#54 merged; #43 do
+- Branch atual: docs/cr-endurecimento (PR a abrir). PRs #15–#55 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
