@@ -248,6 +248,38 @@ workflows aplica nada — eles não têm credencial de banco, e não devem ter.
 Toda migration nova precisa entrar também em `src/lib/migracoes-esperadas.ts`; a
 suíte reprova se a lista e o diretório divergirem.
 
+#### 4.0.2 Migration que toca dados: ensaio sobre a cópia ANTES de produção
+
+A suíte prova toda migration numa base vazia, com ida e volta (ADR-022). O que ela
+não prova é o que depende de dado: `SET NOT NULL` sobre linhas nulas, `UNIQUE` sobre
+duplicatas, quantas linhas um `UPDATE` pega. Migration que faz `INSERT`/`UPDATE`/
+`DELETE`/`TRUNCATE`, ou que põe restrição em tabela existente, é **ensaiada sobre o
+backup mais recente** — a suíte reprova enquanto não houver o registro do ensaio.
+
+1. Baixe o dump mais recente e restaure numa base **descartável** (§6.5, passos 2–4) —
+   nunca no projeto de produção. Se o backup for anterior à adoção (2026-09-10), adote
+   nela primeiro (`adotar`, §4.0).
+2. Ensaie, apontando para a CÓPIA:
+
+   ```bash
+   DATABASE_URL="<cópia local>" node db/runner-migracoes.mjs ensaiar <migration> backups/AAAA/MM/AAAA-MM-DD.sql.gz
+   ```
+
+   Ele aplica o UP numa transação, conta as linhas de cada comando e as tabelas cuja
+   contagem mudou, faz a ida e volta **sobre os dados** (DOWN → schema idêntico → UP),
+   e grava `db/migrations-pg/<migration>.ensaio.md`. Se o dado violar a migration, ou o
+   DOWN não restaurar, ele recusa nomeando o motivo e a cópia volta a como estava.
+   Com uma URL do Supabase ele **recusa antes de conectar**.
+3. **Leia os números** antes de publicar — `UPDATE 40` onde se esperava 2 é o motivo de
+   o ensaio existir. Versione o `.ensaio.md` junto com a migration. Não o edite à mão: ele
+   leva o checksum do UP, e mudar o UP depois vence o ensaio.
+4. **Apague o dump e a base descartável.** Eles têm a PII de produção.
+
+> Primeiro ensaio real, 2026-09-10, retroativo: `202609090900_sem_senha_compartilhada`
+> sobre o backup de 2026-09-09 (anterior a ela) — `DELETE 1`, `UPDATE 0`, ida e volta
+> ok. Bate com a conferência que em 2026-09-09 teve de ser feita no próprio banco de
+> produção; agora sai da cópia.
+
 > Verificado em 2026-09-10 contra o **backup de produção daquele dia**, restaurado numa
 > base descartável: 9 adotadas (8 conferidas + a de dados), `conferir` limpo,
 > `aplicar` sem nada a fazer, e o dump antes/depois **idêntico linha a linha** fora do
