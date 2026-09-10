@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
+import Tutorial from './Tutorial';
 import { buscarDadosDoDashboard } from '@/lib/dashboard-refresh';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
@@ -36,6 +37,8 @@ interface Props {
     userRole: string;
     userId: number;
     username?: string;
+    /** TASK-098: primeiro acesso desta pessoa — o tutorial abre sozinho. */
+    tutorialPendente?: boolean;
 }
 
 const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..." }: { users: User[], selectedId?: number, onSelect: (id: number) => void, placeholder?: string }) => {
@@ -227,7 +230,7 @@ const describePending = (pi: NonNullable<Key['pending_info']>): string => {
     return 'Aguardando confirma\u00e7\u00e3o';
 };
 
-export default function DashboardClient({ initialKeys, initialUsers, userRole, userId, username }: Props) {
+export default function DashboardClient({ initialKeys, initialUsers, userRole, userId, username, tutorialPendente}: Props) {
     const router = useRouter();
     const [keys, setKeys] = useState<Key[]>(initialKeys || []);
     // Map initialUsers so it has a 'name' property (falling back to full_name or username)
@@ -704,6 +707,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
     return (
         <div className="page-wrapper">
+            {/* TASK-098 — abre sozinho no primeiro acesso, e so aqui: e a tela onde
+                a pessoa sempre cai depois de entrar. Nao bloqueia — sai com Escape,
+                com "Pular" ou clicando fora. */}
+            <Tutorial papel={userRole} abrirAoMontar={tutorialPendente} />
+
             <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
             <main className="main-content">

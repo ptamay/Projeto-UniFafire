@@ -68,6 +68,7 @@ próprio cadastro.
 |---|---|
 | `/api/account/profile` | `GET`, `PUT` |
 | `/api/account/security/password` | `PUT` |
+| `/api/account/onboarding` | `POST` | **sessão** | Marca que a pessoa viu o tutorial de primeiro acesso. **Não recebe corpo**: o alvo sai da sessão, e só dela — aceitar um `userId` de fora seria escrita em linha alheia. `COALESCE` preserva a primeira data, então rever pela tela não a reescreve (TASK-098) |
 | `/api/auth/me` | `GET` |
 
 ---

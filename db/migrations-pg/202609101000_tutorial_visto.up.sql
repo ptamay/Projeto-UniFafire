@@ -1,0 +1,30 @@
+-- 202609101000_tutorial_visto (UP) — TASK-098 · Tipo A · ADR-018
+--
+-- Registra QUANDO cada pessoa viu o tutorial de primeiro acesso.
+--
+-- ## Por que no banco, e não em `localStorage`
+--
+-- `localStorage` é por NAVEGADOR, e este sistema tem um computador compartilhado no
+-- balcão. Ele erraria nos dois sentidos ao mesmo tempo:
+--
+--   · quem entrasse depois, no mesmo navegador, NUNCA veria o tutorial — porque o
+--     colega anterior já o tinha fechado;
+--   · a mesma pessoa o veria de novo em cada aparelho que usasse.
+--
+-- A pessoa é a mesma em qualquer aparelho. O registro pertence a ela, não ao
+-- navegador.
+--
+-- ## Por que timestamp, e não booleano
+--
+-- `true` responde "viu?". A data responde "quando?", e é isso que permite saber, no
+-- futuro, se alguém viu a versão antiga do tutorial — se o conteúdo mudar, a
+-- comparação com a data da mudança diz quem precisa ver de novo. Um booleano
+-- fecharia essa porta por economizar nada.
+--
+-- ## Nulo é o estado normal
+--
+-- `NULL` significa "ainda não viu", que é como toda conta nasce. Sem NOT NULL e sem
+-- DEFAULT: um default de `now()` marcaria todo mundo como tendo visto no instante
+-- da migration, que é o oposto do que se quer.
+
+ALTER TABLE users ADD COLUMN onboarding_visto_em timestamptz;

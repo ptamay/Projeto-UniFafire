@@ -96,11 +96,18 @@ export default async function Home() {
     if (!session) redirect('/login');
 
     let sessionData;
+    // TASK-098: o tutorial abre sozinho no PRIMEIRO acesso, e este e o unico lugar
+    // onde a pessoa sempre passa depois de entrar.
+    let tutorialPendente = false;
     try {
         sessionData = await verifySession(session.value);
         if (!sessionData) throw new Error('Invalid session');
-        const user = await queryOne('SELECT id FROM users WHERE id = $1', [sessionData.id]);
+        // A mesma consulta que ja validava a existencia da conta traz o marcador do
+        // tutorial. Uma ida ao banco, nao duas.
+        const user = await queryOne<{ id: number; onboarding_visto_em: Date | null }>(
+            'SELECT id, onboarding_visto_em FROM users WHERE id = $1', [sessionData.id]);
         if (!user) redirect('/login');
+        tutorialPendente = user.onboarding_visto_em === null;
     } catch {
         redirect('/login');
     }
@@ -116,6 +123,7 @@ export default async function Home() {
                 userRole={sessionData.role || 'FUNCIONARIO'}
                 userId={sessionData.id}
                 username={sessionData.username}
+                tutorialPendente={tutorialPendente}
             />
         </main>
     );

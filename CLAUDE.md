@@ -266,8 +266,18 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-097-configuracoes (PR a abrir). PRs #15–#45 merged; #46
-  aberto (registro da migration).
+- Branch atual: feat/task-098-tutorial (PR a abrir). PRs #15–#48 merged; #43 do
+  Dependabot aberto.
+- ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
+  papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
+  aberto naquele ADR, esperando dados da TASK-095.
+- ⚠️ **A TASK-098 TRAZ MIGRATION `202609101000_tutorial_visto`.** Merge não aplica
+  schema. **É mais grave que a da TASK-093:** sem ela, a consulta da página inicial
+  falha e o DASHBOARD não abre — lá, só reset e criação caíam.
+- ✅ **DUAS GUARDAS SE PAGARAM na TASK-098**, e vale o registro: o cenário da
+  TASK-097 que PROIBIA a palavra "tutorial" na tela reprovou (era o combinado — ele
+  existia para avisar a hora), e a guarda do contrato de API (TASK-086) pegou a
+  rota nova não documentada.
 - ✅ **TASK-097 FEITA em 2026-09-09** — card de atualização em tempo real (lendo de
   assinatura COMPARTILHADA, sem abrir segundo WebSocket), zona de perigo separada
   fora da grade, e o card de configurações reequilibrado. O botão de "rever
