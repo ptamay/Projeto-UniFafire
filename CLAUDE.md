@@ -110,8 +110,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - 🔴 **ORDEM: aplicar a `202609101600` em produção ANTES do merge** — senão o health (TASK-103)
   responde 503 e o `pos-deploy` fica vermelho. Pelo runner (§4.1): o usuário roda `aplicar` com a
   URL de produção a partir da branch — OU, como o usuário prefere, pelo EDITOR com o roteiro que o runner gera (`roteiro <migration>`, adicionado na TASK-109).
-- Próxima Ação: aplicação em produção pelo usuário → merge → verificar (health, conferir, card
-  "Ativa") → TASK-110. Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
+- ✅ **TASK-109 NO AR:** roteiro gerado pelo runner (`roteiro <migration>`) colado pelo usuário
+  no editor, registro conferido (11 linhas, checksums LF), #57 merged, `pos-deploy` verde
+  sozinho, health 200. Pendente do usuário: card de tempo real "Ativa" + próxima operação real.
+- ✅ **TASK-110 FEITA** (branch `feat/task-110-permissoes`, PR a abrir): keepalive `{}`, backup
+  `contents: read`, guarda. ⚠️ Só verificada quando os dois rodarem no Actions.
+- Próxima Ação: merge do PR da TASK-110 → rodar keepalive e backup (manual ou agenda) → ADR-023
+  fechado. Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
   (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
@@ -342,7 +347,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-109-api-fechada (PR a abrir). PRs #15–#56 merged; #43 do
+- Branch atual: feat/task-110-permissoes (PR a abrir). PRs #15–#57 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

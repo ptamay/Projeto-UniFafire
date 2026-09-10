@@ -113,6 +113,12 @@
      revoga — passa a conferir a base logo após `prepararBasePlataforma`.
   5. Produção: aplicar pelo runner (§4.1); depois health 200, `conferir` limpo, **sinal do Realtime
      recebido** e o card de tempo real "Ativa".
+- ✅ **TASK-109 NO AR em 2026-09-10** — roteiro aplicado pelo usuário no editor (registro com
+  `0bf101f9ac0bd852`), #57 merged, `pos-deploy` verde sozinho, health 200. Falta o usuário ver o
+  card de tempo real "Ativa" e a próxima operação real propagar.
+- ✅ **TASK-110 FEITA em 2026-09-10** (branch `feat/task-110-permissoes`): keepalive `{}`, backup
+  `contents: read`, guarda para todo workflow (topo + nada de write). ⚠️ Verificada só quando
+  os dois rodarem no Actions depois do merge.
 - **TASK-110 → `permissions:` nos workflows.** `keepalive.yml` → `{}`; `backup.yml` →
   `contents: read`; guarda: todo workflow declara `permissions:` no topo. Verificado só quando o
   backup rodar de verdade depois do merge (execução manual).
