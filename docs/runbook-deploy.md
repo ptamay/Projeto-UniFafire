@@ -180,22 +180,60 @@ todas as sessões ativas** — o que é o procedimento certo se ele vazar.
 
 ## 4. Migrations
 
-**Não há runner automático de migrations para Postgres.** `db/migrate.mjs` é o
-runner do SQLite antigo e **não serve** para o banco de produção (débito
-registrado no `plan.md`). Em produção, aplique os arquivos à mão, **em ordem de
-nome**, que é ordem cronológica:
+**Desde o ADR-021 há runner: `db/runner-migracoes.mjs`.** Ele aplica em ordem de
+nome, cada migration numa transação junto com o seu registro na tabela
+`migracoes_aplicadas`, e para na primeira falha. (`db/migrate.mjs` é o runner do
+SQLite antigo e **não serve** para produção.)
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations-pg/<timestamp>_<nome>.up.sql
+# o que falta, o que mudou depois de aplicado, o que está no banco sem arquivo
+# (sai com código 1 se houver qualquer um dos três)
+DATABASE_URL="<URL>" node db/runner-migracoes.mjs conferir
+
+# aplica o que estiver pendente
+DATABASE_URL="<URL>" node db/runner-migracoes.mjs aplicar
 ```
 
 Regras que não se negociam:
 
-- **Ordem de nome, sempre.** Os arquivos são prefixados por timestamp.
 - **Gere um backup antes** (§6.3, "Rodar o backup à mão").
 - **Nunca edite o banco à mão.** Toda mudança de schema entra por um par
-  UP/DOWN em `db/migrations-pg/` — o Gate 2 reprova UP sem DOWN.
-- Para reverter, aplique o `.down.sql` correspondente.
+  UP/DOWN em `db/migrations-pg/` — o Gate 2 reprova UP sem DOWN. SQL colado no
+  editor do Supabase não entra no registro, e é assim que o ledger antigo divergiu.
+- **Nunca edite uma migration já aplicada.** O registro guarda o hash do arquivo, e
+  `conferir` acusa a alteração — escreva uma migration nova.
+- Para reverter, aplique o `.down.sql` correspondente à mão **e apague a linha dela
+  em `migracoes_aplicadas`**, senão o runner nunca a reaplica.
+
+#### 4.0 Adoção — uma vez só, na primeira vez que o runner encontra o banco
+
+O registro nasce vazio e produção não: as migrations até
+`202609101000_tutorial_visto` foram aplicadas à mão. Rodar `aplicar` direto
+tentaria reexecutá-las. A adoção as marca como `adotada` **sem executar nenhuma**:
+
+```bash
+DATABASE_URL="<URL>" node db/runner-migracoes.mjs adotar 202609101000_tutorial_visto
+DATABASE_URL="<URL>" node db/runner-migracoes.mjs conferir   # tem de sair limpo
+```
+
+- **`ate` é obrigatório** e é o nome da última migration que você SABE estar no
+  banco. Adotar além dele marcaria como aplicado algo que nunca rodou.
+- **Antes de marcar, ela confere no catálogo** cada tabela, índice, função, trigger
+  (na tabela certa), coluna, restrição e RLS que as migrations declaram. Faltou um,
+  **recusa tudo** e lista o que falta — não adota pela metade.
+- **Se recusar, NÃO insista:** o banco não tem o que o repositório diz. Aplique a
+  migration que falta (ou descubra por que ela não está lá) e adote de novo.
+- Migration só de dados (`UPDATE`/`DELETE`) não deixa nada no catálogo: é adotada
+  **e dita como não conferida** na saída. Hoje é só a `202609090900`.
+- Uma recusa deixa a tabela `migracoes_aplicadas` criada e vazia de adoções. É
+  inofensivo; a próxima tentativa segue dali.
+
+> Verificado em 2026-09-10 contra o **backup de produção daquele dia**, restaurado numa
+> base descartável: 9 adotadas (8 conferidas + a de dados), `conferir` limpo,
+> `aplicar` sem nada a fazer, e o dump antes/depois **idêntico linha a linha** fora do
+> registro. Com o trigger `history_no_delete` removido, a RLS de `users` desligada e a
+> coluna `onboarding_visto_em` apagada, a adoção recusou nomeando as três e não
+> marcou nada.
 
 ### 4.1 Como descobrir o que já foi aplicado
 
@@ -308,7 +346,9 @@ descreve o que está no banco.
 > Nada se perdeu e ninguém ficou sem acesso; o que parou foi o balcão conseguir cadastrar
 > gente nova ou resetar quem esqueceu a senha. **Ao mergear um PR que traga migration,
 > aplique-a ANTES ou imediatamente depois**, e confira o schema (§4.1) em vez de supor.
-> Enquanto não houver runner, a ordem é responsabilidade de quem faz o merge.
+> O runner existe (§4), mas **não roda sozinho no merge** — de propósito (ADR-021).
+> A ordem continua sendo responsabilidade de quem faz o merge: `aplicar` antes ou
+> logo depois, e `conferir` para ter certeza.
 
 > **Por que `app_logs` quase passou batido, e o que isso ensina.** Ela ficou
 > pendente desde a Sprint 22 sem ninguém notar, porque a falta dela **não produz

@@ -169,10 +169,174 @@ export async function conferir(client, dir = DIR_PADRAO) {
     return { registro: true, pendentes, alteradas, orfas };
 }
 
+// ── Adoção (TASK-102) ───────────────────────────────────────────────────────
+//
+// Marcar como aplicado o que JÁ está no banco, sem reexecutar. Existe porque o
+// registro nasce vazio e produção não: nove migrations aplicadas à mão.
+//
+// ## O risco não é quebrar. É MENTIR.
+//
+// Adotar é afirmar "isto já está no banco". Se for falso, o runner nunca aplica a
+// migration — ela está registrada — e o banco fica sem ela, em silêncio. Por isso a
+// adoção PROVA antes de marcar, e se faltar um único objeto, recusa TUDO.
+
+/** Tira comentários e corpos entre `$$` antes de procurar objetos. As migrations
+ *  deste projeto são quase metade comentário, e muitos mencionam `CREATE TABLE` para
+ *  explicar uma decisão — sem isto a sonda procuraria tabelas que ninguém criou. */
+function limparSql(sql) {
+    return sql
+        .replace(/\$([A-Za-z_]*)\$[\s\S]*?\$\1\$/g, "''")
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/--[^\n]*/g, '');
+}
+
+function separar(nome) {
+    const partes = nome.replace(/"/g, '').toLowerCase().split('.');
+    return partes.length === 2 ? { schema: partes[0], nome: partes[1] } : { schema: 'public', nome: partes[0] };
+}
+
+/** Objetos que a migration DECLARA criar. É o que a adoção vai procurar. */
+export function objetosDeclarados(sql) {
+    const s = limparSql(sql);
+    const achados = [];
+    // `String.raw`, e não template literal comum: ali `\s` vira `s` e `\b` vira
+    // BACKSPACE. A primeira versão desta sonda nasceu com todas as regex quebradas
+    // por isso — e só não passou despercebida porque o teste reprovou em vez de dar
+    // falso verde.
+    const ident = String.raw`((?:"[^"]+"|[A-Za-z_][\w$]*)(?:\.(?:"[^"]+"|[A-Za-z_][\w$]*))?)`;
+    const padroes = [
+        ['tabela', new RegExp(String.raw`\bCREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?` + ident, 'gi')],
+        ['indice', new RegExp(String.raw`\bCREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?` + ident, 'gi')],
+        ['funcao', new RegExp(String.raw`\bCREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+` + ident + String.raw`\s*\(`, 'gi')],
+    ];
+    for (const [tipo, re] of padroes) {
+        for (const m of s.matchAll(re)) achados.push({ tipo, ...separar(m[1]) });
+    }
+    // Trigger leva a TABELA junto: o nome de trigger é único por tabela, não no
+    // banco, e procurar só pelo nome aceitaria um homônimo pendurado em outra.
+    const trigger = new RegExp(
+        String.raw`\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:CONSTRAINT\s+)?TRIGGER\s+` + ident + String.raw`[^;]*?\bON\s+` + ident,
+        'gi',
+    );
+    for (const m of s.matchAll(trigger)) {
+        const t = separar(m[2]);
+        achados.push({ tipo: 'trigger', schema: t.schema, tabela: t.nome, nome: separar(m[1]).nome });
+    }
+    // `ALTER TABLE` é lido como COMANDO INTEIRO (até o `;`), e não como um casamento
+    // só: `ADD COLUMN a, ADD COLUMN b` é um comando, e casar só o começo afirmaria
+    // `b` sem tê-la procurado. Os corpos entre `$$` já foram tirados por `limparSql`,
+    // então o `;` aqui é sempre fim de comando.
+    const alter = new RegExp(String.raw`\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?` + ident + String.raw`([^;]*)`, 'gi');
+    // Vírgula dentro de `numeric(10, 2)` é seguida de número, não de `ADD` — por
+    // isso ancorar em "início ou vírgula" basta, sem contar parênteses.
+    const addColuna = new RegExp(
+        String.raw`(?:^|,)\s*ADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?`
+            + String.raw`(?!(?:CONSTRAINT|PRIMARY|UNIQUE|FOREIGN|CHECK|EXCLUDE)\b)` + ident,
+        'gi',
+    );
+    const addRestricao = new RegExp(String.raw`\bADD\s+CONSTRAINT\s+` + ident, 'gi');
+    for (const m of s.matchAll(alter)) {
+        const t = separar(m[1]);
+        const corpo = m[2];
+        for (const c of corpo.matchAll(addColuna)) {
+            achados.push({ tipo: 'coluna', schema: t.schema, tabela: t.nome, nome: separar(c[1]).nome });
+        }
+        for (const c of corpo.matchAll(addRestricao)) {
+            achados.push({ tipo: 'restricao', schema: t.schema, tabela: t.nome, nome: separar(c[1]).nome });
+        }
+        // RLS é ESTADO da tabela, não objeto — e é o controle que mais importa aqui:
+        // a chave anônima está no bundle do navegador, e RLS desligada entrega a
+        // tabela a quem a abrir, sem sintoma na aplicação.
+        if (/^\s*ENABLE\s+ROW\s+LEVEL\s+SECURITY\b/i.test(corpo)) {
+            achados.push({ tipo: 'rls', schema: t.schema, nome: t.nome });
+        }
+    }
+    return achados;
+}
+
+async function existe(client, o) {
+    const q = {
+        tabela:  ['SELECT to_regclass($1) IS NOT NULL AS ok', [`${o.schema}.${o.nome}`]],
+        indice:  ['SELECT to_regclass($1) IS NOT NULL AS ok', [`${o.schema}.${o.nome}`]],
+        trigger: [`SELECT EXISTS (SELECT 1 FROM pg_trigger g JOIN pg_class c ON c.oid = g.tgrelid
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                   WHERE n.nspname = $1 AND c.relname = $2 AND g.tgname = $3 AND NOT g.tgisinternal) AS ok`,
+                  [o.schema, o.tabela, o.nome]],
+        funcao:  [`SELECT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                   WHERE p.proname = $1 AND n.nspname = $2) AS ok`, [o.nome, o.schema]],
+        coluna:  [`SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema = $1 AND table_name = $2 AND column_name = $3) AS ok`,
+                  [o.schema, o.tabela, o.nome]],
+        restricao: [`SELECT EXISTS (SELECT 1 FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                   WHERE n.nspname = $1 AND c.relname = $2 AND k.conname = $3) AS ok`,
+                  [o.schema, o.tabela, o.nome]],
+        rls:     [`SELECT COALESCE((SELECT c.relrowsecurity FROM pg_class c
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                   WHERE n.nspname = $1 AND c.relname = $2), false) AS ok`, [o.schema, o.nome]],
+    }[o.tipo];
+    const r = await client.query(q[0], q[1]);
+    return r.rows[0].ok;
+}
+
+/**
+ * Marca como `adotada` cada migration até `ate` (inclusive) que ainda não esteja no
+ * registro — SEM executar nenhuma.
+ *
+ * Confere TUDO antes de marcar QUALQUER UMA. Se faltar um objeto, lança e o registro
+ * fica como estava: adoção parcial seria uma mentira pela metade, e a pior parte é
+ * que a metade verdadeira daria confiança à falsa.
+ */
+export async function adotar(client, dir = DIR_PADRAO, { ate } = {}) {
+    // `ate` obrigatório: adotar "tudo que tem arquivo" marcaria como aplicada uma
+    // migration que acabou de chegar e nunca rodou em lugar nenhum.
+    if (!ate) throw new Error('adotar exige `ate`: o nome da última migration que já está no banco');
+
+    const todas = listarMigracoes(dir);
+    const corte = todas.findIndex(m => m.nome === ate);
+    if (corte === -1) throw new Error(`\`ate\` não corresponde a nenhuma migration: ${ate}`);
+
+    await garantirRegistro(client);
+    const feitas = await registradas(client);
+    const candidatas = todas.slice(0, corte + 1).filter(m => !feitas.has(m.nome));
+
+    const ausentes = [];
+    const naoVerificaveis = [];
+    for (const m of candidatas) {
+        const objetos = objetosDeclarados(m.conteudo);
+        if (objetos.length === 0) { naoVerificaveis.push(m.nome); continue; }
+        for (const o of objetos) {
+            if (!(await existe(client, o))) {
+                const alvo = o.tabela ? `${o.tabela}.${o.nome}` : o.nome;
+                ausentes.push(`${m.nome}: ${o.tipo} ${alvo}`);
+            }
+        }
+    }
+    if (ausentes.length) {
+        throw new Error(`adoção recusada — o banco não tem o que estas migrations declaram:\n  ${ausentes.join('\n  ')}`);
+    }
+
+    await client.query('BEGIN');
+    try {
+        for (const m of candidatas) {
+            await client.query(
+                `INSERT INTO ${TABELA_REGISTRO} (nome, checksum, modo) VALUES ($1, $2, 'adotada')`,
+                [m.nome, m.checksum],
+            );
+        }
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    }
+    return { adotadas: candidatas.map(m => m.nome), naoVerificaveis };
+}
+
 // ── Linha de comando ────────────────────────────────────────────────────────
 //
 //   DATABASE_URL=... node db/runner-migracoes.mjs conferir
 //   DATABASE_URL=... node db/runner-migracoes.mjs aplicar
+//   DATABASE_URL=... node db/runner-migracoes.mjs adotar <ultima-migration-no-banco>
 //
 // `conferir` sai com código 1 se houver qualquer coisa pendente, alterada ou
 // órfã — é o que a TASK-103 e um passo de CI usam para decidir.
@@ -183,8 +347,8 @@ if (ehEntrada) {
     const { default: pg } = await import('pg');
     const comando = process.argv[2];
     const url = process.env.DATABASE_URL;
-    if (!url || !['conferir', 'aplicar'].includes(comando)) {
-        console.error('uso: DATABASE_URL=... node db/runner-migracoes.mjs conferir|aplicar');
+    if (!url || !['conferir', 'aplicar', 'adotar'].includes(comando)) {
+        console.error('uso: DATABASE_URL=... node db/runner-migracoes.mjs conferir|aplicar|adotar <ate>');
         process.exit(2);
     }
     const client = new pg.Client({ connectionString: url });
@@ -193,6 +357,12 @@ if (ehEntrada) {
         if (comando === 'aplicar') {
             const { aplicadas } = await aplicar(client);
             console.log(aplicadas.length ? `aplicadas: ${aplicadas.join(', ')}` : 'nada pendente');
+        } else if (comando === 'adotar') {
+            const r = await adotar(client, DIR_PADRAO, { ate: process.argv[3] });
+            console.log(`adotadas: ${r.adotadas.join(', ') || '(nenhuma)'}`);
+            if (r.naoVerificaveis.length) {
+                console.log(`⚠️ adotadas SEM conferência (só dados, nada no catálogo): ${r.naoVerificaveis.join(', ')}`);
+            }
         } else {
             const r = await conferir(client);
             console.log(JSON.stringify(r, null, 2));
