@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
+import { createClient, type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js';
 
 // TASK-072 (Sprint 25 · Etapa 5 do ADR-012) — a assinatura do sinal de mudança.
 // REQ-032, constitution §3.2.
@@ -44,6 +44,49 @@ function credenciais(): { url: string; chave: string } | null {
     return url && chave ? { url, chave } : null;
 }
 
+// ── Um cliente por aba (TASK-105) ───────────────────────────────────────────
+//
+// ## O que estava errado
+//
+// `createClient(...)` vivia DENTRO do efeito. Cada montagem criava um cliente novo,
+// com o **próprio WebSocket** — e cada página renderiza o próprio `Sidebar`, então
+// toda navegação remontava a assinatura. A limpeza chamava `removeChannel(canal)`,
+// que tira o canal do cliente e **não fecha o socket**.
+//
+// Medido no navegador em 2026-09-09: **3 navegações → 4 sockets, 4 ainda OPEN.**
+// Nenhum fechou. Numa jornada de balcão, uma aba acumula dezenas de conexões — e o
+// plano gratuito do Supabase Realtime tem limite de conexões SIMULTÂNEAS. O sintoma
+// seria o tempo real parar para todos **sem erro visível**, com as telas caindo no
+// polling de 30 s.
+//
+// ## Por que cliente único, e não `disconnect()` na limpeza
+//
+// Fechar o socket ao desmontar consertaria o vazamento e manteria a ROTATIVIDADE:
+// abrir e fechar conexão a cada clique no menu. Um cliente por aba elimina o
+// problema em vez de limpá-lo — os canais entram e saem, o socket fica.
+//
+// ## Por que preguiçoso, e não no topo do módulo
+//
+// Criar no topo executaria no import, inclusive onde não há credencial — e um
+// cliente apontando para `undefined` retenta para sempre. `null` aqui significa
+// "este ambiente não tem Realtime", que é um estado legítimo (`sem-configuracao`).
+
+let clienteDoSinal: SupabaseClient | null | undefined;
+
+/** O cliente Realtime da aba. Criado na primeira chamada e reaproveitado por todas
+ *  as montagens seguintes; `null` quando o ambiente não tem credenciais. */
+export function obterClienteDoSinal(): SupabaseClient | null {
+    if (clienteDoSinal !== undefined) return clienteDoSinal;
+
+    const cred = credenciais();
+    clienteDoSinal = cred
+        ? createClient(cred.url, cred.chave, {
+            auth: { persistSession: false, autoRefreshToken: false },
+        })
+        : null;
+    return clienteDoSinal;
+}
+
 /**
  * Assina o sinal de mudança das chaves.
  *
@@ -72,17 +115,15 @@ export function useSinalDeMudanca(
     }, [aoMudar, aoMudarEstado]);
 
     useEffect(() => {
-        const cred = credenciais();
-        if (!cred) {
+        // TASK-105: o cliente vem do escopo do módulo. Criar um aqui abria um
+        // WebSocket por montagem, e nenhum era fechado.
+        const supabase = obterClienteDoSinal();
+        if (!supabase) {
             aoMudarEstadoRef.current?.('sem-configuracao');
             return;
         }
 
         aoMudarEstadoRef.current?.('conectando');
-
-        const supabase = createClient(cred.url, cred.chave, {
-            auth: { persistSession: false, autoRefreshToken: false },
-        });
 
         let canal: RealtimeChannel | undefined;
         try {
@@ -102,6 +143,11 @@ export function useSinalDeMudanca(
             aoMudarEstadoRef.current?.('falhou');
         }
 
+        // O canal SAI, o socket FICA. Com um cliente só, é o canal que passaria a
+        // se acumular: cada montagem assina `chaves` de novo, e sem isto o mesmo
+        // cliente ficaria com N assinaturas do mesmo evento — a callback dispararia
+        // N vezes por sinal, e cada disparo é um refetch. O vazamento mudaria de
+        // forma em vez de sumir.
         return () => {
             if (canal) void supabase.removeChannel(canal);
         };

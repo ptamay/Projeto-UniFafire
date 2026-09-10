@@ -273,7 +273,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   fora da grade, e o card de configurações reequilibrado. O botão de "rever
   tutorial" NÃO entrou: a TASK-098 não existe, e há cenário proibindo a palavra na
   tela — ele cai quando o tutorial chegar.
-- 🔴 **VAZAMENTO DE WEBSOCKET A CADA NAVEGAÇÃO — achado ao verificar a TASK-097.**
+- ✅ **VAZAMENTO DE WEBSOCKET CORRIGIDO (TASK-105, 2026-09-09).** Cliente único por
+  aba, preguiçoso. Recontado no navegador com as MESMAS três navegações:
+  **4 sockets / 4 abertos → 0 / 0**, e o tempo real continua "Ativa". O canal
+  continua sendo removido ao desmontar — com um socket só, seriam os CANAIS a
+  acumular, e a callback dispararia N vezes por sinal.
+- Registro do defeito, porque o número dá sentido à correção:
   `useSinalDeMudanca` cria o cliente Supabase DENTRO do efeito, e cada página
   renderiza o próprio `Sidebar`: toda navegação abre um socket novo. A limpeza
   remove o canal e **não fecha o socket**. Medido: **3 navegações → 4 sockets, todos
