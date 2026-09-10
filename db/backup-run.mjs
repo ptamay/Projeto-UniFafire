@@ -16,7 +16,13 @@ import { pathToFileURL } from 'node:url';
  *  o schema real — lista escrita à mão envelhece em silêncio. */
 export const TABELAS_ESPERADAS = [
     'action_logs', 'app_logs', 'audit_logs', 'backup_runs', 'history',
-    'key_transactions', 'keys', 'login_attempts', 'rate_limit_hits', 'settings', 'users',
+    'key_transactions', 'keys', 'login_attempts',
+    // TASK-101: o registro de migrations TEM de estar no backup. Sem ele, restaurar
+    // devolveria o banco sem memória do que foi aplicado, e o runner rodado sobre a
+    // base restaurada tentaria reaplicar tudo — o problema do ledger recriado pelo
+    // próprio procedimento de recuperação.
+    'migracoes_aplicadas',
+    'rate_limit_hits', 'settings', 'users',
 ];
 
 /**
