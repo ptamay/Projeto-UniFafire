@@ -177,6 +177,20 @@ describe('TASK-103 — alguém é avisado logo depois do deploy', () => {
         expect(yml).toMatch(/"status":"ok"/);
     });
 
+    it('BDD 4: o corpo impresso termina a linha antes da anotação de erro', () => {
+        // Achado na PRIMEIRA execução real (2026-09-10, antes da adoção): o corpo
+        // JSON não termina em quebra de linha, e o `::error::` saiu grudado nele —
+        // `{"status":"degraded",...}::error::O deploy...`. O GitHub só transforma
+        // em anotação o comando que COMEÇA a linha, então o motivo da falha não
+        // apareceu no resumo do job, só enterrado no log.
+        const yml = semComentarios(arquivo);
+        const cats = [...yml.matchAll(/cat resposta\.json[^\n]*/g)].map(m => m[0]);
+        expect(cats.length).toBeGreaterThan(0);
+        for (const c of cats) {
+            expect(c, `imprime o corpo sem terminar a linha: ${c}`).toMatch(/cat resposta\.json[^;&|]*;\s*echo\b/);
+        }
+    });
+
     it('BDD 4: URL por configuração, e o mínimo de permissão', () => {
         const yml = semComentarios(arquivo);
         expect(yml).toMatch(/\$\{\{\s*vars\.HEALTH_URL\s*\}\}/);

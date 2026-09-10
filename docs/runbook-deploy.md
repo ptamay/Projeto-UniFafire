@@ -257,6 +257,12 @@ suíte reprova se a lista e o diretório divergirem.
 
 ### 4.1 Como descobrir o que já foi aplicado
 
+> ✅ **Desde 2026-09-10 a resposta é `node db/runner-migracoes.mjs conferir`** (§4).
+> Produção foi adotada naquele dia: 48 de 48 objetos declarados conferidos no catálogo,
+> 9 migrations `adotada` + o registro `aplicada`. O que segue abaixo é o registro de por
+> que o ledger do Supabase foi abandonado — continua valendo como aviso, não como
+> procedimento.
+
 > ⚠️ **NÃO CONFIE NO LEDGER DO SUPABASE.** Até 2026-09-07 esta seção mandava
 > consultá-lo e o chamava de "única fonte confiável". **Ele não é**, e a medição
 > daquele dia provou nos dois sentidos ao mesmo tempo. Leia o resto desta seção

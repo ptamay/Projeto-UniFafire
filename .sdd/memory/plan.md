@@ -87,11 +87,17 @@
 
 ## 4. Backlog — Próximas Sprints
 
-### Aberta por Change Request — Runner de migrations (CR Tipo D · ADR-021)
-> **101, 102 e 103 FEITAS em 2026-09-10** (branch `feat/task-101-runner`). **A ordem não é
-> preferência**: a 102 é a que pode quebrar produção e depende da 101; a 104 é a única que
-> não pode vir primeiro — e ela espera 101–103 NO AR, o que exige a ADOÇÃO EM PRODUÇÃO
-> (runbook §4.0) **antes** do merge: sem registro, o health da 103 responde 503.
+### Runner de migrations (CR Tipo D · ADR-021) ✅ FECHADO em 2026-09-10
+> **101, 102 e 103 no ar pelo PR #50; 104 (a emenda da §4.1) na branch
+> `feat/task-104-emenda-4-1`.** Em produção: sonda 48/48, adoção 9 + registro (feita pelo
+> usuário no editor SQL, com script gerado das funções do runner e ensaiado numa cópia —
+> o conector do Supabase foi barrado pelo classificador), health 503 → 200 sem novo deploy.
+> O `pos-deploy` falhou na execução do merge PELO MOTIVO CERTO (503 `schema_pendente`,
+> antes da adoção) e passou na re-execução: verificado nos dois caminhos. A primeira
+> execução revelou o `::error::` grudado no corpo JSON — corrigido (fix TASK-103).
+> ⚠️ A §4.2 (teste de migração "contra CÓPIA… nunca direto em `keys.db`") ficou com o mesmo
+> tipo de envelhecimento — cita `keys.db`, que não é mais produção. FORA do escopo do
+> ADR-021; exige CR Tipo D próprio.
 >
 > Resultado medido: suíte 564 testes / 60 arquivos, montada PELO RUNNER. Adoção verificada
 > contra o backup de produção de 2026-09-10 restaurado: 9 adotadas, dump antes/depois

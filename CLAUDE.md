@@ -54,12 +54,19 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   arquivo sozinho). Adoção contra o **backup de produção de 2026-09-10
   restaurado**: 9 adotadas, dump antes/depois idêntico; sabotados trigger, RLS e
   coluna, recusou nomeando os três. Health no dev server: 200 → 503 → 200.
-- 🔴 **ORDEM OBRIGATÓRIA PARA O MERGE:** ADOTAR EM PRODUÇÃO **ANTES** — sem registro,
-  o health da 103 responde 503 e o `pos-deploy` fica vermelho. Comando no runbook
-  §4.0 (`adotar 202609101000_tutorial_visto`, depois `conferir`). Exige a
-  `DATABASE_URL` de produção: **quem roda é o usuário**, eu não manejo credencial.
-- ⚠️ `pos-deploy.yml` só está verificado quando rodar no primeiro deploy de produção
-  (lição do go-live). A TASK-104 (emenda da §4.1) espera 101–103 NO AR.
+- ✅ **ADR-021 FECHADO em 2026-09-10.** PR #50 merged (101–103 no ar). Adoção em
+  PRODUÇÃO feita pelo usuário no editor SQL: sonda 48/48, 9 `adotada` + 1 `aplicada`;
+  health 503 → **200** sem novo deploy. `pos-deploy` VERIFICADO nos dois caminhos —
+  falhou no merge pelo motivo certo (antes da adoção) e passou na re-execução.
+  TASK-104: **§4.1 da constitution EMENDADA** (branch `feat/task-104-emenda-4-1`, PR a
+  abrir), com guarda que confere o PADRÃO citado contra o disco.
+- ⚠️ **SQL EM PRODUÇÃO pelo conector do Supabase é barrado pelo classificador**, até
+  leitura de catálogo e mesmo com autorização do usuário em chat. Caminho que
+  funcionou: gerar o SQL a partir das funções do runner, ensaiar numa cópia local
+  (inclusive sabotada, com o cliente SEM parar no erro — tem de ser atômico) e o
+  usuário cola no editor. Verificação depois por `curl` no health público.
+- ⚠️ A §4.2 da constitution envelheceu do mesmo jeito (cita `keys.db` como produção).
+  Fora do ADR-021 — CR Tipo D próprio, se o usuário quiser.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -289,7 +296,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-101-runner (PR a abrir). PRs #15–#49 merged; #43 do
+- Branch atual: feat/task-104-emenda-4-1 (PR a abrir). PRs #15–#50 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
@@ -577,7 +584,9 @@ docs/
   api-contract.md
   event-catalog.md
 
-db/migrations/          ← scripts DOWN (rollback) pareados por timestamp com o UP
+db/migrations-pg/       ← <timestamp>_<nome>.up.sql + .down.sql pareados (constitution §4.1)
+db/runner-migracoes.mjs ← aplica e registra em migracoes_aplicadas (runbook §4)
+db/migrations/          ← SQLite antigo, só ferramentas offline
 assets/brand/           ← logo e identidade visual
 
 .semgrep/
