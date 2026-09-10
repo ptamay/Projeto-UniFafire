@@ -81,7 +81,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `rls_auto_enable` — corrigido. Nenhum teste quebrou com os grants novos. 572 / 62.
   Medido de lado: anon sem privilégio em tabela, mas com SELECT/UPDATE/USAGE nas 11
   sequências e EXECUTE nas 4 funções de trigger (sobra, não falha) → endurecimento.
-- Próxima Ação: merge do PR da TASK-106; depois TASK-107 → 108.
+- ✅ **TASK-107 FEITA em 2026-09-10** (PR #53 da 106 merged). `ensaiar <migration> <dump>`
+  no runner, contra a CÓPIA (URL do Supabase recusada antes de conectar); registro
+  `<nome>.ensaio.md` com sha256 do UP; guarda; runbook §4.0.2. Ensaio real retroativo da
+  `202609090900` sobre o backup de 09/09: DELETE 1, UPDATE 0, ida e volta ok.
+- 🐛 **DEFEITO DA TASK-101 ACHADO E CORRIGIDO:** checksum era dos bytes do disco, e com
+  `autocrlf=true` o disco tem CRLF onde o git tem LF → os 10 checksums de produção só valem
+  NESTE Windows. Hash agora normaliza para LF. 🔴 **Produção precisa rodar
+  `corrigir-checksums.sql`** (gerado e ensaiado: troca só onde o valor é o antigo, aborta se
+  não forem exatamente 10) — pelo USUÁRIO no editor, logo depois do merge. Até lá, o
+  `conferir` do código novo acusa as 10 como alteradas (o health não usa checksum).
+- Próxima Ação: merge do PR da TASK-107 → usuário roda a correção dos checksums → TASK-108.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -311,7 +321,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-106-ida-e-volta (PR a abrir). PRs #15–#52 merged; #43 do
+- Branch atual: feat/task-107-ensaio-de-dados (PR a abrir). PRs #15–#53 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

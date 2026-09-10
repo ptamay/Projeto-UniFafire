@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import crypto from 'crypto';
 import { Client } from 'pg';
 import { TEST_DATABASE_URL } from './pg-test-config';
 
@@ -183,6 +184,25 @@ describe('TASK-101 — a conferência diz o que o ledger não dizia', () => {
 
         const r = await comCliente(urlBase, c => conferir(c, dir));
         expect(r.orfas).toEqual(['202601010000_a']);
+    });
+
+    it('BDD 3: o checksum não depende do fim de linha da máquina', async () => {
+        // Achado em 2026-09-10 (TASK-107): com `core.autocrlf=true`, o Windows põe o
+        // arquivo em disco com CRLF e o git o guarda com LF. O hash dos bytes do disco
+        // variava com a máquina — os 10 checksums de produção saíram deste Windows, e
+        // um `conferir` em Linux, Mac ou no Actions acusaria as 10 como ALTERADAS.
+        // A forma canônica é a que o repositório guarda: LF.
+        const { listarMigracoes } = await runner();
+        const crlf = fs.mkdtempSync(path.join(os.tmpdir(), 'crlf-'));
+        const lf = fs.mkdtempSync(path.join(os.tmpdir(), 'lf-'));
+        const sql = 'CREATE TABLE a (\n    id int\n);\n';
+        fs.writeFileSync(path.join(crlf, '202601010000_a.up.sql'), sql.replace(/\n/g, '\r\n'));
+        fs.writeFileSync(path.join(lf, '202601010000_a.up.sql'), sql);
+
+        const [c] = listarMigracoes(crlf);
+        const [l] = listarMigracoes(lf);
+        expect(c.checksum, 'o mesmo arquivo dá checksum diferente conforme o fim de linha').toBe(l.checksum);
+        expect(l.checksum).toBe(crypto.createHash('sha256').update(sql).digest('hex'));
     });
 
     it('BDD 3: base em dia não acusa nada', async () => {

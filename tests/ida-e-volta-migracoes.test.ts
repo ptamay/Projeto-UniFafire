@@ -42,51 +42,8 @@ async function comCliente<T>(url: string, f: (c: Client) => Promise<T>): Promise
     try { return await f(c); } finally { await c.end(); }
 }
 
-/**
- * O schema `public` como TEXTO comparável: colunas, restrições, índices, triggers,
- * funções, RLS, políticas e privilégios. É o que um DOWN tem de restaurar.
- *
- * Privilégio entra ORDENADO item a item: `{a,b}` e `{b,a}` são o mesmo acesso, e a
- * ordem do array muda com a sequência de GRANT/REVOKE — comparar o array cru acusaria
- * divergência onde não há.
- */
-async function retrato(c: Client): Promise<string[]> {
-    const acl = (col: string) => `coalesce((SELECT string_agg(x::text, ',' ORDER BY x::text) FROM unnest(${col}) x), 'padrao')`;
-    const r = await c.query<{ linha: string }>(`
-        SELECT 'coluna ' || table_name || '.' || column_name || ' ' || data_type
-               || ' null=' || is_nullable || ' default=' || coalesce(column_default, '') AS linha
-          FROM information_schema.columns WHERE table_schema = 'public'
-        UNION ALL
-        SELECT 'restricao ' || conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
-          FROM pg_constraint WHERE connamespace = 'public'::regnamespace
-        UNION ALL
-        SELECT 'indice ' || indexdef FROM pg_indexes WHERE schemaname = 'public'
-        UNION ALL
-        SELECT 'trigger ' || pg_get_triggerdef(g.oid)
-          FROM pg_trigger g JOIN pg_class k ON k.oid = g.tgrelid
-         WHERE NOT g.tgisinternal AND k.relnamespace = 'public'::regnamespace
-        UNION ALL
-        SELECT 'funcao ' || p.oid::regprocedure || ' ' || md5(pg_get_functiondef(p.oid)) || ' acl=' || ${acl('p.proacl')}
-          FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace
-        UNION ALL
-        SELECT 'relacao ' || relname || ' ' || relkind::text || ' rls=' || relrowsecurity
-               || ' force=' || relforcerowsecurity || ' acl=' || ${acl('relacl')}
-          FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind IN ('r', 'S', 'v', 'm', 'p')
-        UNION ALL
-        SELECT 'politica ' || tablename || ' ' || policyname || ' ' || cmd || ' ' || coalesce(qual, '')
-          FROM pg_policies WHERE schemaname = 'public'
-    `);
-    return r.rows.map(l => l.linha).sort();
-}
-
-function diferenca(antes: string[], depois: string[]) {
-    const a = new Set(antes), d = new Set(depois);
-    return [
-        ...antes.filter(l => !d.has(l)).map(l => `  − ${l}`),
-        ...depois.filter(l => !a.has(l)).map(l => `  + ${l}`),
-    ];
-}
-
+// O retrato do schema mora no runner (`retratoDoSchema`): o ensaio sobre a cópia de
+// produção (TASK-107) compara a mesma coisa, e duas definições divergiriam.
 const runner = () => import('../db/runner-migracoes.mjs');
 
 describe('TASK-106 — a base de teste tem os privilégios de produção', () => {
@@ -123,7 +80,7 @@ describe('TASK-106 — todo DOWN roda, e devolve o banco como estava', () => {
     });
 
     it('BDD 2: UP → DOWN → schema idêntico ao de antes do UP → UP de novo, para CADA migration', async () => {
-        const { listarMigracoes } = await runner();
+        const { listarMigracoes, retratoDoSchema: retrato, diferencaDeRetratos: diferenca } = await runner();
         const fs = await import('fs');
         const path = await import('path');
         const dir = path.resolve(process.cwd(), 'db/migrations-pg');

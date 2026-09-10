@@ -2,7 +2,8 @@
 
 - **Status:** Aceito — aprovado pelo usuário em 2026-09-10. TASK-106 feita em 2026-09-10
   (a base de teste reproduz o `pg_default_acl` lido em produção; a ida e volta achou o
-  `PUBLIC` que o DOWN da imutabilidade esquecia). A emenda sai na TASK-108, depois da 107
+  `PUBLIC` que o DOWN da imutabilidade esquecia). TASK-107 feita em 2026-09-10 (primeiro
+  ensaio real, retroativo, da `202609090900`: `DELETE 1`, `UPDATE 0`). Falta a TASK-108
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (altera `constitution.md` §4.2)
 - **Relacionado:** constitution §4.1, §4.2 · ADR-021 · runbook §4, §6.5 · regra `20-migrations`

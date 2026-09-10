@@ -51,8 +51,12 @@ function sqlDoRegistro() {
     return fs.readFileSync(path.join(DIR_PADRAO, `${MIGRACAO_DO_REGISTRO}.up.sql`), 'utf-8');
 }
 
+/** sha256 da forma CANÔNICA do arquivo: fim de linha LF, que é como o git o guarda.
+ *  Com `core.autocrlf=true` o Windows o põe em disco com CRLF; o hash dos bytes crus
+ *  variava com a máquina, e os checksums gravados neste Windows seriam acusados como
+ *  "alterados" por um `conferir` em Linux, Mac ou no Actions (achado em 2026-09-10). */
 function hash(conteudo) {
-    return crypto.createHash('sha256').update(conteudo).digest('hex');
+    return crypto.createHash('sha256').update(conteudo.replace(/\r\n/g, '\n')).digest('hex');
 }
 
 /** Migrations do diretório, em ordem de NOME. Só os UP: o DOWN é para reverter à
@@ -167,6 +171,56 @@ export async function conferir(client, dir = DIR_PADRAO) {
         .sort();
 
     return { registro: true, pendentes, alteradas, orfas };
+}
+
+// ── Retrato do schema (TASK-106) ────────────────────────────────────────────
+//
+// O schema `public` como linhas comparáveis: colunas, restrições, índices,
+// triggers, funções, RLS, políticas e privilégios. É o que um DOWN tem de
+// restaurar. Aqui, e não no teste, porque a ida e volta da suíte e o ensaio sobre
+// a cópia de produção (TASK-107) comparam a MESMA coisa — duas definições
+// divergiriam, e uma delas passaria a aceitar o que a outra recusa.
+
+/** Privilégio entra ORDENADO item a item: `{a,b}` e `{b,a}` são o mesmo acesso, e a
+ *  ordem do array muda com a sequência de GRANT/REVOKE. */
+const aclOrdenada = (col) =>
+    `coalesce((SELECT string_agg(x::text, ',' ORDER BY x::text) FROM unnest(${col}) x), 'padrao')`;
+
+export async function retratoDoSchema(client) {
+    const r = await client.query(`
+        SELECT 'coluna ' || table_name || '.' || column_name || ' ' || data_type
+               || ' null=' || is_nullable || ' default=' || coalesce(column_default, '') AS linha
+          FROM information_schema.columns WHERE table_schema = 'public'
+        UNION ALL
+        SELECT 'restricao ' || conrelid::regclass || ' ' || conname || ' ' || pg_get_constraintdef(oid)
+          FROM pg_constraint WHERE connamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'indice ' || indexdef FROM pg_indexes WHERE schemaname = 'public'
+        UNION ALL
+        SELECT 'trigger ' || pg_get_triggerdef(g.oid)
+          FROM pg_trigger g JOIN pg_class k ON k.oid = g.tgrelid
+         WHERE NOT g.tgisinternal AND k.relnamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'funcao ' || p.oid::regprocedure || ' ' || md5(pg_get_functiondef(p.oid)) || ' acl=' || ${aclOrdenada('p.proacl')}
+          FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace
+        UNION ALL
+        SELECT 'relacao ' || relname || ' ' || relkind::text || ' rls=' || relrowsecurity
+               || ' force=' || relforcerowsecurity || ' acl=' || ${aclOrdenada('relacl')}
+          FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind IN ('r', 'S', 'v', 'm', 'p')
+        UNION ALL
+        SELECT 'politica ' || tablename || ' ' || policyname || ' ' || cmd || ' ' || coalesce(qual, '')
+          FROM pg_policies WHERE schemaname = 'public'
+    `);
+    return r.rows.map(l => l.linha).sort();
+}
+
+/** O que sumiu (−) e o que apareceu (+) entre dois retratos. Vazio = idênticos. */
+export function diferencaDeRetratos(antes, depois) {
+    const a = new Set(antes), d = new Set(depois);
+    return [
+        ...antes.filter(l => !d.has(l)).map(l => `  − ${l}`),
+        ...depois.filter(l => !a.has(l)).map(l => `  + ${l}`),
+    ];
 }
 
 // ── Adoção (TASK-102) ───────────────────────────────────────────────────────
@@ -332,11 +386,174 @@ export async function adotar(client, dir = DIR_PADRAO, { ate } = {}) {
     return { adotadas: candidatas.map(m => m.nome), naoVerificaveis };
 }
 
+// ── Ensaio sobre cópia de produção (TASK-107) ───────────────────────────────
+//
+// A base da suíte nasce VAZIA: prova a sequência e a ida e volta do schema, e não o
+// que depende de dado — `SET NOT NULL` sobre linhas nulas, `UNIQUE` sobre
+// duplicatas, um `UPDATE` que pega mais linhas do que se pensava. Migration assim
+// é ensaiada sobre o dump mais recente, restaurado numa base descartável, antes de
+// produção (ADR-022, decisão 3). Só ela: o ensaio traz a PII de produção para a
+// máquina de quem publica, e nas aditivas não prova nada a mais.
+
+/**
+ * Por que a migration exige ensaio — lista vazia = não toca dados.
+ *
+ * Conta: DML (`INSERT`, `UPDATE … SET`, `DELETE FROM`, `TRUNCATE`) e, em `ALTER
+ * TABLE`, restrição que dado existente pode violar (`NOT NULL`, `UNIQUE`, `CHECK`,
+ * chave estrangeira ou primária, troca de tipo), além de `CREATE UNIQUE INDEX`.
+ *
+ * Não conta: `CREATE TABLE` (tabela nova nasce vazia), evento de trigger (`BEFORE
+ * UPDATE OR DELETE ON`), privilégio (`REVOKE UPDATE, DELETE`), corpo de função (roda
+ * quando a função é chamada) e comentário. Conservador de propósito no resto: um
+ * `ADD COLUMN … NOT NULL DEFAULT` é acusado mesmo que o default o torne seguro — o
+ * ensaio custa segundos, e acertar à mão qual default é seguro é o tipo de juízo que
+ * este critério existe para não pedir.
+ */
+export function tocaDados(sql) {
+    const motivos = [];
+    for (const bruto of limparSql(sql).split(';')) {
+        const st = bruto.replace(/\s+/g, ' ').trim();
+        if (!st) continue;
+        const trecho = st.slice(0, 70);
+        if (/\bINSERT\s+INTO\b/i.test(st)
+            || /\bDELETE\s+FROM\b/i.test(st)
+            || /\bUPDATE\s+(?:ONLY\s+)?[\w."]+\s+SET\b/i.test(st)
+            || /^TRUNCATE\b/i.test(st)
+            || /^CREATE\s+UNIQUE\s+INDEX\b/i.test(st)) {
+            motivos.push(trecho);
+        } else if (/^ALTER\s+TABLE\b/i.test(st)
+            && (/(?<!\bDROP\s+)\bNOT\s+NULL\b/i.test(st)
+                || /\b(UNIQUE|CHECK|REFERENCES)\b/i.test(st)
+                || /\b(FOREIGN|PRIMARY)\s+KEY\b/i.test(st)
+                || /\bALTER\s+COLUMN\s+\S+\s+(?:SET\s+DATA\s+)?TYPE\b/i.test(st))) {
+            motivos.push(trecho);
+        }
+    }
+    return motivos;
+}
+
+/** Ensaio é SEMPRE numa cópia. Reconhece os endereços do Supabase para recusar
+ *  antes de conectar — a recusa não pode depender de a conexão falhar. */
+export function pareceProducao(url) {
+    let host = '';
+    try { host = new URL(url).hostname; } catch { return false; }
+    return /(^|\.)supabase\.(co|com)$/i.test(host);
+}
+
+async function contagensPorTabela(client) {
+    const t = await client.query(`SELECT table_name FROM information_schema.tables
+                                   WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1`);
+    const out = {};
+    for (const { table_name: nome } of t.rows) {
+        // Identificador vindo do CATÁLOGO, nunca de input — a exceção da §1.3.
+        const r = await client.query(`SELECT count(*)::int AS n FROM public."${nome.replace(/"/g, '""')}"`);
+        out[nome] = r.rows[0].n;
+    }
+    return out;
+}
+
+const COMANDOS_DE_DADOS = new Set(['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'MERGE']);
+
+/**
+ * Ensaia `nome` sobre a cópia a que `client` está ligado: UP, linhas por comando,
+ * contagens, e a ida e volta SOBRE OS DADOS (DOWN → schema idêntico ao de antes → UP
+ * de novo). Tudo numa transação: se qualquer passo falhar, a cópia volta a como
+ * estava e o ensaio pode ser refeito. No sucesso, a migration fica registrada NA
+ * CÓPIA, como produção a terá.
+ */
+export async function ensaiar(client, dir = DIR_PADRAO, nome, { origem } = {}) {
+    const todas = listarMigracoes(dir);
+    const i = todas.findIndex(m => m.nome === nome);
+    if (i === -1) throw new Error(`migration não encontrada: ${nome}`);
+    const m = todas[i];
+
+    if (!(await registroExiste(client))) {
+        throw new Error('a cópia não tem registro de migrations: use um backup posterior à adoção, ou adote nela antes (runbook §4.0)');
+    }
+    const feitas = await registradas(client);
+    if (feitas.has(nome)) throw new Error(`${nome} já está aplicada nesta cópia — o ensaio precisa de um backup ANTERIOR a ela`);
+    // Ensaiar B com A pendente mediria B sobre um banco que produção não terá.
+    const antes = todas.slice(0, i).filter(x => !feitas.has(x.nome)).map(x => x.nome);
+    if (antes.length) throw new Error(`a cópia não está no ponto de ${nome}: pendentes antes dela — ${antes.join(', ')}`);
+
+    const down = fs.readFileSync(path.join(dir, `${nome}.down.sql`), 'utf-8');
+    const retratoAntes = await retratoDoSchema(client);
+    const contagensAntes = await contagensPorTabela(client);
+
+    let comandos, contagensDepois;
+    await client.query('BEGIN');
+    try {
+        const res = await client.query(m.conteudo);
+        comandos = (Array.isArray(res) ? res : [res])
+            .filter(r => COMANDOS_DE_DADOS.has(r.command))
+            .map(r => ({ comando: r.command, linhas: r.rowCount ?? 0 }));
+        contagensDepois = await contagensPorTabela(client);
+
+        await client.query(down);
+        const dif = diferencaDeRetratos(retratoAntes, await retratoDoSchema(client));
+        if (dif.length) throw new Error(`o DOWN não restaura o schema anterior:\n${dif.join('\n')}`);
+        await client.query(m.conteudo);
+
+        await client.query(
+            `INSERT INTO ${TABELA_REGISTRO} (nome, checksum, modo) VALUES ($1, $2, 'aplicada')`,
+            [m.nome, m.checksum],
+        );
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw new Error(`ensaio de ${nome} falhou: ${e.message}`);
+    }
+
+    return {
+        nome, checksum: m.checksum, origem: origem ?? '(não informada)',
+        em: new Date().toISOString().slice(0, 10),
+        motivos: tocaDados(m.conteudo), comandos,
+        contagens: { antes: contagensAntes, depois: contagensDepois },
+        idaEVolta: 'ok',
+    };
+}
+
+/** O `<nome>.ensaio.md`. Só números e nomes de tabela — nenhum dado de pessoa. */
+export function registroDoEnsaio(r) {
+    const mudaram = Object.keys(r.contagens.antes)
+        .filter(t => r.contagens.antes[t] !== r.contagens.depois[t]);
+    return [
+        `# Ensaio — ${r.nome}`,
+        '',
+        '> Gerado por `node db/runner-migracoes.mjs ensaiar` (TASK-107 · ADR-022). **Não editar à',
+        '> mão:** a guarda confere o checksum, e o ensaio de outra versão do UP não vale.',
+        '',
+        `- up (sha256): ${r.checksum}`,
+        `- ensaiado em: ${r.em}`,
+        `- sobre: ${r.origem} (cópia restaurada em base descartável)`,
+        `- por que exige ensaio: ${r.motivos.map(x => `\`${x}\``).join(' · ') || '(não toca dados)'}`,
+        `- resultado: ${r.idaEVolta}`,
+        '',
+        '## Linhas por comando',
+        '',
+        '| comando | linhas |',
+        '|---|---|',
+        ...(r.comandos.length ? r.comandos.map(c => `| ${c.comando} | ${c.linhas} |`) : ['| (nenhum comando de dados) | — |']),
+        '',
+        '## Tabelas cuja contagem mudou',
+        '',
+        ...(mudaram.length
+            ? ['| tabela | antes | depois |', '|---|---|---|', ...mudaram.map(t => `| ${t} | ${r.contagens.antes[t]} | ${r.contagens.depois[t]} |`)]
+            : ['Nenhuma.']),
+        '',
+        '## Ida e volta sobre os dados',
+        '',
+        `UP → DOWN → schema idêntico ao de antes → UP de novo: **${r.idaEVolta}**.`,
+        '',
+    ].join('\n');
+}
+
 // ── Linha de comando ────────────────────────────────────────────────────────
 //
 //   DATABASE_URL=... node db/runner-migracoes.mjs conferir
 //   DATABASE_URL=... node db/runner-migracoes.mjs aplicar
 //   DATABASE_URL=... node db/runner-migracoes.mjs adotar <ultima-migration-no-banco>
+//   DATABASE_URL=<cópia> node db/runner-migracoes.mjs ensaiar <migration> <dump>
 //
 // `conferir` sai com código 1 se houver qualquer coisa pendente, alterada ou
 // órfã — é o que a TASK-103 e um passo de CI usam para decidir.
@@ -347,8 +564,13 @@ if (ehEntrada) {
     const { default: pg } = await import('pg');
     const comando = process.argv[2];
     const url = process.env.DATABASE_URL;
-    if (!url || !['conferir', 'aplicar', 'adotar'].includes(comando)) {
-        console.error('uso: DATABASE_URL=... node db/runner-migracoes.mjs conferir|aplicar|adotar <ate>');
+    if (!url || !['conferir', 'aplicar', 'adotar', 'ensaiar'].includes(comando)) {
+        console.error('uso: DATABASE_URL=... node db/runner-migracoes.mjs conferir|aplicar|adotar <ate>|ensaiar <migration> <dump>');
+        process.exit(2);
+    }
+    // Antes de conectar: a recusa não pode depender de a conexão falhar.
+    if (comando === 'ensaiar' && pareceProducao(url)) {
+        console.error('recusado: DATABASE_URL aponta para o Supabase — o ensaio é SEMPRE numa cópia restaurada, nunca em produção (runbook §4).');
         process.exit(2);
     }
     const client = new pg.Client({ connectionString: url });
@@ -357,6 +579,14 @@ if (ehEntrada) {
         if (comando === 'aplicar') {
             const { aplicadas } = await aplicar(client);
             console.log(aplicadas.length ? `aplicadas: ${aplicadas.join(', ')}` : 'nada pendente');
+        } else if (comando === 'ensaiar') {
+            const [nome, origem] = [process.argv[3], process.argv[4]];
+            if (!nome || !origem) throw new Error('ensaiar exige <migration> e <dump de origem>');
+            const r = await ensaiar(client, DIR_PADRAO, nome, { origem });
+            const arq = path.join(DIR_PADRAO, `${nome}.ensaio.md`);
+            fs.writeFileSync(arq, registroDoEnsaio(r));
+            console.log(`ensaio ok: ${r.comandos.map(c => `${c.comando} ${c.linhas}`).join(', ') || 'nenhum comando de dados'} · ida e volta ok`);
+            console.log(`registro: ${path.relative(process.cwd(), arq)} — versione junto com a migration`);
         } else if (comando === 'adotar') {
             const r = await adotar(client, DIR_PADRAO, { ate: process.argv[3] });
             console.log(`adotadas: ${r.adotadas.join(', ') || '(nenhuma)'}`);
