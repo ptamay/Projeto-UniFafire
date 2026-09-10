@@ -87,6 +87,28 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023)
+> Aprovado pelo usuário em 2026-09-10: fechar `anon` e `authenticated` (não `service_role`), com
+> o default privilege revogado para que o que vier nasça fechado. Sem sprint atribuída.
+- **TASK-109 → migration que fecha `public` para `anon`/`authenticated`, e a guarda.**
+  1. ANTES: consulta só-leitura em produção, rodada pelo usuário — privilégios de anon/authenticated
+     em tabelas, sequências e funções de `public` (esperado: nenhum em tabela, SELECT/UPDATE/USAGE
+     nas 11 sequências, EXECUTE nas 4 funções de trigger) e event triggers ativos.
+  2. Migration pareada: REVOKE em tabelas, sequências e funções existentes (funções também de
+     `PUBLIC`, senão o anon herda o EXECUTE); `ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE`
+     para as duas roles; e o default GLOBAL de EXECUTE para `PUBLIC`. DOWN restaura EXATO — a ida e
+     volta da TASK-106 cobra, inclusive o que o `rls_auto_enable` já não tinha.
+  3. Guarda: toda tabela de `public` com RLS; anon/authenticated sem privilégio em nada de `public`,
+     nem via PUBLIC; default privilege sem conceder a elas.
+  4. ⚠️ Ajustar o cenário 1 da TASK-106: ele lê o default da base DEPOIS das migrations e esta o
+     revoga — passa a conferir a base logo após `prepararBasePlataforma`.
+  5. Produção: aplicar pelo runner (§4.1); depois health 200, `conferir` limpo, **sinal do Realtime
+     recebido** e o card de tempo real "Ativa".
+- **TASK-110 → `permissions:` nos workflows.** `keepalive.yml` → `{}`; `backup.yml` →
+  `contents: read`; guarda: todo workflow declara `permissions:` no topo. Verificado só quando o
+  backup rodar de verdade depois do merge (execução manual).
+> Fora deste CR, registrado: elevar "a API de dados nasce fechada" à constitution (Tipo D).
+
 ### Teste de migração de verdade (CR Tipo D · ADR-022) ✅ FECHADO em 2026-09-10
 > 106 (#53) e 107 (#54) merged; **108 — a §4.2 EMENDADA** (branch `feat/task-108-emenda-4-2`),
 > com guarda que confere que o que a cláusula afirma é o que a suíte e o runner fazem. Os 10
@@ -102,7 +124,7 @@
   service_role), e a ida e volta roda para as 10. **Achou um defeito real:** o DOWN da
   imutabilidade devolvia o EXECUTE do `rls_auto_enable` sem o `PUBLIC` que o UP revoga —
   corrigido. Nenhum teste existente quebrou com os grants novos. 572 testes / 62 arquivos.
-  > 📋 **Endurecimento, agora com números** (medido na base de teste com o padrão de
+  > 📋 **Endurecimento, agora com números** — ➡️ virou o CR do ADR-023 (medido na base de teste com o padrão de
   > produção, NÃO no banco de produção): depois de todas as migrations, `anon` não tem
   > privilégio em tabela nenhuma e as 11 têm RLS — mas tem `SELECT, UPDATE, USAGE` nas **11
   > sequências** e `EXECUTE` nas **4 funções de trigger**. Sobra de privilégio, não falha
@@ -702,8 +724,8 @@ executável uma vez só, sem deixar caminho de escalada aberto depois.
 
   > **`docs/api-contract.md` está no mapa do projeto e não existe (achado da TASK-082, Sprint 24).** O `CLAUDE.md` o lista em "Localização dos artefatos principais" e o `.sdd/memory/` o menciona, mas o arquivo nunca foi criado. Um critério BDD da TASK-082 — "as rotas removidas não aparecem mais como disponíveis no contrato" — ficou **sem alvo**, e foi marcado como não cumprido em vez de riscado. Duas saídas: criar o contrato de verdade (as rotas públicas já estão descritas de forma dispersa entre `proxy.ts`, os handlers e o runbook), ou tirá-lo do mapa. Deixar como está é a coisa que esta própria sprint existe para combater: documento afirmando o que não está lá.
 
-- **Nenhuma garantia de que toda tabela nasça com RLS e sem grant (achado da varredura de 2026-09-06, ADR-015).** As 11 tabelas de produção estão certas hoje — RLS ligado, zero políticas, nenhum grant a `anon`/`authenticated` —, mas isso depende de **cada migration lembrar**. Não há `ALTER DEFAULT PRIVILEGES` no schema `public`, nem teste que reprove uma tabela nova sem RLS. É a mesma forma dos três achados de autorização deste dia: o estado está correto e nada o defende. Endurecimento, não defeito ativo — cabe numa sprint própria, junto com o item abaixo.
-- **Os workflows não declaram `permissions:` (achado da mesma varredura).** `backup.yml` e `keepalive.yml` rodam com o `GITHUB_TOKEN` no padrão do repositório em vez do mínimo que cada um precisa. O backup já usa um PAT próprio para o repositório privado, então o `GITHUB_TOKEN` amplo não está sendo usado para nada — é superfície ociosa. Correção de uma linha por workflow, mas mexe em arquivo que o Gate 2 observa: CR pequeno.
+- ➡️ **VIROU CR em 2026-09-10 — ADR-023, TASK-109.** **Nenhuma garantia de que toda tabela nasça com RLS e sem grant (achado da varredura de 2026-09-06, ADR-015).** As 11 tabelas de produção estão certas hoje — RLS ligado, zero políticas, nenhum grant a `anon`/`authenticated` —, mas isso depende de **cada migration lembrar**. Não há `ALTER DEFAULT PRIVILEGES` no schema `public`, nem teste que reprove uma tabela nova sem RLS. É a mesma forma dos três achados de autorização deste dia: o estado está correto e nada o defende. Endurecimento, não defeito ativo — cabe numa sprint própria, junto com o item abaixo.
+- ➡️ **VIROU CR em 2026-09-10 — ADR-023, TASK-110.** **Os workflows não declaram `permissions:` (achado da mesma varredura).** `backup.yml` e `keepalive.yml` rodam com o `GITHUB_TOKEN` no padrão do repositório em vez do mínimo que cada um precisa. O backup já usa um PAT próprio para o repositório privado, então o `GITHUB_TOKEN` amplo não está sendo usado para nada — é superfície ociosa. Correção de uma linha por workflow, mas mexe em arquivo que o Gate 2 observa: CR pequeno.
 
 - **O ledger de migrations do Supabase NÃO descreve o que está no banco (medido em 2026-09-07).** Agrava o item do runner, acima, e **contradizia o runbook**, que chamava o ledger de "única fonte confiável" — corrigido no §4.1 na mesma data. O ledger tem 6 entradas e `db/migrations-pg/` tem 6 arquivos, e o número igual esconde que os conjuntos divergem **nos dois sentidos**: `search_path_history_imutavel_task_065` está no ledger e não tem arquivo; `202609061800_sinal_realtime` tem arquivo, **está aplicada** (o sinal do Realtime funciona em produção) e **não está no ledger**. Ele não serve nem como limite inferior nem superior. O conferidor que vale é o schema — e não só as tabelas: **trigger ausente não se manifesta**, a escrita proibida simplesmente passa. Enquanto não houver runner, a divergência cresce a cada migration aplicada à mão.
 - **A região da função da Vercel nunca foi escolhida (medido em 2026-09-07 · REQ-032).** `X-Vercel-Id: gru1::iad1::…` — entra em São Paulo, executa em Washington, banco em `sa-east-1`, São Paulo. **249 ms por ida ao banco**, idêntico na mediana e no mínimo. **O plano gratuito PERMITE escolher**, verificado na documentação da Vercel em 2026-09-07: o limite do Hobby é o *número* de regiões (uma), não a escolha, e `gru1` é exatamente `sa-east-1` — nenhuma região é restrita a plano pago. Correção: `vercel.json` com `{"regions": ["gru1"]}` ou o painel (Settings → Functions → Function Regions). Muda a topologia de deploy do ADR-012 → **CR Tipo C**. Ressalva: `gru1` fica na ponta cara do preço regional, mas isso é cobrança acima da franquia (1 TB / 10 M edge requests) e o Hobby não cobra excedente — irrelevante para ~10 usuários. A confirmação final é o painel da conta `unifafiregc@gmail.com`, que o CLI logado como `ptamay` não enxerga (runbook §0).
