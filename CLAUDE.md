@@ -65,8 +65,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   funcionou: gerar o SQL a partir das funções do runner, ensaiar numa cópia local
   (inclusive sabotada, com o cliente SEM parar no erro — tem de ser atômico) e o
   usuário cola no editor. Verificação depois por `curl` no health público.
-- ⚠️ A §4.2 da constitution envelheceu do mesmo jeito (cita `keys.db` como produção).
-  Fora do ADR-021 — CR Tipo D próprio, se o usuário quiser.
+- 📋 **CR da §4.2 FEITO em 2026-09-10 (Tipo D, ADR-022), aprovado pelo usuário.**
+  Não era só letra (`keys.db`, `backups/`): **nenhum dos 10 DOWNs jamais tinha sido
+  executado.** Primeira ida e volta, feita à mão para o ADR: 9 exatos; o da
+  `imutabilidade_historico` diverge em 81 linhas SÓ POR AMBIENTE — a base de teste tem
+  `pg_default_acl` VAZIO, e o Supabase dá GRANT ALL a anon/authenticated por padrão.
+  Na suíte, portanto, teste de "anon não lê" passa trivialmente. Decisões: ida e volta
+  para TODAS (TASK-106, com o `global-setup` reproduzindo os privilégios de produção —
+  valor conferido no `pg_default_acl` de produção, consulta que o USUÁRIO roda); cópia de
+  produção só quando a migration toca dados (TASK-107); emenda por último (TASK-108).
+- Próxima Ação: merge do PR do CR; depois TASK-106 → 107 → 108, nessa ordem.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -296,7 +304,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-104-emenda-4-1 (PR a abrir). PRs #15–#50 merged; #43 do
+- Branch atual: docs/cr-4-2 (PR a abrir). PRs #15–#51 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
