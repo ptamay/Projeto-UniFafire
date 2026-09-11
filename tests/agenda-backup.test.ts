@@ -29,7 +29,9 @@ import { TEST_DATABASE_URL } from './pg-test-config';
 // ## O que NÃO entra aqui
 //
 // A retenção. Ela só é APLICADA na TASK-113 (a poda do repositório privado); um campo
-// gravado que nada obedece seria exatamente o controle inerte do ADR-013.
+// gravado que nada obedece seria exatamente o controle inerte do ADR-013. Chegou lá, e
+// os cenários dela moram em `tests/retencao-backup.test.ts` — que também conferem que o
+// campo só existe porque o workflow poda.
 
 const RAIZ = process.cwd();
 const ler = (f: string) => fs.readFileSync(path.resolve(RAIZ, f), 'utf-8');
@@ -177,12 +179,12 @@ describe('TASK-112 — só ADMIN lê e altera a agenda', () => {
     it('BDD 4: sem sessão 401; GESTOR 403 — ler e alterar', async () => {
         expect((await (await comSessao(null)).GET()).status).toBe(401);
         expect((await (await comSessao('GESTOR')).GET()).status).toBe(403);
-        expect((await (await comSessao('GESTOR')).POST(post({ hora: 4, vezes: 1 }))).status).toBe(403);
+        expect((await (await comSessao('GESTOR')).POST(post({ hora: 4, vezes: 1, dias: 7 }))).status).toBe(403);
     });
 
     it('BDD 4: ADMIN grava, e a leitura devolve a agenda com os horários', async () => {
         const { POST } = await comSessao('ADMIN');
-        expect((await POST(post({ hora: 4, vezes: 2 }))).status).toBe(200);
+        expect((await POST(post({ hora: 4, vezes: 2, dias: 7 }))).status).toBe(200);
 
         const { GET } = await comSessao('ADMIN');
         const corpo = await (await GET()).json();
@@ -191,8 +193,8 @@ describe('TASK-112 — só ADMIN lê e altera a agenda', () => {
 
     it('BDD 4: valor fora da faixa é recusado com 400 — e nada é gravado', async () => {
         const { POST } = await comSessao('ADMIN');
-        await POST(post({ hora: 6, vezes: 1 }));
-        for (const ruim of [{ hora: 24, vezes: 1 }, { hora: 3, vezes: 5 }, { hora: 3, vezes: 0 }, { hora: '3', vezes: 1 }, { hora: 2.5, vezes: 1 }]) {
+        await POST(post({ hora: 6, vezes: 1, dias: 7 }));
+        for (const ruim of [{ hora: 24, vezes: 1, dias: 7 }, { hora: 3, vezes: 5, dias: 7 }, { hora: 3, vezes: 0, dias: 7 }, { hora: '3', vezes: 1, dias: 7 }, { hora: 2.5, vezes: 1, dias: 7 }]) {
             const res = await (await comSessao('ADMIN')).POST(post(ruim));
             expect(res.status, JSON.stringify(ruim)).toBe(400);
         }
@@ -203,7 +205,7 @@ describe('TASK-112 — só ADMIN lê e altera a agenda', () => {
     it('BDD 4: a mudança entra na trilha de auditoria (§3, REQ-010)', async () => {
         const antes = await (await import('@/lib/pg')).queryOne<{ n: number }>(
             `SELECT count(*)::int AS n FROM action_logs WHERE action = 'BACKUP_AGENDA_ALTERADA'`);
-        await (await comSessao('ADMIN')).POST(post({ hora: 2, vezes: 3 }));
+        await (await comSessao('ADMIN')).POST(post({ hora: 2, vezes: 3, dias: 7 }));
         const depois = await (await import('@/lib/pg')).queryOne<{ n: number }>(
             `SELECT count(*)::int AS n FROM action_logs WHERE action = 'BACKUP_AGENDA_ALTERADA'`);
         expect(depois!.n, 'a agenda mudou e ninguém ficou sabendo quem mudou').toBe(antes!.n + 1);
@@ -238,8 +240,7 @@ describe('TASK-112 — a tela oferece o que o sistema faz, e só isso', () => {
         expect(tela()).toMatch(/por volta d/i);
     });
 
-    it('BDD 5: retenção ainda NÃO aparece — só é aplicada na TASK-113', () => {
-        expect(tela(), 'campo de retenção antes de existir a poda: controle inerte (ADR-013)')
-            .not.toMatch(/reten[çc][ãa]o/i);
-    });
+    // TASK-113: o cenário "retenção ainda NÃO aparece" saiu — cumpriu o papel de segurar
+    // o campo até a poda existir. Quem o substitui é a guarda de dois lados em
+    // `tests/retencao-backup.test.ts` (BDD 12): campo na tela exige poda no workflow.
 });
