@@ -6,6 +6,7 @@
 //
 //   executar=true|false
 //   motivo=<texto>
+//   retencao=<dias>        (TASK-113 — ausente quando a agenda não pôde ser lida)
 //
 // Uso: DATABASE_URL=... EVENTO=<github.event_name> node db/agenda-backup.mjs >> "$GITHUB_OUTPUT"
 //
@@ -20,14 +21,19 @@ import { lerAgenda, deveExecutar, CHAVES, descreverHorarios } from '../src/lib/a
  * @param {{ agora: Date, evento: string }} opcoes
  */
 export async function decidir(client, { agora, evento }) {
-    // Execução manual é alguém pedindo — a agenda decide o automático, não o pedido.
-    if (evento === 'workflow_dispatch') {
-        return { executar: true, motivo: 'execução manual' };
-    }
     const linhas = await client.query(
         'SELECT key, value FROM settings WHERE key = ANY($1)', [Object.values(CHAVES)],
     );
     const agenda = lerAgenda(Object.fromEntries(linhas.rows.map(l => [l.key, l.value])));
+    // TASK-113 — a retenção vai junto: o envio (`db/enviar-backup.mjs`) poda por ela. Lida
+    // AQUI, e não lá, para que o workflow inteiro use a agenda de um mesmo instante.
+    const retencao = agenda.dias;
+
+    // Execução manual é alguém pedindo — a agenda decide o automático, não o pedido. Mas
+    // ela também guarda um dump, então também leva a retenção.
+    if (evento === 'workflow_dispatch') {
+        return { executar: true, motivo: 'execução manual', retencao };
+    }
     const ultimo = await client.query('SELECT max(ran_at) AS t FROM backup_runs WHERE succeeded');
     const ultimoSucesso = ultimo.rows[0].t ? new Date(ultimo.rows[0].t) : null;
 
@@ -35,6 +41,7 @@ export async function decidir(client, { agora, evento }) {
     const quando = `agenda ${descreverHorarios(agenda)} (Recife); horário vencido ${horario.toISOString()}`;
     return {
         executar,
+        retencao,
         motivo: executar
             ? `${quando}; sem backup bem-sucedido depois dele`
             : `${quando}; já cumprido em ${ultimoSucesso.toISOString()}`,
@@ -48,11 +55,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === ESTE) {
     try {
         await client.connect();
         const r = await decidir(client, { agora: new Date(), evento: process.env.EVENTO ?? 'schedule' });
-        process.stdout.write(`executar=${r.executar}\nmotivo=${r.motivo}\n`);
-        console.error(`[agenda] ${r.executar ? 'EXECUTAR' : 'pular'} — ${r.motivo}`);
+        process.stdout.write(`executar=${r.executar}\nmotivo=${r.motivo}\nretencao=${r.retencao}\n`);
+        console.error(`[agenda] ${r.executar ? 'EXECUTAR' : 'pular'} — ${r.motivo}; retenção ${r.retencao} dias`);
     } catch (e) {
         // Na dúvida, EXECUTA. Um portão que falha fechado deixa de fazer backup em
         // silêncio — o pior modo de falha para um backup. Fazer um a mais é barato.
+        //
+        // E, na dúvida, NÃO APAGA (TASK-113): sem `retencao=`, o envio só acrescenta o
+        // dump. Um padrão de 7 dias aqui apagaria 23 dias de backups de quem configurou
+        // 30 — e apagar, ao contrário de fazer um backup a mais, não tem volta.
         // `||` e não `??`: conexão recusada chega como AggregateError de mensagem VAZIA,
         // só com `code` — e o log de uma falha tem de dizer por que falhou.
         const msg = String(e?.message || e?.code || e).replace(/postgres(ql)?:\/\/[^\s]+/g, '<conexão>');

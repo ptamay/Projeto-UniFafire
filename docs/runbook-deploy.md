@@ -275,7 +275,7 @@ backup mais recente** — a suíte reprova enquanto não houver o registro do en
 2. Ensaie, apontando para a CÓPIA:
 
    ```bash
-   DATABASE_URL="<cópia local>" node db/runner-migracoes.mjs ensaiar <migration> backups/AAAA/MM/AAAA-MM-DD.sql.gz
+   DATABASE_URL="<cópia local>" node db/runner-migracoes.mjs ensaiar <migration> backups/AAAA/MM/AAAA-MM-DDTHHMMSSZ.sql.gz
    ```
 
    Ele aplica o UP numa transação, conta as linhas de cada comando e as tabelas cuja
@@ -470,16 +470,51 @@ O que o script faz e o que ele **recusa** fazer:
 3. Aplique a migration de `backup_runs` (§4).
 4. Dispare o job à mão (§6.3) e confirme que ele terminou verde.
 
-### 6.2 O que o job faz, todo dia às 03:00 (America/Recife)
+### 6.2 O que o job faz, na agenda configurada na tela (padrão: 03:00 de Recife, 1× por dia)
 
-`.github/workflows/backup.yml`:
+`.github/workflows/backup.yml` roda de hora em hora; o job `agenda` lê em
+`settings` a hora, as vezes por dia e a retenção que o ADMIN configurou em
+**Configurações → Backup**, e só deixa o backup rodar quando há horário vencido sem
+backup bem-sucedido depois dele (TASK-112). Então:
 
 1. `pg_dump` do banco de produção, comprimido.
 2. **Restaura o dump numa base descartável** e reconcilia contra a origem: a
    contagem de linhas de cada tabela **e** o esquema (tabelas, índices, triggers,
    funções e quais tabelas estão sob RLS).
-3. Envia o dump para o repositório privado, em `backups/AAAA/MM/AAAA-MM-DD.sql.gz`.
+3. Envia o dump para o repositório privado, em
+   `backups/AAAA/MM/AAAA-MM-DDTHHMMSSZ.sql.gz` (hora UTC — desde a TASK-113; os
+   anteriores têm só a data, `AAAA-MM-DD.sql.gz`), **e aplica a retenção**
+   (`db/enviar-backup.mjs`, abaixo).
 4. **Registra a execução em `backup_runs` — inclusive quando falha.**
+
+#### Retenção (TASK-113, ADR-024 decisão 2)
+
+Ficam os dumps dos últimos **N dias de Recife, contando hoje** (N de 3 a 30,
+padrão 7): com um backup por dia, exatamente N arquivos. O que é mais velho é
+**apagado de verdade**: o repositório privado é republicado como **um único commit**
+com os arquivos da janela, por push forçado. Tirar só da pasta deixaria o dump —
+com a PII de todo mundo — no histórico do git para sempre.
+
+Guardas, todas com teste em `tests/retencao-backup.test.ts`:
+
+- só roda **depois** da verificação por restauração, no mesmo job;
+- o dump novo é sempre mantido — o repositório nunca fica sem backup;
+- arquivo que não tem nome de backup (o `README.md`, uma nota) nunca é apagado;
+- se a agenda não pôde ser lida, a retenção é **desconhecida** e **nada é apagado**
+  (o dump é só acrescentado, num commit comum);
+- o push forçado leva `--force-with-lease`: se alguém gravou no repositório entre o
+  clone e o push, ele é recusado em vez de atropelar.
+
+> ⚠️ **O que "apagado" quer dizer no GitHub.** Depois do push forçado, o dump antigo
+> não é alcançável por nenhuma branch nem commit do repositório. O GitHub remove
+> fisicamente objetos inalcançáveis na coleta de lixo **dele**, em prazo que não
+> controlamos; até lá, um commit antigo ainda poderia ser aberto por quem tem acesso
+> ao repositório privado **e** sabe o SHA. Para remoção imediata e garantida (ex.:
+> pedido de titular de dado), abra chamado no suporte do GitHub citando os SHAs.
+>
+> ⚠️ **Baixar a retenção apaga no próximo backup.** Mudar de 30 para 7 dias pela
+> tela apaga, no envio seguinte, 23 dias de dumps — sem lixeira. A mudança fica na
+> trilha (`BACKUP_AGENDA_ALTERADA`, com os dois números).
 
 Divergência reprova o job. *Backup não verificado não conta como backup*: um dump
 truncado restaura sem erro nenhum e só se revela no dia em que for necessário.
@@ -509,8 +544,9 @@ possíveis, e eles não significam a mesma coisa:
 
 1. **Não sobrescreva a evidência.** Se o banco atual está corrompido mas
    acessível, não o apague — crie uma base nova e restaure nela.
-2. Baixe o dump do repositório privado (`backups/AAAA/MM/AAAA-MM-DD.sql.gz`).
-   Prefira o mais recente **que tenha aparecido como verificado** em §6.4.
+2. Baixe o dump do repositório privado (`backups/AAAA/MM/AAAA-MM-DDTHHMMSSZ.sql.gz`,
+   hora UTC). Prefira o mais recente **que tenha aparecido como verificado** em §6.4.
+   Só existem os da janela de retenção (§6.2) — o que é mais velho foi apagado.
 3. **Crie a base de destino.** Duas opções, e a escolha depende do que quebrou:
    - **Projeto Supabase novo** — se o projeto atual está inacessível, pausado
      além do recuperável, ou se você não confia mais nele. É o caminho mais
@@ -523,7 +559,7 @@ possíveis, e eles não significam a mesma coisa:
 4. Restaure:
 
    ```bash
-   gunzip -c AAAA-MM-DD.sql.gz | psql "<URL_DA_BASE_NOVA>" -v ON_ERROR_STOP=1
+   gunzip -c AAAA-MM-DDTHHMMSSZ.sql.gz | psql "<URL_DA_BASE_NOVA>" -v ON_ERROR_STOP=1
    ```
 
    `ON_ERROR_STOP=1` não é opcional: sem ele o `psql` engole erros e você fica

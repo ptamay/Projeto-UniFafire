@@ -6,7 +6,8 @@ import { logAction } from '@/lib/logger';
 import { AgendaBackupSchema } from '@/lib/schemas';
 import { lerAgenda, horariosDoDia, CHAVES } from '@/lib/agenda-backup.mjs';
 
-// TASK-112 (ADR-024) — a agenda do backup: hora e vezes por dia.
+// TASK-112 (ADR-024) — a agenda do backup: hora e vezes por dia. TASK-113: e por
+// quantos dias os dumps ficam no repositório privado — o envio poda o resto, de verdade.
 //
 // O workflow (`.github/workflows/backup.yml`) roda de hora em hora e consulta estas
 // mesmas linhas por `db/agenda-backup.mjs`, com a mesma política
@@ -27,7 +28,7 @@ async function sessaoAdmin() {
 
 async function agendaAtual() {
     const linhas = await query<{ key: string; value: string }>(
-        'SELECT key, value FROM settings WHERE key IN ($1, $2)', [CHAVES.hora, CHAVES.vezes],
+        'SELECT key, value FROM settings WHERE key IN ($1, $2, $3)', [CHAVES.hora, CHAVES.vezes, CHAVES.dias],
     );
     // Validada na LEITURA também: valor herdado inválido cai no padrão (Sprint 24).
     return lerAgenda(Object.fromEntries(linhas.map(l => [l.key, l.value])));
@@ -55,14 +56,14 @@ export async function POST(req: Request) {
     if (!validado.success) {
         return NextResponse.json({ error: validado.error.issues[0]?.message ?? 'Agenda inválida.' }, { status: 400 });
     }
-    const { hora, vezes } = validado.data;
+    const { hora, vezes, dias } = validado.data;
 
     try {
         const antes = await agendaAtual();
-        // As duas linhas entram juntas ou nenhuma entra: meia agenda seria uma agenda
-        // que ninguém configurou.
+        // As linhas entram juntas ou nenhuma entra: meia agenda seria uma agenda que
+        // ninguém configurou.
         await withTransaction(async (tx) => {
-            for (const [chave, valor] of [[CHAVES.hora, hora], [CHAVES.vezes, vezes]] as const) {
+            for (const [chave, valor] of [[CHAVES.hora, hora], [CHAVES.vezes, vezes], [CHAVES.dias, dias]] as const) {
                 await tx.execute(
                     `INSERT INTO settings (key, value) VALUES ($1, $2)
                      ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
@@ -70,10 +71,13 @@ export async function POST(req: Request) {
                 );
             }
         });
+        // A retenção com os dois números: baixá-la apaga backups no próximo envio, e a
+        // trilha tem de dizer quem fez isso, de quanto para quanto.
         await logAction(session!.id as number, session!.username as string, 'BACKUP_AGENDA_ALTERADA', 'settings',
-            `de ${horariosDoDia(antes).join('h, ')}h para ${horariosDoDia({ hora, vezes }).join('h, ')}h (Recife)`);
+            `de ${horariosDoDia(antes).join('h, ')}h para ${horariosDoDia({ hora, vezes }).join('h, ')}h (Recife); ` +
+            `retenção de ${antes.dias} dias para ${dias} dias`);
 
-        return NextResponse.json({ hora, vezes, horarios: horariosDoDia({ hora, vezes }) });
+        return NextResponse.json({ hora, vezes, dias, horarios: horariosDoDia({ hora, vezes }) });
     } catch (e) {
         console.error('[Backup] Falha ao gravar a agenda:', e);
         return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });

@@ -59,10 +59,15 @@ describe('TASK-082 — os controles inertes saem da tela', () => {
         // frase é verdadeira. Regex larga demais reprovaria a correção.
         expect(tela, 'campo de retenção continua na tela').not.toMatch(/Retenção \(quantidade/i);
         expect(tela, 'o input de retenção continua na tela').not.toMatch(/type="number"[^>]*max=\{50\}/);
-        expect(
-            tela,
-            'a tela ainda promete que backups antigos são removidos — nada os remove',
-        ).not.toMatch(/removidos automaticamente/i);
+        // TASK-113 (ADR-024): a retenção também volta, porque o workflow passou a PODAR o
+        // repositório privado. Mesma forma da guarda da agenda: a promessa de apagar só
+        // pode estar na tela se o envio que apaga estiver no workflow.
+        if (/removid|apagad/i.test(tela)) {
+            expect(
+                semComentarios('.github/workflows/backup.yml'),
+                'a tela promete que backups antigos são apagados — nada os apaga',
+            ).toMatch(/node db\/enviar-backup\.mjs/);
+        }
     });
 
     it('BDD 1: não há botão "Gerar Backup Agora"', () => {

@@ -4,7 +4,9 @@
   TASK-112 feita em 2026-09-10 — com uma diferença do texto: a retenção NÃO entrou na tela na 112,
   e sim na 113 junto com a poda (campo que nada obedece seria o controle inerte do ADR-013); e as
   chaves são novas (`backup_hora`, `backup_vezes_por_dia`), porque a órfã `backup_time` valia
-  "02:00" em produção
+  "02:00" em produção. TASK-113 feita em 2026-09-10: a retenção entra na tela junto com a poda;
+  janela em dias de Recife contando hoje; o repositório privado vira UM commit com a janela a cada
+  backup (push forçado com lease); retenção desconhecida não apaga nada
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (a restauração pela tela mexe no que a §3.5 e a §4.4 da
   constitution dizem; a agenda e a retenção sozinhas seriam Tipo C)
