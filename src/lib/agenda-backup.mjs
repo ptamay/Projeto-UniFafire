@@ -1,5 +1,6 @@
 // TASK-112 (ADR-024) — a agenda do backup: o que o ADMIN configura, e quando o
-// workflow deve executar.
+// workflow deve executar. TASK-113: e por quantos dias os dumps ficam guardados
+// (`db/enviar-backup.mjs` aplica).
 //
 // JavaScript puro, de propósito: a rota da aplicação (`src/`) e o script do workflow
 // (`db/agenda-backup.mjs`, no GitHub Actions) usam a MESMA política. `db/` pode
@@ -17,13 +18,18 @@ export const OFFSET_RECIFE_HORAS = -3;
 export const CHAVES = {
     hora: 'backup_hora',
     vezes: 'backup_vezes_por_dia',
+    // TASK-113 — também nova: `backup_retention_count` valia "7" em produção e contava
+    // ARQUIVOS, não dias. Saiu na migration `202609101700_settings_orfas_de_backup`.
+    dias: 'backup_retencao_dias',
 };
 
-export const AGENDA_PADRAO = { hora: 3, vezes: 1 };
+export const AGENDA_PADRAO = { hora: 3, vezes: 1, dias: 7 };
 
 /** Mínimo de 1 vez por dia: é o RPO de 24 h da constitution §4.3. Até 4: mais que
- *  isso guarda dumps com PII por uma precisão que o atraso do GitHub desfaz. */
-export const LIMITES = { hora: [0, 23], vezes: [1, 4] };
+ *  isso guarda dumps com PII por uma precisão que o atraso do GitHub desfaz.
+ *  Retenção de 3 a 30 dias (TASK-113, ADR-024 decisão 2): abaixo de 3, um dump ruim e
+ *  verificado por azar deixaria pouca escolha; acima de 30, é PII guardada sem motivo. */
+export const LIMITES = { hora: [0, 23], vezes: [1, 4], dias: [3, 30] };
 
 function inteiroNaFaixa(bruto, [min, max], padrao) {
     const s = String(bruto ?? '').trim();
@@ -42,6 +48,7 @@ export function lerAgenda(settings) {
     return {
         hora: inteiroNaFaixa(settings?.[CHAVES.hora], LIMITES.hora, AGENDA_PADRAO.hora),
         vezes: inteiroNaFaixa(settings?.[CHAVES.vezes], LIMITES.vezes, AGENDA_PADRAO.vezes),
+        dias: inteiroNaFaixa(settings?.[CHAVES.dias], LIMITES.dias, AGENDA_PADRAO.dias),
     };
 }
 

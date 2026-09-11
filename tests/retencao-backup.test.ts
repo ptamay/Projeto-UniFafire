@@ -144,6 +144,19 @@ describe('TASK-113 — o plano da poda', () => {
         expect(r.apagar).toHaveLength(2);
     });
 
+    it('BDD 4: o dump novo fica mesmo quando a data dele cairia fora da janela', async () => {
+        // Hoje o nome sai do mesmo relógio que a janela, e o novo cai sempre dentro dela.
+        // A regra não pode depender disso: um relógio torto no runner, ou um nome montado
+        // por outro caminho (a restauração da TASK-115), e a poda apagaria o único
+        // backup que acabou de ser verificado.
+        const { planejarPoda } = await envio();
+        const novoTorto = 'backups/2026/09/2026-09-01T061700Z.sql.gz';
+        const r = planejarPoda({
+            arquivos: ['backups/2026/08/2026-08-30.sql.gz', novoTorto], novo: novoTorto, agora, dias: 3,
+        });
+        expect(r.manter, 'a poda apagou o dump que acabou de ser verificado').toEqual([novoTorto]);
+    });
+
     it('BDD 4: sem o dump novo entre os arquivos, recusa — nada é apagado', async () => {
         const { planejarPoda } = await envio();
         expect(() => planejarPoda({ arquivos: ['backups/2026/09/2026-09-01.sql.gz'], novo, agora, dias: 7 }))
@@ -277,7 +290,7 @@ describe('TASK-113 — o envio e a poda, contra um repositório git de verdade',
         };
         await expect(enviarBackup({
             remoto: remotoUrl, arquivoLocal: dump, agora, dias: 7, dirTrabalho: tmp, depoisDoClone: empurrarConcorrente,
-        })).rejects.toThrow();
+        })).rejects.toThrow(/git push falhou[\s\S]*stale info/);
         expect(arvore(), 'o push forçado apagou o que o outro tinha acabado de guardar')
             .toContain('backups/2026/09/seguranca.sql.gz');
     });

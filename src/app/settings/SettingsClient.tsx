@@ -78,7 +78,7 @@ export default function SettingsClient({ userRole, username }: Props) {
         if (userRole === 'ADMIN') {
             fetch('/api/backups/agenda')
                 .then(r => (r.ok ? r.json() : null))
-                .then(d => { if (d && typeof d.hora === 'number') setAgenda({ hora: d.hora, vezes: d.vezes }); })
+                .then(d => { if (d && typeof d.hora === 'number') setAgenda({ hora: d.hora, vezes: d.vezes, dias: d.dias }); })
                 .catch(() => {});
         }
     }, [userRole]);
@@ -92,7 +92,7 @@ export default function SettingsClient({ userRole, username }: Props) {
                 body: JSON.stringify(agenda),
             });
             const d = await res.json();
-            if (res.ok) toast.success(`Backup agendado para ${descreverHorarios(d)}.`);
+            if (res.ok) toast.success(`Backup agendado para ${descreverHorarios(d)}, guardado por ${d.dias} dias.`);
             else toast.error(d.error || 'Erro ao salvar a agenda.');
         } catch { toast.error('Erro de conexão.'); }
         setSalvandoAgenda(false);
@@ -259,9 +259,10 @@ export default function SettingsClient({ userRole, username }: Props) {
 
                         {/* TASK-112 (ADR-024) — a agenda VOLTA à tela porque agora é
                             obedecida: o workflow roda de hora em hora e consulta estas
-                            linhas. A retenção NÃO está aqui: só é aplicada na TASK-113,
-                            e campo que nada obedece é o controle inerte do ADR-013. */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.25rem' }}>
+                            linhas. TASK-113: a retenção entra junto com a poda que a
+                            aplica (`db/enviar-backup.mjs`) — antes dela, seria o controle
+                            inerte do ADR-013. */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(6.5rem, 1fr))', gap: '0.75rem', marginTop: '1.25rem' }}>
                             <div className="input-group">
                                 <label className="input-label" htmlFor="bkp-hora">Horário</label>
                                 <select id="bkp-hora" className="input" value={agenda.hora}
@@ -280,10 +281,24 @@ export default function SettingsClient({ userRole, username }: Props) {
                                     ))}
                                 </select>
                             </div>
+                            <div className="input-group">
+                                <label className="input-label" htmlFor="bkp-dias">Guardar por</label>
+                                <select id="bkp-dias" className="input" value={agenda.dias}
+                                    onChange={e => setAgenda(a => ({ ...a, dias: Number(e.target.value) }))}>
+                                    {Array.from({ length: LIMITES.dias[1] - LIMITES.dias[0] + 1 }, (_, i) => i + LIMITES.dias[0]).map(d => (
+                                        <option key={d} value={d}>{d} dias</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
                             Pelo GitHub Actions, por volta de <strong style={{ color: 'var(--text-secondary)' }}>{descreverHorarios(agenda)}</strong> (horário
                             de Recife) — o GitHub pode atrasar alguns minutos. Cada dump é verificado por restauração antes de ser guardado.
+                        </p>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
+                            Ficam os backups dos últimos <strong style={{ color: 'var(--text-secondary)' }}>{agenda.dias} dias</strong>, contando
+                            hoje. Os mais antigos são apagados do repositório privado a cada novo backup, inclusive do histórico — não há como
+                            recuperá-los depois.
                         </p>
                         <div style={{ marginTop: '0.75rem' }}>
                             <button className="btn btn-green" onClick={salvarAgenda} disabled={salvandoAgenda}>

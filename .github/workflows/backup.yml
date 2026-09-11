@@ -69,6 +69,8 @@ jobs:
     timeout-minutes: 5
     outputs:
       executar: ${{ steps.decisao.outputs.executar }}
+      # TASK-113 — vazio quando a agenda não pôde ser lida: aí o envio não apaga nada.
+      retencao: ${{ steps.decisao.outputs.retencao }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -180,24 +182,23 @@ jobs:
             "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q
           node db/verify-dump-cli.mjs "$DATABASE_URL" "$VERIFICACAO_URL"
 
-      - name: Enviar para o repositório privado
+      # TASK-113 (ADR-024, decisão 2) — envia E aplica a retenção, apagando de verdade:
+      # o repositório privado é republicado como um commit só, com os dumps da janela, e
+      # o que sai dela deixa de estar no histórico. Irreversível por desenho — é o ponto.
+      #
+      # Por isso vem DEPOIS da restauração de verificação, sem `if: always()` nem
+      # `continue-on-error`: se o dump novo não foi verificado, este passo nem roda.
+      #
+      # A orquestração mora em `db/enviar-backup.mjs`, exercitada contra um repositório
+      # git de verdade em `tests/retencao-backup.test.ts` — e não aqui, onde um
+      # `git push --force` não teria teste nenhum. Lição do go-live.
+      - name: Enviar para o repositório privado e aplicar a retenção
         id: enviar
         env:
           GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
           BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
-        run: |
-          set -euo pipefail
-          DESTINO="backups/$(date -u +%Y/%m/%Y-%m-%d).sql.gz"
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${BACKUP_REPO}.git" destino
-          mkdir -p "destino/$(dirname "$DESTINO")"
-          cp "$ARQUIVO" "destino/$DESTINO"
-          cd destino
-          git config user.name  "backup-bot"
-          git config user.email "backup-bot@users.noreply.github.com"
-          git add "$DESTINO"
-          git commit -m "backup verificado $(date -u +%Y-%m-%d)"
-          git push
-          echo "destino=${BACKUP_REPO}:${DESTINO}" >> "$GITHUB_OUTPUT"
+          RETENCAO: ${{ needs.agenda.outputs.retencao }}
+        run: node db/enviar-backup.mjs --arquivo "$ARQUIVO" --dias "$RETENCAO" >> "$GITHUB_OUTPUT"
 
       # `always()` é o que transforma falha em REGISTRO. Sem ele, um job que
       # quebra no meio não deixa rastro, e a métrica da TASK-075 lê "nenhuma

@@ -116,7 +116,7 @@ alcançam nenhuma rota de operação — apenas as de conta própria acima.
 | `/api/logs` | `GET` | A · G | Trilha de auditoria |
 | `/api/backups` | `GET` | **A** | Lista execuções de `backup_runs` — **não** arquivos |
 | `/api/backups/reliability` | `GET` | **A** | Métrica de confiabilidade. Restrita porque a resposta pode conter mensagem de erro do job |
-| `/api/backups/agenda` | `GET`, `POST` | **A** | Agenda do backup: `{hora 0–23, vezes 1–4}` (Zod, número inteiro), gravada em `settings` e lida pelo workflow de hora em hora (`db/agenda-backup.mjs`). `GET` devolve também `horarios`. Alteração entra na trilha (`BACKUP_AGENDA_ALTERADA`). TASK-112 |
+| `/api/backups/agenda` | `GET`, `POST` | **A** | Agenda do backup: `{hora 0–23, vezes 1–4, dias 3–30}` (Zod, número inteiro, os três obrigatórios), gravada em `settings` e lida pelo workflow de hora em hora (`db/agenda-backup.mjs`). `dias` é a retenção: o envio (`db/enviar-backup.mjs`) apaga do repositório privado — inclusive do histórico — o que for mais velho. `GET` devolve também `horarios`. Alteração entra na trilha (`BACKUP_AGENDA_ALTERADA`, com a retenção de antes e a de depois). TASK-112, TASK-113 |
 
 ---
 

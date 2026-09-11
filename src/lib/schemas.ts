@@ -122,4 +122,7 @@ export const SettingsSchema = z.object({
 export const AgendaBackupSchema = z.object({
     hora: z.number().int('A hora é um número inteiro.').min(0).max(23, 'A hora vai de 0 a 23.'),
     vezes: z.number().int('Vezes por dia é um número inteiro.').min(1, 'Pelo menos 1 vez por dia (RPO de 24 h).').max(4, 'No máximo 4 vezes por dia.'),
+    // TASK-113 — obrigatória, e não opcional: baixar a retenção APAGA backups no próximo
+    // envio, então ela só muda quando alguém a escolhe, nunca por omissão de um campo.
+    dias: z.number().int('A retenção é um número inteiro de dias.').min(3, 'Guarde pelo menos 3 dias de backups.').max(30, 'No máximo 30 dias de backups.'),
 }).strict();
