@@ -119,6 +119,23 @@
   em hora; passo inicial lê a agenda e decide. Migration normaliza as linhas órfãs
   `backup_time`/`backup_retention_count`. A tela diz que o horário é "por volta de" (o GitHub
   atrasa agendas).
+- ✅ **TASK-112 NO AR** (#61 merged, `324f29d`): `202609101700` aplicada pelo usuário no editor
+  ANTES do merge (registro com 12 linhas, checksum `add7ea04…`), health 200.
+- ✅ **TASK-113 FEITA em 2026-09-10** (branch `feat/task-113-retencao`). `db/enviar-backup.mjs`:
+  nome com hora (UTC, sem ":"), janela de N dias de Recife contando hoje (3–30, padrão 7), e o
+  repositório privado republicado como UM commit sem pai com a janela — push forçado com lease.
+  Exercitado contra repositório git bare de verdade: o que sai da janela deixa de ser alcançável,
+  INCLUSIVE a versão sobrescrita. Agenda ilegível → `retencao=` ausente → nada apagado. Campo
+  "Guardar por" na tela; trilha com os dois números. 666 testes / 70 arquivos.
+  > 🔎 Medido no repositório privado antes: `2026-09-10.sql.gz` gravado DUAS vezes (manual do
+  > ADR-023 + agendado) — a primeira versão só existia no histórico (commit 380f778). É o
+  > vazamento que o ADR descrevia, já acontecido uma vez.
+  > ⚠️ **O primeiro backup depois do merge reescreve o repositório privado — irreversível.** Hoje
+  > há 5 dumps (06–10/09) + README, todos dentro de 7 dias: nada some da pasta, só o histórico
+  > (inclusive a cópia escondida do dia 10). Verificar com UMA execução manual logo depois do
+  > merge (job de CI só está verificado depois de rodar).
+  > ⚠️ Limite honesto (runbook §6.2): o GitHub remove objetos inalcançáveis na coleta de lixo
+  > DELE; até lá, um commit antigo abre por SHA para quem tem acesso ao repositório privado.
 - **TASK-113 → retenção de verdade.** Nome de arquivo com hora; poda reescrevendo o histórico do
   repositório privado; nunca poda sem o dump novo verificado; nunca fica sem nenhum.
 - **TASK-114 → backup manual.** Rota ADMIN que dispara o workflow pela API do GitHub com token
@@ -129,6 +146,11 @@
   (`action_logs`, `audit_logs`, `app_logs`, `backup_runs`, `migracoes_aplicadas`) preservada e
   registrando a restauração; recusa schema incompatível; modal destrutivo que diz a data e que
   SENHAS voltam ao que eram. Ensaiada contra cópia antes de produção (ADR-022).
+  > ⚠️ Herdado da TASK-113: `backup_runs.destination` continua apontando para dumps que a poda já
+  > APAGOU. A lista da restauração não pode sair só do `backup_runs` — tem de cruzar com o que
+  > existe no repositório (ou com a janela de retenção). E o backup de segurança grava no mesmo
+  > repositório: usar o mesmo `concurrency` do backup e o `db/enviar-backup.mjs` (o lease já
+  > protege, e o cenário BDD 7 da 113 foi escrito pensando nela).
 - **TASK-116 → emenda da §3.5 e da §4.4** — só depois de 112–115 no ar.
 
 ### API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023) ✅ FECHADO em 2026-09-10

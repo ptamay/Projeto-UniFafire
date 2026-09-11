@@ -137,8 +137,24 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   atraso do GitHub); migration das órfãs ensaiada sobre produção. 🔴 Aplicar a
   `202609101700_settings_orfas_de_backup` pelo roteiro no editor ANTES do merge.
   Achado: `auto_logout_time = "30"` ainda em produção — usuário corrige salvando pela tela.
-- Próxima Ação: usuário aplica o roteiro → merge → TASK-113 (retenção de verdade). Fila restante: §0 da constitution ("Transição em curso", vencida), §2.2
-  (espera dados), linhas órfãs de `settings`, PR #43 do Dependabot.
+- ✅ #61 merged (TASK-112 no ar): `202609101700` aplicada pelo usuário ANTES do merge, registro
+  com 12 linhas, health 200. ✅ **TASK-113 FEITA** (branch `feat/task-113-retencao`, PR a abrir):
+  `db/enviar-backup.mjs` envia com nome por hora e republica o repositório privado como UM commit
+  com os dumps dos últimos N dias de Recife (3–30, padrão 7), push forçado com lease; agenda
+  ilegível → nada apagado. Testado contra repositório git bare de verdade. 666 / 70.
+  🔴 **O primeiro backup depois do merge REESCREVE o repositório privado (irreversível)** — hoje
+  nada sai da pasta (5 dumps, 06–10/09), só o histórico, inclusive a cópia sobrescrita do dia 10.
+  Verificar com UMA execução manual logo após o merge, com o OK do usuário.
+- ⚠️ **DOCKER DESKTOP QUEBRADO em 2026-09-10:** cai na partida com `sailor-ingest.sock.stale` —
+  socket AF_UNIX órfão em `%LOCALAPPDATA%\Docker\run` que nem `del` apaga (provável: só com
+  reinício do Windows). Contorno que funcionou: **cluster NATIVO do Postgres 17**
+  (`C:\Program Files\PostgreSQL\17\bin`) com `initdb` na pasta de rascunho, porta 15432, usuário
+  `unifafire`/`unifafire_test`, base `unifafire_test` — o mesmo endereço do compose, então a suíte
+  e o dev server não percebem a troca. O `global-setup` exige `docker info`; sem daemon, rodar a
+  suíte com uma config local que troca só o `globalSetup`.
+- Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
+  TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
+  ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -368,7 +384,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-112-agenda-backup (PR a abrir). PRs #15–#60 merged; #43 do
+- Branch atual: feat/task-113-retencao (PR a abrir). PRs #15–#61 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
