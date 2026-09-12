@@ -152,6 +152,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `unifafire`/`unifafire_test`, base `unifafire_test` — o mesmo endereço do compose, então a suíte
   e o dev server não percebem a troca. O `global-setup` exige `docker info`; sem daemon, rodar a
   suíte com uma config local que troca só o `globalSetup`.
+- ✅ **TASK-119 FEITA em 2026-09-11** (branch `feat/task-119-tabela-rola-no-conteiner`, PR a abrir):
+  `contain: inline-size` no `.table-wrapper` — o min-content da tabela vazava pelo contêiner de
+  rolagem e alargava o `.main-content` (item flex, `min-width: auto`). Não era só o `/users`:
+  `/history`, `/logs` e `/keys` estouravam a 769–1024. **16 medições estourando → 2**, celular
+  inalterado, 668 / 71, 6 gates, `next build` verde. ⚠️ **Em aberto:** o Dashboard a 769–800 px
+  (grade do `.dashboard-list-header`, sem contêiner de rolagem) — outro mecanismo. E NÃO usar
+  `min-width: 0` no `.main-content`: com o `overflow-x: clip` dele, isso CORTA em vez de rolar.
 - Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
   TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
   ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.

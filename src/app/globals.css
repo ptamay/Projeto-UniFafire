@@ -388,6 +388,13 @@ h3 { font-size: 1.125rem; }
 /* ── Tables ───────────────────────────────────────────────── */
 .table-wrapper {
   overflow-x: auto;
+  /* REQ-016 (TASK-119): sem contenção, o min-content da tabela vazava por este
+     contêiner de rolagem e alargava o .main-content (item flex, min-width: auto) —
+     quem rolava era a PÁGINA. inline-size faz a largura intrínseca ignorar a
+     tabela: o contêiner ocupa o que o pai dá e a tabela rola aqui dentro.
+     Não trocar por min-width: 0 no .main-content: com o overflow-x: clip dele, o
+     que não tem para onde rolar (grade do Dashboard) seria cortado em silêncio. */
+  contain: inline-size;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
