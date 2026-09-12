@@ -18,3 +18,17 @@ test.describe('Sem scroll horizontal na portaria (REQ-016)', () => {
         await expectNoHorizontalScroll(page);
     });
 });
+
+// TASK-118 — o papel que a TASK-117 achou cortado, e que este spec não cobria.
+// ALUNO e FUNCIONARIO têm QUATRO chips na barra de filtros (`Minhas Chaves` a mais que a
+// portaria), 430 px de min-content: sem `min-width: 0` no `.main-content` o main ia a
+// 462 px no celular. O porteiro, com três chips, cabe — por isso o spec acima nunca viu.
+test.describe('Sem scroll horizontal para quem porta chave (REQ-016)', () => {
+    test('dashboard do aluno, com a barra de 4 filtros, cabe na tela', async ({ page }) => {
+        await login(page, 'e2e_aluno');
+        // Premissa: a barra de QUATRO chips, que é o que alarga o main.
+        await expect(page.locator('.dashboard-filter-chip')).toHaveCount(4);
+        await expect(page.getByRole('button', { name: /^Minhas Chaves/ })).toBeVisible();
+        await expectNoHorizontalScroll(page);
+    });
+});
