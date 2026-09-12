@@ -87,6 +87,21 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por achado — REQ-016 no desktop (varredura da TASK-117)
+- ✅ **TASK-119 FEITA em 2026-09-11** (branch `feat/task-119-tabela-rola-no-conteiner`). Em `/users`
+  a 1280 px o `.main-content` media 1146 (esperado 1020) e a página rolava. Medidas as nove telas
+  de 1280 a 769 px: `/history`, `/logs` e `/keys` estouravam igual entre 769 e 1024. Mecanismo
+  único — o min-content da tabela vazava pelo `.table-wrapper` (`overflow-x: auto`) e alargava o
+  `.main-content` (item flex, `min-width: auto`). Correção na origem: `contain: inline-size` no
+  `.table-wrapper`. **16 medições estourando → 2**; celular (375) inalterado. De brinde: o
+  "Novo Usuário" e o contador, cortados na borda em 1280, voltaram à tela. Em 1280 a coluna
+  Ações do `/users` rola ~100 px DENTRO da tabela (antes, fora da página) — decisão do usuário.
+  > `min-width: 0` no `.main-content` foi DESCARTADO por medição: com o `overflow-x: clip` dele,
+  > o que não tem contêiner de rolagem seria cortado em silêncio em vez de rolar.
+  > ⚠️ **Fica em aberto, mecanismo diferente:** o Dashboard (`/`) a 769–800 px mede 628 contra
+  > 509–540 — a grade do `.dashboard-list-header` (colunas fixas de 180 e 120 px) não cabe e não
+  > tem para onde rolar. Não é tabela; a TASK-119 não o alcança, de propósito.
+
 ### Aberta por Change Request — Tela de Configurações e tutorial (CR Tipo C · ADR-025)
 > Aprovado pelo usuário em 2026-09-10. Independente do ADR-024; pode vir primeiro.
 - ✅ **TASK-111 FEITA em 2026-09-10** (branch `feat/task-111-tela`). "?" no rodapé da barra e na
