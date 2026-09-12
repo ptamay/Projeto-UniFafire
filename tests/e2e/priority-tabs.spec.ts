@@ -1,59 +1,44 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { login } from './helpers';
 
-test.describe('Dashboard Priority Tabs', () => {
-  test('User with "Minhas chaves" tab (ALUNO) should see it as default', async ({ page }) => {
-    // Role ALUNO sees "Minhas chaves"
-    await login(page, 'e2e_aluno');
+// TASK-052 — a aba de ENTRADA do Dashboard depende do papel, e a ordem dos chips também:
+//   ALUNO/FUNCIONARIO → "Minhas Chaves" primeiro e ativa (quem porta chave quer as dele);
+//   PORTEIRO          → sem "Minhas Chaves", "Disponíveis" ativa (o balcão entrega chave);
+//   ADMIN/GESTOR      → sem "Minhas Chaves", "Todas" ativa (visão de gestão).
+//
+// TASK-120 — este spec nasceu com a TASK-052 e NUNCA passou: procurava um `h1`
+// "Dashboard" (o título é "Monitoramento de Chaves") e classes Tailwind de exemplo
+// ("bg-white") que o componente não usa. Agora cobra o contrato do componente: os
+// chips são `.dashboard-filter-chip`, e o ativo é o `btn-green`.
 
-    // Wait for dashboard to load
-    await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
+const chips = (page: Page) => page.locator('.dashboard-filter-chip');
 
-    // Check if the first tab is "Minhas chaves"
-    // Assuming tabs are buttons in a tab list
-    const tabButtons = page.locator('.flex.space-x-1.rounded-xl.bg-surface-elevated button');
-    
-    // First tab text
-    await expect(tabButtons.nth(0)).toHaveText(/Minhas chaves/i);
+async function abrirDashboard(page: Page, usuario: string) {
+    await login(page, usuario);
+    // O heading real — o esqueleto do `loading.tsx` repete o título com `aria-hidden`.
+    await expect(page.getByRole('heading', { name: 'Monitoramento de Chaves', level: 1 })).toBeVisible();
+}
 
-    // Verify it is active by default (it should have bg-white or bg-primary, etc. We can check aria-selected if present, or just its class)
-    // Looking at similar components, usually it has text-primary or bg-white
-    const firstTabClass = await tabButtons.nth(0).getAttribute('class');
-    expect(firstTabClass).toContain('bg-white'); // Example active class in typical Tailwind tabs
-  });
+async function expectAbas(page: Page, rotulos: RegExp[], ativa: RegExp) {
+    await expect(chips(page)).toHaveText(rotulos);
+    // Exatamente UMA ativa, e é a esperada.
+    await expect(page.locator('.dashboard-filter-chip.btn-green')).toHaveCount(1);
+    await expect(page.locator('.dashboard-filter-chip.btn-green')).toHaveText(ativa);
+}
 
-  test('Porteiro should see standard tabs without "Minhas chaves"', async ({ page }) => {
-    await login(page, 'e2e_porteiro');
+test.describe('Dashboard — aba de entrada por papel (TASK-052)', () => {
+    test('ALUNO entra em "Minhas Chaves", a primeira aba', async ({ page }) => {
+        await abrirDashboard(page, 'e2e_aluno');
+        await expectAbas(page, [/^Minhas Chaves/, /^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Minhas Chaves/);
+    });
 
-    // Wait for dashboard to load
-    await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
+    test('PORTEIRO não tem "Minhas Chaves" e entra em "Disponíveis"', async ({ page }) => {
+        await abrirDashboard(page, 'e2e_porteiro');
+        await expectAbas(page, [/^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Disponíveis$/);
+    });
 
-    const tabButtons = page.locator('.flex.space-x-1.rounded-xl.bg-surface-elevated button');
-    
-    // First tab should be "Todas"
-    await expect(tabButtons.nth(0)).toHaveText(/Todas/i);
-
-    // Verify it is active by default (but only if filter was updated to 'all' or 'available'. Wait, for Porteiro filter is 'available', but 'Todas' is the first tab. So 'Todas' is NOT active by default for Porteiro?
-    // User requested ADMIN/GESTOR default to 'all'. Porteiro defaults to 'available'. The first tab is 'Todas'.
-    // If we want Porteiro default to be 'available', the active class will be on nth(1).
-    // Let's just check that 'Todas' is first. We can skip checking active class for Porteiro here or check nth(1).
-    const secondTabClass = await tabButtons.nth(1).getAttribute('class');
-    expect(secondTabClass).toContain('bg-white');
-  });
-
-  test('Admin should see "Todas" as active by default', async ({ page }) => {
-    await login(page, 'e2e_admin');
-
-    // Wait for dashboard to load
-    await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
-
-    const tabButtons = page.locator('.flex.space-x-1.rounded-xl.bg-surface-elevated button');
-    
-    // First tab should be "Todas"
-    await expect(tabButtons.nth(0)).toHaveText(/Todas/i);
-
-    // Verify it is active by default
-    const firstTabClass = await tabButtons.nth(0).getAttribute('class');
-    expect(firstTabClass).toContain('bg-white');
-  });
+    test('ADMIN não tem "Minhas Chaves" e entra em "Todas"', async ({ page }) => {
+        await abrirDashboard(page, 'e2e_admin');
+        await expectAbas(page, [/^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Todas$/);
+    });
 });

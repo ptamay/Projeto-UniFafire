@@ -17,6 +17,25 @@ export async function logout(page: Page) {
 }
 
 /**
+ * Abre a aba "Todas" do Dashboard.
+ *
+ * TASK-120 — desde a TASK-052 a aba de ENTRADA depende do papel: ALUNO e FUNCIONARIO
+ * abrem em "Minhas Chaves", PORTEIRO em "Disponíveis", ADMIN e GESTOR em "Todas". Um
+ * fluxo que procura uma chave fora da aba de entrada não a encontra — foi assim que
+ * os specs de fluxo quebraram sem ninguém ver. Cada `page.goto('/')` volta à aba de
+ * entrada, então chame de novo depois de navegar.
+ *
+ * Com retry: o chip existe no HTML do SSR antes de a hidratação anexar o onClick.
+ */
+export async function abrirAbaTodas(page: Page) {
+    const todas = page.locator('.dashboard-filter-chip', { hasText: /^Todas$/ });
+    await expect(async () => {
+        await todas.click({ timeout: 3000 });
+        await expect(todas).toHaveClass(/\bbtn-green\b/, { timeout: 1000 });
+    }).toPass({ timeout: 30_000 });
+}
+
+/**
  * REQ-016: nenhuma tela pode gerar scroll horizontal nem cortar conteúdo (viewport ≥ 360px).
  *
  * TASK-118 — medir só `documentElement.scrollWidth` é CEGO no celular: com

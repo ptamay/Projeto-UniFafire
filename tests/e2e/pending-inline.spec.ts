@@ -44,6 +44,12 @@ test.describe('Pendências inline no Dashboard (REQ-029b)', () => {
 
         // ── Pendência criada aparece no painel, sem navegar ──
         await createPendingWithdraw(page);
+        // TASK-120 — a pendência nasce pela API, FORA desta tela, e o que a traz para cá
+        // em produção é o Realtime. A E2E roda sem Realtime (TASK-118: as chaves vazias
+        // não a ligam ao canal de produção), e o fallback é o polling de 30 s — contra
+        // os 10 s abaixo, escritos na era do polling de 3 s. O spec é sobre o PAINEL, não
+        // sobre a propagação (essa é o REQ-032, medido à parte): recarrega.
+        await page.reload();
         const panel = page.locator('.pending-inline');
         await expect(panel).toBeVisible({ timeout: 10_000 });
         const item = panel.locator('.pending-inline-item', { hasText: KEY });
