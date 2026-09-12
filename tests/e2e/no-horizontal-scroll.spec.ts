@@ -14,7 +14,10 @@ test.describe('Sem scroll horizontal na portaria (REQ-016)', () => {
     test('dashboard do porteiro não gera scroll horizontal', async ({ page }) => {
         await login(page, 'e2e_porteiro');
         // A lista precisa estar renderizada (chaves seedadas em uso + disponíveis).
-        await expect(page.getByText('Monitoramento de Chaves')).toBeVisible();
+        // Pelo heading, e não por texto: com o servidor frio, o esqueleto da TASK-096
+        // (`loading.tsx`) tem um `sr-only` "Carregando Monitoramento de Chaves" e um h1
+        // `aria-hidden` — `getByText` casava os dois e a medida podia sair do esqueleto.
+        await expect(page.getByRole('heading', { name: 'Monitoramento de Chaves', level: 1 })).toBeVisible();
         await expectNoHorizontalScroll(page);
     });
 });
