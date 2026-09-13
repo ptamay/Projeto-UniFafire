@@ -147,4 +147,15 @@ describe('TASK-121 — a lista do Dashboard cabe na largura que tem (REQ-016)', 
         expect(corpo).toMatch(/\.dashboard-list-header\s*\{[^}]*display\s*:\s*none/);
         expect(corpo).toMatch(/\.dashboard-list-row\s*\{[^}]*grid-template-areas\s*:/);
     });
+
+    it('BDD 7: a barra de filtros rola por dentro em qualquer largura, não só no celular', () => {
+        // Com a lista cabendo, apareceu o que ela escondia: para FUNCIONARIO e ALUNO a
+        // barra tem quatro chips ("Minhas Chaves (N)") que pedem 448 px, e a 769 há 445.
+        // A regra de rolagem existia só no bloco do celular. Sem dropdown dentro, rolar
+        // aqui não tem o problema do seletor.
+        const regra = regraBase(/\.dashboard-filter-bar/);
+        expect(regra, 'sem contenção, os chips alargam o .main-content')
+            .toMatch(/(^|;)\s*contain\s*:\s*[^;]*\binline-size\b/);
+        expect(regra).toMatch(/(^|;)\s*overflow-x\s*:\s*auto\b/);
+    });
 });
