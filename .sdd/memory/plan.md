@@ -108,8 +108,12 @@
   reprovou nos dois projetos após as 2 retentativas; artefato de 765 KB subiu) → verde de novo
   depois do revert (`34731935774`). Vitest também rodada local em `TZ=UTC` (fuso do runner e da
   Vercel): 689/74 — nenhum teste dependia do -03.
-  > ⚠️ O Actions avisa que `checkout@v4`/`setup-node@v4` (em TODOS os workflows) miram Node 20,
-  > descontinuado — hoje forçados a Node 24 sem erro. Subir para v5 é manutenção à parte.
+  > ✅ `checkout@v4`/`setup-node@v4` miravam Node 20 (descontinuado): subiram para a **v5** (Node
+  > 24, conferido no `action.yml` de cada tag) no `backup.yml` e no `testes.yml`, 2026-09-13, a
+  > pedido do usuário. O `upload-artifact@v4` (Node 20) foi para a **v6** — a v5 dele ainda era
+  > Node 20; de v4 a v6 só mudou o runtime, as entradas usadas (`name`, `path`,
+  > `retention-days`) são as mesmas. As três já estão na v7. ⚠️ O upload só roda quando o CI
+  > FALHA, então a v6 só se prova na primeira falha real.
   > ✅ Gatilho de push na `main` provado no merge do #68 (`ea932c0`): execução `34733468862`, verde em 3 min — vitest 696/75, E2E 32 ok / 2 pulados.
 - 🔒 **O check `testes` é OBRIGATÓRIO na `main` desde 2026-09-12** — ruleset **23122325**, "main —
   testes obrigatórios (TASK-122)", criado a pedido do usuário depois do merge do #68 (antes, travaria
