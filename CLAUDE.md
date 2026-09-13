@@ -179,14 +179,20 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   a lista num contêiner com `overflow-x: auto`: o seletor abre com foco e rola a lista POR DENTRO
   (251 px). Sobre a `main` nova: 216 medições (4 papéis × 9 telas × 5 larguras + 375) com 0
   defeitos, celular incluído; vitest 686 / 74, E2E 32 ok / 2 pulados / 0, 6 gates, build verde.
-- ✅ **TASK-122 FEITA (PR #68, aberto): OS TESTES RODAM NO CI.** Até aqui NENHUM teste rodava
-  sozinho. `.github/workflows/testes.yml`: vitest + E2E (desktop e mobile) contra Postgres de
+- ✅ **TASK-122 NO AR (#68 merged, `ea932c0`): OS TESTES RODAM NO CI.** Até aqui NENHUM teste
+  rodava sozinho. `.github/workflows/testes.yml`: vitest + E2E (desktop e mobile) contra Postgres de
   serviço igual ao do compose, em todo PR para a `main`, push na `main` e sob demanda; ~3 min.
   **Verificado no Actions nos três estados:** verde → VERMELHO com falha plantada (vitest e E2E
-  reprovaram; a E2E roda mesmo com a vitest vermelha) → verde após o revert. Fuso UTC (o da
-  Vercel): nenhum teste dependia do -03. Pendente do usuário: merge, e decidir se o check vira
-  OBRIGATÓRIO na proteção da `main`. ⚠️ `checkout@v4`/`setup-node@v4` miram Node 20
-  (descontinuado) em todos os workflows — manutenção à parte.
+  reprovaram; a E2E roda mesmo com a vitest vermelha) → verde após o revert; e o gatilho de push
+  na `main` no merge (verde: vitest 696/75, E2E 32/2). Fuso UTC (o da Vercel): nenhum teste dependia do -03.
+  ⚠️ `checkout@v4`/`setup-node@v4` miram Node 20 (descontinuado) em todos os workflows —
+  manutenção à parte.
+- 🔒 **MERGE NA `main` EXIGE O CHECK `testes` VERDE** (desde 2026-09-12, pedido do usuário). Ruleset
+  **23122325** — configuração do GitHub, NÃO está no git. Só vale o `testes` do `github-actions`;
+  `strict=false` (PR não precisa estar atualizado); **sem bypass**, nem para admin. Na prática:
+  `gh pr merge` falha até o check passar — esperar, não contornar; push direto na `main` é
+  recusado; PR de branch antiga (Dependabot #43) precisa de push novo ou re-run. Emergência:
+  desativar o ruleset em Settings → Rules — decisão do USUÁRIO. Detalhes no `plan.md` (TASK-122).
 - Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
   TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
   ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.
@@ -603,7 +609,7 @@ Próxima ação      : TASK-093/094 (ADR-017) — código de uso único no reset
 | Backend / dados | **Postgres (Supabase, `sa-east-1`) via `pg`** — `src/lib/pg.ts`. Sem ORM, sem prepared statement nomeado, `$n` sempre |
 | Auth | Sessão/JWT (`jose`) + `bcryptjs`. Segredo validado por `src/lib/secret-policy.ts` — o processo NÃO SOBE com segredo fraco. Cookie só por `src/lib/session-cookie.ts`, com `secure` incondicional em produção |
 | Deploy | **Vercel**. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi REMOVIDO na TASK-079. Saúde em `/api/health`, pública e de dois campos. Passo a passo em `docs/runbook-deploy.md` |
-| Testes | Vitest contra **Postgres real em container** (`npm run test:db:up`) + Playwright |
+| Testes | Vitest contra **Postgres real em container** (`npm run test:db:up`) + Playwright. **CI:** `testes.yml` roda os dois em todo PR e push na `main`, e o check `testes` é OBRIGATÓRIO para mesclar (ruleset 23122325, sem bypass) |
 | Secrets | .env local |
 | Erros | Sentry |
 | Autorização | `src/proxy.ts` NEGA por padrão (API 401, página 307). Papel continua sendo do handler — §3.2 |

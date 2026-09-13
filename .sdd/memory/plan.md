@@ -100,7 +100,8 @@
   com a execução verde; (2) a imagem do Postgres é a do compose (uma fonte de verdade para as
   duas); (3) nada engole o código de saída (`continue-on-error`, `|| true`).
   > ⚠️ Só está verificada depois de rodar no Actions de verdade (lição do go-live).
-  > Fora de escopo: tornar o check OBRIGATÓRIO no merge — é configuração do repositório, do usuário.
+  > Fora de escopo da task: tornar o check OBRIGATÓRIO no merge — configuração do repositório.
+  > Feito depois, a pedido explícito do usuário (ruleset abaixo).
 - ✅ **TASK-122 FEITA e VERIFICADA NO ACTIONS em 2026-09-12** (PR #68). Três execuções reais:
   verde (`34731534720`, 3 min: vitest 689/74 em 45 s, E2E 32 ok / 2 pulados em 1,4 min) →
   **vermelho com falha plantada** (`34731699349`: vitest 1 falhou; a E2E rodou mesmo assim e
@@ -109,7 +110,20 @@
   Vercel): 689/74 — nenhum teste dependia do -03.
   > ⚠️ O Actions avisa que `checkout@v4`/`setup-node@v4` (em TODOS os workflows) miram Node 20,
   > descontinuado — hoje forçados a Node 24 sem erro. Subir para v5 é manutenção à parte.
-  > ⚠️ O push na `main` (gatilho 2) só se prova no primeiro merge depois deste.
+  > ✅ Gatilho de push na `main` provado no merge do #68 (`ea932c0`): execução `34733468862`, verde em 3 min — vitest 696/75, E2E 32 ok / 2 pulados.
+- 🔒 **O check `testes` é OBRIGATÓRIO na `main` desde 2026-09-12** — ruleset **23122325**, "main —
+  testes obrigatórios (TASK-122)", criado a pedido do usuário depois do merge do #68 (antes, travaria
+  todo PR aberto num check que a `main` ainda não publicava). ⚠️ **É configuração do GitHub, não
+  está no git** — este registro é o único rastro no repositório. Parâmetros, e por quê:
+  · exige o check `testes` do app `github-actions` (integration_id 15368) — um status com o mesmo
+    nome vindo de outro lugar não vale;
+  · `strict=false`: não exige PR atualizado com a `main` — com duas sessões mesclando o tempo todo,
+    cada merge obrigaria a refazer o CI dos outros; o push na `main` roda de novo e pega o que escapar;
+  · **sem bypass**, nem para administrador. Emergência: desativar o ruleset em Settings → Rules.
+  Efeitos: merge só com `testes` verde (~3 min); push direto na `main` recusado; PR de branch antiga
+  (Dependabot #43) precisa de um run do workflow — push novo ou re-run.
+  Verificado pela API de regras EFETIVAS da `main` (`rules/branches/main`), não só pela criação, e
+  por este registro: foi o primeiro PR a passar pela regra.
 
 ### Aberta por achado — REQ-016 no desktop (varredura da TASK-117)
 - ✅ **TASK-119 FEITA em 2026-09-11** (branch `feat/task-119-tabela-rola-no-conteiner`). Em `/users`
