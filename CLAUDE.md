@@ -159,6 +159,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   inalterado, 668 / 71, 6 gates, `next build` verde. ⚠️ **Em aberto:** o Dashboard a 769–800 px
   (grade do `.dashboard-list-header`, sem contêiner de rolagem) — outro mecanismo. E NÃO usar
   `min-width: 0` no `.main-content`: com o `overflow-x: clip` dele, isso CORTA em vez de rolar.
+- ✅ **TASK-117, 118 e 120 NO AR em 2026-09-12** (#64, #65, #66, empilhados e mesclados em ordem;
+  pós-deploy verde, health 200). 117: `min-width: 0` no `.main-content` SÓ no celular — o Dashboard
+  do aluno era cortado (main 462 px). ⚠️ Contradiz a nota da 119 acima e as duas valem: no celular
+  hoje nada é cortado (medido), mas um filho largo sem contêiner de rolagem seria cortado DENTRO do
+  main sem a guarda ver. 118: **a E2E estava MORTA desde a Sprint 21** (config no SQLite) e a
+  guarda `expectNoHorizontalScroll` era CEGA no celular — agora base própria `unifafire_e2e` pelo
+  runner, porta **3100**, guarda mede o conteúdo (provada revertendo a 117). 120: os specs de fluxo
+  estavam quebrados desde a TASK-052 (aba de entrada por papel) — **E2E 32 ok / 2 pulados / 0
+  falhas**. Rodar: `npm run test:db:up` + `npm run test:e2e`. ⚠️ `localhost:15432` pode ser um
+  Postgres NATIVO de outra sessão (bind em 127.0.0.1 vence o container); `DATABASE_URL` resolve.
+  ⚠️ `next dev` reinjeta um bloco no `AGENTS.md` a cada subida — não commitar.
 - Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
   TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
   ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.
@@ -391,7 +402,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-113-retencao (PR a abrir). PRs #15–#61 merged; #43 do
+- Branch atual: main. PRs #15–#66 merged; #43 do
   Dependabot aberto.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
@@ -497,7 +508,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   no iOS, idle. **Nenhuma verificável, porque `/api/auth/logout` não registra nada
   na trilha** — lacuna do REQ-010 por si só. Decisão sua em 2026-09-08:
   INSTRUMENTAR (TASK-095) antes de emendar a §2.2, que é Tipo D. Ver ADR-018.
-- Atualizado em: 2026-09-10
+- Atualizado em: 2026-09-12
 ```
 
 ---
