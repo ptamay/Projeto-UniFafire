@@ -170,8 +170,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   falhas**. Rodar: `npm run test:db:up` + `npm run test:e2e`. ⚠️ `localhost:15432` pode ser um
   Postgres NATIVO de outra sessão (bind em 127.0.0.1 vence o container); `DATABASE_URL` resolve.
   ⚠️ `next dev` reinjeta um bloco no `AGENTS.md` a cada subida — não commitar.
-- ✅ **TASK-121 FEITA em 2026-09-12** (branch `feat/task-121-dashboard-cabe`, sobre a `main` com a
-  119/117/118/120, PR a abrir): a lista do Dashboard é query container e cabe — abaixo de 760 px de
+- ✅ **TASK-121 NO AR em 2026-09-12** (#69 merged, `4f14eb8`; pós-deploy verde, health 200. O
+  empilhamento na #63 caiu: ela entrou antes, e a branch foi rebaseada na `main` com a
+  119/117/118/120): a lista do Dashboard é query container e cabe — abaixo de 760 px de
   lista, cada linha vira duas colunas. O estouro escondia coisa pior: conteúdo vazando da célula
   até 123 px e cabeçalho×linha desalinhados até 55 px — agora 0/0 de 1440 a 769, nos quatro papéis.
   A barra de filtros ganhou rolagem no desktop (FUNCIONARIO/ALUNO estourava 3 px a 769). ⚠️ NÃO pôr
@@ -410,8 +411,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: main. PRs #15–#66 merged; #43 do
-  Dependabot aberto.
+- Branch atual: main. PRs #15–#67 e #69 merged; abertos: #68 (TASK-122, vitest e E2E no CI) e
+  #43 do Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.
