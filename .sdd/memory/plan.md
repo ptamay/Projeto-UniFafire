@@ -87,6 +87,21 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — os testes rodam no CI (CR Tipo A · 2026-09-12)
+> Pedido do usuário depois da TASK-120. Tipo A: infraestrutura nova, nenhuma funcionalidade muda.
+> Motivo, medido: **nenhum teste roda no CI** — nem a E2E nem a vitest; o `ci-gates.sh` também
+> não roda a vitest. A E2E morreu em silêncio na Sprint 21 e os specs de fluxo já estavam
+> quebrados desde a TASK-052 (julho): meses sem ninguém ver, porque nada roda sozinho.
+- **TASK-122** — workflow `testes.yml`: vitest + E2E (desktop e mobile) contra um Postgres de
+  serviço com o MESMO endereço do `docker-compose.test.yml`, em todo PR para a `main`, todo push
+  na `main` e sob demanda. `permissions: contents: read` (guarda da TASK-110). Artefatos do
+  Playwright só quando falha.
+  BDD: (1) um spec que falha deixa o check VERMELHO — provado com uma falha plantada, não só
+  com a execução verde; (2) a imagem do Postgres é a do compose (uma fonte de verdade para as
+  duas); (3) nada engole o código de saída (`continue-on-error`, `|| true`).
+  > ⚠️ Só está verificada depois de rodar no Actions de verdade (lição do go-live).
+  > Fora de escopo: tornar o check OBRIGATÓRIO no merge — é configuração do repositório, do usuário.
+
 ### Aberta por achado — REQ-016 no desktop (varredura da TASK-117)
 - ✅ **TASK-119 FEITA em 2026-09-11** (branch `feat/task-119-tabela-rola-no-conteiner`). Em `/users`
   a 1280 px o `.main-content` media 1146 (esperado 1020) e a página rolava. Medidas as nove telas
