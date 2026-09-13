@@ -170,6 +170,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   falhas**. Rodar: `npm run test:db:up` + `npm run test:e2e`. ⚠️ `localhost:15432` pode ser um
   Postgres NATIVO de outra sessão (bind em 127.0.0.1 vence o container); `DATABASE_URL` resolve.
   ⚠️ `next dev` reinjeta um bloco no `AGENTS.md` a cada subida — não commitar.
+- ✅ **TASK-122 FEITA (PR #68, aberto): OS TESTES RODAM NO CI.** Até aqui NENHUM teste rodava
+  sozinho. `.github/workflows/testes.yml`: vitest + E2E (desktop e mobile) contra Postgres de
+  serviço igual ao do compose, em todo PR para a `main`, push na `main` e sob demanda; ~3 min.
+  **Verificado no Actions nos três estados:** verde → VERMELHO com falha plantada (vitest e E2E
+  reprovaram; a E2E roda mesmo com a vitest vermelha) → verde após o revert. Fuso UTC (o da
+  Vercel): nenhum teste dependia do -03. Pendente do usuário: merge, e decidir se o check vira
+  OBRIGATÓRIO na proteção da `main`. ⚠️ `checkout@v4`/`setup-node@v4` miram Node 20
+  (descontinuado) em todos os workflows — manutenção à parte.
 - Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
   TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
   ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.
