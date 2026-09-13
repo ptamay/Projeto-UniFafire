@@ -134,8 +134,8 @@
   (`overflow-x: clip`). Medir `scrollWidth` do main daria alarme falso com os tooltips invisíveis
   que o clip corta de propósito — precisa de desenho. E a E2E ainda NÃO roda em CI nem em hook:
   morreu uma vez em silêncio e pode morrer de novo; a guarda vitest cobre só a configuração.
-- ✅ **TASK-121 FEITA em 2026-09-12** (branch `feat/task-121-dashboard-cabe`, sobre a `main` com a
-  119/117/118/120).
+- ✅ **TASK-121 NO AR em 2026-09-12** (#69 merged, `4f14eb8`; pós-deploy verde, health 200).
+  Rebaseada na `main` com a 119/117/118/120 — a #63, em que estava empilhada, entrou antes.
   O estouro da página era o sintoma visível; medido com nomes de tamanho comum, o conteúdo VAZAVA
   da própria célula em 17/71/117/123 px (1280/1024/900/800) — o nome de quem está com a chave
   passava sob o "Devolver" — e cabeçalho e linhas desalinhavam até 55 px. Dois mecanismos:
