@@ -170,8 +170,8 @@
   duas rodadas, também sobre a mescla com o #63. vitest 679 / 73.
 - 📋 **Em aberto (proposta, sem task):** a guarda de largura não vê filho cortado DENTRO do main
   (`overflow-x: clip`). Medir `scrollWidth` do main daria alarme falso com os tooltips invisíveis
-  que o clip corta de propósito — precisa de desenho. E a E2E ainda NÃO roda em CI nem em hook:
-  morreu uma vez em silêncio e pode morrer de novo; a guarda vitest cobre só a configuração.
+  que o clip corta de propósito — precisa de desenho. ~~E a E2E ainda NÃO roda em CI nem em hook~~
+  — **superado pela TASK-122**: a E2E roda no CI em todo PR e push na `main`, com check obrigatório.
 - ✅ **TASK-121 NO AR em 2026-09-12** (#69 merged, `4f14eb8`; pós-deploy verde, health 200).
   Rebaseada na `main` com a 119/117/118/120 — a #63, em que estava empilhada, entrou antes.
   O estouro da página era o sintoma visível; medido com nomes de tamanho comum, o conteúdo VAZAVA
@@ -237,6 +237,23 @@
   > merge (job de CI só está verificado depois de rodar).
   > ⚠️ Limite honesto (runbook §6.2): o GitHub remove objetos inalcançáveis na coleta de lixo
   > DELE; até lá, um commit antigo abre por SHA para quem tem acesso ao repositório privado.
+- ✅ **TASK-113 NO AR E VERIFICADA EM PRODUÇÃO** (#62 merged, `06fe058`). Execução manual autorizada
+  pelo usuário (run 34556069977, 2026-09-11 02:49 UTC): `agenda` e `backup` verdes, log
+  `[retenção] 7 dias, desde 2026-09-04: 6 mantido(s), 0 apagado(s)`; o repositório privado virou
+  **1 commit sem pai** (`956a2bb`), e o `380f778` (cópia sobrescrita do dia 10) não tem mais
+  ancestral comum com `main` — mas ainda abre por SHA, como o runbook §6.2 avisa. **Primeira poda
+  real em 2026-09-13**: janela desde 07/09, o dump de 06/09 saiu. Backups agendados 11, 12 e 13/09
+  verdes; 16 execuções do workflow desde 11/09, nenhuma falha.
+- ✅ **TASK-123 FEITA em 2026-09-13** (branch `feat/task-123-atraso-honesto`) — correção de tela
+  dentro do ADR-024, achada ao verificar a 113. **Medido:** o `cron` de hora em hora disparou só a
+  cada 3–5 h (16 disparos em ~56 h, 11 a 13/09), e o backup das 03:00 de Recife saiu às **06:42**,
+  **07:47** e 03:10. A tela prometia "por volta de — pode atrasar alguns minutos"; passa a dizer
+  "a partir de … às vezes horas depois — mas o backup sai todo dia", com cenário provando que o
+  portão nunca executa antes do horário. RPO de 24 h cumprido nos três dias (o portão recupera).
+  > De lado: `tests/testes-no-ci.test.ts` (TASK-122) reprovava em todo Windows — o YAML com CRLF
+  > e o `.` da regex sem casar `\r`. Normalizado na leitura; no CI (Linux) passava.
+  > 📋 Em aberto (sem task): se o horário exato importar, disparo pontual de fora do GitHub (ex.:
+  > um agendador que chame `workflow_dispatch` com o token da TASK-114). Hoje não há pedido.
 - **TASK-113 → retenção de verdade.** Nome de arquivo com hora; poda reescrevendo o histórico do
   repositório privado; nunca poda sem o dump novo verificado; nunca fica sem nenhum.
 - **TASK-114 → backup manual.** Rota ADMIN que dispara o workflow pela API do GitHub com token
