@@ -475,7 +475,15 @@ O que o script faz e o que ele **recusa** fazer:
 `.github/workflows/backup.yml` roda de hora em hora; o job `agenda` lê em
 `settings` a hora, as vezes por dia e a retenção que o ADMIN configurou em
 **Configurações → Backup**, e só deixa o backup rodar quando há horário vencido sem
-backup bem-sucedido depois dele (TASK-112). Então:
+backup bem-sucedido depois dele (TASK-112).
+
+> ⚠️ **"De hora em hora" é o pedido, não o que o GitHub entrega** (medido, TASK-123): de 11 a
+> 13/09 o `cron` disparou só a cada 3–5 h, e o backup das 03:00 saiu às 06:42, às 07:47 e às
+> 03:10. O portão nunca executa antes do horário e recupera o disparo perdido, então **sai um
+> backup por dia**, mas não na hora exata. Backup atrasado não é incidente; **dia sem backup é**
+> — veja o card (§6.4) e, se precisar agora, rode à mão (§6.3).
+
+Então:
 
 1. `pg_dump` do banco de produção, comprimido.
 2. **Restaura o dump numa base descartável** e reconcilia contra a origem: a

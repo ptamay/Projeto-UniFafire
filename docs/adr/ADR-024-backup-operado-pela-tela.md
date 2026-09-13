@@ -38,7 +38,9 @@ backups por dia configuráveis; e restaurar pela tela de Configurações.
 - **Agenda configurável.** O `cron` do Actions é fixo no arquivo. Mas o workflow pode
   rodar de hora em hora e só executar quando bater com o que está no banco: o repositório
   é público, então os minutos de Actions são gratuitos. O GitHub atrasa agendas sob
-  carga — o horário é "por volta de", e a tela tem de dizer isso.
+  carga — o horário é "por volta de", e a tela tem de dizer isso. *(Medido depois, TASK-123: o
+  atraso foi de HORAS — o `cron` de hora em hora disparou a cada 3–5 h, e o backup das 03:00 saiu
+  às 06:42 e às 07:47. A tela passou a dizer "a partir de", e que o backup sai todo dia.)*
 - **Retenção.** Tirar o arquivo da pasta não apaga: ele continua no histórico do git do
   repositório privado, com nome, matrícula e telefone de todo mundo, para sempre.
 - **Backup manual.** A aplicação pode disparar o workflow pela API do GitHub — com um

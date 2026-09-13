@@ -291,9 +291,15 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 </select>
                             </div>
                         </div>
+                        {/* TASK-123: dizia "por volta de — pode atrasar alguns minutos".
+                            Medido nos três primeiros dias: o cron de hora em hora disparou
+                            a cada 3–5 h, e o backup das 03:00 saiu às 06:42 e às 07:47. O
+                            portão nunca executa antes do horário e recupera o disparo
+                            perdido — "a partir de" e "todo dia" são o que é verdade. */}
                         <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
-                            Pelo GitHub Actions, por volta de <strong style={{ color: 'var(--text-secondary)' }}>{descreverHorarios(agenda)}</strong> (horário
-                            de Recife) — o GitHub pode atrasar alguns minutos. Cada dump é verificado por restauração antes de ser guardado.
+                            Pelo GitHub Actions, a partir de <strong style={{ color: 'var(--text-secondary)' }}>{descreverHorarios(agenda)}</strong> (horário
+                            de Recife). O GitHub não garante a hora e às vezes dispara horas depois — mas o backup sai todo dia. Cada dump é
+                            verificado por restauração antes de ser guardado.
                         </p>
                         <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
                             Ficam os backups dos últimos <strong style={{ color: 'var(--text-secondary)' }}>{agenda.dias} dias</strong>, contando

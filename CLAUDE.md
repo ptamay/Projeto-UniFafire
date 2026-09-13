@@ -142,9 +142,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `db/enviar-backup.mjs` envia com nome por hora e republica o repositório privado como UM commit
   com os dumps dos últimos N dias de Recife (3–30, padrão 7), push forçado com lease; agenda
   ilegível → nada apagado. Testado contra repositório git bare de verdade. 666 / 70.
-  🔴 **O primeiro backup depois do merge REESCREVE o repositório privado (irreversível)** — hoje
-  nada sai da pasta (5 dumps, 06–10/09), só o histórico, inclusive a cópia sobrescrita do dia 10.
-  Verificar com UMA execução manual logo após o merge, com o OK do usuário.
+  ✅ **NO AR E VERIFICADA** (#62 merged, `06fe058`): execução manual autorizada (run 34556069977) —
+  repositório privado virou 1 commit sem pai; a cópia sobrescrita do dia 10 (`380f778`) saiu do
+  `main` mas ainda abre por SHA até a coleta de lixo do GitHub (runbook §6.2). Primeira poda real
+  em 13/09 (o dump de 06/09 saiu). Backups de 11, 12 e 13/09 verdes.
+- ✅ **TASK-123 FEITA em 2026-09-13** (branch `feat/task-123-atraso-honesto`, PR a abrir): a tela
+  prometia atraso de "alguns minutos"; MEDIDO, o `cron` de hora em hora disparou a cada 3–5 h e o
+  backup das 03:00 saiu às 06:42 e às 07:47. Agora: "a partir de … às vezes horas depois — mas sai
+  todo dia". De lado: `testes-no-ci.test.ts` reprovava em todo Windows (CRLF) — corrigido.
 - ⚠️ **DOCKER DESKTOP QUEBRADO em 2026-09-10:** cai na partida com `sailor-ingest.sock.stale` —
   socket AF_UNIX órfão em `%LOCALAPPDATA%\Docker\run` que nem `del` apaga (provável: só com
   reinício do Windows). Contorno que funcionou: **cluster NATIVO do Postgres 17**
@@ -194,9 +199,12 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `gh pr merge` falha até o check passar — esperar, não contornar; push direto na `main` é
   recusado; PR de branch antiga (Dependabot #43) precisa de push novo ou re-run. Emergência:
   desativar o ruleset em Settings → Rules — decisão do USUÁRIO. Detalhes no `plan.md` (TASK-122).
-- Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
-  TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
-  ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.
+- Próxima Ação: PR da TASK-123 → merge (check `testes` obrigatório) → **TASK-114, BLOQUEADA pelo
+  usuário**: token fine-grained só de `Projeto-UniFafire` com `Actions: Read and write`, cadastrado
+  como secret na Vercel → 115 → 116. Fila restante: `auto_logout_time = "30"` (usuário salva pela
+  tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
+  da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
+  v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
@@ -426,8 +434,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: main. PRs #15–#67 e #69 merged; abertos: #68 (TASK-122, vitest e E2E no CI) e
-  #43 do Dependabot.
+- Branch atual: feat/task-123-atraso-honesto (PR a abrir). PRs #15–#71 merged; aberto só o #43 do
+  Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.
@@ -532,7 +540,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   no iOS, idle. **Nenhuma verificável, porque `/api/auth/logout` não registra nada
   na trilha** — lacuna do REQ-010 por si só. Decisão sua em 2026-09-08:
   INSTRUMENTAR (TASK-095) antes de emendar a §2.2, que é Tipo D. Ver ADR-018.
-- Atualizado em: 2026-09-12
+- Atualizado em: 2026-09-13
 ```
 
 ---
@@ -591,10 +599,11 @@ Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em cód
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : TASK-093/094 (ADR-017) — código de uso único no reset, pelo
-                    ciclo TDD. 🔴 crítica: mexe no login, que é o Fluxo 1 da spec
-                    §4. Fora isso, o REQ-032 espera a PRIMEIRA OPERAÇÃO REAL para
-                    fechar a perna A (`medir-req032.mjs --operacao`)
+Próxima ação      : ADR-024 (backup pela tela) — TASK-114, bloqueada pelo token de
+                    Actions que o usuário cria; depois 115 (restaurar da lista) e
+                    116 (emenda da §3.5/§4.4). O `## Checkpoint Atual` acima é a
+                    fonte viva; esta seção só resume. (A nota antiga, TASK-093/094,
+                    estava vencida desde 2026-09-09.)
 ```
 
 ---
