@@ -101,6 +101,39 @@
   > ⚠️ **Fica em aberto, mecanismo diferente:** o Dashboard (`/`) a 769–800 px mede 628 contra
   > 509–540 — a grade do `.dashboard-list-header` (colunas fixas de 180 e 120 px) não cabe e não
   > tem para onde rolar. Não é tabela; a TASK-119 não o alcança, de propósito.
+- ✅ **TASK-117 NO AR em 2026-09-12** (#64). No celular, o Dashboard de ALUNO/FUNCIONARIO saía
+  cortado: a barra de 4 chips `nowrap` (430 px de min-content) alargava o `.main-content` (item
+  flex) para 462 px. `min-width: 0` no `.main-content` **só no bloco mobile**; a barra passa a rolar
+  sozinha. Outras 52 medidas idênticas.
+  > ⚠️ **Contradiz a nota da TASK-119, e as duas valem:** lá o `min-width: 0` foi descartado no
+  > desktop porque, com o `overflow-x: clip` do main, o que não tem contêiner de rolagem é CORTADO
+  > em silêncio. No celular a 117 o aplicou, e hoje nada é cortado (medido) — mas um filho largo
+  > sem contêiner de rolagem que aparecer ali será cortado DENTRO do main, e a guarda da TASK-118
+  > (que mede a borda do main) não o vê. Ver o item em aberto abaixo.
+- ✅ **TASK-118 NO AR em 2026-09-12** (#65). **A suíte E2E estava MORTA desde a Sprint 21** —
+  `playwright.config.ts` passava `DB_PATH` (ninguém lê) e o `global-setup` montava SQLite. Agora:
+  base própria `unifafire_e2e` montada pelo RUNNER sobre `prepararBasePlataforma` (a próxima
+  migration chega sozinha), recusada se não for local ou se for a da vitest; porta própria **3100**
+  (`E2E_PORT`); webServer com `DATABASE_URL`, `JWT_SECRET` descartável, `APP_ENV=dev` e chaves do
+  Supabase VAZIAS (um `.env.local` ligaria a E2E ao Realtime de produção). O webServer sobe ANTES
+  do globalSetup (Playwright 1.61) → `DROP SCHEMA`, não `DROP DATABASE`.
+  E **`expectNoHorizontalScroll` era CEGA no celular**: `html, body { overflow-x: hidden }` fixa o
+  `documentElement.scrollWidth` na tela. Mede agora max(documento, body, borda do `.main-content`).
+  Prova com a 117 revertida: guarda antiga 4/4 verdes (cega); nova reprova só o aluno mobile
+  (`corpo 483, main 483, tela 375`). `guarda-de-largura.spec.ts` é a guarda da guarda (`setContent`,
+  sem app). Guarda vitest `tests/e2e-na-base-postgres.test.ts` — a vitest é a suíte que alguém roda.
+- ✅ **TASK-120 NO AR em 2026-09-12** (#66). Ressuscitada, a E2E deu 14 falhas, TODAS de spec: desde
+  a **TASK-052 (18/07)** o Dashboard abre em aba POR PAPEL e os fluxos procuravam chave fora dela —
+  quebraram dois meses ANTES da Sprint 21, e ninguém viu porque ninguém rodava. `abrirAbaTodas()`;
+  `priority-tabs` reescrito (nasceu na TASK-052 e NUNCA passou); `key-flows` navegava antes de o
+  POST da confirmação voltar (parecia defeito da devolução); `pending-inline` recarrega em vez de
+  esperar o polling de 30 s; a guarda de largura espera o `load` e o esqueleto (`aria-busy`) sair
+  — antes podia medir o esqueleto e aprovar sem ver a tela. **E2E: 32 ok / 2 pulados / 0 falhas**,
+  duas rodadas, também sobre a mescla com o #63. vitest 679 / 73.
+- 📋 **Em aberto (proposta, sem task):** a guarda de largura não vê filho cortado DENTRO do main
+  (`overflow-x: clip`). Medir `scrollWidth` do main daria alarme falso com os tooltips invisíveis
+  que o clip corta de propósito — precisa de desenho. E a E2E ainda NÃO roda em CI nem em hook:
+  morreu uma vez em silêncio e pode morrer de novo; a guarda vitest cobre só a configuração.
 
 ### Aberta por Change Request — Tela de Configurações e tutorial (CR Tipo C · ADR-025)
 > Aprovado pelo usuário em 2026-09-10. Independente do ADR-024; pode vir primeiro.
