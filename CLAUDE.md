@@ -185,9 +185,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   **Verificado no Actions nos três estados:** verde → VERMELHO com falha plantada (vitest e E2E
   reprovaram; a E2E roda mesmo com a vitest vermelha) → verde após o revert; e o gatilho de push
   na `main` no merge (verde: vitest 696/75, E2E 32/2). Fuso UTC (o da Vercel): nenhum teste dependia do -03.
-  ✅ `checkout` e `setup-node` subiram para a v5 (Node 24) no `backup.yml` e no `testes.yml`
-  (2026-09-13). ⚠️ Resta o `upload-artifact@v4` do `testes.yml` em Node 20 — a v5 DELE ainda é
-  Node 20; só a v6 sobe (a mais recente das três é a v7).
+  ✅ Nenhuma action em Node 20 (2026-09-13): `checkout` e `setup-node` na v5 (`backup.yml` e
+  `testes.yml`), `upload-artifact` na v6 (a v5 dele ainda era Node 20). As três já estão na v7.
+  ⚠️ O `upload-artifact` só roda quando o CI FALHA — a v6 só se prova na primeira falha real.
 - 🔒 **MERGE NA `main` EXIGE O CHECK `testes` VERDE** (desde 2026-09-12, pedido do usuário). Ruleset
   **23122325** — configuração do GitHub, NÃO está no git. Só vale o `testes` do `github-actions`;
   `strict=false` (PR não precisa estar atualizado); **sem bypass**, nem para admin. Na prática:

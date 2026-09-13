@@ -110,8 +110,10 @@
   Vercel): 689/74 — nenhum teste dependia do -03.
   > ✅ `checkout@v4`/`setup-node@v4` miravam Node 20 (descontinuado): subiram para a **v5** (Node
   > 24, conferido no `action.yml` de cada tag) no `backup.yml` e no `testes.yml`, 2026-09-13, a
-  > pedido do usuário. ⚠️ Resta o `upload-artifact@v4` (Node 20): a v5 dele ainda é Node 20, só a
-  > v6 sobe. As três já estão na v7.
+  > pedido do usuário. O `upload-artifact@v4` (Node 20) foi para a **v6** — a v5 dele ainda era
+  > Node 20; de v4 a v6 só mudou o runtime, as entradas usadas (`name`, `path`,
+  > `retention-days`) são as mesmas. As três já estão na v7. ⚠️ O upload só roda quando o CI
+  > FALHA, então a v6 só se prova na primeira falha real.
   > ✅ Gatilho de push na `main` provado no merge do #68 (`ea932c0`): execução `34733468862`, verde em 3 min — vitest 696/75, E2E 32 ok / 2 pulados.
 - 🔒 **O check `testes` é OBRIGATÓRIO na `main` desde 2026-09-12** — ruleset **23122325**, "main —
   testes obrigatórios (TASK-122)", criado a pedido do usuário depois do merge do #68 (antes, travaria
