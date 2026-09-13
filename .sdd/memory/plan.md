@@ -134,6 +134,21 @@
   (`overflow-x: clip`). Medir `scrollWidth` do main daria alarme falso com os tooltips invisíveis
   que o clip corta de propósito — precisa de desenho. E a E2E ainda NÃO roda em CI nem em hook:
   morreu uma vez em silêncio e pode morrer de novo; a guarda vitest cobre só a configuração.
+- ✅ **TASK-121 FEITA em 2026-09-12** (branch `feat/task-121-dashboard-cabe`, sobre a `main` com a
+  119/117/118/120).
+  O estouro da página era o sintoma visível; medido com nomes de tamanho comum, o conteúdo VAZAVA
+  da própria célula em 17/71/117/123 px (1280/1024/900/800) — o nome de quem está com a chave
+  passava sob o "Devolver" — e cabeçalho e linhas desalinhavam até 55 px. Dois mecanismos:
+  cabeçalho e cada linha são grades SEPARADAS e `fr` puro tira o mínimo do conteúdo de cada uma;
+  a célula do usuário tem `minWidth: 0` e a trilha dela chegava a 11 px com o seletor (160) dentro.
+  Correção: a lista vira query container (`lista-chaves / inline-size`), trilhas `minmax(0, fr)`
+  e fixas (usuário ≥ 160), e abaixo de 760 px de LISTA cada linha vira duas colunas com o
+  cabeçalho oculto. Todas as larguras de 1440 a 769: main exato, vazamento 0, desalinhamento 0.
+  Exposto pela correção e corrigido junto: a barra de filtros de FUNCIONARIO/ALUNO (4 chips,
+  448 px) estourava 3 px a 769 — só tinha rolagem no bloco do celular. Sobre a
+  `main` com a 117: 216 medições, 0 defeitos (celular incluído); vitest 686 / 74; E2E 32 / 2 / 0.
+  > Contêiner com `overflow-x: auto` em volta da lista foi DESCARTADO por medição: o seletor abre
+  > com foco no filtro, e na última linha isso rola a lista POR DENTRO em 251 px.
 
 ### Aberta por Change Request — Tela de Configurações e tutorial (CR Tipo C · ADR-025)
 > Aprovado pelo usuário em 2026-09-10. Independente do ADR-024; pode vir primeiro.
