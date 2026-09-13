@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { login, logout, expectNoHorizontalScroll } from './helpers';
+import { login, logout, abrirAbaTodas, expectNoHorizontalScroll } from './helpers';
 
 // Fluxos críticos 2 e 3 (spec §4) com dupla confirmação (REQ-003/004),
 // executados pela UI real em desktop E mobile (TASK-028).
@@ -37,6 +37,8 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         await login(page, 'e2e_aluno');
         await expectNoHorizontalScroll(page);
 
+        // O aluno entra em "Minhas Chaves" (TASK-052), e a chave a retirar ainda não é dele.
+        await abrirAbaTodas(page);
         await openKeyAction(page, isMobile, 'Solicitar', 'Solicitar Retirada?');
         await page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
 
@@ -57,6 +59,8 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         // O aluno portador vê a ação de devolver no dashboard
         await logout(page);
         await login(page, 'e2e_aluno');
+        // Sem abrir "Todas": a chave agora é dele e tem de aparecer na aba de entrada,
+        // "Minhas Chaves" — que é por onde o portador real devolve.
         await openKeyAction(page, isMobile, 'Devolver', 'Solicitar Devolução?');
         await page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
 
@@ -70,6 +74,10 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         const box = await confirmBtn.boundingBox();
         expect(box!.height).toBeGreaterThanOrEqual(44);
         await confirmBtn.click();
+        // TASK-120 — esperar a confirmação ser ACEITA antes de navegar, como a retirada
+        // acima já faz. Sem isto o `goto` seguinte abortava o POST em voo e a chave
+        // continuava em uso: a falha parecia da devolução e era do spec.
+        await expect(page.getByText('Nenhuma confirmação pendente no momento.')).toBeVisible();
 
         // Chave volta a 'disponível' — ciclo completo, estado restaurado
         await page.goto('/');

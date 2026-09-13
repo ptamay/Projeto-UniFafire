@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { login } from './helpers';
+import { login, abrirAbaTodas } from './helpers';
 
 // REQ-028 (ADR-009) — devolução forçada ampla pela portaria pela UI real, em desktop E mobile.
 // A portaria devolve à força uma chave em uso por um usuário comum (funcionário sem celular),
@@ -20,14 +20,12 @@ async function openReturn(page: Page, isMobile: boolean) {
 }
 
 test.describe('Devolução forçada pela portaria (REQ-028)', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.addInitScript(() => localStorage.setItem('dashboard-view', 'grid'));
-    });
-
     test('porteiro força a devolução de chave em uso, com justificativa', async ({ page }, testInfo) => {
         const isMobile = testInfo.project.name === 'mobile';
 
         await login(page, 'e2e_porteiro');
+        // O porteiro entra em "Disponíveis" (TASK-052); a chave a devolver está em uso.
+        await abrirAbaTodas(page);
 
         await openReturn(page, isMobile);
 

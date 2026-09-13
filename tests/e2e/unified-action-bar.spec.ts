@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, abrirAbaTodas } from './helpers';
 
 // TASK-048 (REQ-029a, ADR-010) — busca = Ação Rápida: um ÚNICO campo no desktop
 // que filtra a lista em tempo real E registra pelo teclado (Enter age na sugestão).
@@ -10,6 +10,8 @@ test.describe('Campo único busca+ação no Dashboard desktop (REQ-029a)', () =>
     test.beforeEach(async ({ page }, testInfo) => {
         test.skip(testInfo.project.name === 'mobile', 'A barra unificada é desktop-only');
         await login(page, 'e2e_porteiro');
+        // O porteiro entra em "Disponíveis" (TASK-052); o spec conta as TRÊS chaves.
+        await abrirAbaTodas(page);
     });
 
     test('um único input na barra; digitar filtra a lista; Enter registra por teclado', async ({ page }) => {

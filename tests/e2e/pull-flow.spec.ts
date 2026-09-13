@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { login, logout, expectNoHorizontalScroll } from './helpers';
+import { login, logout, abrirAbaTodas, expectNoHorizontalScroll } from './helpers';
 
 // REQ-027 (ADR-008) — fluxo "pull": quem não está com a chave a solicita ao portador,
 // que aceita em /confirm. Exercitado pela UI real em desktop E mobile (Playwright roda
@@ -34,6 +34,9 @@ async function acceptRequest(page: Page) {
 // Confirma quem é o portador exibido no Dashboard para a chave do fluxo pull.
 async function expectHolder(page: Page, isMobile: boolean, holderName: string) {
     await page.goto('/');
+    // O goto volta à aba de entrada ("Minhas Chaves" para aluno) — e depois da
+    // transferência a chave é, por construção, de OUTRA pessoa.
+    await abrirAbaTodas(page);
     const container = isMobile
         ? page.locator('.key-card', { hasText: PULL_KEY })
         : page.locator('.dashboard-list-row', { hasText: PULL_KEY });
@@ -41,16 +44,14 @@ async function expectHolder(page: Page, isMobile: boolean, holderName: string) {
 }
 
 test.describe('Solicitação de chave em uso — fluxo pull (REQ-027)', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.addInitScript(() => localStorage.setItem('dashboard-view', 'grid'));
-    });
-
     test('B solicita a chave de A, A aceita, e o sentido inverso restaura o estado', async ({ page }, testInfo) => {
         const isMobile = testInfo.project.name === 'mobile';
 
         // ── Sentido 1: Aluno Dois (B) solicita a chave que está com Aluno E2E (A) ──
         await login(page, 'e2e_aluno2');
         await expectNoHorizontalScroll(page);
+        // B entra em "Minhas Chaves" (TASK-052), e a chave é de A.
+        await abrirAbaTodas(page);
         await requestKey(page, isMobile);
 
         // A aceita na Central de Confirmações
