@@ -236,11 +236,46 @@ describe('TASK-112 — a tela oferece o que o sistema faz, e só isso', () => {
         expect(tela(), 'a tela não oferece as vezes por dia').toMatch(/vezes/i);
     });
 
-    it('BDD 5: diz que o horário é aproximado — o GitHub atrasa agendas', () => {
-        expect(tela()).toMatch(/por volta d/i);
-    });
+    // TASK-123: o cenário "diz que o horário é aproximado" (que exigia "por volta de")
+    // mudou de forma — ver o bloco abaixo. "Por volta de" era a promessa errada.
 
     // TASK-113: o cenário "retenção ainda NÃO aparece" saiu — cumpriu o papel de segurar
     // o campo até a poda existir. Quem o substitui é a guarda de dois lados em
     // `tests/retencao-backup.test.ts` (BDD 12): campo na tela exige poda no workflow.
+});
+
+// TASK-123 (ADR-024) — a tela diz o atraso que o GitHub de fato impõe.
+//
+// A TASK-112 escreveu "por volta de 03:00 — o GitHub pode atrasar alguns minutos". Medido
+// em produção nos três primeiros dias da agenda de hora em hora (2026-09-11 a 13): o
+// GitHub disparou o `cron` de hora em hora só a cada 3–5 h (16 disparos em ~56 h), e o
+// backup das 03:00 de Recife saiu às 06:42, às 07:47 e às 03:10. "Alguns minutos" era
+// falso por um fator de 60 — a promessa de tela que o ADR-013 veio tirar.
+//
+// O que é verdade, e é o que a tela passa a dizer: o backup sai A PARTIR do horário (o
+// portão só executa com horário vencido — nunca antes), às vezes HORAS depois, e sai
+// todo dia (o portão recupera o disparo perdido; RPO de 24 h cumprido nos três dias).
+describe('TASK-123 — a tela diz o atraso real do agendamento', () => {
+    const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
+
+    it('BDD 1: não promete atraso de minutos — medido, foi de horas', () => {
+        expect(tela(), 'a tela ainda promete atraso de minutos').not.toMatch(/alguns minutos/i);
+        expect(tela(), '"por volta de" sugere que pode sair antes, e que sai perto').not.toMatch(/por volta d/i);
+    });
+
+    it('BDD 1: diz que sai a partir do horário, que pode atrasar horas, e que sai todo dia', () => {
+        const t = tela();
+        expect(t, 'não diz que o horário é o mais cedo possível').toMatch(/a partir d/i);
+        expect(t, 'não diz que o atraso pode ser de horas').toMatch(/horas/i);
+        expect(t, 'não diz o que é garantido: um backup por dia').toMatch(/todo dia|todos os dias/i);
+    });
+
+    it('BDD 1: "a partir de" é verdade — o portão nunca executa antes do horário', async () => {
+        // A frase nova só pode estar na tela se o portão a cumprir: às 02:59 de Recife,
+        // com o backup de ontem feito, não executa.
+        const { deveExecutar } = await import('@/lib/agenda-backup.mjs');
+        expect(deveExecutar({
+            agora: new Date('2026-09-11T05:59Z'), agenda: { hora: 3, vezes: 1 }, ultimoSucesso: new Date('2026-09-10T09:42Z'),
+        }).executar).toBe(false);
+    });
 });
