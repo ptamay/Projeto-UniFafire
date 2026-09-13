@@ -12,8 +12,9 @@ import { TEST_DATABASE_URL } from './pg-test-config';
 // antigas de `db/migrations/`. Resultado medido em 2026-09-11: o dev server subia sem
 // `JWT_SECRET` nem `DATABASE_URL` e morria na primeira requisição.
 //
-// A suíte E2E não roda em hook nem em CI; a vitest roda. Por isso a guarda mora
-// aqui: é a única suíte que alguém executa sem lembrar de executar. Ela é textual e
+// Desde a TASK-122 as duas suítes rodam no CI (`.github/workflows/testes.yml`), mas a
+// vitest roda também na máquina de quem desenvolve, muito antes do PR — por isso a
+// guarda mora aqui, e não só no workflow. Ela é textual e
 // não prova que a E2E passa — isso só `npm run test:e2e` prova. Ela impede o
 // caminho de volta ao banco que não existe, e exige a base montada pelo MESMO
 // runner que monta a de produção (ADR-021): assim a próxima migration chega à E2E

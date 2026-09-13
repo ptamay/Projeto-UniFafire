@@ -179,6 +179,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   a lista num contêiner com `overflow-x: auto`: o seletor abre com foco e rola a lista POR DENTRO
   (251 px). Sobre a `main` nova: 216 medições (4 papéis × 9 telas × 5 larguras + 375) com 0
   defeitos, celular incluído; vitest 686 / 74, E2E 32 ok / 2 pulados / 0, 6 gates, build verde.
+- ✅ **TASK-122 FEITA (PR #68, aberto): OS TESTES RODAM NO CI.** Até aqui NENHUM teste rodava
+  sozinho. `.github/workflows/testes.yml`: vitest + E2E (desktop e mobile) contra Postgres de
+  serviço igual ao do compose, em todo PR para a `main`, push na `main` e sob demanda; ~3 min.
+  **Verificado no Actions nos três estados:** verde → VERMELHO com falha plantada (vitest e E2E
+  reprovaram; a E2E roda mesmo com a vitest vermelha) → verde após o revert. Fuso UTC (o da
+  Vercel): nenhum teste dependia do -03. Pendente do usuário: merge, e decidir se o check vira
+  OBRIGATÓRIO na proteção da `main`. ⚠️ `checkout@v4`/`setup-node@v4` miram Node 20
+  (descontinuado) em todos os workflows — manutenção à parte.
 - Próxima Ação: PR da TASK-113 → merge → execução manual do backup (verificar a reescrita) →
   TASK-114 (backup manual: depende do TOKEN que o usuário cria). Fila restante: §0 da constitution
   ("Transição em curso", vencida), §2.2 (espera dados), PR #43 do Dependabot.

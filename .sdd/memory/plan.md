@@ -87,6 +87,30 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — os testes rodam no CI (CR Tipo A · 2026-09-12)
+> Pedido do usuário depois da TASK-120. Tipo A: infraestrutura nova, nenhuma funcionalidade muda.
+> Motivo, medido: **nenhum teste roda no CI** — nem a E2E nem a vitest; o `ci-gates.sh` também
+> não roda a vitest. A E2E morreu em silêncio na Sprint 21 e os specs de fluxo já estavam
+> quebrados desde a TASK-052 (julho): meses sem ninguém ver, porque nada roda sozinho.
+- **TASK-122** — workflow `testes.yml`: vitest + E2E (desktop e mobile) contra um Postgres de
+  serviço com o MESMO endereço do `docker-compose.test.yml`, em todo PR para a `main`, todo push
+  na `main` e sob demanda. `permissions: contents: read` (guarda da TASK-110). Artefatos do
+  Playwright só quando falha.
+  BDD: (1) um spec que falha deixa o check VERMELHO — provado com uma falha plantada, não só
+  com a execução verde; (2) a imagem do Postgres é a do compose (uma fonte de verdade para as
+  duas); (3) nada engole o código de saída (`continue-on-error`, `|| true`).
+  > ⚠️ Só está verificada depois de rodar no Actions de verdade (lição do go-live).
+  > Fora de escopo: tornar o check OBRIGATÓRIO no merge — é configuração do repositório, do usuário.
+- ✅ **TASK-122 FEITA e VERIFICADA NO ACTIONS em 2026-09-12** (PR #68). Três execuções reais:
+  verde (`34731534720`, 3 min: vitest 689/74 em 45 s, E2E 32 ok / 2 pulados em 1,4 min) →
+  **vermelho com falha plantada** (`34731699349`: vitest 1 falhou; a E2E rodou mesmo assim e
+  reprovou nos dois projetos após as 2 retentativas; artefato de 765 KB subiu) → verde de novo
+  depois do revert (`34731935774`). Vitest também rodada local em `TZ=UTC` (fuso do runner e da
+  Vercel): 689/74 — nenhum teste dependia do -03.
+  > ⚠️ O Actions avisa que `checkout@v4`/`setup-node@v4` (em TODOS os workflows) miram Node 20,
+  > descontinuado — hoje forçados a Node 24 sem erro. Subir para v5 é manutenção à parte.
+  > ⚠️ O push na `main` (gatilho 2) só se prova no primeiro merge depois deste.
+
 ### Aberta por achado — REQ-016 no desktop (varredura da TASK-117)
 - ✅ **TASK-119 FEITA em 2026-09-11** (branch `feat/task-119-tabela-rola-no-conteiner`). Em `/users`
   a 1280 px o `.main-content` media 1146 (esperado 1020) e a página rolava. Medidas as nove telas
