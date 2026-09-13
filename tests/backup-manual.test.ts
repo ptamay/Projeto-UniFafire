@@ -73,8 +73,9 @@ const contar = async (acao: string) => (await queryOne<{ n: number }>(
 
 beforeEach(async () => {
     await limparBackupRuns();
-    // A trilha é imutável por trigger; o isolamento entre cenários é pelo que cada um
-    // conta ANTES e DEPOIS — não por apagar.
+    // `action_logs` só é zerada por arquivo (tests/setup.ts). Sem isto, o pedido de um
+    // cenário deixaria o seguinte "pendente" — e recusado com 409 por motivo alheio.
+    await execute(`DELETE FROM action_logs WHERE action LIKE 'BACKUP_MANUAL_%'`);
     vi.stubEnv('BACKUP_DISPARO_TOKEN', TOKEN);
     vi.stubEnv('BACKUP_DISPARO_REPO', REPO);
 });

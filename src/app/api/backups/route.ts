@@ -16,7 +16,8 @@ import { verifySession } from '@/lib/session';
 // - **POST saiu na TASK-082.** Ele recusava com 503 desde a TASK-070, e o botão
 //   que o chamava saiu junto. Handler que responde 503 para sempre é pior que a
 //   ausência dele: sugere capacidade em manutenção, quando a capacidade não
-//   existe mais. Gerar backup é o job agendado — e, à mão, o `Run workflow`.
+//   existe mais. Gerar backup é o job agendado — e, à mão, o `Run workflow`, ou o
+//   `POST /api/backups/executar` (TASK-114), que dispara esse mesmo workflow.
 
 async function verifyAdmin() {
     const sessionCookie = (await cookies()).get('session');

@@ -529,8 +529,41 @@ truncado restaura sem erro nenhum e só se revela no dia em que for necessário.
 
 ### 6.3 Rodar o backup à mão
 
-GitHub → **Actions** → *Backup diário verificado* → **Run workflow**. Use isto
-antes de qualquer migration e antes de qualquer operação destrutiva.
+Use isto antes de qualquer migration e antes de qualquer operação destrutiva. Dois
+caminhos, e os dois rodam o MESMO workflow (mesma verificação, mesma retenção):
+
+- **Pela tela** (TASK-114): Configurações → Backup → **Fazer backup agora** (só ADMIN).
+  O pedido vai para a trilha (`BACKUP_MANUAL_SOLICITADO`), a tela mostra "pedido às …
+  por …" e o resultado aparece em "Último backup" em poucos minutos. Enquanto o pedido
+  não termina, o botão fica travado — até 60 min; depois disso volta, para o caso de o
+  GitHub ter engolido o disparo.
+- **Pelo GitHub**: Actions → *Backup diário verificado* → **Run workflow**. Funciona
+  sempre, com ou sem o botão configurado.
+
+#### Configurar o botão (uma vez — feito pelo USUÁRIO, que é quem maneja credencial)
+
+Sem isto, a tela não mostra o botão, e diz que falta configurar.
+
+1. GitHub → *Settings* (da conta) → *Developer settings* → *Personal access tokens* →
+   **Fine-grained tokens** → *Generate new token*.
+   - *Repository access*: **Only select repositories** → só o repositório do CÓDIGO
+     (`ptamay/Projeto-UniFafire`) — não o de backups.
+   - *Permissions* → *Repository permissions* → **Actions: Read and write**. Nada mais
+     (o *Metadata: Read* entra sozinho, e é obrigatório).
+   - *Expiration*: anote a data. Token vencido faz o botão responder "o GitHub recusou o
+     token", e a trilha registra `BACKUP_MANUAL_FALHOU` com HTTP 401.
+2. Vercel → projeto → *Settings* → *Environment Variables*, ambiente **Production**:
+   - `BACKUP_DISPARO_TOKEN` = o token, tipo **Sensitive**;
+   - `BACKUP_DISPARO_REPO` = `ptamay/Projeto-UniFafire` (dono/repo, não a URL).
+3. *Redeploy* (variável nova só vale em deploy novo) e confira em Configurações que o
+   botão apareceu. Aperte uma vez e veja o backup em "Último backup".
+
+> ⚠️ **O que esse token pode fazer se vazar:** `Actions: write` neste repositório permite
+> disparar, cancelar e reexecutar workflows, apagar execuções e seus logs — e **desligar
+> um workflow, inclusive o de backup**. Não escreve código, não lê secrets e não alcança o
+> repositório de backups. Um backup desligado em silêncio aparece no card (§6.4) como
+> "Sem execução" em poucos dias. Vazou: revogue no GitHub (mesma tela do passo 1), gere
+> outro, troque na Vercel e confira em Actions que o *Backup diário verificado* está ativo.
 
 ### 6.4 Onde ver se o backup está bem
 
