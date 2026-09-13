@@ -170,6 +170,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   falhas**. Rodar: `npm run test:db:up` + `npm run test:e2e`. ⚠️ `localhost:15432` pode ser um
   Postgres NATIVO de outra sessão (bind em 127.0.0.1 vence o container); `DATABASE_URL` resolve.
   ⚠️ `next dev` reinjeta um bloco no `AGENTS.md` a cada subida — não commitar.
+- ✅ **TASK-121 FEITA em 2026-09-12** (branch `feat/task-121-dashboard-cabe`, sobre a `main` com a
+  119/117/118/120, PR a abrir): a lista do Dashboard é query container e cabe — abaixo de 760 px de
+  lista, cada linha vira duas colunas. O estouro escondia coisa pior: conteúdo vazando da célula
+  até 123 px e cabeçalho×linha desalinhados até 55 px — agora 0/0 de 1440 a 769, nos quatro papéis.
+  A barra de filtros ganhou rolagem no desktop (FUNCIONARIO/ALUNO estourava 3 px a 769). ⚠️ NÃO pôr
+  a lista num contêiner com `overflow-x: auto`: o seletor abre com foco e rola a lista POR DENTRO
+  (251 px). Sobre a `main` nova: 216 medições (4 papéis × 9 telas × 5 larguras + 375) com 0
+  defeitos, celular incluído; vitest 686 / 74, E2E 32 ok / 2 pulados / 0, 6 gates, build verde.
 - ✅ **TASK-122 FEITA (PR #68, aberto): OS TESTES RODAM NO CI.** Até aqui NENHUM teste rodava
   sozinho. `.github/workflows/testes.yml`: vitest + E2E (desktop e mobile) contra Postgres de
   serviço igual ao do compose, em todo PR para a `main`, push na `main` e sob demanda; ~3 min.

@@ -1251,8 +1251,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
                         {/* Modo Desktop (Lista) */}
                         <div className="desktop-only">
-                        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-                            {/* Grid do cabeçalho e das linhas vem da classe (globals) — uma definição só */}
+                        <div className="dashboard-list" style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                            {/* Grid do cabeçalho e das linhas vem da classe (globals) — uma definição só.
+                                Quando a lista não cabe em cinco colunas, cada linha se rearranja (TASK-121). */}
                             <div className="dashboard-list-header">
                                 <div style={{ textAlign: 'left' }}>Nome</div>
                                 <div style={{ textAlign: 'left' }}>Sala / Local</div>
@@ -1286,7 +1287,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     <div style={{ width: '32px', height: '32px', background: 'var(--blue-700)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                                                         {key.employee_name?.charAt(0).toUpperCase()}
                                                     </div>
-                                                    <div style={{ minWidth: 0 }}>
+                                                    {/* maxWidth: numa coluna flex centralizada o item não estica, fica do
+                                                        tamanho do texto — sem teto, as reticências nunca apareciam e o
+                                                        nome passava por baixo do botão ao lado (TASK-121). */}
+                                                    <div style={{ minWidth: 0, maxWidth: '100%' }}>
                                                         <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
                                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
                                                     </div>
