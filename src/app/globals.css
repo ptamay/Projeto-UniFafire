@@ -513,12 +513,60 @@ h3 { font-size: 1.125rem; }
    Grid definido UMA vez para cabeçalho e linhas (antes: template mágico
    duplicado em dois objetos inline — dessincronizava no primeiro ajuste).
    No mobile o media query abaixo re-molda as linhas em card (flex). */
+/* REQ-016 (TASK-121): query container de inline-size — o min-content da grade
+   deixa de alargar o .main-content (item flex, min-width: auto), e o modo
+   compacto abaixo decide pela largura DA LISTA, não da viewport.
+   Não trocar por um contêiner com overflow-x: auto: o seletor de usuário abre
+   com foco no filtro, e na última linha isso rola a lista POR DENTRO (medido:
+   251 px) — as linhas de cima somem dentro do card. */
+.dashboard-list {
+  container: lista-chaves / inline-size;
+}
+/* Nenhuma trilha tira o mínimo do conteúdo. Cabeçalho e cada linha são grades
+   SEPARADAS com o mesmo template; fr puro é minmax(auto, fr), e cada grade
+   calculava colunas próprias quando apertava (medido: até 55 px de
+   desalinhamento). A coluna do usuário comporta o UserSelector (min 160px). */
 .dashboard-list-header,
 .dashboard-list-row {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 180px 1.8fr 120px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 180px minmax(160px, 1.8fr) 120px;
   padding: 1rem 1rem 1rem 2.5rem;
   gap: 1rem;
+}
+/* Com mínimo zero, palavra longa quebra em vez de invadir a coluna ao lado. */
+.dashboard-list-header > :nth-child(-n+2),
+.dashboard-list-row > :nth-child(-n+2) {
+  overflow-wrap: anywhere;
+}
+/* Modo compacto. O largo pede 580px (56 de padding + 64 de gaps + 180 + 160 +
+   120) com nome e sala em ZERO; em 760 eles ficam com ~108 e ~72. Abaixo disso,
+   cada linha vira duas colunas — nome | status, sala, usuário | ações — e o
+   cabeçalho sai. O posicionamento é pela ordem das cinco células da linha. */
+@container lista-chaves (max-width: 759px) {
+  .dashboard-list-header { display: none; }
+  .dashboard-list-row {
+    grid-template-columns: minmax(0, 1fr) 200px;
+    grid-template-areas:
+      "nome    status"
+      "sala    sala"
+      "usuario acoes";
+    row-gap: 0.5rem;
+  }
+  .dashboard-list-row > :nth-child(1) { grid-area: nome; }
+  .dashboard-list-row > :nth-child(2) { grid-area: sala; }
+  .dashboard-list-row > :nth-child(3) { grid-area: status; }
+  /* start: sem ele, o seletor e quem está com a chave centralizam na coluna larga */
+  .dashboard-list-row > :nth-child(4) { grid-area: usuario; justify-self: start; }
+  .dashboard-list-row > :nth-child(5) { grid-area: acoes; }
+}
+
+/* REQ-016 (TASK-121): a barra de filtros rola por dentro em qualquer largura.
+   Para FUNCIONARIO/ALUNO são quatro chips nowrap ("Minhas Chaves (N)") que pedem
+   448 px; a 769 há 445, e sem contenção eles alargavam o .main-content. A regra
+   de rolagem existia só no bloco do celular (abaixo), que segue valendo lá. */
+.dashboard-filter-bar {
+  overflow-x: auto;
+  contain: inline-size;
 }
 .dashboard-list-header {
   background: var(--bg-elevated);
