@@ -72,8 +72,8 @@ jobs:
       # TASK-113 — vazio quando a agenda não pôde ser lida: aí o envio não apaga nada.
       retencao: ${{ steps.decisao.outputs.retencao }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -126,7 +126,7 @@ jobs:
       VERIFICACAO_BANCO: verificacao
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Montar a URL da base de verificacao
         run: |
@@ -134,7 +134,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: verificacao
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
