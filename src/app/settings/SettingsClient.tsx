@@ -30,6 +30,14 @@ function formatBytes(b: number) {
 // O estado virou um ponto discreto no rodapé do shell (`Sidebar`), presente em toda
 // página — e continua lendo a assinatura compartilhada, sem abrir outra.
 
+// TASK-114 (ADR-024): o backup manual. O botão só aparece com `configurado` — sem o
+// token na Vercel, ele seria o controle inerte que o ADR-013 tirou da tela.
+interface EstadoBackupManual {
+    configurado: boolean;
+    pendente: boolean;
+    solicitacao: { em: string; por: string } | null;
+}
+
 interface Props {
     userRole: string;
     username: string;
@@ -51,6 +59,15 @@ export default function SettingsClient({ userRole, username }: Props) {
     // (`db/agenda-backup.mjs`), com a mesma política que valida aqui.
     const [agenda, setAgenda] = useState(AGENDA_PADRAO);
     const [salvandoAgenda, setSalvandoAgenda] = useState(false);
+    const [manual, setManual] = useState<EstadoBackupManual | null>(null);
+    const [pedindoBackup, setPedindoBackup] = useState(false);
+
+    const fetchManual = () => {
+        fetch('/api/backups/executar')
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => { if (d && typeof d.configurado === 'boolean') setManual(d); })
+            .catch(() => {});
+    };
 
     const fetchBackups = () => {
         fetch('/api/backups')
@@ -80,8 +97,31 @@ export default function SettingsClient({ userRole, username }: Props) {
                 .then(r => (r.ok ? r.json() : null))
                 .then(d => { if (d && typeof d.hora === 'number') setAgenda({ hora: d.hora, vezes: d.vezes, dias: d.dias }); })
                 .catch(() => {});
+            fetchManual();
         }
     }, [userRole]);
+
+    // TASK-114: enquanto há backup pedido e não terminado, a tela relê o estado e o
+    // último backup a cada 30 s — o "aguardando" some quando a execução aparece em
+    // `backup_runs`, que é o fato, e não quando o GitHub aceita o pedido.
+    const pendente = manual?.pendente ?? false;
+    useEffect(() => {
+        if (!pendente) return;
+        const id = setInterval(() => { fetchBackups(); fetchManual(); }, 30_000);
+        return () => clearInterval(id);
+    }, [pendente]);
+
+    const pedirBackup = async () => {
+        setPedindoBackup(true);
+        try {
+            const res = await fetch('/api/backups/executar', { method: 'POST' });
+            const d = await res.json();
+            if (typeof d?.configurado === 'boolean') setManual(d);
+            if (res.ok) toast.success('Backup pedido ao GitHub. Ele aparece em "Último backup" quando terminar.');
+            else toast.error(d.error || 'Não foi possível pedir o backup.');
+        } catch { toast.error('Erro de conexão.'); }
+        setPedindoBackup(false);
+    };
 
     const salvarAgenda = async () => {
         setSalvandoAgenda(true);
@@ -256,6 +296,29 @@ export default function SettingsClient({ userRole, username }: Props) {
                                 </div>
                             );
                         })()}
+
+                        {/* TASK-114 (ADR-024): o botão não faz backup — pede ao GitHub que
+                            rode o mesmo workflow do agendamento, com a mesma verificação e a
+                            mesma retenção. Sem o token configurado, ele não aparece: no
+                            lugar, o que falta e o caminho manual que funciona hoje. */}
+                        {manual && (manual.configurado ? (
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem 0.75rem', marginTop: '0.75rem' }}>
+                                <button className="btn btn-ghost btn-sm" onClick={pedirBackup} disabled={pedindoBackup || manual.pendente}>
+                                    {pedindoBackup ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Fazer backup agora'}
+                                </button>
+                                {manual.pendente && manual.solicitacao && (
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                        Pedido às {formatTimestamp(manual.solicitacao.em)} por {manual.solicitacao.por} — aguardando o
+                                        GitHub, costuma levar poucos minutos.
+                                    </span>
+                                )}
+                            </div>
+                        ) : (
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                                Backup manual pela tela ainda não configurado (runbook §6.3). Enquanto isso: GitHub → Actions →
+                                &quot;Backup diário verificado&quot; → Run workflow.
+                            </p>
+                        ))}
 
                         {/* TASK-112 (ADR-024) — a agenda VOLTA à tela porque agora é
                             obedecida: o workflow roda de hora em hora e consulta estas

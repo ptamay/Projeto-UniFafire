@@ -135,7 +135,8 @@ export async function getBackupRuns(limit = 10) {
  * é recusar o impossível é código morto.
  *
  * Backup é `.github/workflows/backup.yml`. Para rodar fora da hora: Actions →
- * "Backup diário verificado" → Run workflow.
+ * "Backup diário verificado" → Run workflow — ou, desde a TASK-114, o botão da tela,
+ * que DISPARA esse mesmo workflow (`src/lib/backup-manual.ts`).
  */
 
 /*

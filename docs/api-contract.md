@@ -117,6 +117,7 @@ alcançam nenhuma rota de operação — apenas as de conta própria acima.
 | `/api/backups` | `GET` | **A** | Lista execuções de `backup_runs` — **não** arquivos |
 | `/api/backups/reliability` | `GET` | **A** | Métrica de confiabilidade. Restrita porque a resposta pode conter mensagem de erro do job |
 | `/api/backups/agenda` | `GET`, `POST` | **A** | Agenda do backup: `{hora 0–23, vezes 1–4, dias 3–30}` (Zod, número inteiro, os três obrigatórios), gravada em `settings` e lida pelo workflow de hora em hora (`db/agenda-backup.mjs`). `dias` é a retenção: o envio (`db/enviar-backup.mjs`) apaga do repositório privado — inclusive do histórico — o que for mais velho. `GET` devolve também `horarios`. Alteração entra na trilha (`BACKUP_AGENDA_ALTERADA`, com a retenção de antes e a de depois). TASK-112, TASK-113 |
+| `/api/backups/executar` | `GET`, `POST` | **A** | Backup manual. `GET` → `{configurado, pendente, solicitacao: {em, por} \| null}`. `POST` pede ao GitHub que rode `backup.yml` na `main` (`workflow_dispatch`) com o token `BACKUP_DISPARO_TOKEN` (fine-grained, só `Actions: write`) e responde **202** com o estado. **503** sem `BACKUP_DISPARO_TOKEN`/`BACKUP_DISPARO_REPO` (a tela não mostra o botão); **409** enquanto há pedido sem execução nova em `backup_runs` (expira em 60 min); **502** quando o GitHub recusa ou não responde, com mensagem do que conferir — nunca o token nem o corpo do GitHub. Trilha: `BACKUP_MANUAL_SOLICITADO` ou `BACKUP_MANUAL_FALHOU`. TASK-114 |
 
 ---
 

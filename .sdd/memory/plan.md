@@ -260,6 +260,18 @@
   > um agendador que chame `workflow_dispatch` com o token da TASK-114). Hoje não há pedido.
 - **TASK-113 → retenção de verdade.** Nome de arquivo com hora; poda reescrevendo o histórico do
   repositório privado; nunca poda sem o dump novo verificado; nunca fica sem nenhum.
+- ✅ **TASK-114 FEITA em 2026-09-13** (branch `feat/task-114-backup-manual`) — em código; o disparo
+  REAL só se prova com o token que o usuário cria (runbook §6.3). `src/lib/backup-manual.ts` +
+  `GET/POST /api/backups/executar` (só ADMIN): `workflow_dispatch` do `backup.yml` na `main`; 202,
+  409 enquanto pendente (até aparecer execução nova em `backup_runs`; expira em 60 min), 502 que diz
+  o que conferir (401 token, 403/404 permissão ou repositório), 503 sem configuração; trilha
+  `BACKUP_MANUAL_SOLICITADO`/`_FALHOU`; o token nunca em resposta, log ou trilha; `BACKUP_DISPARO_REPO`
+  estrito ("dono/repo" — URL colada mandaria o token para outro endereço). Tela: botão só com
+  `configurado`; sem token, diz o que falta e o caminho do Actions. Verificado no navegador: sem
+  token (real) e configurado → pedido → travado (respostas da rota SIMULADAS na página, sem tocar o
+  GitHub). Sabotagens pegas: sem a trava do pendente, formato de repo frouxo.
+  > ⚠️ Runbook §6.3: `Actions: write` também DESLIGA workflows — um token vazado pode parar o backup
+  > em silêncio; o card acusa "Sem execução" em dias.
 - **TASK-114 → backup manual.** Rota ADMIN que dispara o workflow pela API do GitHub com token
   fino (só `Actions: write` neste repositório) — **criado pelo usuário**, secret na Vercel. Estado
   lido do `backup_runs`; entrada na trilha.

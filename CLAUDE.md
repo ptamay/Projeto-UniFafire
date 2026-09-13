@@ -199,9 +199,13 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `gh pr merge` falha até o check passar — esperar, não contornar; push direto na `main` é
   recusado; PR de branch antiga (Dependabot #43) precisa de push novo ou re-run. Emergência:
   desativar o ruleset em Settings → Rules — decisão do USUÁRIO. Detalhes no `plan.md` (TASK-122).
-- Próxima Ação: PR da TASK-123 → merge (check `testes` obrigatório) → **TASK-114, BLOQUEADA pelo
-  usuário**: token fine-grained só de `Projeto-UniFafire` com `Actions: Read and write`, cadastrado
-  como secret na Vercel → 115 → 116. Fila restante: `auto_logout_time = "30"` (usuário salva pela
+- ✅ #73 merged (TASK-123 no ar). ✅ **TASK-114 FEITA em 2026-09-13** (branch
+  `feat/task-114-backup-manual`, PR a abrir): botão "Fazer backup agora" (só ADMIN) →
+  `POST /api/backups/executar` → `workflow_dispatch` do `backup.yml`. Só aparece com
+  `BACKUP_DISPARO_TOKEN` + `BACKUP_DISPARO_REPO` na Vercel. ⚠️ O disparo REAL só se prova depois que
+  o USUÁRIO criar o token (runbook §6.3) e apertar o botão uma vez.
+- Próxima Ação: PR da TASK-114 → merge → usuário cria o token e cadastra na Vercel → apertar o
+  botão uma vez em produção → TASK-115 (restaurar da lista) → 116. Fila restante: `auto_logout_time = "30"` (usuário salva pela
   tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
   da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
   v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
@@ -434,7 +438,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-123-atraso-honesto (PR a abrir). PRs #15–#71 merged; aberto só o #43 do
+- Branch atual: feat/task-114-backup-manual (PR a abrir). PRs #15–#73 merged; aberto só o #43 do
   Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
@@ -599,7 +603,7 @@ Fase atual        : 11 (operação). TODAS as etapas do ADR-012 fechadas em cód
                     3, 4, 5, 7a e 7b. A Etapa 6 foi dissolvida. Nada planejado —
                     o que vier entra por Change Request
 Último commit     : (ver git log -1)
-Próxima ação      : ADR-024 (backup pela tela) — TASK-114, bloqueada pelo token de
+Próxima ação      : ADR-024 (backup pela tela) — TASK-114 feita (falta o token de
                     Actions que o usuário cria; depois 115 (restaurar da lista) e
                     116 (emenda da §3.5/§4.4). O `## Checkpoint Atual` acima é a
                     fonte viva; esta seção só resume. (A nota antiga, TASK-093/094,
