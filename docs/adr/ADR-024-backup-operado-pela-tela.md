@@ -6,7 +6,10 @@
   chaves são novas (`backup_hora`, `backup_vezes_por_dia`), porque a órfã `backup_time` valia
   "02:00" em produção. TASK-113 feita em 2026-09-10: a retenção entra na tela junto com a poda;
   janela em dias de Recife contando hoje; o repositório privado vira UM commit com a janela a cada
-  backup (push forçado com lease); retenção desconhecida não apaga nada
+  backup (push forçado com lease); retenção desconhecida não apaga nada. TASK-114 feita em
+  2026-09-13: `POST /api/backups/executar` dispara o `backup.yml` por `workflow_dispatch`; o botão
+  só aparece com `BACKUP_DISPARO_TOKEN` e `BACKUP_DISPARO_REPO` configurados; pedido pendente até
+  aparecer execução nova em `backup_runs` (expira em 60 min)
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (a restauração pela tela mexe no que a §3.5 e a §4.4 da
   constitution dizem; a agenda e a retenção sozinhas seriam Tipo C)
