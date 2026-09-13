@@ -1,0 +1,97 @@
+# TASK-122 (CR Tipo A) — os testes rodam sozinhos, em todo PR e em todo push na main.
+#
+# ## Por que existe
+#
+# Até aqui NENHUM teste rodava no CI — nem a E2E nem a vitest. A E2E morreu em silêncio
+# na Sprint 21 (config ainda no SQLite) e os specs de fluxo já estavam quebrados desde a
+# TASK-052, em julho: meses sem ninguém ver, porque nada roda sem alguém lembrar
+# (TASK-118 e TASK-120).
+#
+# ## O Postgres é o do compose
+#
+# Imagem, credenciais e porta iguais às do `docker-compose.test.yml` — a guarda
+# `tests/testes-no-ci.test.ts` compara os dois arquivos. Com isso a suíte roda aqui sem
+# nenhuma variável: `tests/pg-test-config.ts` cai no endereço padrão, e a E2E deriva a
+# base dela (`unifafire_e2e`) do mesmo servidor.
+#
+# ## Fuso: UTC, de propósito
+#
+# O runner roda em UTC, e a Vercel também. Um teste que só passa no -03 da máquina de
+# quem desenvolve depende de algo que produção não tem — melhor saber aqui.
+#
+# ## ⚠️ Verificado só depois de rodar de verdade
+#
+# A guarda confere a FORMA. A prova é o check no PR — inclusive VERMELHO com uma falha
+# plantada, registrada na task.
+
+name: Testes (vitest + E2E)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Só faz checkout. O token padrão pode escrever no repositório, e um passo comprometido
+# (uma dependência do `npm ci`) herdaria esse poder — TASK-110.
+permissions:
+  contents: read
+
+# Um PR que recebe outro push não precisa terminar a execução velha. Na main, cada push
+# termina a sua: é o registro de que a main estava verde.
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: unifafire
+          POSTGRES_PASSWORD: unifafire_test
+          POSTGRES_DB: unifafire_test
+        ports:
+          - "15432:5432"
+        options: >-
+          --health-cmd "pg_isready -U unifafire -d unifafire_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Antes da vitest: se ela falhar, a E2E ainda roda (abaixo) e o PR mostra as duas.
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: vitest
+        run: npx vitest run
+
+      # `!cancelled()`: roda mesmo com a vitest vermelha, para o PR mostrar as duas
+      # suítes de uma vez. Não engole nada — o job continua falhando se qualquer uma falhar.
+      - name: E2E (desktop e mobile)
+        if: ${{ !cancelled() }}
+        run: npm run test:e2e
+
+      - name: Guardar o que o Playwright viu na falha
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
