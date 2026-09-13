@@ -24,7 +24,11 @@ const ARQUIVO = path.resolve(RAIZ, '.github/workflows/testes.yml');
 /** YAML sem comentário — o cabeçalho do workflow EXPLICA o que ele faz, e uma guarda
  *  que achasse a palavra no comentário passaria cega (TASK-110). */
 function semComentarios(texto: string): string {
-    return texto.split('\n').filter(l => !/^\s*#/.test(l)).map(l => l.replace(/\s+#.*$/, '')).join('\n');
+    // CRLF → LF: com `autocrlf=true` (Windows) o arquivo chega com `\r\n`, e o `.` da regex
+    // do bloco `on:` não casa o `\r` — ela parava na primeira linha e o cenário reprovava
+    // só fora do CI (Linux, LF). Mesma família do checksum da TASK-101.
+    return texto.replace(/\r\n/g, '\n')
+        .split('\n').filter(l => !/^\s*#/.test(l)).map(l => l.replace(/\s+#.*$/, '')).join('\n');
 }
 
 const existe = fs.existsSync(ARQUIVO);
