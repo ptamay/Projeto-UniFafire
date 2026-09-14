@@ -173,12 +173,13 @@ describe('TASK-133 — superfícies planas: sem gradiente, sem brilho, uma eleva
                 if (/var\(--elevacao\)/.test(r.corpo) && !FLUTUA.test(r.seletor)) fora.push(`${rel(f)} ${r.seletor}`);
             }
         }
-        // No componente, só em estilo de elemento posicionado por cima dos outros.
+        // No componente, só em elemento posicionado por cima dos outros ou num diálogo (a
+        // caixa do modal fica dentro do fundo fixo sem ser, ela mesma, posicionada).
         for (const { f, texto } of TSX()) {
             for (const m of texto.matchAll(/var\(--elevacao\)/g)) {
-                const inicio = texto.lastIndexOf('style={{', m.index!);
+                const tag = texto.lastIndexOf('<', m.index!);
                 const fim = texto.indexOf('}}', m.index!);
-                if (!/position:\s*'(absolute|fixed)'/.test(texto.slice(inicio, fim))) fora.push(`${rel(f)} (elemento não flutua)`);
+                if (!/position:\s*'(absolute|fixed)'|role="dialog"/.test(texto.slice(tag, fim))) fora.push(`${rel(f)} (elemento não flutua)`);
             }
         }
         expect(fora, `elevação em quem não flutua:\n${fora.join('\n')}`).toEqual([]);

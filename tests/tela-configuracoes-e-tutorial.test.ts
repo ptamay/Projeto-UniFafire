@@ -95,7 +95,7 @@ describe('TASK-111 — o backup mostra só o estado', () => {
         // confiabilidade.
         const fonte = semComentarios(TELA);
         expect(fonte, 'a tela não diz qual foi o último backup').toMatch(/Último backup/);
-        expect(fonte, 'a tela não distingue backup que falhou').toMatch(/FALHOU/);
+        expect(fonte, 'a tela não distingue backup que falhou').toMatch(/'falhou'/i);
         expect(fonte, 'a confiabilidade sumiu junto').toMatch(/descreverConfiabilidade/);
     });
 });

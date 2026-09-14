@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import IndicadorDeNavegacao from './IndicadorDeNavegacao';
 import PendingInline from './PendingInline';
+import { rotuloDoPapel } from '@/lib/papeis';
 import toast from 'react-hot-toast';
 import { findDelayedKeys } from '@/lib/business-rules';
 import { useClientClock } from '@/lib/use-client-clock';
@@ -107,8 +108,8 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                     fontSize: 'var(--fs-2)',
                     color: selectedUser ? 'var(--text-primary)' : 'var(--text-muted)',
                     transition: 'all 0.2s',
-                    boxShadow: open ? 'var(--shadow-accent)' : 'none',
-                    borderColor: open ? 'var(--green-400)' : 'var(--border-strong)'
+                    boxShadow: open ? '0 0 0 3px var(--acao-bg)' : 'none',
+                    borderColor: open ? 'var(--acao)' : 'var(--border-strong)'
                 }}
             >
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: selectedUser ? 600 : 400 }}>
@@ -130,7 +131,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                         background: 'var(--bg-card)', 
                         border: '1px solid var(--border-strong)', 
                         borderRadius: 'var(--radius-md)', 
-                        boxShadow: 'var(--shadow-lg)',
+                        boxShadow: 'var(--elevacao)',
                         zIndex: 'var(--z-dropdown)',
                         overflow: 'hidden',
                         animation: 'slideUp 0.2s ease-out'
@@ -186,7 +187,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        background: selectedId === u.id ? 'var(--bg-selection)' : highlight === index ? 'var(--bg-selection-light)' : 'transparent',
+                                        background: selectedId === u.id ? 'var(--acao-bg)' : highlight === index ? 'var(--bg-elevated)' : 'transparent',
                                         color: 'var(--text-primary)',
                                         transition: 'background 0.1s'
                                     }}
@@ -198,7 +199,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                         <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', marginTop: '1px' }}>{u.role || 'Usuário'}</div>
                                     </div>
                                     {selectedId === u.id && (
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acao)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="20 6 9 17 4 12"></polyline>
                                         </svg>
                                     )}
@@ -722,21 +723,21 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     <div className="dashboard-stats" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <div className="stat-chip">
                             <span className="stat-chip-label">Disponíveis</span>
-                            <span className="stat-chip-value" style={{ color: 'var(--status-available-text)' }}>{stats.available}</span>
+                            <span className="stat-chip-value" style={{ color: 'var(--livre-fg)' }}>{stats.available}</span>
                         </div>
                         <div className="stat-chip">
                             <span className="stat-chip-label">Em Uso</span>
-                            <span className="stat-chip-value" style={{ color: 'var(--status-inuse-text)' }}>{stats.inUse}</span>
+                            <span className="stat-chip-value" style={{ color: 'var(--em-uso-fg)' }}>{stats.inUse}</span>
                         </div>
                     </div>
                 </header>
 
                 {/* Painel de Alertas */}
                 {delayedKeys.length > 0 && isPorteiroOrAdmin && (
-                    <div style={{ marginBottom: '1.5rem', background: 'var(--status-inuse-bg)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px', color: 'var(--status-inuse-text)' }} aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div role="alert" style={{ marginBottom: '1.5rem', background: 'var(--alerta-bg)', border: '1px solid var(--alerta-fg)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px', color: 'var(--alerta-fg)' }} aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <div>
-                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-inuse-text)', fontSize: 'var(--fs-3)', fontWeight: 700 }}>Atenção: Chaves em Atraso</h3>
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--alerta-fg)', fontSize: 'var(--fs-3)', fontWeight: 700 }}>Atenção: Chaves em Atraso</h3>
                             <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--text-primary)', fontSize: 'var(--fs-2)' }}>
                                 {delayedKeys.map(k => (
                                     <li key={k.id}>
@@ -755,7 +756,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 {/* Explicação da dupla confirmação (dispensável, contextual) */}
                 {showIntro && (
                     <div className="animate-fade" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-300)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>Como funciona a dupla confirmação</div>
                             <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
@@ -784,7 +785,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         abaixo, id="unified-key-input"). Os atributos anti-autofill que existiam
                         aqui (data-lpignore/data-1p-ignore/type=search) já vivem naquele campo. */}
                     <div className="control-actions" style={{ flex: '1', minWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', paddingLeft: '1rem' }}>
-                        <div style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true">
+                        <div style={{ color: 'var(--text-muted)', flexShrink: 0 }} aria-hidden="true">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </div>
 
@@ -884,7 +885,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     id="key-dropdown"
                                     role="listbox"
                                     aria-label="Chaves"
-                                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '300px', overflowY: 'auto', marginTop: '1px' }}
+                                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--elevacao)', zIndex: 100, maxHeight: '300px', overflowY: 'auto', marginTop: '1px' }}
                                 >
                                     <div className="dropdown-hint">
                                         Use as setas e Enter para selecionar
@@ -894,13 +895,13 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             key={k.id}
                                             role="option"
                                             aria-selected={keyIndex === index}
-                                            style={{ padding: '0.8rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: keyIndex === index ? 'var(--bg-selection)' : 'transparent', minHeight: '44px' }}
+                                            style={{ padding: '0.8rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: keyIndex === index ? 'var(--acao-bg)' : 'transparent', minHeight: '44px' }}
                                             onMouseDown={(ev) => { ev.preventDefault(); selectQaKey(k); }}
                                             className="suggestion-item"
                                         >
                                             <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>{k.name}</span>
                                             <span className={`status-tag ${k.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {k.status === 'available' ? 'DISPONÍVEL' : `COM ${k.employee_name?.toUpperCase() || '—'}`}
+                                                {k.status === 'available' ? 'Disponível' : `Com ${k.employee_name || '—'}`}
                                             </span>
                                         </div>
                                     ))}
@@ -965,7 +966,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 id="emp-dropdown"
                                                 role="listbox"
                                                 aria-label="Usuários"
-                                                style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '200px', overflowY: 'auto', marginTop: '1px' }}
+                                                style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '0 0 var(--radius-md) var(--radius-md)', boxShadow: 'var(--elevacao)', zIndex: 100, maxHeight: '200px', overflowY: 'auto', marginTop: '1px' }}
                                             >
                                                 <div className="dropdown-hint">
                                                     Use as setas e Enter para selecionar
@@ -975,26 +976,26 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         key={emp.id}
                                                         role="option"
                                                         aria-selected={empIndex === index}
-                                                        style={{ padding: '0.8rem 1rem', minHeight: '44px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: empIndex === index ? 'var(--bg-selection)' : 'transparent' }}
+                                                        style={{ padding: '0.8rem 1rem', minHeight: '44px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: empIndex === index ? 'var(--acao-bg)' : 'transparent' }}
                                                         onMouseDown={(ev) => { ev.preventDefault(); selectQaEmp(emp); }}
                                                         className="suggestion-item"
                                                     >
                                                         <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)' }}>{emp.name}</div>
-                                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>{emp.role}</div>
+                                                        <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>{rotuloDoPapel(emp.role)}</div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                     </>
                                 ) : (
-                                    <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-selection-light)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                                    <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                                         <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Para: <strong style={{ color: 'var(--text-primary)' }}>{username}</strong></span>
                                     </div>
                                 )}
                             </div>
                         )}
                         {qaStep === 'return' && (
-                            <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-selection-light)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                            <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                                 <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Com: <strong style={{ color: 'var(--text-primary)' }}>{qaResolvedKey?.employee_name || '—'}</strong></span>
                             </div>
                         )}
@@ -1002,7 +1003,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         {qaStep && (
                             <button
                                 id="unified-confirm-btn"
-                                className={`btn ${qaStep === 'withdraw' ? 'btn-green' : 'btn-blue'} btn-sm`}
+                                className={`btn ${qaStep === 'withdraw' ? 'btn-principal' : 'btn-secundario'} btn-sm`}
                                 style={{ minHeight: '44px', minWidth: '90px' }}
                                 disabled={!qaConfirmEnabled}
                                 onClick={() => {
@@ -1072,7 +1073,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     {(isPorteiroOrAdmin ? (['all','available','in_use'] as const) : (['mine','all','available','in_use'] as const)).map(f => (
                         <button
                             key={f}
-                            className={`btn ${filter === f ? 'btn-green' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
+                            className={`btn ${filter === f ? 'btn-principal' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
                             onClick={() => setFilter(f)}
                             style={{ borderRadius: '10px', flex: 1 }}
                         >
@@ -1093,7 +1094,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.375rem' }}>Nenhuma chave cadastrada ainda</p>
                             <p style={{ maxWidth: '34rem', margin: '0 auto' }}>As chaves da portaria aparecem aqui. Cadastre a primeira para começar a registrar retiradas e devoluções.</p>
                             {isPorteiroOrAdmin ? (
-                                <Link href="/keys" prefetch={false} className="btn btn-green btn-sm" style={{ marginTop: '1.25rem' }}>
+                                <Link href="/keys" prefetch={false} className="btn btn-principal btn-sm" style={{ marginTop: '1.25rem' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                     Cadastrar chave
                                     <IndicadorDeNavegacao />
@@ -1159,7 +1160,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             {key.room && <div className="key-card-room">{key.room}</div>}
                                                         </div>
                                                         <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                            {key.pending_info ? 'AGUARDANDO' : (key.status === 'available' ? 'DISPONÍVEL' : 'EM USO')}
+                                                            {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em uso')}
                                                         </span>
                                                     </div>
 
@@ -1170,7 +1171,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                                {key.employee_role && <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
+                                                                {key.employee_role && <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>{rotuloDoPapel(key.employee_role)}</div>}
                                                             </div>
                                                         </div>
                                                     )}
@@ -1182,7 +1183,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
-                                                                <div style={{ fontSize: 'var(--fs-1)', color: 'var(--warning-text)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
+                                                                <div style={{ fontSize: 'var(--fs-2)', color: 'var(--pendente-fg)', fontWeight: 600 }}>{describePending(key.pending_info)}</div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1204,12 +1205,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     )}
                                                     {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <div style={{ display: 'flex', gap: '0.625rem', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                                                            {/* Devolver carrega a identidade azul da devolução (btn-blue no
+                                                            {/* Devolver carrega a identidade azul da devolução (btn-secundario no
                                                                 desktop) — antes era ghost neutro só no mobile. */}
                                                             <button
                                                                 className="key-card-action-btn"
                                                                 onClick={() => requestTransaction(key.id, 'return')}
-                                                                style={{ flex: 1, border: '1px solid var(--blue-500)', background: 'var(--blue-700)', color: '#fff' }}
+                                                                style={{ flex: 1, border: '1px solid var(--acao)', background: 'var(--acao)', color: 'var(--acao-texto)' }}
                                                             >
                                                                 Devolver
                                                             </button>
@@ -1276,14 +1277,14 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         </div>
                                         <div data-label="Status" style={{ display: 'flex', justifyContent: 'center' }}>
                                             <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em Uso')}
+                                                {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em uso')}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
                                             {key.status === 'in_use' ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', textAlign: 'center', minWidth: 0 }}>
                                                     {/* Azul institucional p/ "pessoa" (One Voice Rule) — o verde sólido media 3,2:1 com o branco */}
-                                                    <div style={{ width: '32px', height: '32px', background: 'var(--blue-700)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                                    <div style={{ width: '32px', height: '32px', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, flexShrink: 0, border: '1px solid var(--border-strong)' }}>
                                                         {key.employee_name?.charAt(0).toUpperCase()}
                                                     </div>
                                                     {/* maxWidth: numa coluna flex centralizada o item não estica, fica do
@@ -1291,7 +1292,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         nome passava por baixo do botão ao lado (TASK-121). */}
                                                     <div style={{ minWidth: 0, maxWidth: '100%' }}>
                                                         <div style={{ fontSize: 'var(--fs-3)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
-                                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
+                                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rotuloDoPapel(key.employee_role) || 'Usuário'}</div>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1328,7 +1329,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 )
                                             ) : key.status === 'available' ? (
                                                 <button
-                                                    className="btn btn-green btn-sm"
+                                                    className="btn btn-principal btn-sm"
                                                     disabled={actionLoading === key.id || (isPorteiroOrAdmin && !selectedEmployee[key.id])}
                                                     onClick={() => requestTransaction(key.id, 'withdraw')}
                                                     style={{ padding: '0.4rem 1.25rem' }}
@@ -1344,7 +1345,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     {(isPorteiroOrAdmin || key.user_id === userId) && (
                                                         <>
                                                             <button
-                                                                className="btn btn-blue btn-sm"
+                                                                className="btn btn-secundario btn-sm"
                                                                 disabled={actionLoading === key.id}
                                                                 onClick={() => requestTransaction(key.id, 'return')}
                                                                 style={{ padding: '0.4rem 1.25rem' }}
@@ -1397,7 +1398,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                                 <h2 style={{ fontSize: 'var(--fs-4)', color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>Para quem?</h2>
-                                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Chave <strong style={{color: 'var(--green-400)'}}>{touchSelectModal.keyName}</strong></p>
+                                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Chave <strong style={{ color: 'var(--text-primary)' }}>{touchSelectModal.keyName}</strong></p>
                             </div>
                             <button className="icon-btn" onClick={() => setTouchSelectModal(prev => ({ ...prev, open: false }))} style={{ margin: '-0.5rem -0.5rem 0 0', padding: '0.5rem' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1445,7 +1446,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
             {/* Modal de Confirmação Premium */}
             {confirmModal.open && (
                 <div className="modal-overlay" onClick={() => setConfirmModal(prev => ({ ...prev, open: false }))}>
-                    <div ref={modalBoxRef} role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={e => e.stopPropagation()} onKeyDown={handleModalKeyDown} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
+                    <div ref={modalBoxRef} role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={e => e.stopPropagation()} onKeyDown={handleModalKeyDown} style={{ background: 'var(--bg-card)', width: '100%', maxWidth: '400px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--elevacao)', overflowX: 'hidden', overflowY: 'auto', maxHeight: '90dvh', animation: 'slideUp 0.25s ease' }}>
                         <div style={{ padding: '1.5rem', textAlign: 'center' }}>
                             {/* Chips de ícone: tokens --chip-* (par fundo+traço com override light) —
                                 antes usavam pastéis claros fixos e --purple-* inexistentes (ícone invisível). */}
@@ -1517,7 +1518,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)', lineHeight: '1.5' }}>
                                         Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
                                         {confirmModal.type === 'withdraw' && (
-                                            <span> para <strong style={{ color: 'var(--green-400)' }}>{confirmModal.employeeName}</strong></span>
+                                            <span> para <strong style={{ color: 'var(--text-primary)' }}>{confirmModal.employeeName}</strong></span>
                                         )}.
                                         <br/><span style={{ fontSize: 'var(--fs-2)', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
                                     </p>
@@ -1536,7 +1537,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                 setBypassConfirmation(e.target.checked);
                                                 if (!e.target.checked) setJustification('');
                                             }}
-                                            style={{ accentColor: confirmModal.type === 'withdraw' ? 'var(--green-500)' : 'var(--blue-500)', width: '18px', height: '18px', flexShrink: 0 }}
+                                            style={{ accentColor: 'var(--acao)', width: '18px', height: '18px', flexShrink: 0 }}
                                         />
                                         {confirmModal.type === 'withdraw' ? 'Atribuir chave imediatamente sem confirmação' : 'Confirmar devolução imediatamente (sem celular)'}
                                     </label>
@@ -1585,7 +1586,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             </button>
                             <button
                                 ref={confirmBtnRef}
-                                className={`btn ${confirmModal.type === 'withdraw' ? 'btn-green' : 'btn-blue'}`}
+                                className={`btn ${confirmModal.type === 'withdraw' ? 'btn-principal' : 'btn-secundario'}`}
                                 onClick={confirmAction}
                             >
                                 {bypassConfirmation ? 'Confirmar agora' : 'Enviar solicitação'}

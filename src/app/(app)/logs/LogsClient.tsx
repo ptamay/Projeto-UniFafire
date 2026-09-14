@@ -81,7 +81,7 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                 <div className="card w-full">
                     <div className="page-header mb-6" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <h2 className="page-title m-0">Logs do Sistema</h2>
+                            <h1 className="page-title m-0">Logs do Sistema</h1>
                         </div>
 
                         <div style={{ 
@@ -104,7 +104,7 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                         value={searchTerm}
                                         onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                                     />
-                                    <span className="search-icon">🔍</span>
+                                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                                 </div>
                             </div>
 
@@ -173,7 +173,7 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                     Limpar Filtros
                                 </button>
                                 <button 
-                                    className="btn btn-green btn-sm"
+                                    className="btn btn-principal btn-sm"
                                     onClick={() => {
                                         if (logs.length === 0) return;
                                         const csv = 'Data/Hora,Usuário,Ação Realizada,Alvo,Endereço IP,Detalhes\n' + 
@@ -216,13 +216,15 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                             <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{formatTimestamp(log.timestamp)}</td>
                                             <td data-label="Usuário"><strong>{log.username}</strong></td>
                                             <td data-label="Ação">
-                                                <span style={{
+                                                {/* O código da ação é o registro da trilha (LOGOUT, LOGIN_SUCCESS),
+                                                    não um rótulo — fica como foi gravado (TASK-133). */}
+                                                <span className="codigo-trilha" style={{
                                                     fontSize: 'var(--fs-2)',
                                                     padding: '2px 8px',
                                                     borderRadius: 'var(--radius-sm)',
-                                                    background: isSecurityEvent ? 'var(--blue-900)' : 'var(--bg-elevated)',
-                                                    color: isSecurityEvent ? 'var(--blue-300)' : 'var(--text-secondary)',
-                                                    fontWeight: 400,
+                                                    background: 'var(--bg-elevated)',
+                                                    color: isSecurityEvent ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                                    fontWeight: isSecurityEvent ? 600 : 400,
                                                     border: '1px solid var(--border)'
                                                 }}>
                                                     {log.action}

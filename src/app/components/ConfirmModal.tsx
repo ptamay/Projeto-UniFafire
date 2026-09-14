@@ -25,8 +25,8 @@ export default function ConfirmModal({ isOpen, title = 'Confirmação', message,
             <div className="modal-box" style={{ maxWidth: exigirTexto ? 480 : 420 }} onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: danger ? 'var(--danger-bg)' : 'var(--bg-selection)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={danger ? 'var(--danger-text)' : 'var(--green-400)'} strokeWidth="2">
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: danger ? 'var(--alerta-bg)' : 'var(--acao-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={danger ? 'var(--alerta-fg)' : 'var(--acao)'} strokeWidth="2">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                             </svg>
@@ -47,7 +47,7 @@ export default function ConfirmModal({ isOpen, title = 'Confirmação', message,
                 )}
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                     <button className="btn btn-ghost" onClick={cancelar}>{cancelText}</button>
-                    <button className={`btn ${danger ? 'btn-danger' : 'btn-green'}`} disabled={!liberado}
+                    <button className={`btn ${danger ? 'btn-perigo' : 'btn-principal'}`} disabled={!liberado}
                         onClick={() => { if (!liberado) return; onConfirm(); cancelar(); }}>{confirmText}</button>
                 </div>
             </div>

@@ -56,6 +56,17 @@ test.describe('TASK-133 — componentes globais do quadro de chaves', () => {
                     const r = el.getBoundingClientRect();
                     if (r.width === 0 || r.height === 0 || !el.textContent?.trim()) continue;
                     if (getComputedStyle(el).textTransform === 'uppercase') fora.push(`maiúsculas em <${el.tagName.toLowerCase()} class="${el.className}">`);
+                    // Ponto cego achado na verificação: "EM USO" e "ALUNO" vinham ESCRITOS em
+                    // maiúsculas no código — sem text-transform nenhum. Siglas curtas passam, e o
+                    // código da ação nos Logs (.codigo-trilha: LOGOUT, LOGIN_SUCCESS) também — é o
+                    // registro gravado, não rótulo.
+                    if (el.children.length === 0 && !el.closest('.codigo-trilha')) {
+                        const texto = el.textContent.trim();
+                        const letras = texto.replace(/[^A-Za-zÀ-ÿ]/g, '');
+                        if (letras.length >= 4 && texto === texto.toUpperCase() && !/^(PDF|CSV)$/.test(texto)) {
+                            fora.push(`texto em maiúsculas: "${texto}"`);
+                        }
+                    }
                 }
                 return fora;
             });

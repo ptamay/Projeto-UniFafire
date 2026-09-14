@@ -251,17 +251,17 @@ export default function HistoryClient({
 
                     <div className="page-header mb-6 no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
-                            <h2 className="page-title m-0">Histórico de Movimentações</h2>
+                            <h1 className="page-title m-0">Histórico de Movimentações</h1>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                                 {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
                                     <button
-                                        className="btn btn-danger"
+                                        className="btn btn-perigo"
                                         onClick={() => setShowClearConfirm(true)}
                                     >
                                         Limpar Histórico
                                     </button>
                                 )}
-                                <button className="btn btn-blue" onClick={handleExportPDF} disabled={gerandoPDF} style={{ fontSize: 'var(--fs-3)' }}>
+                                <button className="btn btn-secundario" onClick={handleExportPDF} disabled={gerandoPDF}>
                                     {gerandoPDF ? 'Gerando…' : 'Exportar PDF'}
                                 </button>
                                 <PrintButton />
@@ -271,13 +271,13 @@ export default function HistoryClient({
                         {isPorteiroOrAdmin && bizMetrics && (
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
-                                    <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Dupla confirmação</span>
+                                    <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--livre-fg)' : 'var(--text-primary)' }}>
                                         {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
                                     </span>
                                 </div>
                                 <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
+                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Tempo de balcão</span>
                                     <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)' }}>
                                         {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
                                     </span>
@@ -491,7 +491,7 @@ export default function HistoryClient({
                         <p style={{ color: 'var(--text-secondary)' }}>Esta ação apagará todos os registros de movimentação. Deseja realmente limpar o histórico?</p>
                         <div className="action-row mt-6">
                             <button className="btn btn-ghost" onClick={() => setShowClearConfirm(false)}>Cancelar</button>
-                            <button className="btn btn-danger" onClick={handleClearHistory}>
+                            <button className="btn btn-perigo" onClick={handleClearHistory}>
                                 Confirmar Limpeza
                             </button>
                         </div>

@@ -136,11 +136,9 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                             return (
                                 <div key={tx.id} style={{
                                     background: 'var(--bg-card)',
-                                    border: `1px solid var(--border)`,
-                                    borderTop: `3px solid ${accentColor}`,
+                                    border: '1px solid var(--border)',
                                     borderRadius: 'var(--radius-lg)',
                                     padding: '1.25rem',
-                                    boxShadow: 'var(--shadow-sm)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '1rem',
@@ -149,9 +147,8 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <div>
                                             <span style={{
-                                                fontSize: 'var(--fs-1)', fontWeight: 700, textTransform: 'uppercase',
-                                                letterSpacing: '0.05em', color: accentColor,
-                                                background: accentBg, padding: '2px 8px', borderRadius: 'var(--radius-full)', display: 'inline-block', marginBottom: '0.4rem'
+                                                fontSize: 'var(--fs-2)', fontWeight: 600, color: accentColor,
+                                                background: accentBg, padding: '0.125rem 0.625rem', borderRadius: 'var(--radius-full)', display: 'inline-block', marginBottom: '0.5rem'
                                             }}>
                                                 {isWithdraw ? 'Retirada de Chave' : isPull ? 'Solicitação de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
                                             </span>
@@ -199,10 +196,11 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
 
                                     {/* Status Administrativo */}
                                     {isPorteiroOrAdmin && (
-                                        <div style={{ fontSize: 'var(--fs-1)', fontWeight: 600, marginTop: '-0.5rem' }}>
+                                        <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, marginTop: '-0.5rem' }}>
+                                            {/* Esperar não é alarme: âmbar (pendente), não vermelho. */}
                                             {!tx.user_confirmed_at
-                                                ? <span style={{ color: 'var(--danger-text)' }}>● Aguardando o usuário confirmar</span>
-                                                : <span style={{ color: 'var(--status-available-text)' }}>● Usuário confirmou</span>}
+                                                ? <span style={{ color: 'var(--pendente-fg)' }}>● Aguardando o usuário confirmar</span>
+                                                : <span style={{ color: 'var(--livre-fg)' }}>● Usuário confirmou</span>}
                                         </div>
                                     )}
 
@@ -212,8 +210,8 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                             {/* Se o usuário destino for o próprio usuário logado e ainda não confirmou como usuário */}
                                             {tx.user_id === userId && !tx.user_confirmed_at && (
                                                 <button
-                                                    className="btn btn-green"
-                                                    style={{ flex: 1, minWidth: '120px', minHeight: 44, fontSize: 'var(--fs-3)', fontWeight: 700 }}
+                                                    className="btn btn-principal"
+                                                    style={{ flex: 1, minWidth: '120px' }}
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
@@ -225,8 +223,8 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                                 cujo aceite é estrito do portador (ADR-008), nunca da portaria por papel. */}
                                             {isPorteiroOrAdmin && !isPull && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
                                                 <button
-                                                    className="btn btn-green"
-                                                    style={{ flex: 1, minWidth: '120px', minHeight: 44, fontSize: 'var(--fs-3)', fontWeight: 700 }}
+                                                    className="btn btn-principal"
+                                                    style={{ flex: 1, minWidth: '120px' }}
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
@@ -237,8 +235,8 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                             {/* Portador aceita uma solicitação pull da chave que está com ele (REQ-027) */}
                                             {isPull && isHolderViewer && (
                                                 <button
-                                                    className="btn btn-green"
-                                                    style={{ flex: 1, minWidth: '120px', minHeight: 44, fontSize: 'var(--fs-3)', fontWeight: 700 }}
+                                                    className="btn btn-principal"
+                                                    style={{ flex: 1, minWidth: '120px' }}
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
@@ -248,7 +246,7 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
 
                                             {/* Mensagem de espera para quem iniciou e aguarda a outra parte */}
                                             {!isPorteiroOrAdmin && tx.user_id === userId && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: 'var(--warning-bg)', color: 'var(--warning-text)', fontWeight: 700, borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: 'var(--pendente-bg)', color: 'var(--pendente-fg)', fontWeight: 600, borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', flex: 1 }}>
                                                     <IconClock /> Aguardando {isPull ? 'o portador' : 'porteiro'}
                                                 </div>
                                             )}
@@ -257,7 +255,7 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                             {(isPorteiroOrAdmin || tx.user_id === userId || tx.porteiro_id === userId) && (
                                                 <button
                                                     className="btn btn-ghost"
-                                                    style={{ flex: '0 1 auto', minWidth: '100px', minHeight: 44, fontSize: 'var(--fs-3)', color: 'var(--danger-text)', border: '1px solid var(--danger-bg)' }}
+                                                    style={{ flex: '0 1 auto', minWidth: '100px' }}
                                                     onClick={() => cancelTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >

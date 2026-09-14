@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROTULO_DO_PAPEL } from './papeis';
 
 // Roles disponíveis no sistema
 export const ROLES = ['ADMIN', 'GESTOR', 'PORTEIRO', 'FUNCIONARIO', 'ALUNO'] as const;
@@ -16,7 +17,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
     canConfirmTransaction: boolean; // Pode confirmar transações (usuário final)
 }> = {
     ADMIN: {
-        label: 'Administrador',
+        label: ROTULO_DO_PAPEL.ADMIN,
         canManageKeys: true,
         canManageUsers: true,
         canViewHistory: true,
@@ -26,7 +27,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
         canConfirmTransaction: false,
     },
     GESTOR: {
-        label: 'Gestor',
+        label: ROTULO_DO_PAPEL.GESTOR,
         canManageKeys: true,
         canManageUsers: true,
         canViewHistory: true,
@@ -36,7 +37,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
         canConfirmTransaction: false,
     },
     PORTEIRO: {
-        label: 'Porteiro',
+        label: ROTULO_DO_PAPEL.PORTEIRO,
         canManageKeys: true,
         canManageUsers: false,
         canViewHistory: true,
@@ -46,7 +47,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
         canConfirmTransaction: false,
     },
     FUNCIONARIO: {
-        label: 'Funcionário',
+        label: ROTULO_DO_PAPEL.FUNCIONARIO,
         canManageKeys: false,
         canManageUsers: false,
         canViewHistory: false,
@@ -56,7 +57,7 @@ export const ROLE_PERMISSIONS: Record<Role, {
         canConfirmTransaction: true,
     },
     ALUNO: {
-        label: 'Aluno',
+        label: ROTULO_DO_PAPEL.ALUNO,
         canManageKeys: false,
         canManageUsers: false,
         canViewHistory: false,

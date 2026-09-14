@@ -130,8 +130,8 @@ export default function KeysClient({
             <main className="main-content animate-fade">
                 <div className="card w-full">
                     <div className="page-header mb-6">
-                        <h2 className="page-title m-0">Gerenciar Chaves</h2>
-                        <button className="btn btn-green" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
+                        <h1 className="page-title m-0">Gerenciar Chaves</h1>
+                        <button className="btn btn-principal" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
                     </div>
 
                     <div className="table-wrapper table-cards">
@@ -151,7 +151,7 @@ export default function KeysClient({
                                         <td data-label="Sala/Local" style={{ color: 'var(--text-secondary)' }}>{key.room}</td>
                                         <td data-label="Status">
                                             <span className={`status-tag ${key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {key.status === 'available' ? 'Disponível' : 'Em Uso'}
+                                                {key.status === 'available' ? 'Disponível' : 'Em uso'}
                                             </span>
                                         </td>
                                         <td className="td-actions" style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -162,7 +162,7 @@ export default function KeysClient({
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-danger btn-sm"
+                                                className="btn btn-perigo btn-sm"
                                                 onClick={() => handleDeleteKey(key)}
                                             >
                                                 Remover
@@ -195,7 +195,7 @@ export default function KeysClient({
                             </div>
                             <div className="action-row mt-6">
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowAddKeyModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-green">Salvar</button>
+                                <button type="submit" className="btn btn-principal">Salvar</button>
                             </div>
                         </form>
                     </div>
@@ -227,7 +227,7 @@ export default function KeysClient({
                             </div>
                             <div className="action-row mt-6">
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowEditKeyModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-green">Salvar Alterações</button>
+                                <button type="submit" className="btn btn-principal">Salvar Alterações</button>
                             </div>
                         </form>
                     </div>

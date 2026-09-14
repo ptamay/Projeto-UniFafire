@@ -35,48 +35,60 @@
   --blue-200: #b8c6f5;
   --blue-100: #dbe3ff;
 
-  /* --- MODO ESCURO (Padrão) --- */
-  --bg-page:        #060B19; /* Azul bem escuro, quase preto para conforto visual */
-  --bg-surface:     #0F172A; /* Azul acinzedado (Slate 900) para superfícies */
-  --bg-card:        #1E293B; /* Slate 800 para contraste suave nos cards */
-  --bg-elevated:    #334155; /* Slate 700 para destaques */
-  --bg-input:       #0F172A;
-  --border:         rgba(255, 255, 255, 0.12); /* Bordas brancas suaves, não interferem nas cores */
-  --border-strong:  rgba(255, 255, 255, 0.24);
+  /* ── Quadro de chaves (TASK-133 · ADR-031) ──────────────────────────────────
+     No quadro da portaria, cada chave é uma plaqueta num gancho, lida de longe sem
+     instrução. A tela segue a mesma lei: chapa PLANA (fundo e superfície sem sombra de
+     repouso), e cor que significa sempre a mesma coisa, em qualquer tela:
+       livre    = verde     a chave está no gancho, pode pegar
+       em uso   = cinza     o gancho está vazio — alguém levou; é normal, não é alarme
+       pendente = âmbar     esperando alguém confirmar (e o aviso que ainda não é erro)
+       alerta   = vermelho  atraso, erro, e o que APAGA — nunca enfeite, nunca estado comum
+       ação     = azul UniFAFIRE, só no botão principal e no que é tocável
+     Verde, âmbar e vermelho são o semáforo: quem tem pouca instrução lê sem legenda.
+     Contraste AA de cada par conferido por tests/componentes-quadro.test.ts. */
 
-  --text-primary:   #F8FAFC; /* Off-white, evita o brilho excessivo do branco puro */
+  /* --- MODO ESCURO --- */
+  --bg-page:        #0A0F1C; /* a chapa */
+  --bg-surface:     #111827;
+  --bg-card:        #111827; /* igual à superfície: cartão se separa por borda, não por caixa */
+  --bg-elevated:    #1B2434; /* linha em hover, cabeçalho de tabela */
+  --bg-input:       #0A0F1C;
+  --border:         rgba(255, 255, 255, 0.12);
+  --border-strong:  rgba(255, 255, 255, 0.24);
+  --borda-campo:   #64748B; /* borda de campo: 4:1 com o fundo do campo (controle pede ≥ 3:1) */
+
+  --text-primary:   #F1F5F9;
   --text-secondary: #CBD5E1;
   --text-muted:     #94A3B8;
-  --text-green:      var(--green-300);
 
-  --accent-primary: var(--green-400);
-  --accent-hover:   var(--green-300);
-  --bg-selection:   rgba(29, 128, 70, 0.15);
-  --bg-selection-light: rgba(29, 128, 70, 0.05);
+  --acao:          #9DB4FF; /* no escuro, o azul claro com texto marinho: 8,7:1 */
+  --acao-hover:    #B8C8FF;
+  --acao-texto:    #0B1540;
+  --acao-bg:       rgba(157, 180, 255, 0.14); /* seleção, item ativo */
 
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.5);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
-  --shadow-accent:0 0 24px rgba(29,128,70,0.15);
+  --livre-fg:      #34D399;
+  --livre-bg:      rgba(52, 211, 153, 0.12);
+  --em-uso-fg:     #CBD5E1;
+  --em-uso-bg:     rgba(148, 163, 184, 0.16);
+  --pendente:      #F59E0B; /* sólido: contador */
+  --pendente-texto:#1A1200;
+  --pendente-fg:   #FBBF24;
+  --pendente-bg:   rgba(245, 158, 11, 0.14);
+  --alerta:        #DC2626; /* sólido: botão de apagar — o #ef4444 antigo dava 3,8:1 com branco */
+  --alerta-hover:  #B91C1C;
+  --alerta-texto:  #FFFFFF;
+  --alerta-fg:     #FCA5A5;
+  --alerta-bg:     rgba(239, 68, 68, 0.14);
 
-  --status-available-bg:  rgba(34, 197, 94, 0.12);
-  --status-inuse-bg:      rgba(251, 146, 60, 0.12);
-  --status-available-text: #34d399; /* verde legível sobre fundo escuro */
-  --status-inuse-text:     #fda4af; /* rose-300 — AA sobre o fundo TINTADO da tag (o #fb7185 media 4,45:1 no composto) */
+  /* Uma elevação só, para o que flutua de verdade: modal, menu, lista suspensa,
+     gaveta aberta, dica. Nada em repouso tem sombra. */
+  --elevacao: 0 8px 24px rgba(0, 0, 0, 0.5);
+  /* O véu atrás do que flutua (modal, gaveta): um só, nos dois temas. */
+  --veu: rgba(6, 11, 25, 0.72);
 
-  /* Semânticos — perigo/alerta (antes espalhados como literais #ef4444/#f87171/#f59e0b) */
-  --danger:        #ef4444; /* fundo de ações destrutivas (excluir) */
-  --danger-hover:  #dc2626;
-  --danger-text:   #f87171; /* texto/ícone de perigo sobre fundo escuro */
-  --danger-bg:     rgba(239, 68, 68, 0.12);
-  --warning:       #f59e0b; /* pendências/atenção */
-  --warning-text:  #fbbf24;
-  --warning-bg:    rgba(245, 158, 11, 0.12);
-
-  /* Idioma único ação→cor (badges/acentos de REGISTRO, não de botão):
-     retirada = âmbar · devolução = verde · transferência = roxo.
-     O mesmo significado em TODAS as telas (Dashboard, Confirmações, Histórico) —
-     antes "retirada" era verde numa tela, âmbar noutra e rosa na terceira. */
+  /* Idioma único ação→cor dos REGISTROS (Histórico, Confirmações), casado com o
+     estado que a ação produz: retirada = âmbar · devolução = verde (→ livre) ·
+     transferência = roxo. */
   --action-withdraw-fg: #fbbf24;
   --action-withdraw-bg: rgba(245, 158, 11, 0.12);
   --action-return-fg:   #34d399;
@@ -84,16 +96,18 @@
   --action-transfer-fg: #c084fc;
   --action-transfer-bg: rgba(168, 85, 247, 0.12);
 
-  /* Chips de ícone de modal (linguagem de CONTROLE — casa com btn-green/btn-blue):
-     par fundo+traço legível nos dois temas. Substitui os pastéis claros fixos
-     (--green-100/--blue-100 sobre modal escuro) e os tokens --purple-* que não
-     existiam — o ícone do modal de transferência renderizava invisível. */
-  --chip-green-bg:  rgba(40, 163, 92, 0.18);
-  --chip-green-fg:  var(--green-300);
-  --chip-blue-bg:   rgba(98, 121, 216, 0.18);
-  --chip-blue-fg:   var(--blue-300);
+  /* Chips de ícone de modal: par fundo+traço legível nos dois temas. */
+  --chip-green-bg:  rgba(52, 211, 153, 0.14);
+  --chip-green-fg:  #34D399;
+  --chip-blue-bg:   rgba(157, 180, 255, 0.14);
+  --chip-blue-fg:   #9DB4FF;
   --chip-purple-bg: rgba(168, 85, 247, 0.18);
   --chip-purple-fg: #c084fc;
+
+  /* Botões (TASK-133): o principal da tela com 48 px, os outros com 40. No celular os
+     secundários sobem para a área de toque de 44 (--touch-target). */
+  --btn-h: 2.5rem;
+  --btn-h-principal: 3rem;
 
   /* Escala de tipo (TASK-132 · ADR-031 · REQ-033a). CINCO degraus e nenhum outro — a
      guarda tests/escala-tipografica.test.ts reprova font-size fora deles. Antes eram 20
@@ -134,46 +148,43 @@
   --sidebar-w: var(--sidebar-w-collapsed);
 }
 
-/* --- MODO CLARO (Override) --- */
+/* --- MODO CLARO --- o que abre no celular de quem está no pátio, ao sol (ADR-031). */
 .light-mode {
   color-scheme: light !important;
-  --bg-page:        #f1f5f9;
-  --bg-surface:     #ffffff;
-  --bg-card:        #ffffff;
-  --bg-elevated:    #f8fafc;
-  --bg-input:       #ffffff;
-  --border:         rgba(15, 29, 87, 0.15); /* #0F1D57 rgba */
-  --border-strong:  rgba(15, 29, 87, 0.3);
+  --bg-page:        #F2F4F7;
+  --bg-surface:     #FFFFFF;
+  --bg-card:        #FFFFFF;
+  --bg-elevated:    #EEF1F5;
+  --bg-input:       #FFFFFF;
+  --border:         rgba(15, 29, 87, 0.14);
+  --border-strong:  rgba(15, 29, 87, 0.32);
+  --borda-campo:   #7C8699; /* 3,7:1 com o branco */
 
-  --text-primary:   #0F1D57;
-  --text-secondary: #414d61;
-  --text-muted:     #64748b;
-  --text-green:     #125930;
+  --text-primary:   #0F1D57; /* o azul UniFAFIRE como tinta */
+  --text-secondary: #3B4658;
+  --text-muted:     #535E6E;
 
-  --accent-primary: #1D8046;
-  --accent-hover:   #125930;
-  --bg-selection:   rgba(29, 128, 70, 0.10);
-  --bg-selection-light: rgba(29, 128, 70, 0.03);
+  --acao:          #1E3A9C; /* branco sobre ele: 9,8:1 */
+  --acao-hover:    #162A75;
+  --acao-texto:    #FFFFFF;
+  --acao-bg:       rgba(30, 58, 156, 0.08);
 
-  --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md:  0 4px 10px rgba(0,0,0,0.08);
-  --shadow-lg:  0 10px 20px rgba(0,0,0,0.1);
-  --shadow-accent:0 0 20px rgba(29,128,70,0.12);
+  --livre-fg:      #047857;
+  --livre-bg:      rgba(16, 185, 129, 0.12);
+  --em-uso-fg:     #334155;
+  --em-uso-bg:     rgba(100, 116, 139, 0.14);
+  --pendente:      #B45309;
+  --pendente-texto:#FFFFFF;
+  --pendente-fg:   #92400E;
+  --pendente-bg:   rgba(217, 119, 6, 0.12);
+  --alerta:        #B91C1C;
+  --alerta-hover:  #991B1B;
+  --alerta-texto:  #FFFFFF;
+  --alerta-fg:     #B91C1C;
+  --alerta-bg:     rgba(220, 38, 38, 0.10);
 
-  --status-available-bg:  rgba(16, 185, 129, 0.12);
-  --status-inuse-bg:      rgba(244, 63, 94, 0.12);
-  --status-available-text: #047857; /* emerald-700 — 5,4:1 sobre branco (o #059669 anterior media 3,77:1) */
-  --status-inuse-text:     #be123c; /* rose-700 — AA sobre o fundo TINTADO da tag (o #e11d48 media 4,01:1 no composto) */
+  --elevacao: 0 8px 24px rgba(15, 29, 87, 0.16);
 
-  --danger:        #dc2626;
-  --danger-hover:  #b91c1c;
-  --danger-text:   #dc2626; /* contraste AA sobre fundo claro */
-  --danger-bg:     rgba(220, 38, 38, 0.1);
-  --warning:       #d97706;
-  --warning-text:  #b45309;
-  --warning-bg:    rgba(217, 119, 6, 0.1);
-
-  /* Idioma ação→cor — pares AA sobre fundo claro */
   --action-withdraw-fg: #b45309;
   --action-withdraw-bg: rgba(217, 119, 6, 0.1);
   --action-return-fg:   #047857;
@@ -181,32 +192,20 @@
   --action-transfer-fg: #7e22ce;
   --action-transfer-bg: rgba(168, 85, 247, 0.12);
 
-  /* Chips de ícone de modal — pastéis sobre fundo claro */
-  --chip-green-bg:  var(--green-100);
-  --chip-green-fg:  var(--green-600);
-  --chip-blue-bg:   var(--blue-100);
-  --chip-blue-fg:   var(--blue-600);
+  --chip-green-bg:  rgba(16, 185, 129, 0.12);
+  --chip-green-fg:  #047857;
+  --chip-blue-bg:   rgba(30, 58, 156, 0.08);
+  --chip-blue-fg:   #1E3A9C;
   --chip-purple-bg: #f3e8ff;
   --chip-purple-fg: #7e22ce;
 }
 
-/* Força menus nativos a ficarem brancos no Windows/Chrome */
+/* Menus nativos (select) acompanham o tema — o Windows/Chrome os desenha à parte. */
 .light-mode select,
 .light-mode option {
-  background-color: #ffffff !important;
-  color: #0F1D57 !important;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
-
-/* Melhora contraste do botão desabilitado e texto no modo claro */
-.light-mode .btn-green:disabled,
-.light-mode .btn:disabled {
-  background: #f1f5f9 !important;
-  color: #64748b !important;
-  border-color: #cbd5e1 !important;
-}
-
-/* (.light-mode .status-* removidos: as tags usam tokens que já têm override
-   no bloco .light-mode acima — uma fonte de verdade por cor.) */
 
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -228,11 +227,13 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 /* font-size: inherit (TASK-132): sem ele, controle sem classe própria herdava o 13,33 px
    do navegador — o sexto tamanho, fora da escala, medido no Histórico e no desktop. */
 
-/* ── Scrollbar ─────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ── Superfícies do navegador: seleção, cursor, rolagem ─────── */
+::selection { background: var(--acao); color: var(--acao-texto); }
+input, textarea { caret-color: var(--acao); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-page); }
-::-webkit-scrollbar-thumb { background: var(--blue-600); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--green-500); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* No mobile, preferimos ocultar a customização forte do scroll */
 @media (max-width: 768px) {
@@ -277,128 +278,106 @@ small { font-size: var(--fs-2); }
 }
 
 /* ── Cards ────────────────────────────────────────────────── */
+/* Plano: separa por borda, não por sombra, e não reage ao hover — cartão não é botão. */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1.5rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
 
-/* ── Buttons ──────────────────────────────────────────────── */
+/* ── Buttons (TASK-133) ───────────────────────────────────────
+   Cor sólida, sem gradiente, sem brilho, sem subir no hover — o hover não existe no
+   toque, e o botão que se mexe parecia enfeite. O nome diz o PAPEL, não a cor:
+     .btn-principal  a ação da tela: azul de ação, 48 px — um por tela
+     .btn-secundario outras ações: contorno, 40 px
+     .btn-ghost      a mais discreta (cancelar, filtros)
+     .btn-perigo     o que apaga: vermelho — nunca o primeiro nem o maior da tela
+     .btn-sm         compacto de linha (o verbo ao lado de cada item): 40 px sempre */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  min-height: var(--btn-h);
+  padding: 0 1.125rem;
   border-radius: var(--radius-sm);
   font-size: var(--fs-2);
-  font-weight: 700;
-  font-family: var(--font-sistema), system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+  font-family: inherit;
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
   text-decoration: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -webkit-tap-highlight-color: transparent;
 }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.btn-green {
-  /* Gradiente na faixa green-500→600 da rampa: branco passa AA em toda a
-     superfície (o par anterior #5cb884→#23824d media 2,43:1 no canto claro). */
-  background: linear-gradient(135deg, var(--green-500), var(--green-600));
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(29, 128, 70, 0.25);
+.btn-principal {
+  min-height: var(--btn-h-principal);
+  padding: 0 1.5rem;
+  background: var(--acao);
+  color: var(--acao-texto);
+  font-size: var(--fs-3);
 }
-.btn-green:hover:not(:disabled) {
-  /* Lift and Glow (DESIGN.md): o hover sobe e ilumina a sombra — sem clarear
-     o fundo, que derrubaria o contraste do texto. */
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(29, 128, 70, 0.45);
-}
-.btn-green:active { transform: translateY(0); }
+.btn-principal:hover:not(:disabled) { background: var(--acao-hover); }
 
-.btn-blue {
-  background: var(--blue-700);
-  color: #fff;
-  border: 1px solid var(--green-500);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+.btn-secundario {
+  background: var(--bg-surface);
+  color: var(--acao);
+  border-color: var(--border-strong);
 }
-.btn-blue:hover:not(:disabled) {
-  background: var(--blue-600);
-  transform: translateY(-2px);
-  border-color: var(--green-300);
-}
+.btn-secundario:hover:not(:disabled) { background: var(--acao-bg); border-color: var(--acao); }
 
 .btn-ghost {
-  background: var(--bg-input);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
 }
-.btn-ghost:hover:not(:disabled) {
-  background: var(--bg-elevated);
-  border-color: var(--green-400);
-  color: var(--text-green);
-  transform: translateY(-1px);
-}
+.btn-ghost:hover:not(:disabled) { background: var(--bg-elevated); color: var(--text-primary); }
 
-.btn-danger {
-  background: var(--danger);
-  color: white;
-  border: 1px solid rgba(0,0,0,0.1);
+.btn-perigo {
+  background: var(--alerta);
+  color: var(--alerta-texto);
 }
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover);
-  box-shadow: 0 4px 12px var(--danger-bg);
-  transform: translateY(-2px);
-}
+.btn-perigo:hover:not(:disabled) { background: var(--alerta-hover); }
 
-.btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-2); }
-.btn-lg { padding: 1rem 2.5rem; font-size: var(--fs-3); }
-.btn-icon { padding: 0.5rem; width: 44px; height: 44px; }
+.btn-sm,
+.btn-principal.btn-sm { min-height: var(--btn-h); padding: 0 0.875rem; font-size: var(--fs-2); }
+.btn-lg { min-height: var(--btn-h-principal); padding: 0 1.75rem; font-size: var(--fs-3); }
+.btn-icon { padding: 0; width: var(--btn-h); height: var(--btn-h); }
 
 /* ── Inputs ───────────────────────────────────────────────── */
+/* Borda de campo com contraste de controle (≥ 3:1 com o fundo), não a borda de enfeite. */
 .input {
   width: 100%;
   background: var(--bg-input);
-  border: 2px solid var(--border-strong);
+  border: 1px solid var(--borda-campo);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-family: var(--font-sistema), system-ui, sans-serif;
+  font-family: inherit;
   font-size: var(--fs-3);
-  padding: 0.875rem 1rem;
+  padding: 0.625rem 0.875rem;
   min-height: 44px;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input::placeholder { color: var(--text-muted); }
 .input:focus {
-  border-color: var(--green-400);
-  box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15);
+  border-color: var(--acao);
+  box-shadow: 0 0 0 3px var(--acao-bg);
 }
 
-.light-mode .input {
-  color: #0f172a;
-  border-color: #cbd5e1;
-}
-
+/* Rótulo em caixa normal (TASK-133): as MAIÚSCULAS espaçadas eram o sotaque de template. */
 .input-label {
   display: block;
   font-size: var(--fs-2);
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.light-mode .input-label {
-  color: #475569;
+  margin-bottom: 0.375rem;
 }
 
 .input-group {
@@ -429,11 +408,9 @@ small { font-size: var(--fs-2); }
 .table thead th {
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.875rem 1.25rem;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
@@ -446,23 +423,9 @@ small { font-size: var(--fs-2); }
   transition: background 0.15s;
 }
 .table tbody tr:last-child { border-bottom: none; }
-.table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.table tbody tr:hover { background: var(--bg-elevated); }
 
-/* Overrides para Modo Claro */
-.light-mode .table thead th {
-  background: #f1f5f9;
-  color: #1e293b;
-  border-bottom: 2px solid #e2e8f0;
-}
-.light-mode .table tbody tr:hover {
-  background: #f8fafc;
-}
-.light-mode .table tbody td {
-  color: #0F1D57;
-}
-.light-mode .text-muted {
-  color: #64748b !important;
-}
+.text-muted { color: var(--text-muted); }
 
 .table tbody td {
   padding: 1rem 1.25rem;
@@ -470,44 +433,42 @@ small { font-size: var(--fs-2); }
   vertical-align: middle;
 }
 
-/* ── Status Tags ──────────────────────────────────────────── */
+/* ── Status Tags (TASK-133) ───────────────────────────────────
+   O estado é O dado do produto: palavra + cor + forma, em caixa normal. A marca
+   repete o quadro de chaves — ponto CHEIO = a chave está no gancho (livre); ANEL
+   VAZIO = o gancho está vazio (em uso). Quem não distingue cor lê pela forma. */
 .status-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.875rem;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem 0.125rem 0.5rem;
   border-radius: var(--radius-full);
-  /* Piso de legibilidade 12px — o estado da chave é O dado do produto e era
-     o menor texto da tela (10,4px), hostil à leitura "a 1 metro" (DESIGN.md). */
-  font-size: var(--fs-1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.2s ease;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
 }
-
 .status-tag::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
-/* Tokens + currentColor: cada tag deriva borda e "luz" do próprio texto,
-   e o par dark/light vem dos tokens — sem overrides .light-mode duplicados.
-   (Antes: #f43f5e literal a 3,73:1 no dark; o token --status-inuse-text passa AA.) */
-.status-tag::before,
-.status-tag { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
-.status-tag::before { border: none; background: currentColor; box-shadow: 0 0 8px currentColor; }
-
 .status-available {
-  background: var(--status-available-bg);
-  color: var(--status-available-text);
+  background: var(--livre-bg);
+  color: var(--livre-fg);
 }
 
 .status-inuse, .status-in_use {
-  background: var(--status-inuse-bg);
-  color: var(--status-inuse-text);
+  background: var(--em-uso-bg);
+  color: var(--em-uso-fg);
+}
+.status-inuse::before, .status-in_use::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px currentColor;
 }
 
 .status-transfer {
@@ -516,8 +477,8 @@ small { font-size: var(--fs-2); }
 }
 
 .status-pending {
-  background: var(--warning-bg);
-  color: var(--warning-text);
+  background: var(--pendente-bg);
+  color: var(--pendente-fg);
 }
 
 /* Ações de registro (Histórico): retirada=âmbar, devolução=verde —
@@ -593,11 +554,9 @@ small { font-size: var(--fs-2); }
 .dashboard-list-header {
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
-  font-size: var(--fs-1);
-  font-weight: 700;
+  font-size: var(--fs-2);
+  font-weight: 600;
   color: var(--text-secondary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 .dashboard-list-row {
   border-bottom: 1px solid var(--border);
@@ -619,17 +578,15 @@ small { font-size: var(--fs-2); }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: var(--fs-1);
-  font-weight: 700;
+  font-size: var(--fs-2);
+  font-weight: 600;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
 }
 .pending-inline-count {
-  background: var(--warning-bg);
-  color: var(--warning-text);
+  background: var(--pendente-bg);
+  color: var(--pendente-fg);
   border-radius: var(--radius-full);
   padding: 0 0.5rem;
   font-size: var(--fs-1);
@@ -652,15 +609,15 @@ small { font-size: var(--fs-2); }
   min-width: 0;
 }
 .pending-inline-key {
-  font-size: var(--fs-2);
-  font-weight: 700;
+  font-size: var(--fs-3);
+  font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .pending-inline-status {
-  font-size: var(--fs-1);
+  font-size: var(--fs-2);
   color: var(--text-secondary);
 }
 .pending-inline-actions {
@@ -686,60 +643,38 @@ small { font-size: var(--fs-2); }
   gap: 0.5rem;
 }
 .stat-chip-label {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 .stat-chip-value { font-size: var(--fs-4); font-weight: 700; }
 
 /* ── Rótulo de campo em modais/formulários ────────────────── */
 .field-label {
   display: block;
-  font-size: var(--fs-1);
-  color: var(--text-muted);
+  font-size: var(--fs-2);
+  color: var(--text-secondary);
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.375rem;
 }
 
 /* ── Linha de dica no topo de dropdowns ───────────────────── */
 .dropdown-hint {
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
   font-size: var(--fs-1);
+  font-weight: 600;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
 }
-
-/* ── Skeleton (carregamento) ──────────────────────────────────
-   Placeholder com shimmer no lugar de spinner central (registro de produto).
-   Reduced-motion: fica estático, sem animação. */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--bg-elevated) 25%,
-    color-mix(in srgb, var(--bg-elevated) 55%, var(--bg-card)) 50%,
-    var(--bg-elevated) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.4s ease infinite;
-  border-radius: var(--radius-sm);
-}
-@keyframes skeleton-shimmer {
-  to { background-position: -200% 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .skeleton { animation: none; }
-}
+/* (.skeleton saiu na TASK-133: sem uso desde a TASK-128/131 — as telas chegam com os
+   dados pelo servidor — e era o último gradiente do arquivo.) */
 
 /* ── Modal ──────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(6,14,42,0.85); /* blue-950 */
-  backdrop-filter: blur(4px);
+  background: var(--veu);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,12 +684,12 @@ small { font-size: var(--fs-2); }
 }
 .modal-box {
   background: var(--bg-card);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 2rem;
+  padding: 1.5rem;
   width: 90%;
   max-width: 480px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--elevacao);
   animation: slideUp 0.25s ease;
 }
 .modal-header {
@@ -805,8 +740,8 @@ small { font-size: var(--fs-2); }
   top: 0; left: 0;
   width: var(--sidebar-w);
   height: 100vh;
-  background: #0F172A; /* Fixado Dark Blue Suave (Slate 900) para maior conforto */
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   z-index: 100;
@@ -816,33 +751,29 @@ small { font-size: var(--fs-2); }
 }
 .sidebar-logo {
   padding: 1.25rem 1rem;
-  border-bottom: 1px solid rgba(29, 128, 70, 0.1);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 1rem;
 }
-.sidebar-logo img { 
-  width: 44px; 
-  height: 44px; 
-  object-fit: contain; 
+.sidebar-logo img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
   background-color: #ffffff;
   border-radius: var(--radius-sm);
   padding: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.sidebar-logo-text { font-size: var(--fs-2); font-weight: 700; color: var(--green-300); line-height: 1.3; }
+.sidebar-logo-text { font-size: var(--fs-2); font-weight: 700; color: var(--text-primary); line-height: 1.3; }
 
 .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; overflow-y: auto; }
 
 .nav-section-title {
   font-size: var(--fs-1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--blue-300);
+  font-weight: 600;
+  color: var(--text-muted);
   padding: 0 0.875rem;
-  margin: 1.75rem 0 0.5rem;
-  opacity: 0.8;
+  margin: 1.5rem 0 0.375rem;
 }
 .nav-section-title:first-child { margin-top: 0.5rem; }
 
@@ -855,41 +786,30 @@ small { font-size: var(--fs-2); }
   border-radius: var(--radius-sm);
   font-size: var(--fs-2);
   font-weight: 600; /* rótulo de navegação: semibold, não regular (TASK-132) */
-  color: #a8bbd8;
+  color: var(--text-secondary);
   cursor: pointer;
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s, color 0.15s;
   position: relative;
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.05);
-  color: #ffffff; /* Branco fixado */
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
+/* A tela em que se está: fundo de ação e texto de ação. Sem barra colorida na borda
+   (o sotaque de template) e sem brilho. */
 .nav-item.active,
 .nav-item:has(> .nav-pendente) {
-  background: rgba(29, 128, 70, 0.12);
-  color: var(--green-300); /* Verde fixado */
-  font-weight: 600;
+  background: var(--acao-bg);
+  color: var(--acao);
 }
-.nav-item.active::before,
-.nav-item:has(> .nav-pendente)::before {
-  content: '';
-  position: absolute;
-  left: 0; 
-  top: 0.75rem; 
-  bottom: 0.75rem;
-  width: 4px;
-  background: var(--green-400);
-  border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 8px rgba(29, 128, 70, 0.4);
-}
-.nav-icon { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.7; color: inherit; display: flex; align-items: center; justify-content: center; }
+.nav-icon { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.8; color: inherit; display: flex; align-items: center; justify-content: center; }
 .nav-item.active .nav-icon,
-.nav-item:has(> .nav-pendente) .nav-icon { opacity: 1; color: var(--green-300); }
+.nav-item:has(> .nav-pendente) .nav-icon { opacity: 1; color: var(--acao); }
 
 .sidebar-footer {
   padding: 1rem 0.75rem;
@@ -945,7 +865,6 @@ small { font-size: var(--fs-2); }
   padding: 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
 }
 /* (.control-divider removido — separava a busca da Ação Rápida; REQ-029a as unificou) */
 .control-actions {
@@ -957,8 +876,8 @@ small { font-size: var(--fs-2); }
   outline-offset: -1px;
 }
 .control-actions:focus-within {
-  outline: 1px solid var(--green-400);
-  box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15);
+  outline: 1px solid var(--acao);
+  box-shadow: 0 0 0 3px var(--acao-bg);
 }
 
 /* No mobile, a meta é digitar o mínimo possível: a Ação Rápida em 2 passos
@@ -988,8 +907,8 @@ small { font-size: var(--fs-2); }
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .mobile-touch-search:focus-within {
-    border-color: var(--green-400);
-    box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15);
+    border-color: var(--acao);
+    box-shadow: 0 0 0 3px var(--acao-bg);
   }
   .mobile-touch-search svg { flex-shrink: 0; color: var(--text-muted); }
   .mobile-touch-search input {
@@ -1026,73 +945,50 @@ small { font-size: var(--fs-2); }
     border-radius: var(--radius-full);
     color: var(--text-primary);
     font-size: var(--fs-2);
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
   }
+  /* A mesma marca da etiqueta de status: ponto cheio = livre, anel vazio = em uso. */
   .mobile-quick-chip::before {
     content: '';
-    width: 7px; height: 7px;
+    width: 8px; height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
   }
-  .mobile-quick-chip.is-available::before { background: var(--status-available-text); }
-  .mobile-quick-chip.is-inuse::before { background: var(--status-inuse-text); }
-  .mobile-quick-chip:active { background: var(--bg-elevated); border-color: var(--accent-primary); }
+  .mobile-quick-chip.is-available::before { background: var(--livre-fg); }
+  .mobile-quick-chip.is-inuse::before { box-shadow: inset 0 0 0 2px var(--em-uso-fg); }
+  .mobile-quick-chip:active { background: var(--bg-elevated); border-color: var(--acao); }
 }
 @media (min-width: 769px) {
   .mobile-touch-bar { display: none !important; }
 }
 
 /* ── Badges ─────────────────────────────────────────────────── */
+/* ── Badges de papel (TASK-133) ────────────────────────────────
+   O papel é identidade, não estado: a palavra já diz quem é. Seis cores de papel
+   disputavam com as quatro de estado (o âmbar do ALUNO era o âmbar de "pendente").
+   Agora é uma etiqueta neutra, em caixa normal, igual para todos. As classes por
+   papel (.badge-admin, .badge-aluno…) continuam no markup e não pintam nada. */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.625rem;
-  border-radius: 999px;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--radius-full);
   font-size: var(--fs-1);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
 }
-.badge-admin  { background: rgba(167,139,250,0.15); color: #a78bfa; }
-.badge-porteiro { background: rgba(96,165,250,0.15); color: #60a5fa; }
-.badge-user   { background: rgba(148,163,184,0.12); color: #94a3b8; }
-.badge-gestor { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; }
-/* FUNCIONARIO e ALUNO — os dois maiores grupos: eram classes referenciadas
-   no Sidebar e em /users mas nunca definidas (badge sem cor). */
-.badge-funcionario { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-.badge-aluno  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-
-/* Modo claro: os tons -300/-400 acima não passam AA sobre branco */
-.light-mode .badge-admin  { background: rgba(126, 34, 206, 0.1); color: #7e22ce; }
-.light-mode .badge-porteiro { background: rgba(29, 78, 216, 0.1); color: #1d4ed8; }
-.light-mode .badge-user   { background: rgba(71, 85, 105, 0.1); color: #475569; }
-.light-mode .badge-gestor { background: rgba(15, 118, 110, 0.1); color: #0f766e; }
-.light-mode .badge-funcionario { background: rgba(3, 105, 161, 0.1); color: #0369a1; }
-.light-mode .badge-aluno  { background: rgba(180, 83, 9, 0.1); color: #b45309; }
 
 /* ── Sidebar no modo claro (REQ-029d) ─────────────────────────
-   A sidebar acompanha o tema: superfície clara, texto institucional AA, acento
-   verde preservado no item ativo. Os badges usam as regras .light-mode .badge-*
-   acima (AA sobre claro) — sem override dark aqui. */
-.light-mode .sidebar {
-  background: #ffffff;
-  border-right: 1px solid rgba(15, 29, 87, 0.12);
-}
-.light-mode .sidebar .sidebar-logo { border-bottom-color: rgba(15, 29, 87, 0.1); }
-.light-mode .sidebar .sidebar-logo-text { color: var(--green-600); }        /* #125930 — 7,7:1 */
-.light-mode .sidebar .sidebar-logo-text div:last-child { color: var(--blue-700); }
-.light-mode .sidebar .nav-section-title { color: var(--blue-700); opacity: 1; } /* #1e3a9c — 8,3:1 */
-.light-mode .sidebar .nav-item { color: #334155; }                          /* slate-700 — 8,9:1 */
-.light-mode .sidebar .nav-item:hover { background: rgba(15, 29, 87, 0.06); color: var(--blue-900); }
+   Desde a TASK-133 a sidebar se pinta pelos tokens (--bg-surface, --text-secondary,
+   --acao), e o claro vem do bloco .light-mode — sem override por cor aqui. Fica só o
+   item ativo, explícito, porque a guarda da troca de tela (TASK-128) confere que o
+   item clicado se marca também no claro. */
 .light-mode .sidebar .nav-item.active,
-.light-mode .sidebar .nav-item:has(> .nav-pendente) { background: rgba(29, 128, 70, 0.12); color: var(--green-600); } /* 7,7:1 */
-.light-mode .sidebar .nav-item.active .nav-icon,
-.light-mode .sidebar .nav-item:has(> .nav-pendente) .nav-icon { color: var(--green-600); }
-.light-mode .sidebar .sidebar-footer { border-top-color: rgba(15, 29, 87, 0.1); }
-/* Dropdown do menu do usuário (bg inline escuro no TSX) → claro no light */
-.light-mode .sidebar-user-menu { background: #ffffff !important; border-color: rgba(15, 29, 87, 0.12) !important; }
+.light-mode .sidebar .nav-item:has(> .nav-pendente) { background: var(--acao-bg); color: var(--acao); }
 
 /* ── Action Row ─────────────────────────────────────────── */
 .action-row {
@@ -1107,7 +1003,7 @@ small { font-size: var(--fs-2); }
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-h);
-  background: var(--blue-900);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   align-items: center;
   justify-content: space-between;
@@ -1117,7 +1013,7 @@ small { font-size: var(--fs-2); }
 @media (max-width: 768px) {
   .mobile-topbar { display: flex; }
   .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+  .sidebar.open { transform: translateX(0); box-shadow: var(--elevacao); }
   .main-content { margin-left: 0; padding: calc(var(--navbar-h) + 1rem) 1rem 1rem 1rem; }
   .desktop-only { display: none !important; }
 }
@@ -1131,7 +1027,7 @@ small { font-size: var(--fs-2); }
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(6,14,42,0.7);
+  background: var(--veu);
   z-index: 99;
 }
 @media (max-width: 768px) {
@@ -1148,30 +1044,15 @@ small { font-size: var(--fs-2); }
   flex-direction: row;
   align-items: flex-start;
   gap: 1rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.15s, border-color 0.15s;
   cursor: pointer;
   position: relative;
-  overflow: hidden;
-  box-shadow: none;
 }
+/* (A faixa colorida de 4 px na borda esquerda saiu: o estado já está no ícone e na
+   etiqueta, e a faixa era o sotaque de template.) */
 
-.key-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 4px;
-  height: 100%;
-  opacity: 1;
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-  transition: opacity 0.3s;
-}
-
-.key-card.available::after { background: var(--status-available-text); }
-.key-card.inuse::after { background: var(--status-inuse-text); }
-.key-card.pending::after { background: var(--warning); }
-
-.key-card:hover { 
-  border-color: var(--border-strong); 
+.key-card:hover {
+  border-color: var(--border-strong);
   background: var(--bg-elevated);
 }
 
@@ -1179,16 +1060,16 @@ small { font-size: var(--fs-2); }
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
   flex-shrink: 0;
 }
-.key-card.pending .key-card-icon-wrapper { color: var(--warning); }
-.key-card.available .key-card-icon-wrapper { color: var(--status-available-text); }
-.key-card.inuse .key-card-icon-wrapper { color: var(--status-inuse-text); }
+.key-card.pending .key-card-icon-wrapper { color: var(--pendente-fg); }
+.key-card.available .key-card-icon-wrapper { color: var(--livre-fg); }
+.key-card.inuse .key-card-icon-wrapper { color: var(--em-uso-fg); }
 
 .key-card-content-wrapper {
   display: flex;
@@ -1206,7 +1087,7 @@ small { font-size: var(--fs-2); }
 
 .key-card-title {
   font-size: var(--fs-3);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   line-height: 1.2;
 }
@@ -1223,7 +1104,7 @@ small { font-size: var(--fs-2); }
 
 .key-card-user-info {
   font-size: var(--fs-2);
-  color: var(--blue-300);
+  color: var(--text-secondary);
   font-weight: 400;
   margin-top: 0.25rem;
   white-space: nowrap;
@@ -1254,18 +1135,12 @@ small { font-size: var(--fs-2); }
   border-color: var(--border-strong);
 }
 
-.light-mode .key-card-icon-wrapper {
-  background: rgba(0, 0, 0, 0.05);
-}
 
+/* Quem está com a chave: uma linha com a inicial, não uma caixa dentro do cartão. */
 .key-card-holder {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-md);
+  gap: 0.625rem;
   margin-top: 0.75rem;
 }
 
@@ -1273,22 +1148,15 @@ small { font-size: var(--fs-2); }
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: transparent;
-  /* Azul institucional para "pessoa" — One Voice Rule: o verde é reservado
-     a CTA/status positivo, não a decoração (e o green-400 media ~2,5:1 aqui). */
-  border: 1.5px solid var(--blue-400);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--fs-1);
   font-weight: 700;
-  color: var(--blue-300);
+  color: var(--text-secondary);
   flex-shrink: 0;
-}
-
-.light-mode .key-card-holder {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.06);
 }
 
 /* ── Form Groups ────────────────────────────────────────── */
@@ -1337,7 +1205,7 @@ small { font-size: var(--fs-2); }
   margin-top: 2rem;
 }
 .pagination button {
-  width: 36px; height: 36px;
+  width: var(--btn-h); height: var(--btn-h);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -1347,9 +1215,9 @@ small { font-size: var(--fs-2); }
   transition: all 0.15s;
 }
 .pagination button.active {
-  background: var(--green-500);
-  color: var(--blue-900);
-  border-color: var(--green-500);
+  background: var(--acao);
+  color: var(--acao-texto);
+  border-color: var(--acao);
   font-weight: 700;
 }
 .pagination button:hover:not(.active):not(:disabled) {
@@ -1367,13 +1235,13 @@ select.input {
   padding-right: 2.5rem;
   cursor: pointer;
 }
-select.input option { background: var(--blue-900); color: var(--text-primary); }
+select.input option { background: var(--bg-surface); color: var(--text-primary); }
 
 /* ── Spinner ────────────────────────────────────────────────── */
 .spinner {
   width: 20px; height: 20px;
   border: 2px solid var(--border);
-  border-top-color: var(--green-400);
+  border-top-color: var(--acao);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -1425,7 +1293,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 3px solid var(--accent-hover);
+  outline: 3px solid var(--acao);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -1446,8 +1314,7 @@ textarea:focus-visible,
   border-radius: var(--radius-sm);
   transition: color 0.15s, background 0.15s;
 }
-.icon-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.06); }
-.light-mode .icon-btn:hover { background: rgba(15,29,87,0.06); }
+.icon-btn:hover { color: var(--text-primary); background: var(--bg-elevated); }
 
 /* Leitores de tela: conteúdo visualmente oculto porém anunciado */
 .sr-only {
@@ -1474,8 +1341,8 @@ textarea:focus-visible,
   background: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-md);
-  padding: 0.4rem 0.625rem;
+  box-shadow: var(--elevacao);
+  padding: 0.375rem 0.625rem;
   border-radius: var(--radius-sm);
   font-size: var(--fs-1);
   font-weight: 600;
@@ -1517,7 +1384,6 @@ textarea:focus-visible,
     z-index: var(--z-bottom-nav);
     background: var(--bg-surface);
     border-top: 1px solid var(--border);
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.25);
     padding-bottom: var(--safe-bottom);
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
@@ -1532,10 +1398,9 @@ textarea:focus-visible,
     padding: 6px 4px;
     border: none;
     background: transparent;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: var(--fs-1); /* piso 12px (era 10px) */
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
@@ -1549,33 +1414,27 @@ textarea:focus-visible,
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .bottom-nav-item:active { color: var(--text-secondary); }
+  .bottom-nav-item:active { color: var(--text-primary); }
+  /* A aba em que se está: ícone numa pílula de ação, rótulo na cor de ação. Sem brilho. */
   .bottom-nav-item.active,
-  .bottom-nav-item:has(> .nav-pendente) { color: var(--accent-hover); }
-  .bottom-nav-item.active::before,
-  .bottom-nav-item:has(> .nav-pendente)::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 28px; height: 3px;
-    background: var(--accent-primary);
-    border-radius: 0 0 3px 3px;
-    box-shadow: 0 0 8px rgba(29,128,70,0.5);
-  }
+  .bottom-nav-item:has(> .nav-pendente) { color: var(--acao); }
+  .bottom-nav-item svg { border-radius: var(--radius-full); padding: 2px 14px; box-sizing: content-box; transition: background-color 0.15s; }
+  .bottom-nav-item.active svg,
+  .bottom-nav-item:has(> .nav-pendente) svg { background: var(--acao-bg); }
+  /* Pendências são âmbar, não alarme: vermelho é só atraso, erro e o que apaga. */
   .bottom-nav-badge {
     position: absolute;
-    top: 4px;
-    left: calc(50% + 8px);
-    min-width: 16px; height: 16px;
-    padding: 0 4px;
-    background: #ef4444;
-    color: #fff;
+    top: 2px;
+    left: calc(50% + 10px);
+    min-width: 18px; height: 18px;
+    padding: 0 5px;
+    background: var(--pendente);
+    color: var(--pendente-texto);
     font-size: var(--fs-1);
     font-weight: 700;
-    line-height: 16px;
-    border-radius: 999px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: var(--radius-full);
     box-shadow: 0 0 0 2px var(--bg-surface);
   }
 
@@ -1588,34 +1447,21 @@ textarea:focus-visible,
      O cabeçalho de colunas some (.dashboard-list-header) e cada célula
      com data-label exibe seu rótulo acima do valor (mesmo padrão que
      as tabelas .table-cards das outras telas, adaptado ao grid de divs). */
-  .dashboard-list-row { 
+  /* Plano, sem sombra, e sem a faixa colorida na borda (TASK-133) — o estado vai na
+     etiqueta. A linha vira plaqueta de verdade na TASK-134. */
+  .dashboard-list-row {
     background: var(--bg-surface) !important;
-    border: 1px solid var(--border-strong) !important;
+    border: 1px solid var(--border) !important;
     border-radius: var(--radius-md) !important;
-    box-shadow: var(--shadow-md) !important;
-    padding: 0.75rem !important; 
-    gap: 0.25rem !important; 
-    margin-bottom: 0.75rem !important;
+    padding: 0.75rem !important;
+    gap: 0.25rem !important;
+    margin-bottom: 0.5rem !important;
     position: relative;
   }
-  .dashboard-list-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: var(--border-strong);
-    border-top-left-radius: var(--radius-md);
-    border-bottom-left-radius: var(--radius-md);
-  }
-  .dashboard-list-row.row-available::before { background: var(--accent-primary); }
-  .dashboard-list-row.row-inuse::before { background: var(--danger); }
-  .dashboard-list-row.row-pending::before { background: var(--warning); }
-  .dashboard-list-row > div:first-child { 
-    font-size: var(--fs-4) !important; 
-    font-weight: 700 !important; 
-    color: var(--text-primary); 
+  .dashboard-list-row > div:first-child {
+    font-size: var(--fs-4) !important;
+    font-weight: 700 !important;
+    color: var(--text-primary);
     text-align: center !important;
     letter-spacing: -0.02em;
     margin-bottom: 0 !important;
@@ -1630,21 +1476,19 @@ textarea:focus-visible,
   .dashboard-list-row > div[data-label]::before {
     content: attr(data-label);
     font-size: var(--fs-1);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-weight: 600;
     color: var(--text-muted);
   }
-  .dashboard-list-row > div:last-child { 
-    width: 100%; 
+  .dashboard-list-row > div:last-child {
+    width: 100%;
     display: flex !important;
     justify-content: center !important;
     margin-top: 0.25rem;
     padding-top: 0.75rem !important;
   }
-  .dashboard-list-row > div:last-child .btn { 
-    width: auto !important; 
-    min-width: 140px; 
+  .dashboard-list-row > div:last-child .btn {
+    width: auto !important;
+    min-width: 140px;
   }
 
   /* ── Safe-area: topbar e drawer respeitam notch/home-bar ── */
@@ -1689,8 +1533,7 @@ textarea:focus-visible,
   height: 3px;
   z-index: 1000;
   pointer-events: none;
-  background: var(--accent-primary);
-  box-shadow: 0 0 8px rgba(40, 163, 92, 0.55);
+  background: var(--acao);
   transform-origin: left center;
   animation: barra-avanca 2.4s cubic-bezier(0.08, 0.7, 0.2, 1) 100ms both;
 }
@@ -1730,12 +1573,13 @@ textarea:focus-visible,
    Bloco ADITIVO: nada aqui altera o desktop (gate anti-regressão).
    ============================================================ */
 
-/* Topbar mobile: título e badge (classes usadas no Sidebar) */
+/* Topbar mobile: o nome da tela à esquerda, junto do menu; ajuda e tema à direita. */
 .mobile-topbar-brand {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+  flex: 1;
 }
 .mobile-topbar-title {
   font-size: var(--fs-3);
@@ -1745,14 +1589,9 @@ textarea:focus-visible,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.mobile-topbar-badge {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--green-300);
-  border: 1px solid rgba(29, 128, 70, 0.4);
-  border-radius: var(--radius-full);
-  padding: 0.1rem 0.5rem;
+.mobile-topbar-acoes {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -1767,10 +1606,37 @@ textarea:focus-visible,
      a barra rola sozinha, como o overflow-x: auto dela já pretendia. */
   .main-content { min-width: 0; }
 
-  /* Alvos de toque ≥ 44px (spec §6) */
+  /* Alvos de toque ≥ 44px (spec §6). O principal fica com os 48 dele: a regra de toque
+     vem depois e, sem a linha dele aqui, o encolheria para 44 (TASK-133). */
   .btn { min-height: var(--touch-target); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }
-  .btn-sm { min-height: var(--touch-target); }
+  .btn-sm,
+  .btn-principal.btn-sm { min-height: var(--touch-target); }
+  .btn-principal,
+  .btn-lg { min-height: var(--btn-h-principal); }
+
+  /* Nunca cartão dentro de cartão (TASK-133): no celular, o cartão que embrulhava a
+     página inteira (Chaves, Histórico, Logs) some — a página já é a superfície. */
+  .main-content > .card {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  /* A barra do topo já diz o nome da tela: o h1 sai da vista, recortado — continua
+     sendo o título da página para o leitor de tela. O subtítulo, que só descrevia,
+     sai junto: a busca e a lista sobem. */
+  .page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .page-subtitle { display: none; }
   .input { min-height: var(--touch-target); font-size: var(--fs-3); } /* 16px evita zoom automático no iOS */
   .form-input { min-height: var(--touch-target); font-size: var(--fs-3); } /* inputs das telas de conta (TASK-027) */
   .nav-item { min-height: var(--touch-target); }
@@ -1815,11 +1681,10 @@ textarea:focus-visible,
   .table-cards .table thead { display: none; }
   .table-cards .table tbody tr {
     background: var(--bg-surface);
-    border: 1px solid var(--border-strong);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    margin-bottom: 1rem;
-    padding: 1rem;
-    box-shadow: var(--shadow-md);
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 1rem;
   }
   .table-cards .table tbody td {
     display: flex;
@@ -1833,24 +1698,22 @@ textarea:focus-visible,
   .table-cards .table tbody td:last-child { border-bottom: none; padding-bottom: 0; }
   .table-cards .table tbody td::before {
     content: attr(data-label);
-    font-size: var(--fs-1);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-size: var(--fs-2);
+    font-weight: 600;
     color: var(--text-muted);
     text-align: left;
     flex-shrink: 0;
   }
   .table-cards .table tbody td[data-label=''],
   .table-cards .table tbody td:not([data-label])::before { content: none; }
-  
+
   .table-cards .table tbody td.td-actions,
-  .table-cards .table tbody td:last-child:has(.btn) { 
-    justify-content: flex-end; 
+  .table-cards .table tbody td:last-child:has(.btn) {
+    justify-content: flex-end;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 1rem;
-    border-top: 1px dashed var(--border);
+    margin-top: 0;
+    padding-top: 0.75rem;
+    /* A célula de cima já traz a linha de baixo: uma borda aqui dava linha dupla. */
   }
   .table-cards .table tbody td.td-actions .btn,
   .table-cards .table tbody td:last-child:has(.btn) .btn {
@@ -1913,7 +1776,7 @@ textarea:focus-visible,
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: var(--veu);
     z-index: 90;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -1927,10 +1790,8 @@ textarea:focus-visible,
     align-items: center;
     justify-content: space-between;
     background: var(--bg-surface);
+    /* Separada do conteúdo que rola por baixo por uma linha, não por sombra (TASK-133). */
     border-bottom: 1px solid var(--border);
-    /* Elevação tangível (mesma linguagem de cards/modais): a barra fixa
-       precisa se destacar do conteúdo que desliza por baixo dela ao rolar. */
-    box-shadow: var(--shadow-sm);
     /* height, padding, position, top e z-index são herdados da definição de safe-area acima */
   }
   .mobile-topbar-brand {
@@ -1945,14 +1806,6 @@ textarea:focus-visible,
     letter-spacing: -0.01em;
     animation: fadeIn 0.2s var(--ease-out-quart);
   }
-  .mobile-topbar-badge {
-    background: var(--accent-primary);
-    color: #fff;
-    font-size: var(--fs-1);
-    padding: 2px 6px;
-    border-radius: var(--radius-full);
-    font-weight: 700;
-  }
 
   /* ── Botões de ícone da topbar (menu + tema) ──
      Antes eram só estilo inline sem transition nem estado — os únicos dois
@@ -1960,7 +1813,7 @@ textarea:focus-visible,
   .mobile-topbar-icon-btn {
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1973,7 +1826,7 @@ textarea:focus-visible,
   }
   .mobile-topbar-icon-btn:hover { background: var(--bg-elevated); color: var(--text-primary); }
   .mobile-topbar-icon-btn:active { transform: scale(0.92); }
-  .mobile-topbar-icon-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+  .mobile-topbar-icon-btn:focus-visible { outline: 3px solid var(--acao); outline-offset: 2px; }
 
   /* Hamburger → X: comunica o estado do drawer em vez de ficar estático */
   .hamburger-icon .line {
@@ -2025,7 +1878,7 @@ textarea:focus-visible,
   -webkit-tap-highlight-color: transparent;
 }
 .touch-contact-item:active {
-  background: var(--bg-selection);
+  background: var(--acao-bg);
 }
 .touch-contact-avatar {
   width: 44px;
@@ -2043,14 +1896,13 @@ textarea:focus-visible,
 }
 .touch-contact-name {
   font-size: var(--fs-3);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   line-height: 1.2;
 }
 .touch-contact-role {
-  font-size: var(--fs-1);
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: var(--fs-2);
+  color: var(--text-secondary);
 }
 
 /* ── Status do backup (TASK-075) ──────────────────────────── */
@@ -2069,10 +1921,11 @@ textarea:focus-visible,
 }
 .bkp-status strong { color: var(--text-primary); font-weight: 700; }
 .bkp-status span { color: var(--text-muted); overflow-wrap: anywhere; }
-.bkp-status--bom { border-color: var(--green-400); background: var(--bg-selection); }
-.bkp-status--bom strong { color: var(--text-green); }
-.bkp-status--ruim { border-color: var(--danger); background: var(--danger-bg); }
-.bkp-status--ruim strong { color: var(--danger-text); }
-.bkp-status--alerta { border-color: var(--warning); background: var(--warning-bg); }
-.bkp-status--alerta strong { color: var(--warning-text); }
+/* O "alerta" do backup é o atraso que ainda não é falha: âmbar (pendente), não vermelho. */
+.bkp-status--bom { border-color: var(--livre-fg); background: var(--livre-bg); }
+.bkp-status--bom strong { color: var(--livre-fg); }
+.bkp-status--ruim { border-color: var(--alerta-fg); background: var(--alerta-bg); }
+.bkp-status--ruim strong { color: var(--alerta-fg); }
+.bkp-status--alerta { border-color: var(--pendente-fg); background: var(--pendente-bg); }
+.bkp-status--alerta strong { color: var(--pendente-fg); }
 
