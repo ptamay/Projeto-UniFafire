@@ -244,7 +244,7 @@ export default function SettingsClient({ userRole }: Props) {
                         de acesso agora e uma URL so, e ela nao vem de `os.networkInterfaces()`. */}
                     {/* System & Security Settings */}
                     <div className="card">
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h2 style={{ fontSize: 'var(--fs-3)', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             Sistema e Segurança
                         </h2>
@@ -252,7 +252,7 @@ export default function SettingsClient({ userRole }: Props) {
                             <div className="input-group">
                                 <label className="input-label">Horário de Logout Automático</label>
                                 <input className="input" type="time" value={autoLogoutTime} onChange={e => setAutoLogoutTime(e.target.value)} />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Horário em que o sistema força o logout de todos os usuários.</span>
+                                <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Horário em que o sistema força o logout de todos os usuários.</span>
                             </div>
                             {/* TASK-094 (ADR-017) — o campo "Senha Padrao de Reset" saiu, e
                                 NADA ocupou o lugar. Cheguei a por aqui um card explicando
@@ -277,7 +277,7 @@ export default function SettingsClient({ userRole }: Props) {
                     {/* Manual Backup - ONLY ADMIN */}
                     {userRole === 'ADMIN' && (
                     <div className="card">
-                        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <h2 style={{ fontSize: 'var(--fs-3)', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             Backup
                         </h2>
@@ -316,25 +316,25 @@ export default function SettingsClient({ userRole }: Props) {
                             if (loadingBkp) return <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}><div className="spinner" /></div>;
                             const ultimo = runs[0];
                             if (!ultimo) {
-                                return <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginTop: '1rem' }}>Nenhuma execução registrada ainda.</p>;
+                                return <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2)', marginTop: '1rem' }}>Nenhuma execução registrada ainda.</p>;
                             }
                             return (
                                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.75rem', marginTop: '1rem' }}>
                                     <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Último backup</div>
-                                        <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                        <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>Último backup</div>
+                                        <div style={{ fontSize: 'var(--fs-3)', fontWeight: 600, color: 'var(--text-primary)' }}>
                                             {formatTimestamp(ultimo.ranAt)}
                                             {ultimo.succeeded && ultimo.sizeBytes !== null && (
                                                 <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}> · {formatBytes(ultimo.sizeBytes)}</span>
                                             )}
                                         </div>
                                         {!ultimo.succeeded && (
-                                            <div style={{ fontSize: '0.8125rem', color: 'var(--danger-text)', overflowWrap: 'anywhere' }}>
+                                            <div style={{ fontSize: 'var(--fs-2)', color: 'var(--danger-text)', overflowWrap: 'anywhere' }}>
                                                 {ultimo.error || 'falhou sem mensagem registrada'}
                                             </div>
                                         )}
                                     </div>
-                                    <span style={{ flexShrink: 0, fontSize: '0.8125rem', fontWeight: 700, color: ultimo.succeeded ? 'var(--green-400)' : 'var(--danger-text)' }}>
+                                    <span style={{ flexShrink: 0, fontSize: 'var(--fs-2)', fontWeight: 700, color: ultimo.succeeded ? 'var(--green-400)' : 'var(--danger-text)' }}>
                                         {ultimo.succeeded ? 'verificado' : 'FALHOU'}
                                     </span>
                                 </div>
@@ -351,14 +351,14 @@ export default function SettingsClient({ userRole }: Props) {
                                     {pedindoBackup ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Fazer backup agora'}
                                 </button>
                                 {manual.pendente && manual.solicitacao && (
-                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>
                                         Pedido às {formatTimestamp(manual.solicitacao.em)} por {manual.solicitacao.por} — aguardando o
                                         GitHub, costuma levar poucos minutos.
                                     </span>
                                 )}
                             </div>
                         ) : (
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
                                 Backup manual pela tela ainda não configurado (runbook §6.3). Enquanto isso: GitHub → Actions →
                                 &quot;Backup diário verificado&quot; → Run workflow.
                             </p>
@@ -403,12 +403,12 @@ export default function SettingsClient({ userRole }: Props) {
                             a cada 3–5 h, e o backup das 03:00 saiu às 06:42 e às 07:47. O
                             portão nunca executa antes do horário e recupera o disparo
                             perdido — "a partir de" e "todo dia" são o que é verdade. */}
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
+                        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.75rem' }}>
                             Pelo GitHub Actions, a partir de <strong style={{ color: 'var(--text-secondary)' }}>{descreverHorarios(agenda)}</strong> (horário
                             de Recife). O GitHub não garante a hora e às vezes dispara horas depois — mas o backup sai todo dia. Cada dump é
                             verificado por restauração antes de ser guardado.
                         </p>
-                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
+                        <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
                             Ficam os backups dos últimos <strong style={{ color: 'var(--text-secondary)' }}>{agenda.dias} dias</strong>, contando
                             hoje. Os mais antigos são apagados do repositório privado a cada novo backup, inclusive do histórico — não há como
                             recuperá-los depois.
@@ -438,7 +438,7 @@ export default function SettingsClient({ userRole }: Props) {
                         background: 'var(--danger-bg, transparent)',
                     }}
                 >
-                    <h2 id="zona-perigo" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--danger-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <h2 id="zona-perigo" style={{ fontSize: 'var(--fs-3)', fontWeight: 700, color: 'var(--danger-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         Zona de Perigo
                     </h2>
@@ -449,8 +449,8 @@ export default function SettingsClient({ userRole }: Props) {
                     {restauracao?.configurado && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                             <div style={{ maxWidth: 520, minWidth: 0, flex: '1 1 18rem' }}>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Restaurar um backup</div>
-                                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                                <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>Restaurar um backup</div>
+                                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
                                     Volta chaves, usuários, movimentações e histórico ao estado de um backup verificado. Antes, sai um
                                     backup de segurança do estado atual. A trilha de auditoria e as configurações não mudam.
                                 </p>
@@ -468,16 +468,16 @@ export default function SettingsClient({ userRole }: Props) {
                                         </select>
                                     </div>
                                 ) : (
-                                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Nenhum backup restaurável ainda.</p>
+                                    <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Nenhum backup restaurável ainda.</p>
                                 )}
                                 {restauracao.ocultosPorSchema > 0 && (
-                                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
+                                    <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
                                         {restauracao.ocultosPorSchema === 1 ? '1 backup mais antigo não aparece' : `${restauracao.ocultosPorSchema} backups mais antigos não aparecem`}:
                                         {' '}são de antes da última mudança de schema e só se restauram pelo runbook (§6.5).
                                     </p>
                                 )}
                                 {restauracao.ultima && (
-                                    <p style={{ fontSize: '0.8125rem', color: restauracao.pendente ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem', overflowWrap: 'anywhere' }}>
+                                    <p style={{ fontSize: 'var(--fs-2)', color: restauracao.pendente ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem', overflowWrap: 'anywhere' }}>
                                         {restauracao.pendente
                                             ? <>Restauração pedida às {formatTimestamp(restauracao.ultima.em)} por {restauracao.ultima.por} — em andamento (primeiro o backup de segurança).</>
                                             : <>Última restauração: {RESULTADO_DA_RESTAURACAO[restauracao.ultima.acao] ?? restauracao.ultima.acao} em {formatTimestamp(restauracao.ultima.em)} por {restauracao.ultima.por}
@@ -496,8 +496,8 @@ export default function SettingsClient({ userRole }: Props) {
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                         <div style={{ maxWidth: 520 }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Banco de Dados</div>
-                            <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                            <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Banco de Dados</div>
+                            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
                                 Exclui chaves, funcionários, históricos e logs. Mantém usuários e configurações.{' '}
                                 <strong>Não há desfazer</strong> — a recuperação depende do backup diário.
                             </p>

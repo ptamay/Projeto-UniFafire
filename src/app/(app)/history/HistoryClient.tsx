@@ -238,7 +238,7 @@ export default function HistoryClient({
                                 print-color-adjust: exact !important;
                             }
                             table {
-                                font-size: 12px;
+                                font-size: var(--fs-1);
                                 width: 100%;
                                 border-collapse: collapse;
                             }
@@ -261,7 +261,7 @@ export default function HistoryClient({
                                         Limpar Histórico
                                     </button>
                                 )}
-                                <button className="btn btn-blue" onClick={handleExportPDF} disabled={gerandoPDF} style={{ fontSize: '0.9rem' }}>
+                                <button className="btn btn-blue" onClick={handleExportPDF} disabled={gerandoPDF} style={{ fontSize: 'var(--fs-3)' }}>
                                     {gerandoPDF ? 'Gerando…' : 'Exportar PDF'}
                                 </button>
                                 <PrintButton />
@@ -271,14 +271,14 @@ export default function HistoryClient({
                         {isPorteiroOrAdmin && bizMetrics && (
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
-                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
+                                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Dupla Confirmação</span>
+                                    <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--status-available-text)' : 'var(--text-primary)' }}>
                                         {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
                                     </span>
                                 </div>
                                 <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
-                                    <span style={{ fontSize: '1.125rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                    <span style={{ fontSize: 'var(--fs-1)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tempo de Balcão</span>
+                                    <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)' }}>
                                         {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
                                     </span>
                                 </div>
@@ -420,14 +420,14 @@ export default function HistoryClient({
                                         </td>
                                         <td data-label="Chave"><strong>{item.key_name}</strong> <small style={{ color: 'var(--text-muted)' }}>({item.room})</small></td>
                                         <td data-label="Funcionário">{item.employee_name || '-'}</td>
-                                        <td data-label="Justificativa" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.justification || '-'}</td>
+                                        <td data-label="Justificativa" style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>{item.justification || '-'}</td>
                                         <td data-label="Confirmado por">
                                             {item.confirmed_by ? (
-                                                <span className="badge badge-porteiro" style={{ fontSize: '0.7rem' }}>
+                                                <span className="badge badge-porteiro" style={{ fontSize: 'var(--fs-1)' }}>
                                                     {item.confirmed_by}
                                                 </span>
                                             ) : (
-                                                <span className="text-muted" style={{ fontSize: '0.75rem', fontStyle: 'italic' }}>Sistêmico</span>
+                                                <span className="text-muted" style={{ fontSize: 'var(--fs-1)', fontStyle: 'italic' }}>Sistêmico</span>
                                             )}
                                         </td>
                                     </tr>
@@ -451,7 +451,7 @@ export default function HistoryClient({
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             gap: '1rem', flexWrap: 'wrap', marginTop: '1rem',
                         }}>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>
                                 {totalRecords} {totalRecords === 1 ? 'movimentação' : 'movimentações'}
                                 {totalPages > 1 && ` · página ${currentPage} de ${totalPages}`}
                             </span>

@@ -67,7 +67,7 @@ describe('TASK-132 — nenhum tamanho ou peso fora da escala', () => {
             const linhas = semComentarioCss(fs.readFileSync(f, 'utf-8')).split('\n');
             linhas.forEach((linha, i) => {
                 const m = linha.match(/(?<![-\w])font-size:\s*([^;}]+)/);
-                if (m && !/^\s*(var\(--fs-[1-5]\)|inherit)\s*$/.test(m[1])) fora.push(`${rel(f)}:${i + 1} ${m[1].trim()}`);
+                if (m && !/^\s*(var\(--fs-[1-5]\)|inherit)\s*(!important)?\s*$/.test(m[1])) fora.push(`${rel(f)}:${i + 1} ${m[1].trim()}`);
             });
         }
         expect(fora, `tamanhos fora da escala:\n${fora.join('\n')}`).toEqual([]);
@@ -78,11 +78,43 @@ describe('TASK-132 — nenhum tamanho ou peso fora da escala', () => {
         for (const f of arquivos(SRC, /\.tsx$/)) {
             const fonte = fs.readFileSync(f, 'utf-8');
             for (const m of fonte.matchAll(/fontSize:\s*([^,}\n]+)/g)) {
-                if (!/^'var\(--fs-[1-5]\)'$/.test(m[1].trim())) fora.push(`${rel(f)} fontSize: ${m[1].trim()}`);
+                // Aceita condição (`a ? 'var(--fs-3)' : 'var(--fs-2)'`) desde que TODO valor
+                // que ela pode dar esteja na escala.
+                const valores = [...m[1].matchAll(/'([^']*)'|(\d+(?:\.\d+)?)/g)].map(v => v[1] ?? v[2]);
+                if (valores.length === 0 || !valores.every(v => /^var\(--fs-[1-5]\)$/.test(v))) {
+                    fora.push(`${rel(f)} fontSize: ${m[1].trim()}`);
+                }
             }
             for (const m of fonte.matchAll(/fontSize=\{?["'\d]/g)) fora.push(`${rel(f)} atributo ${m[0]}`);
         }
         expect(fora, `tamanhos inline fora da escala:\n${fora.join('\n')}`).toEqual([]);
+    });
+
+    it('o CSS embutido nos componentes (<style jsx>) também só usa a escala', () => {
+        // Ponto cego achado na verificação da TASK-132: o Histórico tinha um
+        // `font-size: 12px` dentro de um <style jsx> — CSS num template string do .tsx,
+        // que as varreduras acima (CSS de arquivo e `fontSize:` inline) não liam.
+        const fora: string[] = [];
+        for (const f of arquivos(SRC, /\.tsx$/)) {
+            const fonte = fs.readFileSync(f, 'utf-8');
+            for (const bloco of fonte.matchAll(/<style jsx[^>]*>\{`([\s\S]*?)`\}<\/style>/g)) {
+                for (const m of semComentarioCss(bloco[1]).matchAll(/(?<![-\w])font-(size|weight):\s*([^;}\n]+)/g)) {
+                    const valor = m[2].trim().replace(/\s*!important$/, '');
+                    const ok = m[1] === 'size'
+                        ? /^(var\(--fs-[1-5]\)|inherit)$/.test(valor)
+                        : /^(var\(--fw-(regular|semibold|bold)\)|inherit|400|600|700)$/.test(valor);
+                    if (!ok) fora.push(`${rel(f)} <style jsx> font-${m[1]}: ${valor}`);
+                }
+            }
+        }
+        expect(fora, `CSS embutido fora da escala:\n${fora.join('\n')}`).toEqual([]);
+    });
+
+    it('elementos que o navegador encolhe sozinho (<small>) têm tamanho na escala', () => {
+        // O <small> sai a 83% do pai por padrão: sob texto de 16 px, 13,33 px — um sexto
+        // tamanho, medido no Histórico. A regra de base o põe num degrau.
+        const css = semComentarioCss(fs.readFileSync(path.join(SRC, 'app/globals.css'), 'utf-8'));
+        expect(css).toMatch(/(^|[\s,}])small\s*\{[^}]*font-size:\s*var\(--fs-[1-5]\)/);
     });
 
     it('todo peso de fonte é 400, 600 ou 700 (ou o token)', () => {
@@ -90,15 +122,18 @@ describe('TASK-132 — nenhum tamanho ou peso fora da escala', () => {
         for (const f of arquivos(SRC, /\.css$/)) {
             semComentarioCss(fs.readFileSync(f, 'utf-8')).split('\n').forEach((linha, i) => {
                 const m = linha.match(/(?<![-\w])font-weight:\s*([^;}]+)/);
-                if (m && !/^\s*(var\(--fw-(regular|semibold|bold)\)|inherit|400|600|700)\s*$/.test(m[1])) {
+                if (m && !/^\s*(var\(--fw-(regular|semibold|bold)\)|inherit|400|600|700)\s*(!important)?\s*$/.test(m[1])) {
                     fora.push(`${rel(f)}:${i + 1} ${m[1].trim()}`);
                 }
             });
         }
         for (const f of arquivos(SRC, /\.tsx$/)) {
             for (const m of fs.readFileSync(f, 'utf-8').matchAll(/fontWeight:\s*([^,}\n]+)/g)) {
-                const v = m[1].trim().replace(/^'|'$/g, '');
-                if (!PESOS.includes(v) && !/^var\(--fw-(regular|semibold|bold)\)$/.test(v)) fora.push(`${rel(f)} fontWeight: ${v}`);
+                // Mesma regra de condição do fontSize: todo valor possível na escala.
+                const valores = [...m[1].matchAll(/'([^']*)'|(\d+)/g)].map(v => v[1] ?? v[2]);
+                const ok = valores.length > 0
+                    && valores.every(v => PESOS.includes(v) || /^var\(--fw-(regular|semibold|bold)\)$/.test(v));
+                if (!ok) fora.push(`${rel(f)} fontWeight: ${m[1].trim()}`);
             }
         }
         expect(fora, `pesos fora da escala:\n${fora.join('\n')}`).toEqual([]);

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import './login.css';
 
@@ -13,13 +13,9 @@ export default function LoginPage() {
     const [showPass, setShowPass] = useState(false);
     const [showForgotPopup, setShowForgotPopup] = useState(false);
 
-    // Respeita o tema salvo (dark-first, PRODUCT.md): mesmo mecanismo do Sidebar.
-    // Antes o cartão forçava light-mode — a tela mais brilhante do balcão às 22h.
-    useEffect(() => {
-        if (localStorage.getItem('theme') === 'light') {
-            document.documentElement.classList.add('light-mode');
-        }
-    }, []);
+    // O tema do login é o do resto do sistema: quem o aplica é o SCRIPT_TEMA do <head>
+    // (TASK-132) — segue o aparelho, a escolha salva vence. Antes este efeito só ligava
+    // o claro se ele estivesse salvo, e o escuro vencia sempre na primeira visita.
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -89,7 +85,7 @@ export default function LoginPage() {
                             <div className="login-divider" style={{ marginTop: '-1rem' }}>
                                 <span>Criar Nova Senha</span>
                             </div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', marginBottom: '0.5rem' }}>
+                            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2)', textAlign: 'center', marginBottom: '0.5rem' }}>
                                 {/* TASK-093: nao ha mais "senha padrao do sistema" — o
                                     que se digitou foi um codigo de uso unico, e ele
                                     acaba de ser consumido. Manter o texto antigo seria
@@ -219,7 +215,7 @@ export default function LoginPage() {
                                 type="button"
                                 className="btn-link"
                                 onClick={() => setShowForgotPopup(true)}
-                                style={{ background: 'none', border: 'none', color: 'var(--green-500)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                                style={{ background: 'none', border: 'none', color: 'var(--green-500)', fontSize: 'var(--fs-2)', cursor: 'pointer', textDecoration: 'underline' }}
                             >
                                 Esqueci minha senha
                             </button>
@@ -236,7 +232,7 @@ export default function LoginPage() {
                         <div className="modal-header">
                             <h3 className="modal-title">Recuperação de Acesso</h3>
                         </div>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-3)', lineHeight: 1.5 }}>
                             Para garantir a segurança do sistema institucional, a recuperação de senhas é realizada diretamente pelo setor de Administração.
                             <br /><br />
                             Por favor, <strong>entre em contato com um Administrador ou Gestor</strong> para que sua senha seja redefinida no painel de controle.

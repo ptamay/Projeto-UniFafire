@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Tutorial from './Tutorial';
 import IndicadorDeNavegacao from './IndicadorDeNavegacao';
+import { temaAtual, aplicarTema } from '@/lib/tema';
 
 // TASK-111 (ADR-025) — o estado do tempo real, dito em poucas palavras.
 //
@@ -108,14 +109,11 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
     const closeMobile = () => setMobileOpen(false);
 
     useEffect(() => {
-        // Sincronização única com localStorage (estado externo) na montagem —
-        // intencional para evitar mismatch de hidratação SSR (tema só existe no cliente).
-        const savedTheme = localStorage.getItem('theme') as 'dark' | 'light' | null;
-        if (savedTheme) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setTheme(savedTheme);
-            if (savedTheme === 'light') document.documentElement.classList.add('light-mode');
-        }
+        // Sincronização única com o documento (estado externo) na montagem — intencional
+        // para evitar mismatch de hidratação SSR. Quem DECIDE o tema é o SCRIPT_TEMA do
+        // <head> (TASK-132): segue o aparelho, a escolha salva vence. Aqui só se lê.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTheme(temaAtual());
         const savedCollapse = localStorage.getItem('sidebar-collapsed') === 'true';
         setIsCollapsed(savedCollapse);
         if (savedCollapse) document.documentElement.classList.add('sidebar-collapsed');
@@ -125,12 +123,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
     const toggleTheme = () => {
         const newTheme = theme === 'dark' ? 'light' : 'dark';
         setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        if (newTheme === 'light') {
-            document.documentElement.classList.add('light-mode');
-        } else {
-            document.documentElement.classList.remove('light-mode');
-        }
+        aplicarTema(newTheme);
     };
 
     const toggleCollapse = () => {
@@ -301,8 +294,8 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flex: 1, overflow: 'hidden' }}>
                             <Image src="/logo/unifafire_logo.png" alt="UniFAFIRE" width={44} height={44} style={{ objectFit: 'contain', flexShrink: 0 }} />
                             <div className="sidebar-logo-text">
-                                <div style={{ whiteSpace: 'nowrap', fontWeight: 800, letterSpacing: '-0.01em' }}>Sistema de</div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--green-200)', whiteSpace: 'nowrap', marginTop: '2px', opacity: 0.8 }}>Gestão de Chaves</div>
+                                <div style={{ whiteSpace: 'nowrap', fontWeight: 700, letterSpacing: '-0.01em' }}>Sistema de</div>
+                                <div style={{ fontSize: 'var(--fs-1)', color: 'var(--green-200)', whiteSpace: 'nowrap', marginTop: '2px', opacity: 0.8 }}>Gestão de Chaves</div>
                             </div>
                         </div>
                     )}
@@ -352,7 +345,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                         <span className="nav-item-text" style={{ marginLeft: '0.125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
                                             {item.label}
                                             {item.href === '/confirm' && pendingCount > 0 && !isCollapsed && (
-                                                <span style={{ background: 'var(--danger)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
+                                                <span style={{ background: 'var(--danger)', color: '#fff', fontSize: 'var(--fs-1)', fontWeight: 700, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
                                                     {pendingCount}
                                                 </span>
                                             )}
@@ -377,7 +370,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                             display: 'flex', alignItems: 'center', gap: '0.5rem',
                             justifyContent: isCollapsed ? 'center' : 'flex-start',
                             padding: '0 0.875rem', marginBottom: '0.5rem',
-                            fontSize: '0.8125rem', color: 'var(--text-muted)', cursor: 'default',
+                            fontSize: 'var(--fs-2)', color: 'var(--text-muted)', cursor: 'default',
                         }}
                     >
                         <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: sinal.cor, flexShrink: 0 }} />
@@ -425,12 +418,12 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                 justifyContent: isCollapsed ? 'center' : 'flex-start', cursor: 'pointer', border: 'none', textAlign: 'left'
                             }}
                         >
-                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--green-600), var(--green-300))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--green-600), var(--green-300))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
                                 {username?.[0]?.toUpperCase() || 'U'}
                             </div>
                             {!isCollapsed && (
                                 <div style={{ flex: 1, minWidth: 0 }} className="user-info-text">
-                                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
+                                    <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
                                     <span className={`badge ${roleBadge}`} style={{ marginTop: '2px', display: 'inline-flex' }}>{roleLabel}</span>
                                 </div>
                             )}
@@ -456,18 +449,18 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                             }}>
                                 <Link href="/account/profile" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="user" size={16} /></span>
-                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Meu Perfil</span>
+                                    <span className="nav-item-text" style={{ fontSize: 'var(--fs-2)' }}>Meu Perfil</span>
                                     <IndicadorDeNavegacao />
                                 </Link>
                                 <Link href="/account/security" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="shield" size={16} /></span>
-                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
+                                    <span className="nav-item-text" style={{ fontSize: 'var(--fs-2)' }}>Segurança</span>
                                     <IndicadorDeNavegacao />
                                 </Link>
                                 <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
                                 <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
                                     <span className="nav-icon"><Icon name="log-out" size={16} /></span>
-                                    <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Sair</span>
+                                    <span className="nav-item-text" style={{ fontSize: 'var(--fs-2)' }}>Sair</span>
                                 </button>
                             </div>
                         )}

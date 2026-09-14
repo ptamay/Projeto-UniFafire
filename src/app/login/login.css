@@ -49,14 +49,14 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: block; 
 }
-.login-subtitle { font-size: 0.875rem; color: var(--text-muted); letter-spacing: 0.02em; }
+.login-subtitle { font-size: var(--fs-2); color: var(--text-muted); letter-spacing: 0.02em; }
 .login-divider {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.75rem;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: var(--fs-1);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 600;
@@ -71,7 +71,7 @@
     background: var(--status-inuse-bg);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    color: var(--text-primary); font-size: 0.875rem;
+    color: var(--text-primary); font-size: var(--fs-2);
 }
 .input-icon-wrap { position: relative; }
 .input-icon {
@@ -91,7 +91,7 @@
 .input-action-btn:hover { color: var(--accent-primary); }
 .login-submit { width: 100%; margin-top: 0.25rem; min-height: 48px; }
 .login-footer-text {
-    text-align: center; font-size: 0.75rem;
+    text-align: center; font-size: var(--fs-1);
     color: var(--text-muted); margin-top: 1.5rem; letter-spacing: 0.03em;
 }
 /* TASK-024 (REQ-016): mobile-first — 100dvh acomoda o teclado virtual

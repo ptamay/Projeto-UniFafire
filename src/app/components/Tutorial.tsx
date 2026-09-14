@@ -127,7 +127,7 @@ export default function Tutorial({ papel, abrirAoMontar = false, aberto, aoFecha
                 style={{ maxWidth: 460 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
                         Passo {passo + 1} de {passos.length}
                     </span>
                     <button
@@ -135,16 +135,16 @@ export default function Tutorial({ papel, abrirAoMontar = false, aberto, aoFecha
                         onClick={fechar}
                         className="btn-icon"
                         aria-label="Fechar tutorial"
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600 }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 'var(--fs-2)', fontWeight: 600 }}
                     >
                         Pular
                     </button>
                 </div>
 
-                <h2 id="tutorial-titulo" style={{ fontSize: '1.125rem', fontWeight: 700, lineHeight: 1.2, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                <h2 id="tutorial-titulo" style={{ fontSize: 'var(--fs-4)', fontWeight: 700, lineHeight: 1.2, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                     {atual.titulo}
                 </h2>
-                <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: 'var(--fs-3)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
                     {atual.texto.split('**').map((parte, i) =>
                         i % 2 === 1 ? <strong key={i} style={{ color: 'var(--text-primary)' }}>{parte}</strong> : parte,
                     )}
