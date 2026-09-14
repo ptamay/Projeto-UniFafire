@@ -101,6 +101,22 @@
   4 px em ~200 ms; `prefers-reduced-motion` desliga. `prefetch={false}` continua. O "Cadastrar
   chave" do Dashboard vira link. Guardas no lugar das da TASK-096 que exigiam `loading.tsx`; E2E
   nova com resposta atrasada, desktop e celular. Custo aceito: F5 sem esqueleto.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-128-troca-suave`). Guardas: 9 cenários em
+  `tests/troca-de-tela-suave.test.ts`, vermelho conferido um a um (o de "transform residual" nascia
+  vazio e foi endurecido). E2E `tests/e2e/transicao-suave.spec.ts` com `?_rsc=` segurada 1,5 s e
+  TODOS os quadros gravados por `requestAnimationFrame`: no build de produção local, 5 ok / 1
+  pulado — tela anterior visível em todos os quadros da espera, zero esqueleto, zero quadro em
+  branco, item marcado, barra, fade. **Contra a `main` o mesmo spec reprova**: esqueleto em 15 e 18
+  quadros, item nunca marcado, e o de movimento reduzido (endurecido para conferir `entrar-tela`
+  antes de `none` — passava vazio). Achado da sessão da TASK-130, confirmado: na `main`, Perfil →
+  Segurança tinha ~25 quadros SEM `main` (branco); agora zero. `.animate-fade` de seis telas perde
+  para a entrada nova (mesma especificidade, regra depois).
+  ⚠️ **AINDA HÁ CINZA EM TRÊS TELAS, e não é da navegação:** Confirmações, Logs e Usuários buscam os
+  dados NO NAVEGADOR depois de abrir (`useState(true)` + `fetch` no efeito) — Confirmações com
+  cartões `.skeleton` (é a PRIMEIRA captura do relato), Logs e Usuários com "Carregando…". A tela
+  chega suave e então pisca por dentro. Resolver = entregar os dados iniciais pelo servidor, com a
+  autorização por papel na página (§3.2, guarda TASK-090) e a consulta extraída da rota de API.
+  Decisão do usuário; candidata a TASK-131.
 
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e

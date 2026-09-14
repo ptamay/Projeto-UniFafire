@@ -264,6 +264,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   demais"). TASK-128: saem os `loading.tsx`; a tela atual espera, item clicado marcado + barra no
   topo (`useLinkStatus`), tela nova com fade de ~200 ms; reduced-motion sem animação. Números
   reservados entre sessões: ADR-030/TASK-129 = PWA (sw.js 404), TASK-130 = E2E do menu nas 9 telas.
+  ✅ #87 (CR) aberto. ✅ **TASK-128 FEITA** (branch `feat/task-128-troca-suave`): E2E com `?_rsc=`
+  segurada e todos os quadros gravados — 5 ok no build de produção, REPROVA contra a `main`.
+  ⚠️ Confirmações, Logs e Usuários ainda piscam POR DENTRO (buscam dados no navegador depois de
+  abrir) — decisão do usuário, candidata a TASK-131 (dados iniciais pelo servidor, §3.2).
 - ⚠️ **O CHECKOUT PRINCIPAL PODE ESTAR COM OUTRA SESSÃO** (em 14/09, a TASK-124 rodava lá, com
   arquivos alterados). `git switch` ali leva a branch dela junto. Trabalho paralelo vai numa worktree.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
