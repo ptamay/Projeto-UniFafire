@@ -317,6 +317,21 @@
   > existe no repositório (ou com a janela de retenção). E o backup de segurança grava no mesmo
   > repositório: usar o mesmo `concurrency` do backup e o `db/enviar-backup.mjs` (o lease já
   > protege, e o cenário BDD 7 da 113 foi escrito pensando nela).
+- ✅ **TASK-115 NO AR** (#75 merged, `39c65ee`): `202609131200` aplicada pelo usuário no editor
+  (registro com 13 linhas, checksum `6e22a7f8…`), `pos-deploy` verde, health 200. O CI pegou, antes
+  do merge, uma promessa de prazo sem medida no aviso da restauração ("alguns minutos") — a guarda
+  da TASK-123 reprovou; trocado por "quando terminar". Localmente eu só tinha rodado os testes da
+  restauração.
+- ✅ **TASK-116 FEITA em 2026-09-13** (branch `feat/task-116-emenda-3-5-4-4`) — **o ADR-024 fecha em
+  código.** §3.5 cita `/api/backups/restaurar` (no lugar do "restore de backup" sem rota) e o fluxo
+  real; §4.4 nomeia a restauração como a ÚNICA reversão em massa, inteira, e mantém a proibição de
+  editar transação individual. Guarda no molde das TASK-104/108, que também confere o código
+  (backup de segurança antes da troca; trilha fora da lista do que volta).
+  > ⚠️ **Achado, fora do escopo:** a §3.5 diz "entrada IMUTÁVEL no log de auditoria", e
+  > `action_logs` NÃO é imutável — não tem gatilho (só `history` e `backup_runs` têm), e o próprio
+  > "Limpar Banco" a esvazia com TRUNCATE. A cláusula afirma uma propriedade que o banco não tem.
+  > Não mexi no texto (a emenda era da restauração); é candidata a CR próprio: gatilho de
+  > imutabilidade em `action_logs`, ou a cláusula dizer o que é verdade.
 - **TASK-116 → emenda da §3.5 e da §4.4** — só depois de 112–115 no ar.
 
 ### API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023) ✅ FECHADO em 2026-09-10
