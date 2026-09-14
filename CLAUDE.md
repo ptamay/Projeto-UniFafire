@@ -230,8 +230,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   DELETE recusados em `action_logs`/`audit_logs`, TRUNCATE recusado nas cinco tabelas da trilha
   (inclusive por CASCADE), bypass = modo de manutenção; `load-pg --truncate` numa transação com o
   modo. Roteiro ensaiado. 🔴 **Aplicar o roteiro no editor ANTES do merge** (senão health 503).
-  ⚠️ A suíte local acusa `higiene-de-carga` por um `@vercel/speed-insights` NÃO commitado no
-  working tree (outra sessão, worktree `medicao-desempenho`) — não é da TASK-124 e o CI não vê.
+  ✅ #80 merged. (A queixa da `higiene-de-carga` com o `@vercel/speed-insights` não commitado no
+  checkout principal some com o #81: o pacote entra junto com o importador.)
 - Próxima Ação: roteiro da 124 em produção → merge → TASK-125 (menu no layout). Do usuário: token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -241,6 +241,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   painel da Vercel e instalou `@vercel/speed-insights` 2.0.0. TASK-126: componente próprio no layout
   raiz, só com `VERCEL=1`, URL sem query string. ⚠️ O proxy RODA em `/_vercel/*` quando o recurso não
   está ativo (`/_vercel/insights/` → 307, medido); o caminho aleatório da v2 só se verifica no deploy.
+  ✅ #79 (CR) e #81 (TASK-126) mesclados em 2026-09-14, CI verde (vitest 771/82, E2E 32/2). ⚠️ Preview protegido pelo SSO
+  da Vercel → verificar em PRODUÇÃO depois do merge, no `/login`: script 200, envio 2xx, sem 307.
+- ⚠️ **O CHECKOUT PRINCIPAL PODE ESTAR COM OUTRA SESSÃO** (em 14/09, a TASK-124 rodava lá, com
+  arquivos alterados). `git switch` ali leva a branch dela junto. Trabalho paralelo vai numa worktree.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import MedicaoDeDesempenho from "./components/MedicaoDeDesempenho";
+import { deveMedirDesempenho } from "@/lib/medicao-desempenho";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -46,6 +48,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         error:   { iconTheme: { primary: '#f87171', secondary: '#0f1d57' } },
                     }}
                 />
+                {/* Desempenho no navegador, só num deploy da Vercel (ADR-028). */}
+                {deveMedirDesempenho(process.env) && <MedicaoDeDesempenho />}
             </body>
         </html>
     );
