@@ -22,7 +22,6 @@ import path from 'path';
 const RAIZ = process.cwd();
 const SRC = path.join(RAIZ, 'src');
 const API = path.join(SRC, 'app', 'api');
-const METODOS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 function arquivos(dir: string): string[] {
     const saida: string[] = [];

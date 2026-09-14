@@ -88,7 +88,10 @@ export default function HistoryClient({
 
     const handleClearHistory = async () => {
         try {
-            const res = await fetch('/api/history/clear', { method: 'POST' });
+            // TASK-127: DELETE, como a rota e o contrato de API dizem. Era POST, e a rota só
+            // exporta DELETE desde 2026-05-21 — 405 e "Erro ao limpar histórico." por quatro
+            // meses. `tests/fetch-contrato.test.ts` confere toda chamada das telas.
+            const res = await fetch('/api/history/clear', { method: 'DELETE' });
             if (res.ok) {
                 setShowClearConfirm(false);
                 router.refresh();
