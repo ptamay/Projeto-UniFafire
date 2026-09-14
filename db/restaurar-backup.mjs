@@ -236,6 +236,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === ESTE) {
         if (e instanceof RestauracaoRecusada) {
             await registrarNaTrilha(prod, { acao: ACOES.recusada, pedidoPor, detalhes: `${String(arquivo).slice(0, 80)}; ${msg}` })
                 .catch(() => {});
+            // Para o `$GITHUB_OUTPUT`: a recusa já está na trilha, e o passo de falha do
+            // workflow não a registra de novo como RESTAURACAO_FALHOU.
+            process.stdout.write('recusada=true\n');
         }
     } finally {
         await prod.end().catch(() => {});
