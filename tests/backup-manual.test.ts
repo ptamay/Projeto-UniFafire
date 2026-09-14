@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { execute, queryOne, withTransaction } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-114 (CR Tipo D · ADR-024, decisão 3) — backup manual pela tela.
 //
@@ -75,7 +76,7 @@ beforeEach(async () => {
     await limparBackupRuns();
     // `action_logs` só é zerada por arquivo (tests/setup.ts). Sem isto, o pedido de um
     // cenário deixaria o seguinte "pendente" — e recusado com 409 por motivo alheio.
-    await execute(`DELETE FROM action_logs WHERE action LIKE 'BACKUP_MANUAL_%'`);
+    await withMaintenanceMode(tx => tx.execute(`DELETE FROM action_logs WHERE action LIKE 'BACKUP_MANUAL_%'`));
     vi.stubEnv('BACKUP_DISPARO_TOKEN', TOKEN);
     vi.stubEnv('BACKUP_DISPARO_REPO', REPO);
 });

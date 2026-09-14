@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { query, queryOne, execute } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 import { signSession, verifySession } from '@/lib/session';
 import { checkRateLimit, recordLoginAttempt, clearLoginAttempts } from '@/lib/security-profile';
 import { logAction } from '@/lib/logger';
@@ -39,7 +40,7 @@ import { computeBusinessMetrics } from '@/lib/business-metrics';
 // EXECUÇÃO, não de diretório. O plano as desenhou por pasta.
 
 beforeEach(async () => {
-    await execute('TRUNCATE login_attempts, rate_limit_hits, action_logs, key_transactions RESTART IDENTITY CASCADE');
+    await withMaintenanceMode(tx => tx.execute('TRUNCATE login_attempts, rate_limit_hits, action_logs, key_transactions RESTART IDENTITY CASCADE'));
 });
 
 describe('TASK-069(a) — security-profile grava no Postgres', () => {

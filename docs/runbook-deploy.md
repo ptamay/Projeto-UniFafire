@@ -733,7 +733,8 @@ volta indisponível sem avisar ninguém.
 | Backup falhando | §6.4 para ver o erro registrado; depois a execução do job em Actions. Token expirado é a causa mais comum |
 | Nenhuma execução registrada | O job nunca rodou: §6.1 |
 | Login recusa senha correta logo após rodar a suíte de testes | Ambiente de desenvolvimento: a suíte dá `TRUNCATE` no mesmo banco. Não é defeito de autenticação. Rode `node db/bootstrap-admin.mjs` de novo |
-| Operação destrutiva contestada | Trilha em `/logs` (tela de Logs, perfil ADMIN) e tabela `app_logs`, que é imutável por trigger |
+| Operação destrutiva contestada | Trilha em `/logs` (tela de Logs, perfil ADMIN) e tabela `app_logs`. As duas são imutáveis por gatilho — `action_logs` desde a TASK-124 (ADR-026); antes dela, a tela de Logs podia ser reescrita e só o `app_logs` valia como prova |
+| `… é imutável — UPDATE/DELETE bloqueado` ou `… é trilha de auditoria — TRUNCATE bloqueado` | É o controle funcionando, não defeito (ADR-026). As cinco tabelas da trilha (`history`, `action_logs`, `audit_logs`, `app_logs`, `backup_runs`) só mudam no modo de manutenção, dentro de uma transação: `SELECT set_config('app.maintenance_mode', 'on', true)` antes da instrução — o que o Limpar Banco, a restauração e o `db/load-pg.mjs --truncate` já fazem. Fora desses fluxos, a pergunta certa é por que alguém quer apagar a trilha |
 
 ---
 
