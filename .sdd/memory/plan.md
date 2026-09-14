@@ -149,6 +149,25 @@
   lugar dos quatro botões); cada chave numa linha — nome, sala inteira, estado e o verbo da ação
   ("Pegar", "Devolver", "Pedir", "Passar para outra pessoa"); "Minhas chaves" primeiro para quem porta
   chave (REQ-030). Critério: a 360×640, busca é o primeiro controle e a primeira chave aparece sem rolar.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-134-dashboard-celular`). No celular, cada chave é uma
+  **plaqueta** (linha numa lista com divisórias): nome, sala inteira, estado em palavra ("● Livre",
+  "○ Com Fulano", "Aguardando: …") e o verbo — **Pegar** (para si) · **Entregar** (balcão) · **Devolver** ·
+  **Pedir** (pull) · **Passar para outra pessoa**; a linha não age ao toque (antes o cartão inteiro era
+  "retirar", sem dizer). "Solicitar" nomeava duas ações e saiu dos botões, também no desktop. Busca +
+  filtros presos abaixo da barra do topo; filtros são os contadores ("Livres 1"); contadores soltos fora
+  do celular; o corpo vira coluna com ordem própria (busca → alerta → pendências → atalhos → lista →
+  explicação), desktop inalterado. "Disponível" → **"Livre"** em todas as telas. Atalhos de chaves
+  frequentes só no balcão, com o rótulo "Mais usadas" (REQ-029c é o acelerador do porteiro; para quem
+  porta chave eles repetiam a lista, que já põe as frequentes primeiro). ⚠️ **Achado que valeu a task:**
+  com `html, body { overflow-x: hidden }` o `body` vira contêiner de rolagem e o `position: sticky` gruda
+  nele, que nunca rola — medido: busca em −226 px depois de rolar; com `overflow-x: clip` (hidden fica
+  antes, como reserva), fica a 69 px, logo abaixo da barra. De lado: corrida nos specs de fluxo — o
+  `goto('/confirm')` seguia o clique em "Enviar solicitação" sem esperar o POST, e a página (dados pelo
+  servidor, TASK-131) vinha vazia com o menu dizendo "Confirmações 1"; os specs agora esperam a resposta.
+  Guarda `tests/dashboard-celular.test.ts` (7) + E2E `tests/e2e/dashboard-celular.spec.ts` (8, só
+  celular, a 360×640; na `main` as 8 falhavam). Verificado: vitest 871 ok (mesmas 4 + 1 do
+  `better-sqlite3`), E2E completa no build de produção **76 ok / 14 pulados / 0**, detector 0, capturas
+  de aluno, porteiro e admin (claro/escuro) só com os 5 tamanhos e sem rolagem horizontal.
 - **TASK-135 → Histórico e Logs no celular.** Busca + "Filtros (n)" em folha inferior; mês/data com texto
   de apoio; ações num menu "⋯" com um PDF só; "Limpar Histórico" para Configurações → Zona de Perigo
   (mesma rota, modal e restrição a ADMIN — REQ-014 inalterado); métricas em linguagem simples ou fora do

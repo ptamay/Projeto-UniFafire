@@ -296,8 +296,15 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Guarda `componentes-quadro` 24 + E2E `componentes-globais` 26; E2E completa 68/6/0; detector 12 → 0.
   ⚠️ Verificação que valeu: texto escrito em MAIÚSCULAS no código ("EM USO") escapa de guarda de
   `text-transform` — a E2E agora mede o texto visível.
-- Próxima Ação: PR e merge da TASK-133 → TASK-134 (Dashboard no celular: busca primeiro, contadores
-  viram filtros, plaqueta com o verbo). Do usuário: conferir em produção a parte logada da TASK-125 e,
+  ✅ #98 merged (TASK-133 no ar, `0a09ebd`). ✅ **TASK-134 FEITA** (branch `feat/task-134-dashboard-celular`,
+  PR a abrir): no celular cada chave é uma PLAQUETA (linha, não cartão) com o verbo — Pegar · Entregar ·
+  Devolver · Pedir · Passar para outra pessoa ("Solicitar"/"Transferir" saíram dos botões, também no
+  desktop); a linha não age ao toque; busca + filtros PRESOS; filtros = contadores; "Disponível" → "Livre".
+  ⚠️ `html, body { overflow-x: hidden }` fazia o `body` virar contêiner de rolagem e o sticky não prendia
+  (busca em −226 px) — agora `clip`. ⚠️ Specs de fluxo esperam o POST antes do `goto` (corrida vista).
+  E2E completa 76/14/0; guarda `dashboard-celular` 7 + E2E 8 (só celular, 360×640).
+- Próxima Ação: PR e merge da TASK-134 → TASK-135 (Histórico e Logs no celular: busca + "Filtros (n)" em
+  folha inferior, ações num "⋯", "Limpar Histórico" para a Zona de Perigo). Do usuário: conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -557,7 +564,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-133-componentes (TASK-133, PR a abrir). PRs #15–#97 merged (o #43 do
+- Branch atual: feat/task-134-dashboard-celular (TASK-134, PR a abrir). PRs #15–#98 merged (o #43 do
   Dependabot entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

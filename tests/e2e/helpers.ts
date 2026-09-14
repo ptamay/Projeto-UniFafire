@@ -32,7 +32,7 @@ export async function logout(page: Page) {
  * Com retry: o chip existe no HTML do SSR antes de a hidratação anexar o onClick.
  */
 export async function abrirAbaTodas(page: Page) {
-    const todas = page.locator('.dashboard-filter-chip', { hasText: /^Todas$/ });
+    const todas = page.locator('.dashboard-filter-chip', { hasText: /^Todas\b/ });
     await expect(async () => {
         await todas.click({ timeout: 3000 });
         await expect(todas).toHaveClass(/\bbtn-principal\b/, { timeout: 1000 });

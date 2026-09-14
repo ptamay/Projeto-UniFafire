@@ -207,10 +207,23 @@ cartões de chave e nas linhas do Dashboard saiu); o estado vai na etiqueta.
   barra colorida na borda.
 - **Ícones:** SVG de traço único; os emojis 🖨️ e 🔍 viraram ícones desenhados.
 
-**Contrato:**
+**Em vigor (TASK-134) — Dashboard no celular:**
 
-- **Plaqueta da chave (TASK-134):** uma linha, não um cartão — nome em `--fs-3` semibold, sala inteira
-  em `--fs-2`, estado em palavra + cor, e o verbo da ação à direita.
+- **Plaqueta da chave:** uma LINHA numa lista com divisórias, não um cartão — nome em `--fs-3`
+  semibold, sala inteira em `--fs-2` (quebra, nunca reticências), estado em palavra com a marca
+  ("● Livre", "○ Com Fulano", "Aguardando: …"), e o verbo à direita. A linha não age ao toque: quem age
+  é o botão com o verbo escrito.
+- **Verbos:** "Pegar" (a chave livre, para si), "Entregar" (no balcão, para alguém), "Devolver",
+  "Pedir" (a chave que está com outra pessoa) e "Passar para outra pessoa" (texto de ação sob a linha).
+  "Solicitar" e "Transferir" saíram dos botões — o primeiro nomeava duas ações diferentes. No desktop,
+  os mesmos verbos ("Passar" visível, com o nome completo para o leitor de tela).
+- **Primeira tela (360×640):** a busca é o primeiro controle e fica PRESA abaixo da barra do topo junto
+  com os filtros; os filtros são os contadores ("Todas 3 · Livres 1 · Em uso 2 · Minhas 2"); os
+  contadores soltos do cabeçalho saem do celular; alerta, pendências, atalhos do balcão ("Mais usadas"),
+  a lista e, por último, a explicação da dupla confirmação.
+- A palavra do estado livre é **"Livre"** (antes "Disponível"), em todas as telas.
+
+**Contrato:**
 - **Filtros (TASK-135):** uma busca e um botão "Filtros (n)" que abre uma folha de baixo para cima; o
   primeiro registro aparece sem rolar.
 - **Listas de Chaves e Usuários (TASK-136):** linha com nome, sala/papel e estado; "Remover" como ação

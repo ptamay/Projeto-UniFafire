@@ -217,19 +217,18 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
 
 const normalize = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-// Descreve, em uma linha, o que est\u00e1 pendente na chave \u2014 para o card comunicar
-// claramente a situa\u00e7\u00e3o (REQ-028): quem est\u00e1 com ela, quem pediu, o que falta confirmar.
-const describePending = (pi: NonNullable<Key['pending_info']>): string => {
-    const who = pi.user_name || 'Usu\u00e1rio';
-    if (pi.action === 'withdraw') return 'Retirada \u2014 aguardando confirma\u00e7\u00e3o';
-    if (pi.action === 'return') return 'Devolu\u00e7\u00e3o \u2014 aguardando confirma\u00e7\u00e3o';
+// TASK-134 — o estado de uma chave pendente, na linha da plaqueta: começa sempre por
+// "Aguardando" (a palavra da etiqueta), e diz o quê e com quem em palavras do dia a dia.
+const estadoPendente = (pi: NonNullable<Key['pending_info']>): string => {
+    const who = pi.user_name || 'alguém';
+    if (pi.action === 'withdraw') return `Aguardando: retirada para ${who}`;
+    if (pi.action === 'return') return `Aguardando: devolução de ${who}`;
     if (pi.action === 'transfer') {
-        // Pull (solicita\u00e7\u00e3o): o solicitante j\u00e1 confirmou; falta o portador aceitar.
         return pi.user_confirmed && !pi.porteiro_confirmed
-            ? `${who} solicitou esta chave`
-            : `Transfer\u00eancia para ${who}`;
+            ? `Aguardando: ${who} pediu esta chave`
+            : `Aguardando: passar para ${who}`;
     }
-    return 'Aguardando confirma\u00e7\u00e3o';
+    return 'Aguardando confirmação';
 };
 
 export default function DashboardClient({ initialKeys, initialUsers, userRole, userId, username, tutorialPendente}: Props) {
@@ -715,24 +714,28 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
             <main className="main-content">
                 {/* Header */}
-                <header className="page-header">
+                <header className="page-header dashboard-cabecalho">
                     <div>
                         <h1 className="page-title">Monitoramento de Chaves</h1>
                         <p className="page-subtitle">Retiradas, devoluções e transferências em tempo real</p>
                     </div>
                     <div className="dashboard-stats" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <div className="stat-chip">
-                            <span className="stat-chip-label">Disponíveis</span>
+                            <span className="stat-chip-label">Livres</span>
                             <span className="stat-chip-value" style={{ color: 'var(--livre-fg)' }}>{stats.available}</span>
                         </div>
                         <div className="stat-chip">
-                            <span className="stat-chip-label">Em Uso</span>
+                            <span className="stat-chip-label">Em uso</span>
                             <span className="stat-chip-value" style={{ color: 'var(--em-uso-fg)' }}>{stats.inUse}</span>
                         </div>
                     </div>
                 </header>
 
-                {/* Painel de Alertas */}
+                {/* TASK-134 — no celular este corpo é uma coluna com ordem própria: busca e
+                    filtros primeiro (presos ao rolar), depois alerta, pendências, atalhos, a
+                    lista, e por último a explicação. No desktop a ordem é a do código. */}
+                <div className="dashboard-corpo">
+                <div className="dashboard-alerta">
                 {delayedKeys.length > 0 && isPorteiroOrAdmin && (
                     <div role="alert" style={{ marginBottom: '1.5rem', background: 'var(--alerta-bg)', border: '1px solid var(--alerta-fg)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px', color: 'var(--alerta-fg)' }} aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -748,12 +751,16 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </div>
                     </div>
                 )}
+                </div>
 
                 {/* Pendências inline (REQ-029b): a operação inicia E conclui aqui,
                     sem trocar para /confirm — que permanece como visão completa. */}
-                <PendingInline userRole={userRole} userId={userId} />
+                <div className="dashboard-pendencias">
+                    <PendingInline userRole={userRole} userId={userId} />
+                </div>
 
                 {/* Explicação da dupla confirmação (dispensável, contextual) */}
+                <div className="dashboard-explicacao">
                 {showIntro && (
                     <div className="animate-fade" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -775,6 +782,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </button>
                     </div>
                 )}
+                </div>
 
                 {/* Unified Control Bar — REQ-029a: a busca É a Ação Rápida. Um único
                     campo filtra a lista em tempo real (setSearch no onChange) e age no
@@ -901,7 +909,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         >
                                             <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>{k.name}</span>
                                             <span className={`status-tag ${k.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {k.status === 'available' ? 'Disponível' : `Com ${k.employee_name || '—'}`}
+                                                {k.status === 'available' ? 'Livre' : `Com ${k.employee_name || '—'}`}
                                             </span>
                                         </div>
                                     ))}
@@ -1020,7 +1028,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     }
                                 }}
                             >
-                                {qaStep === 'withdraw' ? 'Solicitar' : 'Devolver'}
+                                {qaStep === 'withdraw' ? (isPorteiroOrAdmin ? 'Entregar' : 'Pegar') : 'Devolver'}
                             </button>
                         )}
 
@@ -1035,19 +1043,49 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     o mesmo fluxo de retirar/devolver). Atalhos de chaves frequentes
                     dão acesso em 1 toque, sem digitar nada, para quem sempre pega
                     a(s) mesma(s) chave(s) — a parte "inteligente" que já existia. */}
-                <div className="mobile-touch-bar">
+                <div className="dashboard-controles">
+                <div className="mobile-touch-bar dashboard-busca">
                     <div className="mobile-touch-search">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         <input
-                            aria-label="Filtrar chave por nome ou sala"
-                            placeholder="Filtrar por nome ou sala..."
+                            type="search"
+                            aria-label="Buscar chave por nome ou sala"
+                            placeholder="Buscar chave ou sala"
+                            enterKeyHint="search"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
+                </div>
 
-                    {frequentKeys.length > 0 && (
-                        <div className="mobile-quick-chips" role="list" aria-label={isPorteiroOrAdmin ? 'Chaves mais movimentadas' : 'Chaves que você usa com frequência'}>
+                {/* Filters — "mine" só faz sentido para quem porta chave pessoalmente
+                    (funcionário/aluno); porteiro/gestor/admin gerenciam chaves de terceiros.
+                    TASK-134: cada filtro é também o contador — "Livres 9" diz o estado do
+                    quadro e filtra ao toque; os contadores soltos do cabeçalho saem do celular. */}
+                <div className="dashboard-filter-bar" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%' }}>
+                    {(isPorteiroOrAdmin ? (['all','available','in_use'] as const) : (['mine','all','available','in_use'] as const)).map(f => (
+                        <button
+                            key={f}
+                            className={`btn ${filter === f ? 'btn-principal' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
+                            onClick={() => setFilter(f)}
+                            aria-pressed={filter === f}
+                            style={{ flex: 1 }}
+                        >
+                            {f === 'all' ? 'Todas' : f === 'available' ? 'Livres' : f === 'in_use' ? 'Em uso' : 'Minhas'}
+                            {' '}
+                            <span className="filtro-conta">{f === 'all' ? stats.total : f === 'available' ? stats.available : f === 'in_use' ? stats.inUse : stats.mine}</span>
+                        </button>
+                    ))}
+                </div>
+                </div>
+
+                {/* Atalhos do balcão (REQ-029c): as chaves mais movimentadas, a um toque. Só
+                    para quem opera o balcão — para quem porta chave, as frequentes já vêm
+                    primeiro na lista, e os chips só a repetiam (TASK-134). */}
+                <div className="mobile-only dashboard-atalhos">
+                    {isPorteiroOrAdmin && frequentKeys.length > 0 && !search && (
+                        <div className="mobile-quick-chips" role="list" aria-label="Chaves mais movimentadas">
+                            <span className="dashboard-atalhos-rotulo" aria-hidden="true">Mais usadas</span>
                             {frequentKeys
                                 .map(id => keys.find(k => k.id === id))
                                 .filter((k): k is Key => Boolean(k))
@@ -1067,23 +1105,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     )}
                 </div>
 
-                {/* Filters — "mine" só faz sentido para quem porta chave pessoalmente
-                    (funcionário/aluno); porteiro/gestor/admin gerenciam chaves de terceiros. */}
-                <div className="dashboard-filter-bar" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', width: '100%' }}>
-                    {(isPorteiroOrAdmin ? (['all','available','in_use'] as const) : (['mine','all','available','in_use'] as const)).map(f => (
-                        <button
-                            key={f}
-                            className={`btn ${filter === f ? 'btn-principal' : 'btn-ghost'} btn-sm dashboard-filter-chip`}
-                            onClick={() => setFilter(f)}
-                            style={{ borderRadius: '10px', flex: 1 }}
-                        >
-                            {f === 'all' ? 'Todas' : f === 'available' ? 'Disponíveis' : f === 'in_use' ? 'Em Uso' : `Minhas Chaves${stats.mine > 0 ? ` (${stats.mine})` : ''}`}
-                        </button>
-                    ))}
-
-                </div>
-
                 {/* Content */}
+                <div className="dashboard-lista">
                 {filtered.length === 0 ? (
                     keys.length === 0 ? (
                         // Primeira vez: nenhuma chave cadastrada — ensina o próximo passo.
@@ -1120,133 +1143,85 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     )
                 ) : (
                     <>
-                        {/* Modo Mobile (Grid Cards) */}
+                        {/* Celular (TASK-134): o quadro de chaves. Cada chave é uma plaqueta —
+                            uma LINHA, não um cartão: nome, sala inteira, estado em palavra, e o
+                            verbo da ação à direita, ao alcance do polegar. A linha não age ao
+                            toque: antes, tocar no cartão inteiro era "retirar", e nada dizia
+                            isso. Quem age é sempre um botão com o verbo escrito. */}
                         <div className="mobile-only">
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {filtered.map(key => (
-                                    <div
-                                        key={key.id}
-                                        className={`key-card ${key.pending_info ? 'pending' : key.status === 'in_use' ? 'inuse' : 'available'}`}
-                                        onClick={() => selectQaKey(key)}
-                                        // Chave disponível não tem botão interno: o card É o alvo — então
-                                        // precisa de semântica e teclado (role=button + Enter/Espaço). Nos
-                                        // demais estados os botões internos já dão o acesso, e um role=button
-                                        // com botões aninhados violaria o ARIA.
-                                        {...(key.status === 'available' && !key.pending_info ? {
-                                            role: 'button' as const,
-                                            tabIndex: 0,
-                                            'aria-label': `Retirar chave ${key.name}${key.room ? `, ${key.room}` : ''}`,
-                                            onKeyDown: (e: React.KeyboardEvent) => {
-                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                    e.preventDefault();
-                                                    selectQaKey(key);
-                                                }
-                                            }
-                                        } : {})}
-                                    >
-                                        <div className="key-card-icon-wrapper">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                                        </div>
-                                        
-                                        <div className="key-card-content-wrapper">
-                                            <div className="key-card-header-row">
-                                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'flex-start', width: '100%' }}>
-                                                    {/* Slot FIXO do estado: título + tag na primeira linha, sempre —
-                                                        antes a tag caía depois dos botões no card "em uso" (flex-wrap),
-                                                        e o dado mais escaneável do produto virava rodapé. */}
-                                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
-                                                        <div style={{ minWidth: 0 }}>
-                                                            <div className="key-card-title">{key.name}</div>
-                                                            {key.room && <div className="key-card-room">{key.room}</div>}
-                                                        </div>
-                                                        <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`} style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                            {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em uso')}
-                                                        </span>
-                                                    </div>
-
-                                                    {key.status === 'in_use' && key.employee_name && !key.pending_info && (
-                                                        <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
-                                                            <div className="key-card-avatar">
-                                                                {key.employee_name[0].toUpperCase()}
-                                                            </div>
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                                {key.employee_role && <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>{rotuloDoPapel(key.employee_role)}</div>}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    
-                                                    {key.pending_info && (
-                                                        <div className="key-card-holder animate-fade" style={{ width: '100%' }}>
-                                                            <div className="key-card-avatar">
-                                                                {(key.pending_info.user_name || 'U')[0].toUpperCase()}
-                                                            </div>
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
-                                                                <div style={{ fontSize: 'var(--fs-2)', color: 'var(--pendente-fg)', fontWeight: 600 }}>{describePending(key.pending_info)}</div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Cada grupo de ações é uma faixa full-width que absorve o toque
-                                                        (stopPropagation no wrapper): errar o botão por poucos px não
-                                                        dispara a ação do card — os alvos têm 44px (REQ-016). */}
-                                                    {key.pending_info && (isPorteiroOrAdmin || key.pending_info.user_id === userId || key.pending_info.porteiro_id === userId) && (
-                                                        <div style={{ display: 'flex', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                                                            <button
-                                                                className="key-card-action-btn"
-                                                                disabled={cancelLoading === key.pending_info.transaction_id}
-                                                                style={{ flex: 1 }}
-                                                                onClick={() => handleCancel(key.pending_info!.transaction_id, key.name)}
-                                                            >
-                                                                {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 12, height: 12 }} /> : 'Cancelar'}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                    {key.status === 'in_use' && !key.pending_info && (isPorteiroOrAdmin || key.user_id === userId) && (
-                                                        <div style={{ display: 'flex', gap: '0.625rem', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                                                            {/* Devolver carrega a identidade azul da devolução (btn-secundario no
-                                                                desktop) — antes era ghost neutro só no mobile. */}
-                                                            <button
-                                                                className="key-card-action-btn"
-                                                                onClick={() => requestTransaction(key.id, 'return')}
-                                                                style={{ flex: 1, border: '1px solid var(--acao)', background: 'var(--acao)', color: 'var(--acao-texto)' }}
-                                                            >
-                                                                Devolver
-                                                            </button>
-                                                            <button
-                                                                className="key-card-action-btn"
-                                                                onClick={() => {
-                                                                    setConfirmModal({
-                                                                        open: true,
-                                                                        keyId: key.id,
-                                                                        keyName: key.name,
-                                                                        type: 'transfer'
-                                                                    });
-                                                                }}
-                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                            >
-                                                                Transferir
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                    {key.status === 'in_use' && !key.pending_info && !isPorteiroOrAdmin && key.user_id !== userId && (
-                                                        <div style={{ display: 'flex', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                                                            <button
-                                                                className="key-card-action-btn"
-                                                                onClick={() => openRequestModal(key)}
-                                                                style={{ flex: 1, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
-                                                            >
-                                                                Solicitar
-                                                            </button>
-                                                        </div>
-                                                    )}
+                            <ul className="plaquetas" aria-label="Chaves">
+                                {filtered.map(key => {
+                                    const pi = key.pending_info;
+                                    const estado = pi ? 'pendente' : key.status === 'available' ? 'livre' : 'em-uso';
+                                    const podeCancelar = !!pi && (isPorteiroOrAdmin || pi.user_id === userId || pi.porteiro_id === userId);
+                                    const podeDevolver = !pi && key.status === 'in_use' && (isPorteiroOrAdmin || key.user_id === userId);
+                                    const podePedir = !pi && key.status === 'in_use' && !isPorteiroOrAdmin && key.user_id !== userId;
+                                    return (
+                                        <li key={key.id} className={`plaqueta plaqueta--${estado}`}>
+                                            <div className="plaqueta-texto">
+                                                <div className="plaqueta-nome">{key.name}</div>
+                                                {key.room && <div className="plaqueta-sala">{key.room}</div>}
+                                                <div className="plaqueta-estado">
+                                                    <span>
+                                                        {pi ? estadoPendente(pi)
+                                                            : key.status === 'available' ? 'Livre'
+                                                            : <>Com <strong>{key.employee_name || 'alguém'}</strong></>}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                            <div className="plaqueta-acoes">
+                                                {!pi && key.status === 'available' && (
+                                                    <button
+                                                        className="btn btn-secundario btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => selectQaKey(key)}
+                                                    >
+                                                        {isPorteiroOrAdmin ? 'Entregar' : 'Pegar'}
+                                                    </button>
+                                                )}
+                                                {podeDevolver && (
+                                                    <button
+                                                        className="btn btn-secundario btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => requestTransaction(key.id, 'return')}
+                                                    >
+                                                        Devolver
+                                                    </button>
+                                                )}
+                                                {podePedir && (
+                                                    <button
+                                                        className="btn btn-secundario btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => openRequestModal(key)}
+                                                    >
+                                                        Pedir
+                                                    </button>
+                                                )}
+                                                {podeCancelar && (
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        disabled={cancelLoading === pi!.transaction_id}
+                                                        onClick={() => handleCancel(pi!.transaction_id, key.name)}
+                                                    >
+                                                        {cancelLoading === pi!.transaction_id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Cancelar'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {podeDevolver && (
+                                                <div className="plaqueta-extra">
+                                                    <button
+                                                        className="btn btn-ghost btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => setConfirmModal({ open: true, keyId: key.id, keyName: key.name, type: 'transfer' })}
+                                                    >
+                                                        Passar para outra pessoa
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
 
                         {/* Modo Desktop (Lista) */}
@@ -1277,7 +1252,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                         </div>
                                         <div data-label="Status" style={{ display: 'flex', justifyContent: 'center' }}>
                                             <span className={`status-tag ${key.pending_info ? 'status-pending' : key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Disponível' : 'Em uso')}
+                                                {key.pending_info ? 'Aguardando' : (key.status === 'available' ? 'Livre' : 'Em uso')}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
@@ -1325,7 +1300,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Cancelar'}
                                                     </button>
                                                 ) : (
-                                                    <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600 }}>Aguardando</span>
+                                                    <span style={{ fontSize: 'var(--fs-2)', color: 'var(--pendente-fg)', fontWeight: 600 }}>Aguardando</span>
                                                 )
                                             ) : key.status === 'available' ? (
                                                 <button
@@ -1334,11 +1309,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     onClick={() => requestTransaction(key.id, 'withdraw')}
                                                     style={{ padding: '0.4rem 1.25rem' }}
                                                 >
-                                                    Solicitar
+                                                    {isPorteiroOrAdmin ? 'Entregar' : 'Pegar'}
                                                 </button>
                                             ) : (
                                                 // A coluna "Ações" tem largura fixa (120px). Com dois botões
-                                                // (Devolver + Transferir), a linha ultrapassava a coluna e gerava
+                                                // (Devolver + Passar), a linha ultrapassava a coluna e gerava
                                                 // scroll horizontal na visão porteiro (REQ-016). flexWrap permite
                                                 // que os botões empilhem quando não cabem lado a lado, sem estourar.
                                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -1363,9 +1338,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                                         type: 'transfer'
                                                                     });
                                                                 }}
-                                                                style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                                aria-label="Passar para outra pessoa"
+                                                                style={{ padding: '0.4rem 1.25rem' }}
                                                             >
-                                                                Transferir
+                                                                Passar
                                                             </button>
                                                         </>
                                                     )}
@@ -1374,9 +1350,9 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             className="btn btn-ghost btn-sm"
                                                             disabled={actionLoading === key.id}
                                                             onClick={() => openRequestModal(key)}
-                                                            style={{ padding: '0.4rem 1.25rem', border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}
+                                                            style={{ padding: '0.4rem 1.25rem' }}
                                                         >
-                                                            Solicitar
+                                                            Pedir
                                                         </button>
                                                     )}
                                                 </div>
@@ -1389,6 +1365,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                         </div>
                     </>
                 )}
+                </div>
+                </div>
             </main>
 
             {/* Modal 100% Touch para Selecionar Usuário (Mobile/Porteiro) */}
