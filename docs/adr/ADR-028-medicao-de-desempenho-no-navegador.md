@@ -1,6 +1,7 @@
 # ADR-028 — Medição de desempenho no navegador (Vercel Speed Insights)
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-14; implementação na TASK-126
+- **Status:** Aceito e **implementado** — aprovado pelo usuário em 2026-09-14; TASK-126 no ar e verificada
+  em produção no mesmo dia (script e envio 200 sem sessão, nenhum 307, URL enviada sem query)
 - **Data:** 2026-09-14
 - **Tipo de Change Request:** **C** (acrescenta uma camada à observabilidade já implementada — §7.2 — e
   uma dependência fora da stack do `plan.md`; nenhum requisito muda). Por que não é D: ver abaixo.
