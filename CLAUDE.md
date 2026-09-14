@@ -273,7 +273,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   e traz o xadrez de transparência como paths `#D6D6D6` — quem usar a arte precisa limpar.
   ✅ **ADR-030 FECHADO em 2026-09-14:** o usuário instalou num Android e num iPhone, e funcionou nos
   dois.
-- Próxima Ação: do usuário — conferir em produção a parte logada da TASK-125 e,
+- 📋 **CR da UI MOBILE UTILITÁRIA (Tipo C, ADR-031, REQ-033 novo), aprovado pelo usuário, 2026-09-14**
+  (branch `cr/ui-mobile`, PR a abrir): cinco capturas ("parece slop de IA", sem hierarquia, botões
+  grandes, público com pouca instrução). Crítica 23/40 (estética 1/4). MEDIDO: 20 tamanhos de fonte contra
+  5 no DESIGN.md (103 achados do detector — são os avisos do hook no `globals.css`, reais, NÃO silenciar),
+  peso 800 ×29, 148 `style={{}}` no Dashboard. ⚠️ O `DESIGN.md` PRESCREVE o visual de template (Lift and
+  Glow, gradiente, maiúsculas) e o `PRODUCT.md` descreve o "Colégio São José" com só porteiros — os dois
+  saem na TASK-132. Decisões: utilitário claro, CR completo, tema seguindo o aparelho. Tasks 132 → 133 →
+  (134, 135, 136). ⚠️ Números: ADR-032+ e TASK-137+ ficam com a outra sessão (§2.2), se abrir CR.
+- Próxima Ação: merge do CR da UI mobile → TASK-132 (fundação). Do usuário: conferir em produção a parte
+  logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -533,8 +542,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: main (nenhuma task ativa desta frente). PRs #15–#91 merged; aberto só o #43 do
-  Dependabot.
+- Branch atual: cr/ui-mobile (CR do ADR-031, PR a abrir). PRs #15–#95 merged (o #43 do Dependabot
+  entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.

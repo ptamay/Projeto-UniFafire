@@ -89,6 +89,38 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — a interface do celular vira utilitária (CR Tipo C · ADR-031 · REQ-033)
+> Aprovado pelo usuário em 2026-09-14: direção **utilitário claro**, CR completo, **tema seguindo o
+> aparelho**. Cinco capturas do celular ("parece slop de IA", "sem hierarquia", "botões grandes demais",
+> "pessoas com pouca instrução"). Crítica: **23/40**, estética 1/4
+> (`.impeccable/critique/2026-09-14T13-04-59Z__src-app-app.md`). Medido: 20 tamanhos de fonte contra 5
+> do DESIGN.md (103 achados do detector), peso 800 ×29, 148 `style={{}}` no `DashboardClient`, celular
+> consertado por `!important`. O DESIGN.md prescreve o visual de template (Lift and Glow, gradiente,
+> maiúsculas) e o PRODUCT.md descreve outra instituição. Ordem: 132 → 133 → (134, 135, 136).
+> ⚠️ Cruza com a TASK-128/131: `IndicadorDeNavegacao` no `Sidebar.tsx`, dados iniciais pelo servidor;
+> guardas `troca-de-tela-suave`, `dados-iniciais-no-servidor`, E2E `transicao-suave` e `menu-no-layout`
+> (0 quadros em branco) continuam verdes. Guardas de largura da TASK-119/121 cobrem o desktop.
+- **TASK-132 → Fundação.** `PRODUCT.md` reescrito (UniFAFIRE, os cinco papéis, celular, pouca
+  instrução); `DESIGN.md` substituído pelo mundo utilitário claro — escala 12·14·16·20·28 px no
+  celular, pesos 400·600·700, rótulos em caixa normal, um nível de elevação, botões 48/40 px, sem
+  gradiente, brilho nem lift; tokens no `globals.css`; guarda que reprova tamanho de fonte fora dos
+  tokens (hoje 103); tema segue `prefers-color-scheme` na primeira visita, escolha salva continua valendo.
+- **TASK-133 → Componentes globais.** Botões sólidos 48/40 px; campos; cartões sem sombra de repouso e
+  sem cartão dentro de cartão (sai o cartão que embrulha a página no celular); etiquetas de status em
+  caixa normal, sem brilho; barra do topo sem título duplicado e com o "?" no lugar; barra inferior;
+  ícones SVG no lugar de 🖨️/🔍.
+- **TASK-134 → Dashboard no celular.** Busca primeiro e presa ao rolar; contadores viram os filtros (no
+  lugar dos quatro botões); cada chave numa linha — nome, sala inteira, estado e o verbo da ação
+  ("Pegar", "Devolver", "Pedir", "Passar para outra pessoa"); "Minhas chaves" primeiro para quem porta
+  chave (REQ-030). Critério: a 360×640, busca é o primeiro controle e a primeira chave aparece sem rolar.
+- **TASK-135 → Histórico e Logs no celular.** Busca + "Filtros (n)" em folha inferior; mês/data com texto
+  de apoio; ações num menu "⋯" com um PDF só; "Limpar Histórico" para Configurações → Zona de Perigo
+  (mesma rota, modal e restrição a ADMIN — REQ-014 inalterado); métricas em linguagem simples ou fora do
+  celular. Critério: a 360×640, o primeiro registro aparece sem rolar.
+- **TASK-136 → Chaves e Usuários em lista no celular.** Linha com nome, sala/papel e estado; editar e
+  remover como secundárias, remover com confirmação. Ao fim: nova crítica do impeccable (meta ≥ 32/40,
+  estética ≥ 3) e registro aqui.
+
 ### Aberta por Change Request — a troca de tela fica suave (CR Tipo C · ADR-029)
 > Aprovado pelo usuário em 2026-09-14. Relato com capturas, depois da TASK-125 no ar: "parece seco
 > demais, aí aparecem esses blocos cinzas carregando e depois aparece a página". O menu já não some
