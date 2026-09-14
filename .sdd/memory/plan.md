@@ -22,7 +22,7 @@
 | Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
-| Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | 📋 aprovado em 2026-09-14, entra na TASK-126. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
+| Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | ✅ no ar desde 2026-09-14 (TASK-126), verificado em produção. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
 
 ## 2. Decisões e Justificativas
 
@@ -106,10 +106,17 @@
   cenário a cenário, e cada guarda reprovou a própria mutação (condição removida, `beforeSend`
   removido, segundo importador com e sem subcaminho). `tsc` 0, `eslint` 0, `npm audit --omit=dev` 0,
   `next build` verde.
-  ⚠️ **O preview da Vercel está atrás do login da Vercel** (302 para o SSO): a verificação do
-  caminho aleatório não sai do preview sem a sessão do usuário. Fica para **produção, logo depois do
-  merge**, no `/login` (público): script 200 e envio 2xx, nenhum 307. Até lá, o critério de aceite
-  do ADR-028 está em CÓDIGO e não em FATO.
+  O preview da Vercel está atrás do login da Vercel (302 para o SSO), então a verificação foi em
+  produção.
+  ✅ **NO AR E VERIFICADA em 2026-09-14** (#79 e #81 mesclados, `52edce3`; deploy e `pos-deploy`
+  verdes, health 200). No `/login?teste=task126&userId=5#topo` de produção, SEM sessão:
+  `/942cb8d68889b40e/script.js` (o caminho aleatório da v2) → **200**, e `/942cb8d68889b40e/vitals`
+  → **200** nos três envios capturados — **nenhum 307**, a Vercel responde antes do proxy. O corpo
+  enviado leva `"href":"https://projeto-uni-fafire.vercel.app/login"` e `"route":"/login"`: **a query
+  e o fragmento não saíram**. Tela autenticada não exercitada (exigiria entrar); a sem sessão é o
+  caso mais restrito do proxy, e com sessão ele deixa tudo passar. ⚠️ Os pontos da verificação
+  (TTFB 67 ms, INP sintético 0) entraram no painel. Falta ver o painel receber os dados de uso
+  real — do usuário.
 
 ### Aberta por Change Request — o menu não some na navegação (CR Tipo C · ADR-027)
 > Aprovado pelo usuário em 2026-09-14 (caminho A). Relato com captura: ao trocar de tela, o menu
