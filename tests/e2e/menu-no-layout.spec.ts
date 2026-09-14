@@ -25,31 +25,31 @@ import { login, E2E_PASSWORD } from './helpers';
 //
 // ## Onde a espera é segurada: na PÁGINA, não na resposta
 //
-// Segurar a resposta RSC inteira (`page.route`) NÃO põe o esqueleto na tela (medido em
-// 2026-09-14): durante o atraso fica a tela ANTERIOR, e o esqueleto só aparece no intervalo entre
-// o começo da resposta e o conteúdo da página — de 0 a ~20 quadros por navegação, zero em metade
-// das telas. Justamente os quadros em que o defeito do #84 vivia.
+// O que faz a espera durar em produção é a página esperando o banco, com o servidor já de pé.
+// Toda página do grupo `(app)` passa por `verifySession`, que lê `users`; o layout e o
+// `proxy.ts` leem só o JWT. Então um `LOCK TABLE users` numa transação da prova segura a PÁGINA
+// e mais nada — como a consulta de `/keys` presa por LOCK com que a TASK-125 foi verificada no
+// navegador, agora nas nove telas.
 //
-// O que põe o esqueleto na tela é o que acontece em produção: o servidor já mandou o layout e o
-// `loading.tsx`, e a página ainda espera o banco. Toda página do grupo `(app)` passa por
-// `verifySession`, que lê `users`; o layout e o `proxy.ts` leem só o JWT. Então um `LOCK TABLE
-// users` numa transação da prova segura a PÁGINA e mais nada — como a consulta de `/keys` presa
-// por LOCK com que a TASK-125 foi verificada no navegador, agora nas nove telas.
+// Segurar a resposta RSC inteira (`page.route`) não reproduz isso. Medido em 2026-09-14, ainda
+// com os `loading.tsx`: pelo `page.route` o esqueleto aparecia de 0 a ~20 quadros por navegação
+// (zero em metade das telas) — justamente os quadros em que o defeito do #84 vivia; pelo LOCK,
+// em ~75 a 90 de ~92.
 //
 // ## O que se observa: a JANELA DE ESPERA
 //
-// A prova não depende do que ocupa o conteúdo na espera — esqueleto (hoje) ou a tela anterior
-// (o ADR-029 tira o esqueleto da navegação). Em CADA quadro da espera, o menu está lá, com área,
-// dentro da tela e POR CIMA (o ponto do centro dele cai dentro do próprio menu — só "estar no
-// DOM" aprovaria um menu coberto pelo conteúdo).
+// Em CADA quadro da espera:
+//   - o menu está lá, com área, dentro da tela e POR CIMA (o ponto do centro dele cai dentro do
+//     próprio menu — só "estar no DOM" aprovaria um menu coberto pelo conteúdo) — ADR-027;
+//   - e o conteúdo é a tela ANTERIOR: nem esqueleto, nem branco — ADR-029 (TASK-128, #89). Esta
+//     prova é também a guarda de regressão dela, a pedido da sessão que a fez: a do
+//     `transicao-suave.spec.ts` segura a resposta pelo `page.route`, que não reproduz a espera
+//     de produção (acima), e olha menos telas.
 //
-// Os quadros com esqueleto e os quadros SEM conteúdo nenhum são contados e anotados no
-// relatório. Anotados, não exigidos: exigir o esqueleto reprovaria o ADR-029; e há um defeito
-// medido que não é do menu — no build de produção, ao entrar numa tela da conta (Meu Perfil,
-// Segurança), a espera pode passar INTEIRA sem `main` nenhum e sem esqueleto: conteúdo em branco
-// ao lado do menu (90 de 91 quadros, em algumas rodadas; em `next dev`, nunca). O menu fica — é
-// o que esta prova exige —; a tela anterior visível durante a espera é promessa do ADR-029, com
-// prova própria.
+// A contagem de quadros sem conteúdo já achou um defeito: antes do #89, ao entrar em Meu Perfil
+// pelo build de produção, a espera inteira ficava em branco (90 de 91 quadros sem `main` nenhum
+// nem esqueleto; em `next dev`, nunca). Depois do #89, 0 quadros com esqueleto e 0 sem conteúdo
+// nas 54 navegações medidas (nove telas × dois aparelhos × três rodadas).
 //
 // ## Como esta prova não depende de sorte
 //
@@ -244,8 +244,8 @@ function anotar(testInfo: TestInfo, esperas: Espera[]) {
     });
 }
 
-test.describe('TASK-125 — o menu não sai na navegação (ADR-027)', () => {
-    test('as nove telas do ADMIN: o menu está em cada quadro da espera, nunca sai, e é o mesmo elemento', async ({ page }, testInfo) => {
+test.describe('TASK-125 — o menu não sai na navegação (ADR-027 · ADR-029)', () => {
+    test('as nove telas do ADMIN: em cada quadro da espera o menu fica, é o mesmo elemento, e a tela anterior continua', async ({ page }, testInfo) => {
         // Nove navegações, cada uma segurada — e, em `next dev`, a primeira visita a cada tela
         // ainda compila a rota.
         test.setTimeout(240_000);
@@ -288,6 +288,9 @@ test.describe('TASK-125 — o menu não sai na navegação (ADR-027)', () => {
                     `${tela}: quadros da espera sem o menu na tela`).toEqual([]);
                 expect(r.saiu, `${tela}: o menu saiu do documento durante a navegação (desmontou)`).toBe(false);
                 expect(r.mesmoElemento, `${tela}: o menu é OUTRO elemento — foi remontado`).toBe(true);
+                // ADR-029 — enquanto a nova não chega, a tela anterior fica.
+                expect(e.quadrosComEsqueleto, `${tela}: esqueleto em ${e.quadrosComEsqueleto} de ${e.quadros} quadros da espera`).toBe(0);
+                expect(e.quadrosSemConteudo, `${tela}: conteúdo em branco em ${e.quadrosSemConteudo} de ${e.quadros} quadros da espera`).toBe(0);
             }
         } finally {
             await banco.end();
