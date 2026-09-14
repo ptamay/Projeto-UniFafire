@@ -151,7 +151,7 @@
   usa o modo de manutenção). ⚠️ A mesma cegueira pode existir no sentido inverso (rota exportando
   método que nenhuma tela usa) — não é defeito, não foi cobrada.
 
-### Aberta por Change Request — o PWA é o manifest, sem service worker (CR Tipo C · ADR-030)
+### O PWA é o manifest, sem service worker (CR Tipo C · ADR-030) ✅ FECHADO em 2026-09-14
 > Aprovado pelo usuário em 2026-09-14 (opção D). Medição dele: `/sw.js` → 404 em produção, e o
 > `next build` local não o gera. **O SW nunca existiu**: projeto nascido no Next 16 (Turbopack no
 > build), e o `@ducanh2912/next-pwa` entrou (`fd7d603`) junto com o `turbopack: {}` que desliga o
@@ -191,9 +191,10 @@
   ícones; `icon-192` 192×192 e `icon-512` 512×512 com alfa, `icon-maskable-512` 512×512 e
   `apple-touch-icon` 180×180 opacos (dimensões e tipo de cor lidos do cabeçalho do PNG baixado, não
   do que o manifest declara); `/sw.js` e `/workbox-4754cb34.js` → **307 `/login`**, a negação por
-  padrão; o `<head>` do `/login` com `manifest` e o `apple-touch-icon` novo. ⚠️ Falta só a
-  **instalação real num Android (menu) e num iPhone (Adicionar à Tela de Início)** — do usuário, e é o
-  que fecha o ADR-030.
+  padrão; o `<head>` do `/login` com `manifest` e o `apple-touch-icon` novo.
+  ✅ **INSTALAÇÃO REAL FEITA pelo usuário em 2026-09-14:** instalou num Android e num iPhone, e
+  funcionou nos dois (relato do usuário). Era o último item do critério de aceite — **ADR-030
+  FECHADO.**
 
 ### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
 > Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o
