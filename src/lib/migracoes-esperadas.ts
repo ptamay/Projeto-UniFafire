@@ -25,6 +25,7 @@ export const MIGRACOES_ESPERADAS = [
     '202609101600_api_de_dados_fechada',
     '202609101700_settings_orfas_de_backup',
     '202609131200_trilha_independente_de_users',
+    '202609141200_trilha_imutavel',
 ] as const;
 
 /**

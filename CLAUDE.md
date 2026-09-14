@@ -221,16 +221,22 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `audit_logs`, e `TRUNCATE` passa nas cinco tabelas da trilha. TASK-124: gatilhos de linha nas duas,
   `BEFORE TRUNCATE` nas cinco (bypass = modo de manutenção), Limpar Banco inalterado. 🔴 Migration →
   roteiro no editor ANTES do merge.
-- Próxima Ação: merge do CR → TASK-124. Em paralelo, do usuário: token de disparo (runbook §6.3) →
-  backup manual → ENSAIO da restauração. Fila: §2.2 (dados de saída desde 08/09), §0 da
-  constitution (vencida), PR #43 do Dependabot, majors TS/ESLint/Vitest, `keys.db`, RTO de 4 h. Fila restante: `auto_logout_time = "30"` (usuário salva pela
-  tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
-  da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
-  v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
 - 📋 **CR do MENU NO LAYOUT (Tipo C, ADR-027), aprovado pelo usuário (caminho A), 2026-09-14:** ao
   trocar de tela o menu some e só o esqueleto aparece — cada uma das nove telas desenha o próprio
   `Sidebar`, e o `loading.tsx` troca a página inteira. TASK-125: grupo de rotas `(app)` com
-  `layout.tsx`; autorização continua em cada página. Independente do CR da trilha (#77).
+  `layout.tsx`; autorização continua em cada página. Independente do CR da trilha.
+- ✅ #78 (CR do menu) e #77 (CR da trilha) merged em 2026-09-14. ✅ **TASK-124 FEITA** (branch
+  `feat/task-124-trilha-imutavel`, PR a abrir): migration `202609141200_trilha_imutavel` — UPDATE e
+  DELETE recusados em `action_logs`/`audit_logs`, TRUNCATE recusado nas cinco tabelas da trilha
+  (inclusive por CASCADE), bypass = modo de manutenção; `load-pg --truncate` numa transação com o
+  modo. Roteiro ensaiado. 🔴 **Aplicar o roteiro no editor ANTES do merge** (senão health 503).
+  ⚠️ A suíte local acusa `higiene-de-carga` por um `@vercel/speed-insights` NÃO commitado no
+  working tree (outra sessão, worktree `medicao-desempenho`) — não é da TASK-124 e o CI não vê.
+- Próxima Ação: roteiro da 124 em produção → merge → TASK-125 (menu no layout). Do usuário: token de
+  disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
+  (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
+  (vencida), PR #43 do Dependabot (re-run do check), majors TS/ESLint/Vitest, `keys.db` no histórico
+  antigo, RTO de 4 h não medido.
 - 📋 **CR do SPEED INSIGHTS (Tipo C, ADR-028), aprovado pelo usuário, 2026-09-14:** ele ativou no
   painel da Vercel e instalou `@vercel/speed-insights` 2.0.0. TASK-126: componente próprio no layout
   raiz, só com `VERCEL=1`, URL sem query string. ⚠️ O proxy RODA em `/_vercel/*` quando o recurso não
@@ -464,7 +470,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: cr/imutabilidade-trilha (PR a abrir). PRs #15–#76 merged; aberto só o #43 do
+- Branch atual: feat/task-124-trilha-imutavel (PR a abrir). PRs #15–#78 merged; aberto só o #43 do
   Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
@@ -570,7 +576,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   no iOS, idle. **Nenhuma verificável, porque `/api/auth/logout` não registra nada
   na trilha** — lacuna do REQ-010 por si só. Decisão sua em 2026-09-08:
   INSTRUMENTAR (TASK-095) antes de emendar a §2.2, que é Tipo D. Ver ADR-018.
-- Atualizado em: 2026-09-13
+- Atualizado em: 2026-09-14
 ```
 
 ---

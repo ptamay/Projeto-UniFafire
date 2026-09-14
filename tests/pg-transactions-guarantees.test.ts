@@ -38,7 +38,7 @@ beforeEach(async () => {
         await t.execute('DELETE FROM history');
     });
     await execute('DELETE FROM key_transactions');
-    await execute('DELETE FROM action_logs');
+    await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs'));
     await execute('DELETE FROM settings');
 });
 

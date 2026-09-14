@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { GET as LogsGET } from '@/app/api/logs/route';
 import { execute } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 vi.mock('next/headers', () => ({
     cookies: () => ({ get: vi.fn().mockReturnValue({ value: 'mocked_token' }) }),
@@ -26,7 +27,7 @@ async function buscar(params: string) {
 
 describe('TASK-055 — filtro de data/hora dos logs no fuso do operador', () => {
     beforeAll(async () => {
-        await execute('DELETE FROM action_logs');
+        await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs'));
         const ins = (a: string, b: string, c: string, d: string) => execute(
             'INSERT INTO action_logs (user_id, username, action, target, timestamp) VALUES (1, $1, $2, $3, $4)',
             [a, b, c, d],

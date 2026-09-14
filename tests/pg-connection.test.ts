@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { query, queryOne, execute, withTransaction, getPool, closePool } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-068 (Sprint 21 · Etapa 4 do ADR-012) — conexão via pooler e o módulo de
 // acesso a dados.
@@ -22,9 +23,9 @@ const MIGRATIONS_PG = path.resolve(process.cwd(), 'db', 'migrations-pg');
 beforeEach(async () => {
     // Isolamento: cada teste começa do mesmo estado. TRUNCATE ... RESTART IDENTITY
     // em vez de DELETE, para que os ids também não vazem de um teste para o outro.
-    await execute(
+    await withMaintenanceMode(tx => tx.execute(
         'TRUNCATE users, keys, key_transactions, history, action_logs, audit_logs, login_attempts, settings, rate_limit_hits RESTART IDENTITY CASCADE',
-    );
+    ));
 });
 
 afterAll(async () => {
