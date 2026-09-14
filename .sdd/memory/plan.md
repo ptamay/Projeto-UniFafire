@@ -22,7 +22,7 @@
 | Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
-| PWA | **Só o manifest (`public/manifest.json`), sem service worker** (ADR-030) | 📋 aprovado em 2026-09-14, entra na TASK-129. O `@ducanh2912/next-pwa` sai: exige webpack, e sob o Turbopack do Next 16 nunca gerou nada. Service worker novo (inclusive Serwist) entra por CR próprio |
+| PWA | **Só o manifest (`public/manifest.json`), sem service worker** (ADR-030) | ✅ TASK-129 feita em 2026-09-14; ícones em `public/icons/`. O `@ducanh2912/next-pwa` sai: exige webpack, e sob o Turbopack do Next 16 nunca gerou nada. Service worker novo (inclusive Serwist) entra por CR próprio |
 | Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | ✅ no ar desde 2026-09-14 (TASK-126), verificado em produção. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
 
 ## 2. Decisões e Justificativas
@@ -127,6 +127,20 @@
   `npm audit --omit=dev` 0. Depois do merge: manifest e ícones 200 em produção, `/sw.js` sem 200,
   DevTools sem erro de ícone, e **instalação real num Android (menu) e num iPhone (Adicionar à Tela
   de Início), pelo usuário**, registrada aqui. Sem migration.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-129-pwa-sem-service-worker`). Vermelho: 8 cenários
+  (`pwa.test.ts` reescrito + um no `proxy-authorization.test.ts`), cada um reprovando pelo motivo
+  esperado. Plugin removido (228 pacotes saem do lockfile, **nenhuma versão muda**); `sw.js` e
+  `workbox-*.js` fora da `ARQUIVOS_PUBLICOS`. **Ícones: havia arte-fonte** — o `logo.svg` traz o
+  emblema em vetor (~650 unidades) à esquerda do logotipo; recortado no anel (centro 377,5/409,5,
+  diâmetro 659, máscara 4 unidades para dentro — no raio exato sobrava fiapo claro, porque o SVG é
+  traçado e traz o xadrez de transparência em `#D6D6D6`, limpo para branco). `public/icons/`:
+  192 e 512 `any` transparentes (emblema em 92%), maskable 512 com fundo branco (70%, dentro da zona
+  segura de 80%), `apple-touch-icon` 180 opaco (84%), e o layout aponta para ele. O PNG de 300×283
+  segue como favicon e no login. Gerador fora do repositório (importa `sharp`, que só vem pelo Next —
+  o Gate 1 reprovaria). Vitest dos dois arquivos 26/26, `tsc` 0, `eslint` 0, `npm audit --omit=dev`
+  0, `next build` verde sem `sw.js`; `next start` local sem sessão: ícones 200 nos tamanhos medidos,
+  `/sw.js` e `/workbox-*.js` redirecionam, 0 registros, console limpo. Suíte inteira: no CI (Docker
+  local fora do ar). ⚠️ Falta: produção depois do merge, e a instalação real — do usuário.
 
 ### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
 > Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o
