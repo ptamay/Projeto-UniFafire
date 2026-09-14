@@ -91,8 +91,10 @@
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e
 > implementado, e a tela não o alcançava. Relato com captura: "Erro ao limpar histórico.".
-- [x] **TASK-127 → a tela chama DELETE.** ✅ **FEITA em 2026-09-14** (branch
-  `fix/task-127-limpar-historico`). A tela chamava `POST /api/history/clear`; a rota exporta só
+- [x] **TASK-127 → a tela chama DELETE.** ✅ **NO AR em 2026-09-14** (#85, `37d95ae`; `pos-deploy`
+  verde, health 200). O primeiro CI do #85 caiu por instabilidade da E2E (o dev server derrubou o
+  `POST /api/auth/logout` com `ECONNRESET` no meio do `pull-flow`; a solicitação pendente sujou a base
+  e derrubou mais dois specs em cascata) — re-execução verde. A tela chamava `POST /api/history/clear`; a rota exporta só
   `DELETE` desde 2026-05-21 (`fd7d603`), e o contrato de API diz `DELETE` → 405. **Quatro meses
   quebrado em produção**, com três testes cobrindo a rota — todos importam o handler e o chamam
   direto, nenhum olhava a costura tela → rota. `tests/fetch-contrato.test.ts`: toda chamada
@@ -139,7 +141,9 @@
 > e o `loading.tsx` troca a página inteira — menu junto. De lado: o menu remonta a cada navegação
 > (a assinatura dele publica "conectando" de novo, e o timer do logout e o tutorial são recriados),
 > e seis telas passam `isOpen`/`onMobileClose` que nenhuma usa.
-- [x] **TASK-125 → menu no layout.** ✅ **FEITA em 2026-09-14** (branch `feat/task-125-menu-no-layout`).
+- [x] **TASK-125 → menu no layout.** ✅ **NO AR em 2026-09-14** (#84, `64a53c6`, CI verde; em produção
+  sem sessão: `/login` sem menu, as nove telas 307 → `/login`, `/api/keys` 401. A parte logada — o
+  menu parado e o ponto do tempo real — espera o usuário conferir). ADR-027 fechado em código.
   `src/app/(app)/layout.tsx` desenha a moldura e o menu (em `.no-print`); as nove telas foram para
   o grupo por `git mv` (URLs iguais, `/login` fora) e desenham só o `main`. O layout lê a sessão
   pelo JWT (`verifySessionEdge`), SEM banco — com `verifySession` cada renderização completa
