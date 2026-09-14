@@ -100,6 +100,16 @@
   desenhado só com `VERCEL=1` (nada local, na E2E nem no CI). Proxy intocado, salvo se o deploy
   mostrar 307 — aí só os dois caminhos da configuração do build. Guardas + verificação no deploy da
   Vercel com e sem sessão, e o resultado registrado aqui.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-126-speed-insights`, PR #81). `src/lib/medicao-desempenho.ts`
+  (`semConsulta`, `deveMedirDesempenho`) + `src/app/components/MedicaoDeDesempenho.tsx` + uma linha no
+  layout raiz; proxy intocado. `tests/medicao-desempenho.test.ts`, 7 cenários: vermelho conferido
+  cenário a cenário, e cada guarda reprovou a própria mutação (condição removida, `beforeSend`
+  removido, segundo importador com e sem subcaminho). `tsc` 0, `eslint` 0, `npm audit --omit=dev` 0,
+  `next build` verde.
+  ⚠️ **O preview da Vercel está atrás do login da Vercel** (302 para o SSO): a verificação do
+  caminho aleatório não sai do preview sem a sessão do usuário. Fica para **produção, logo depois do
+  merge**, no `/login` (público): script 200 e envio 2xx, nenhum 307. Até lá, o critério de aceite
+  do ADR-028 está em CÓDIGO e não em FATO.
 
 ### Aberta por Change Request — o menu não some na navegação (CR Tipo C · ADR-027)
 > Aprovado pelo usuário em 2026-09-14 (caminho A). Relato com captura: ao trocar de tela, o menu

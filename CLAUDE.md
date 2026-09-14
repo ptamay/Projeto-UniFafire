@@ -235,6 +235,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   painel da Vercel e instalou `@vercel/speed-insights` 2.0.0. TASK-126: componente próprio no layout
   raiz, só com `VERCEL=1`, URL sem query string. ⚠️ O proxy RODA em `/_vercel/*` quando o recurso não
   está ativo (`/_vercel/insights/` → 307, medido); o caminho aleatório da v2 só se verifica no deploy.
+  ✅ #79 (CR) aberto. ✅ **TASK-126 FEITA** (PR #81, empilhado no #79). ⚠️ Preview protegido pelo SSO
+  da Vercel → verificar em PRODUÇÃO depois do merge, no `/login`: script 200, envio 2xx, sem 307.
+- ⚠️ **O CHECKOUT PRINCIPAL PODE ESTAR COM OUTRA SESSÃO** (em 14/09, a TASK-124 rodava lá, com
+  arquivos alterados). `git switch` ali leva a branch dela junto. Trabalho paralelo vai numa worktree.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
