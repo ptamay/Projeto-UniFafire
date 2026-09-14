@@ -188,8 +188,8 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                             }} onClick={() => setFilterRole(filterRole === r.value ? 'all' : r.value)}>
                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
                                 <div>
-                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{r.label}</div>
-                                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{count}</div>
+                                    <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{r.label}</div>
+                                    <div style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{count}</div>
                                 </div>
                             </div>
                         );
@@ -207,7 +207,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                             Limpar filtro
                         </button>
                     )}
-                    <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {(
@@ -229,14 +229,14 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                     <tr key={u.id}>
                                         <td data-label="Usuário">
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--blue-700), var(--blue-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.875rem', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
+                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--blue-700), var(--blue-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
                                                     {(u.full_name || u.username)[0].toUpperCase()}
                                                 </div>
                                                 <span style={{ fontWeight: 600 }}>@{u.username}</span>
                                             </div>
                                         </td>
                                         <td data-label="Nome" style={{ color: 'var(--text-secondary)' }}>{u.full_name || '—'}</td>
-                                        <td data-label="Matrícula" style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.85rem' }}>{u.matricula || '—'}</td>
+                                        <td data-label="Matrícula" style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 'var(--fs-2)' }}>{u.matricula || '—'}</td>
                                         <td data-label="Perfil"><span className={`badge ${ROLE_BADGE_CLASS[u.role] || 'badge-user'}`}>{ROLES.find(r => r.value === u.role)?.label || u.role}</span></td>
                                         <td className="td-actions">
                                             <div className="action-row" style={{ justifyContent: 'flex-end' }}>
@@ -277,7 +277,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                 <label className="input-label">Nome e Sobrenome {editUser ? '' : '*'}</label>
                                 <input className="input" value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))} placeholder="ex: João da Silva Pereira" required={!editUser} />
                                 {!editUser && formData.full_name.trim().length > 2 && (
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--blue-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', color: 'var(--blue-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                                         O nome de usuário gerado será algo parecido com: <strong>@{(() => {
                                             const parts = formData.full_name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").split(/\s+/);
@@ -311,7 +311,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                 </select>
                             </div>
                             {selectedRole && (
-                                <div style={{ padding: '0.75rem', background: `${selectedRole.color}15`, border: `1px solid ${selectedRole.color}40`, borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <div style={{ padding: '0.75rem', background: `${selectedRole.color}15`, border: `1px solid ${selectedRole.color}40`, borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>
                                     <strong style={{ color: selectedRole.color }}>⬤ {selectedRole.label}:</strong> {selectedRole.desc}
                                 </div>
                             )}
@@ -345,24 +345,24 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                         <div style={{ width: '48px', height: '48px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         </div>
-                        <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                        <h2 style={{ fontSize: 'var(--fs-4)', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                             Código de Acesso Gerado
                         </h2>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: 'var(--fs-3)' }}>
                             O usuário <strong>@{codigoRevelado.username}</strong> foi {codigoRevelado.motivo} com sucesso.
                         </p>
 
                         {codigoRevelado.codigo && (
                             <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px dashed var(--border-strong)' }}>
-                                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Código de uso único</div>
+                                <div style={{ fontSize: 'var(--fs-1)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Código de uso único</div>
                                 {/* Fonte monoespaçada e espaçamento largo: este valor é
                                     DITADO e transcrito à mão. O alfabeto já exclui os
                                     caracteres ambíguos; a tipografia faz a outra metade. */}
-                                <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: '1.75rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '4px' }}>{codigoRevelado.codigo}</div>
+                                <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--fs-5)', color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '4px' }}>{codigoRevelado.codigo}</div>
                             </div>
                         )}
 
-                        <div style={{ padding: '0.75rem', background: 'var(--orange-50)', color: 'var(--orange-600)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
+                        <div style={{ padding: '0.75rem', background: 'var(--orange-50)', color: 'var(--orange-600)', borderRadius: 'var(--radius-md)', fontSize: 'var(--fs-2)', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             <span>
                                 Anote agora: <strong>este código não será exibido de novo</strong>.

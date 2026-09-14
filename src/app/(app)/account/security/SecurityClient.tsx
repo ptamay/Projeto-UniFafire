@@ -61,7 +61,7 @@ export default function SecurityClient() {
 
                 <div className="content-grid" style={{ maxWidth: '600px' }}>
                     <div className="glass-card" style={{ padding: '2rem' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Trocar Senha</h2>
+                        <h2 style={{ fontSize: 'var(--fs-4)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Trocar Senha</h2>
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             
                             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

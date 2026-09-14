@@ -104,7 +104,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                     alignItems: 'center', 
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    fontSize: '0.8125rem',
+                    fontSize: 'var(--fs-2)',
                     color: selectedUser ? 'var(--text-primary)' : 'var(--text-muted)',
                     transition: 'all 0.2s',
                     boxShadow: open ? 'var(--shadow-accent)' : 'none',
@@ -144,7 +144,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                 aria-controls={listboxId}
                                 aria-autocomplete="list"
                                 aria-activedescendant={highlight >= 0 && filtered[highlight] ? `${listboxId}-opt-${filtered[highlight].id}` : undefined}
-                                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.6rem', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none', minHeight: '44px' }}
+                                style={{ width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.6rem', fontSize: 'var(--fs-1)', color: 'var(--text-primary)', outline: 'none', minHeight: '44px' }}
                                 placeholder="Filtrar usuário..."
                                 value={search}
                                 onChange={e => { setSearch(e.target.value); setHighlight(-1); }}
@@ -181,7 +181,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                     style={{
                                         padding: '0.6rem 0.75rem',
                                         minHeight: '44px',
-                                        fontSize: '0.8rem',
+                                        fontSize: 'var(--fs-2)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -194,8 +194,8 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                     onMouseEnter={() => setHighlight(index)}
                                 >
                                     <div>
-                                        <div style={{ fontWeight: selectedId === u.id ? 700 : 500 }}>{u.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1px' }}>{u.role || 'Usuário'}</div>
+                                        <div style={{ fontWeight: selectedId === u.id ? 700 : 400 }}>{u.name}</div>
+                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', marginTop: '1px' }}>{u.role || 'Usuário'}</div>
                                     </div>
                                     {selectedId === u.id && (
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green-400)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -204,7 +204,7 @@ const UserSelector = ({ users, selectedId, onSelect, placeholder = "Escolher..."
                                     )}
                                 </div>
                             )) : (
-                                <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nenhum usuário encontrado</div>
+                                <div style={{ padding: '1rem', textAlign: 'center', fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Nenhum usuário encontrado</div>
                             )}
                         </div>
                     </div>
@@ -736,8 +736,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     <div style={{ marginBottom: '1.5rem', background: 'var(--status-inuse-bg)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px', color: 'var(--status-inuse-text)' }} aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <div>
-                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-inuse-text)', fontSize: '0.9rem', fontWeight: 800 }}>Atenção: Chaves em Atraso</h3>
-                            <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--text-primary)', fontSize: '0.8rem' }}>
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--status-inuse-text)', fontSize: 'var(--fs-3)', fontWeight: 700 }}>Atenção: Chaves em Atraso</h3>
+                            <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--text-primary)', fontSize: 'var(--fs-2)' }}>
                                 {delayedKeys.map(k => (
                                     <li key={k.id}>
                                         A chave <strong>{k.name}</strong> está com <strong>{k.employee_name}</strong> há mais de {k.diffHours} horas.
@@ -757,8 +757,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     <div className="animate-fade" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue-300)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>Como funciona a dupla confirmação</div>
-                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                            <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>Como funciona a dupla confirmação</div>
+                            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
                                 Toda retirada ou devolução precisa da confirmação das duas partes — quem solicita e a outra pessoa confirmam na aba <strong style={{ color: 'var(--text-primary)' }}>Confirmações</strong>. Enquanto a solicitação estiver <strong style={{ color: 'var(--text-primary)' }}>Aguardando</strong>, você pode cancelá-la.
                             </p>
                         </div>
@@ -804,7 +804,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 data-1p-ignore="true"
                                 type="search"
                                 name="qaKey"
-                                style={{ minHeight: '44px', fontSize: '0.8rem', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%', paddingLeft: '0.5rem' }}
+                                style={{ minHeight: '44px', fontSize: 'var(--fs-2)', background: 'transparent', border: 'none', boxShadow: 'none', width: '100%', paddingLeft: '0.5rem' }}
                                 onFocus={() => {
                                     setShowKeyDrops(true);
                                     setKeyIndex(-1);
@@ -898,7 +898,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             onMouseDown={(ev) => { ev.preventDefault(); selectQaKey(k); }}
                                             className="suggestion-item"
                                         >
-                                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{k.name}</span>
+                                            <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>{k.name}</span>
                                             <span className={`status-tag ${k.status === 'available' ? 'status-available' : 'status-inuse'}`}>
                                                 {k.status === 'available' ? 'DISPONÍVEL' : `COM ${k.employee_name?.toUpperCase() || '—'}`}
                                             </span>
@@ -928,7 +928,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             data-1p-ignore="true"
                                             type="search"
                                             name="qaEmp"
-                                            style={{ minHeight: '44px', fontSize: '0.8rem', width: '220px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)' }}
+                                            style={{ minHeight: '44px', fontSize: 'var(--fs-2)', width: '220px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--border)' }}
                                             onFocus={() => {
                                                 setShowEmpDrops(true);
                                                 setEmpIndex(-1);
@@ -979,8 +979,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         onMouseDown={(ev) => { ev.preventDefault(); selectQaEmp(emp); }}
                                                         className="suggestion-item"
                                                     >
-                                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{emp.name}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{emp.role}</div>
+                                                        <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)' }}>{emp.name}</div>
+                                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>{emp.role}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -988,14 +988,14 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     </>
                                 ) : (
                                     <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-selection-light)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Para: <strong style={{ color: 'var(--text-primary)' }}>{username}</strong></span>
+                                        <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Para: <strong style={{ color: 'var(--text-primary)' }}>{username}</strong></span>
                                     </div>
                                 )}
                             </div>
                         )}
                         {qaStep === 'return' && (
                             <div style={{ minHeight: '38px', display: 'flex', alignItems: 'center', background: 'var(--bg-selection-light)', padding: '0 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Com: <strong style={{ color: 'var(--text-primary)' }}>{qaResolvedKey?.employee_name || '—'}</strong></span>
+                                <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)' }}>Com: <strong style={{ color: 'var(--text-primary)' }}>{qaResolvedKey?.employee_name || '—'}</strong></span>
                             </div>
                         )}
 
@@ -1099,7 +1099,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     <IndicadorDeNavegacao />
                                 </Link>
                             ) : (
-                                <p style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>Peça a um gestor para cadastrar as chaves.</p>
+                                <p style={{ marginTop: '0.75rem', fontSize: 'var(--fs-2)' }}>Peça a um gestor para cadastrar as chaves.</p>
                             )}
                         </div>
                     ) : (
@@ -1169,8 +1169,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                                 {key.employee_name[0].toUpperCase()}
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
-                                                                {key.employee_role && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
+                                                                <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.employee_name}</div>
+                                                                {key.employee_role && <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600 }}>{key.employee_role}</div>}
                                                             </div>
                                                         </div>
                                                     )}
@@ -1181,8 +1181,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                                 {(key.pending_info.user_name || 'U')[0].toUpperCase()}
                                                             </div>
                                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
-                                                                <div style={{ fontSize: '0.7rem', color: 'var(--warning-text)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
+                                                                <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{key.pending_info.user_name || 'Usuário'}</div>
+                                                                <div style={{ fontSize: 'var(--fs-1)', color: 'var(--warning-text)', fontWeight: 700 }}>{describePending(key.pending_info)}</div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1268,10 +1268,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             ) : (
                                 filtered.map(key => (
                                     <div key={key.id} className={`list-row-hover dashboard-list-row ${key.pending_info ? 'row-pending' : key.status === 'available' ? 'row-available' : 'row-inuse'}`}>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem', textAlign: 'left' }}>
+                                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--fs-3)', textAlign: 'left' }}>
                                             {key.name}
                                         </div>
-                                        <div data-label="Sala / Local" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'left' }}>
+                                        <div data-label="Sala / Local" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-2)', textAlign: 'left' }}>
                                             {key.room || '-'}
                                         </div>
                                         <div data-label="Status" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1283,15 +1283,15 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             {key.status === 'in_use' ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', textAlign: 'center', minWidth: 0 }}>
                                                     {/* Azul institucional p/ "pessoa" (One Voice Rule) — o verde sólido media 3,2:1 com o branco */}
-                                                    <div style={{ width: '32px', height: '32px', background: 'var(--blue-700)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 900, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                                    <div style={{ width: '32px', height: '32px', background: 'var(--blue-700)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, flexShrink: 0, border: '2px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                                                         {key.employee_name?.charAt(0).toUpperCase()}
                                                     </div>
                                                     {/* maxWidth: numa coluna flex centralizada o item não estica, fica do
                                                         tamanho do texto — sem teto, as reticências nunca apareciam e o
                                                         nome passava por baixo do botão ao lado (TASK-121). */}
                                                     <div style={{ minWidth: 0, maxWidth: '100%' }}>
-                                                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
+                                                        <div style={{ fontSize: 'var(--fs-3)', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_name}</div>
+                                                        <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{key.employee_role || 'Usuário'}</div>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1305,7 +1305,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                             />
                                                         </>
                                                     ) : (
-                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>-</span>
+                                                        <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>-</span>
                                                     )}
                                                 </div>
                                             )}
@@ -1324,7 +1324,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         {cancelLoading === key.pending_info.transaction_id ? <div className="spinner" style={{ width: 14, height: 14 }} /> : 'Cancelar'}
                                                     </button>
                                                 ) : (
-                                                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Aguardando</span>
+                                                    <span style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600 }}>Aguardando</span>
                                                 )
                                             ) : key.status === 'available' ? (
                                                 <button
@@ -1396,8 +1396,8 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     <div className="modal-box" onClick={e => e.stopPropagation()} style={{ padding: '1.25rem', height: '85vh', display: 'flex', flexDirection: 'column', gap: '1rem', width: '95%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <h2 style={{ fontSize: '1.375rem', color: 'var(--text-primary)', margin: 0, fontWeight: 800 }}>Para quem?</h2>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Chave <strong style={{color: 'var(--green-400)'}}>{touchSelectModal.keyName}</strong></p>
+                                <h2 style={{ fontSize: 'var(--fs-4)', color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>Para quem?</h2>
+                                <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Chave <strong style={{color: 'var(--green-400)'}}>{touchSelectModal.keyName}</strong></p>
                             </div>
                             <button className="icon-btn" onClick={() => setTouchSelectModal(prev => ({ ...prev, open: false }))} style={{ margin: '-0.5rem -0.5rem 0 0', padding: '0.5rem' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1460,7 +1460,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--chip-blue-fg)" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>
                                 )}
                             </div>
-                            <h3 id="confirm-modal-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                            <h3 id="confirm-modal-title" style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                                 {confirmModal.type === 'transfer' ? 'Transferir Chave?'
                                     : confirmModal.type === 'request' ? 'Solicitar esta Chave?'
                                     : `Solicitar ${confirmModal.type === 'withdraw' ? 'Retirada' : 'Devolução'}?`}
@@ -1468,10 +1468,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
                             {confirmModal.type === 'request' ? (
                                 <div style={{ textAlign: 'left', marginTop: '1rem' }}>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                                         Solicitar a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
                                         {confirmModal.holderName && <span> que está com <strong style={{ color: 'var(--chip-purple-fg)' }}>{confirmModal.holderName}</strong></span>}.
-                                        <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>O portador precisa aceitar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para a chave passar para você.</span>
+                                        <br/><span style={{ fontSize: 'var(--fs-2)', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>O portador precisa aceitar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para a chave passar para você.</span>
                                     </p>
                                     <div>
                                         <label className="field-label">Observação (opcional)</label>
@@ -1482,13 +1482,13 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                             placeholder="Ex: Preciso usar a sala agora"
                                             className="input"
-                                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
+                                            style={{ width: '100%', padding: '0.6rem', fontSize: 'var(--fs-2)', border: '1px solid var(--border-strong)' }}
                                         />
                                     </div>
                                 </div>
                             ) : confirmModal.type === 'transfer' ? (
                                 <div style={{ textAlign: 'left', marginTop: '1rem' }}>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)', lineHeight: '1.5', marginBottom: '1.25rem' }}>
                                         Transferir a chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong> diretamente para outro usuário.
                                     </p>
                                     <div style={{ marginBottom: '1.25rem' }}>
@@ -1508,18 +1508,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                             placeholder="Ex: Passando a chave no corredor"
                                             className="input"
-                                            style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem', border: '1px solid var(--border-strong)' }}
+                                            style={{ width: '100%', padding: '0.6rem', fontSize: 'var(--fs-2)', border: '1px solid var(--border-strong)' }}
                                         />
                                     </div>
                                 </div>
                             ) : (
                                 <>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)', lineHeight: '1.5' }}>
                                         Você está prestes a iniciar a {confirmModal.type === 'withdraw' ? 'retirada' : 'devolução'} da chave <strong style={{ color: 'var(--text-primary)' }}>&quot;{confirmModal.keyName}&quot;</strong>
                                         {confirmModal.type === 'withdraw' && (
                                             <span> para <strong style={{ color: 'var(--green-400)' }}>{confirmModal.employeeName}</strong></span>
                                         )}.
-                                        <br/><span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
+                                        <br/><span style={{ fontSize: 'var(--fs-2)', opacity: 0.85, display: 'inline-block', marginTop: '0.5rem' }}>Depois de enviar, a outra parte precisa confirmar na aba <strong style={{ color: 'var(--text-secondary)' }}>Confirmações</strong> para concluir. Você pode cancelar a solicitação enquanto ela estiver pendente.</span>
                                     </p>
                                     
                                     {/* Bypass UI — força a atribuição (withdraw) ou a devolução (return) de qualquer chave em uso (REQ-028) */}
@@ -1528,7 +1528,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
 
                                     {/* minHeight 44: o label inteiro é o alvo de toque do controle mais
                                         sensível do modal (o checkbox sozinho tinha ~16px). */}
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, minHeight: 'var(--touch-target)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: 'var(--fs-2)', color: 'var(--text-primary)', fontWeight: 600, minHeight: 'var(--touch-target)' }}>
                                         <input
                                             type="checkbox"
                                             checked={bypassConfirmation}
@@ -1543,12 +1543,12 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     
                                     {bypassConfirmation && (confirmModal.type === 'withdraw' || confirmModal.type === 'return') && (
                                         <div className="animate-fade" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Justificativa Obrigatória</label>
+                                            <label style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 600 }}>Justificativa Obrigatória</label>
                                             <select 
                                                 value={justification}
                                                 onChange={e => setJustification(e.target.value)}
                                                 className="input"
-                                                style={{ padding: '0.5rem', fontSize: '0.8rem', border: '1px solid var(--border-strong)' }}
+                                                style={{ padding: '0.5rem', fontSize: 'var(--fs-2)', border: '1px solid var(--border-strong)' }}
                                             >
                                                 <option value="" disabled>Selecione um motivo...</option>
                                                 {justificationOptions.map(opt => (
@@ -1564,7 +1564,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmAction(); } }}
                                                     placeholder="Descreva o motivo..."
                                                     className="input"
-                                                    style={{ padding: '0.5rem', fontSize: '0.8rem', border: '1px solid var(--border-strong)' }}
+                                                    style={{ padding: '0.5rem', fontSize: 'var(--fs-2)', border: '1px solid var(--border-strong)' }}
                                                     autoFocus
                                                 />
                                             )}

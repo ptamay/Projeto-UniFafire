@@ -281,8 +281,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   Glow, gradiente, maiúsculas) e o `PRODUCT.md` descreve o "Colégio São José" com só porteiros — os dois
   saem na TASK-132. Decisões: utilitário claro, CR completo, tema seguindo o aparelho. Tasks 132 → 133 →
   (134, 135, 136). ⚠️ Números: ADR-032+ e TASK-137+ ficam com a outra sessão (§2.2), se abrir CR.
-- Próxima Ação: merge do CR da UI mobile → TASK-132 (fundação). Do usuário: conferir em produção a parte
-  logada da TASK-125 e,
+  ✅ #96 merged (CR, `d40a6b2`). ✅ **TASK-132 FEITA** (branch `feat/task-132-fundacao-visual`, PR a abrir):
+  mundo "quadro de chaves", fonte Atkinson Hyperlegible Next, escala `--fs-1..5` com guarda (detector
+  115 → 12, zero de fonte), tema segue o aparelho (`SCRIPT_TEMA` no `<head>`), `PRODUCT.md` e `DESIGN.md`
+  novos. E2E 42/4/0 sobre build de produção local. ⚠️ Playwright emula aparelho CLARO: a E2E abre clara.
+  ⚠️ Verificar tela logada sem Docker: Postgres 17 nativo na 15439 + `E2E_SERVIDOR=producao` +
+  `E2E_DATABASE_URL`/`E2E_PORT` próprios; capturas por cookie assinado (script no rascunho da sessão).
+- Próxima Ação: PR e merge da TASK-132 → TASK-133 (componentes globais: botões, cartões, etiquetas,
+  cores do quadro de chaves). Do usuário: conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -542,8 +548,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: cr/ui-mobile (CR do ADR-031, PR a abrir). PRs #15–#95 merged (o #43 do Dependabot
-  entrou, pela outra sessão).
+- Branch atual: feat/task-132-fundacao-visual (TASK-132, PR a abrir). PRs #15–#96 merged (o #43 do
+  Dependabot entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.

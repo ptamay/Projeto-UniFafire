@@ -217,20 +217,20 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                             <td data-label="Usuário"><strong>{log.username}</strong></td>
                                             <td data-label="Ação">
                                                 <span style={{
-                                                    fontSize: '0.85rem',
+                                                    fontSize: 'var(--fs-2)',
                                                     padding: '2px 8px',
                                                     borderRadius: 'var(--radius-sm)',
                                                     background: isSecurityEvent ? 'var(--blue-900)' : 'var(--bg-elevated)',
                                                     color: isSecurityEvent ? 'var(--blue-300)' : 'var(--text-secondary)',
-                                                    fontWeight: 500,
+                                                    fontWeight: 400,
                                                     border: '1px solid var(--border)'
                                                 }}>
                                                     {log.action}
                                                 </span>
                                             </td>
                                             <td data-label="Alvo">{log.target || '-'}</td>
-                                            <td data-label="IP" style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{log.ip_address || '-'}</td>
-                                            <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{log.details || '-'}</td>
+                                            <td data-label="IP" style={{ fontFamily: 'monospace', fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>{log.ip_address || '-'}</td>
+                                            <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)' }}>{log.details || '-'}</td>
                                         </tr>
                                     )})
                                 ) : (

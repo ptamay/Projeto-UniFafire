@@ -1,5 +1,6 @@
-/* Inter é servida pelo next/font (layout.tsx) via --font-inter — sem @import
-   bloqueante e sem FOUT; o fallback system-ui cobre o primeiro paint. */
+/* A fonte é a Atkinson Hyperlegible Next (TASK-132 · ADR-031), servida pelo next/font
+   (layout.tsx) via --font-sistema — sem @import bloqueante; o fallback system-ui cobre
+   o primeiro paint. Desenhada para baixa visão: I/l/1, O/0 e a/o não se confundem. */
 
 /* ============================================================
    DESIGN SYSTEM — UniFAFIRE
@@ -93,6 +94,23 @@
   --chip-blue-fg:   var(--blue-300);
   --chip-purple-bg: rgba(168, 85, 247, 0.18);
   --chip-purple-fg: #c084fc;
+
+  /* Escala de tipo (TASK-132 · ADR-031 · REQ-033a). CINCO degraus e nenhum outro — a
+     guarda tests/escala-tipografica.test.ts reprova font-size fora deles. Antes eram 20
+     tamanhos, quase todos entre 10 e 14 px, e nada liderava. Papel de cada degrau:
+       --fs-1 metadado, rótulo pequeno, etiqueta     --fs-4 título de seção e de cartão
+       --fs-2 texto de apoio, rótulo de campo        --fs-5 título da tela
+       --fs-3 texto, campo, nome — o piso de leitura
+     Em rem, para respeitar a fonte aumentada do celular. */
+  --fs-1: 0.75rem;   /* 12 px */
+  --fs-2: 0.875rem;  /* 14 px */
+  --fs-3: 1rem;      /* 16 px */
+  --fs-4: 1.25rem;   /* 20 px */
+  --fs-5: 1.75rem;   /* 28 px */
+  /* Três pesos. O 800 estava em 29 lugares: com tudo em negrito, negrito não destaca. */
+  --fw-regular: 400;
+  --fw-semibold: 600;
+  --fw-bold: 700;
 
   /* Layout */
   --sidebar-w: 260px;
@@ -193,10 +211,10 @@
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 16px; scroll-behavior: smooth; }
+html { font-size: var(--fs-3); scroll-behavior: smooth; }
 
 body {
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-sistema), system-ui, sans-serif;
   background: var(--bg-page);
   color: var(--text-primary);
   min-height: 100vh;
@@ -206,7 +224,9 @@ body {
 
 /* Form controls NÃO herdam fonte por padrão (UA stylesheet) — sem isso,
    botões/inputs sem regra explícita (ex.: .nav-item) renderizavam em Arial. */
-button, input, select, textarea { font-family: inherit; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; }
+/* font-size: inherit (TASK-132): sem ele, controle sem classe própria herdava o 13,33 px
+   do navegador — o sexto tamanho, fora da escala, medido no Histórico e no desktop. */
 
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -220,11 +240,13 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 /* ── Typography ────────────────────────────────────────── */
-.font-display { font-family: var(--font-inter), system-ui, sans-serif; }
-h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: var(--font-inter), system-ui, sans-serif; }
-h1 { font-size: 1.875rem; line-height: 1.2; }
-h2 { font-size: 1.375rem; }
-h3 { font-size: 1.125rem; }
+.font-display { font-family: var(--font-sistema), system-ui, sans-serif; }
+h1, h2, h3 { color: var(--text-primary); font-weight: 700; font-family: var(--font-sistema), system-ui, sans-serif; }
+h1 { font-size: var(--fs-5); line-height: 1.2; }
+h2 { font-size: var(--fs-4); }
+h3 { font-size: var(--fs-4); }
+/* O navegador desenha o <small> a 83% do pai — 13,33 px sob texto de 16 (TASK-132). */
+small { font-size: var(--fs-2); }
 
 /* ── Layout Primitives ────────────────────────────────── */
 .page-wrapper {
@@ -272,9 +294,9 @@ h3 { font-size: 1.125rem; }
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   font-weight: 700;
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-sistema), system-ui, sans-serif;
   cursor: pointer;
   border: none;
   outline: none;
@@ -336,8 +358,8 @@ h3 { font-size: 1.125rem; }
   transform: translateY(-2px);
 }
 
-.btn-sm { padding: 0.5rem 1rem; font-size: 0.8125rem; }
-.btn-lg { padding: 1rem 2.5rem; font-size: 1rem; }
+.btn-sm { padding: 0.5rem 1rem; font-size: var(--fs-2); }
+.btn-lg { padding: 1rem 2.5rem; font-size: var(--fs-3); }
 .btn-icon { padding: 0.5rem; width: 44px; height: 44px; }
 
 /* ── Inputs ───────────────────────────────────────────────── */
@@ -347,8 +369,8 @@ h3 { font-size: 1.125rem; }
   border: 2px solid var(--border-strong);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 0.9375rem;
+  font-family: var(--font-sistema), system-ui, sans-serif;
+  font-size: var(--fs-3);
   padding: 0.875rem 1rem;
   min-height: 44px;
   outline: none;
@@ -367,7 +389,7 @@ h3 { font-size: 1.125rem; }
 
 .input-label {
   display: block;
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
   font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
@@ -402,12 +424,12 @@ h3 { font-size: 1.125rem; }
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--fs-3);
 }
 .table thead th {
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -457,8 +479,8 @@ h3 { font-size: 1.125rem; }
   border-radius: var(--radius-full);
   /* Piso de legibilidade 12px — o estado da chave é O dado do produto e era
      o menor texto da tela (10,4px), hostil à leitura "a 1 metro" (DESIGN.md). */
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: all 0.2s ease;
@@ -571,8 +593,8 @@ h3 { font-size: 1.125rem; }
 .dashboard-list-header {
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   color: var(--text-secondary);
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -597,8 +619,8 @@ h3 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -610,8 +632,8 @@ h3 { font-size: 1.125rem; }
   color: var(--warning-text);
   border-radius: var(--radius-full);
   padding: 0 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
 }
 .pending-inline-item {
   display: flex;
@@ -630,7 +652,7 @@ h3 { font-size: 1.125rem; }
   min-width: 0;
 }
 .pending-inline-key {
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   font-weight: 700;
   color: var(--text-primary);
   overflow: hidden;
@@ -638,7 +660,7 @@ h3 { font-size: 1.125rem; }
   white-space: nowrap;
 }
 .pending-inline-status {
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   color: var(--text-secondary);
 }
 .pending-inline-actions {
@@ -664,17 +686,17 @@ h3 { font-size: 1.125rem; }
   gap: 0.5rem;
 }
 .stat-chip-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
 }
-.stat-chip-value { font-size: 1.125rem; font-weight: 800; }
+.stat-chip-value { font-size: var(--fs-4); font-weight: 700; }
 
 /* ── Rótulo de campo em modais/formulários ────────────────── */
 .field-label {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -683,7 +705,7 @@ h3 { font-size: 1.125rem; }
 /* ── Linha de dica no topo de dropdowns ───────────────────── */
 .dropdown-hint {
   padding: 0.4rem 1rem;
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -744,7 +766,7 @@ h3 { font-size: 1.125rem; }
   border-bottom: 1px solid var(--border);
 }
 .modal-title {
-  font-size: 1.125rem;
+  font-size: var(--fs-4);
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -808,13 +830,13 @@ h3 { font-size: 1.125rem; }
   padding: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.sidebar-logo-text { font-size: 0.8rem; font-weight: 700; color: var(--green-300); line-height: 1.3; }
+.sidebar-logo-text { font-size: var(--fs-2); font-weight: 700; color: var(--green-300); line-height: 1.3; }
 
 .sidebar-nav { flex: 1; padding: 1.25rem 0.75rem; overflow-y: auto; }
 
 .nav-section-title {
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--blue-300);
@@ -831,8 +853,8 @@ h3 { font-size: 1.125rem; }
   padding: 0.75rem 0.875rem;
   margin: 0.125rem 0;
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--fs-2);
+  font-weight: 600; /* rótulo de navegação: semibold, não regular (TASK-132) */
   color: #a8bbd8;
   cursor: pointer;
   border: none;
@@ -884,12 +906,12 @@ h3 { font-size: 1.125rem; }
   gap: 1rem;
 }
 .page-title {
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-size: var(--fs-5);
+  font-weight: 700;
   color: var(--text-primary);
 }
 .page-subtitle {
-  font-size: 0.9rem;
+  font-size: var(--fs-3);
   color: var(--text-muted);
   margin-top: 0.25rem;
 }
@@ -977,7 +999,7 @@ h3 { font-size: 1.125rem; }
     border: none;
     outline: none;
     color: var(--text-primary);
-    font-size: 16px; /* evita zoom automático no iOS */
+    font-size: var(--fs-3); /* evita zoom automático no iOS */
   }
   .mobile-touch-search input:focus {
     outline: none !important;
@@ -1003,7 +1025,7 @@ h3 { font-size: 1.125rem; }
     border: 1px solid var(--border);
     border-radius: var(--radius-full);
     color: var(--text-primary);
-    font-size: 0.8125rem;
+    font-size: var(--fs-2);
     font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
@@ -1028,7 +1050,7 @@ h3 { font-size: 1.125rem; }
   align-items: center;
   padding: 0.2rem 0.625rem;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: var(--fs-1);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1183,16 +1205,16 @@ h3 { font-size: 1.125rem; }
 }
 
 .key-card-title {
-  font-size: 1rem;
+  font-size: var(--fs-3);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
 
 .key-card-room {
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 400;
   margin-top: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
@@ -1200,9 +1222,9 @@ h3 { font-size: 1.125rem; }
 }
 
 .key-card-user-info {
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
   color: var(--blue-300);
-  font-weight: 500;
+  font-weight: 400;
   margin-top: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
@@ -1212,7 +1234,7 @@ h3 { font-size: 1.125rem; }
 .key-card-action-btn {
   margin-top: 0.75rem;
   padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1258,8 +1280,8 @@ h3 { font-size: 1.125rem; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   color: var(--blue-300);
   flex-shrink: 0;
 }
@@ -1290,10 +1312,10 @@ h3 { font-size: 1.125rem; }
   color: var(--text-muted);
 }
 .empty-state svg { margin: 0 auto 1rem; opacity: 0.3; }
-.empty-state p { font-size: 0.95rem; }
+.empty-state p { font-size: var(--fs-3); }
 
 /* ── Toast override ─────────────────────────────────────── */
-.react-hot-toast > div { font-family: var(--font-inter), system-ui, sans-serif !important; }
+.react-hot-toast > div { font-family: var(--font-sistema), system-ui, sans-serif !important; }
 
 /* ── Animations ─────────────────────────────────────────── */
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
@@ -1320,7 +1342,7 @@ h3 { font-size: 1.125rem; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--fs-2);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1455,7 +1477,7 @@ textarea:focus-visible,
   box-shadow: var(--shadow-md);
   padding: 0.4rem 0.625rem;
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -1511,7 +1533,7 @@ textarea:focus-visible,
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-size: 0.75rem; /* piso 12px (era 10px) */
+    font-size: var(--fs-1); /* piso 12px (era 10px) */
     font-weight: 700;
     letter-spacing: 0.01em;
     cursor: pointer;
@@ -1550,8 +1572,8 @@ textarea:focus-visible,
     padding: 0 4px;
     background: #ef4444;
     color: #fff;
-    font-size: 0.6rem;
-    font-weight: 800;
+    font-size: var(--fs-1);
+    font-weight: 700;
     line-height: 16px;
     border-radius: 999px;
     box-shadow: 0 0 0 2px var(--bg-surface);
@@ -1591,8 +1613,8 @@ textarea:focus-visible,
   .dashboard-list-row.row-inuse::before { background: var(--danger); }
   .dashboard-list-row.row-pending::before { background: var(--warning); }
   .dashboard-list-row > div:first-child { 
-    font-size: 1.15rem !important; 
-    font-weight: 800 !important; 
+    font-size: var(--fs-4) !important; 
+    font-weight: 700 !important; 
     color: var(--text-primary); 
     text-align: center !important;
     letter-spacing: -0.02em;
@@ -1607,8 +1629,8 @@ textarea:focus-visible,
   }
   .dashboard-list-row > div[data-label]::before {
     content: attr(data-label);
-    font-size: 0.65rem;
-    font-weight: 800;
+    font-size: var(--fs-1);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
@@ -1716,7 +1738,7 @@ textarea:focus-visible,
   min-width: 0;
 }
 .mobile-topbar-title {
-  font-size: 0.9rem;
+  font-size: var(--fs-3);
   font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
@@ -1724,8 +1746,8 @@ textarea:focus-visible,
   text-overflow: ellipsis;
 }
 .mobile-topbar-badge {
-  font-size: 0.6rem;
-  font-weight: 800;
+  font-size: var(--fs-1);
+  font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--green-300);
   border: 1px solid rgba(29, 128, 70, 0.4);
@@ -1749,8 +1771,8 @@ textarea:focus-visible,
   .btn { min-height: var(--touch-target); }
   .btn-icon { width: var(--touch-target); height: var(--touch-target); }
   .btn-sm { min-height: var(--touch-target); }
-  .input { min-height: var(--touch-target); font-size: 16px; } /* 16px evita zoom automático no iOS */
-  .form-input { min-height: var(--touch-target); font-size: 16px; } /* inputs das telas de conta (TASK-027) */
+  .input { min-height: var(--touch-target); font-size: var(--fs-3); } /* 16px evita zoom automático no iOS */
+  .form-input { min-height: var(--touch-target); font-size: var(--fs-3); } /* inputs das telas de conta (TASK-027) */
   .nav-item { min-height: var(--touch-target); }
   .pagination button { width: var(--touch-target); height: var(--touch-target); }
 
@@ -1811,8 +1833,8 @@ textarea:focus-visible,
   .table-cards .table tbody td:last-child { border-bottom: none; padding-bottom: 0; }
   .table-cards .table tbody td::before {
     content: attr(data-label);
-    font-size: 0.65rem;
-    font-weight: 800;
+    font-size: var(--fs-1);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
@@ -1919,17 +1941,17 @@ textarea:focus-visible,
   }
   .mobile-topbar-title {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: var(--fs-3);
     letter-spacing: -0.01em;
     animation: fadeIn 0.2s var(--ease-out-quart);
   }
   .mobile-topbar-badge {
     background: var(--accent-primary);
     color: #fff;
-    font-size: 0.6rem;
+    font-size: var(--fs-1);
     padding: 2px 6px;
     border-radius: var(--radius-full);
-    font-weight: 800;
+    font-weight: 700;
   }
 
   /* ── Botões de ícone da topbar (menu + tema) ──
@@ -2014,19 +2036,19 @@ textarea:focus-visible,
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-size: var(--fs-4);
+  font-weight: 700;
   color: var(--text-secondary);
   flex-shrink: 0;
 }
 .touch-contact-name {
-  font-size: 1rem;
+  font-size: var(--fs-3);
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
 .touch-contact-role {
-  font-size: 0.75rem;
+  font-size: var(--fs-1);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -2043,7 +2065,7 @@ textarea:focus-visible,
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-elevated);
-  font-size: 0.8125rem;
+  font-size: var(--fs-2);
 }
 .bkp-status strong { color: var(--text-primary); font-weight: 700; }
 .bkp-status span { color: var(--text-muted); overflow-wrap: anywhere; }
