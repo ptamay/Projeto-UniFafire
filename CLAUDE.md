@@ -216,10 +216,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `feat/task-116-emenda-3-5-4-4`, PR a abrir): §3.5 e §4.4 emendadas — **ADR-024 fechado em código**.
   ⚠️ Achado registrado no `plan.md`: a §3.5 chama `action_logs` de "imutável" e ela não é (sem
   gatilho; o "Limpar Banco" a esvazia) — candidata a CR.
-- Próxima Ação: merge da TASK-116 → usuário cria o token de disparo (runbook §6.3) → backup manual
-  pela tela (prova a TASK-114) → ENSAIO da restauração pelo Actions (`ensaio: true`, prova a 115).
-  Fila: CR da imutabilidade de `action_logs`, §2.2 (dados de saída desde 08/09), §0 da constitution
-  (vencida), PR #43 do Dependabot, majors TS/ESLint/Vitest, `keys.db` no histórico, RTO de 4 h. Fila restante: `auto_logout_time = "30"` (usuário salva pela
+- ✅ #76 merged (TASK-116 no ar — ADR-024 fechado em código). 📋 **CR da trilha imutável (Tipo C,
+  ADR-026), aprovado pelo usuário:** MEDIDO — `UPDATE`/`DELETE` passam em `action_logs` e
+  `audit_logs`, e `TRUNCATE` passa nas cinco tabelas da trilha. TASK-124: gatilhos de linha nas duas,
+  `BEFORE TRUNCATE` nas cinco (bypass = modo de manutenção), Limpar Banco inalterado. 🔴 Migration →
+  roteiro no editor ANTES do merge.
+- Próxima Ação: merge do CR → TASK-124. Em paralelo, do usuário: token de disparo (runbook §6.3) →
+  backup manual → ENSAIO da restauração. Fila: §2.2 (dados de saída desde 08/09), §0 da
+  constitution (vencida), PR #43 do Dependabot, majors TS/ESLint/Vitest, `keys.db`, RTO de 4 h. Fila restante: `auto_logout_time = "30"` (usuário salva pela
   tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
   da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
   v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
@@ -456,7 +460,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-116-emenda-3-5-4-4 (PR a abrir). PRs #15–#75 merged; aberto só o #43 do
+- Branch atual: cr/imutabilidade-trilha (PR a abrir). PRs #15–#76 merged; aberto só o #43 do
   Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

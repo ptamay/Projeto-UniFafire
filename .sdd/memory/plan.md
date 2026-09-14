@@ -100,6 +100,19 @@
   Verificar desktop, celular e a impressão do Histórico. `git mv` por pasta; ~12 testes citam os
   caminhos e mudam junto.
 
+### Aberta por Change Request — a trilha de auditoria imutável de verdade (CR Tipo C · ADR-026)
+> Aprovado pelo usuário em 2026-09-13, opções recomendadas. Achado da TASK-116: a §3.5 e dois
+> comentários de código tratam `action_logs` como imutável, e ela NÃO é — medido: `UPDATE` e `DELETE`
+> passam em `action_logs` e `audit_logs`, e `TRUNCATE` passa nas cinco tabelas da trilha (gatilho de
+> linha não dispara nele). A §3.5 só se cumpria por acaso, pela cópia de todo `logAction` no
+> `app_logs`. Nenhuma emenda: a constitution passa a ser VERDADE.
+- **TASK-124 → trilha imutável.** Migration: gatilhos UPDATE/DELETE em `action_logs` e `audit_logs`
+  (mesmo bypass do `history`) + `BEFORE TRUNCATE` nas cinco (`history`, `action_logs`, `audit_logs`,
+  `app_logs`, `backup_runs`) + `REVOKE UPDATE, DELETE`. Guarda: toda tabela da trilha tem os três
+  gatilhos, e eles recusam fora do modo de manutenção. `db/load-pg.mjs --truncate` e os testes que
+  esvaziam a trilha passam a usar o bypass. Limpar Banco (REQ-014) inalterado — já usa o modo.
+  🔴 Roteiro para produção ANTES do merge (a migration entra na lista esperada).
+
 ### Aberta por Change Request — os testes rodam no CI (CR Tipo A · 2026-09-12)
 > Pedido do usuário depois da TASK-120. Tipo A: infraestrutura nova, nenhuma funcionalidade muda.
 > Motivo, medido: **nenhum teste roda no CI** — nem a E2E nem a vitest; o `ci-gates.sh` também
@@ -343,8 +356,9 @@
   > ⚠️ **Achado, fora do escopo:** a §3.5 diz "entrada IMUTÁVEL no log de auditoria", e
   > `action_logs` NÃO é imutável — não tem gatilho (só `history` e `backup_runs` têm), e o próprio
   > "Limpar Banco" a esvazia com TRUNCATE. A cláusula afirma uma propriedade que o banco não tem.
-  > Não mexi no texto (a emenda era da restauração); é candidata a CR próprio: gatilho de
-  > imutabilidade em `action_logs`, ou a cláusula dizer o que é verdade.
+  > Não mexi no texto (a emenda era da restauração). ➡️ **VIROU CR em 2026-09-13 — ADR-026,
+  > TASK-124:** gatilhos na trilha, TRUNCATE recusado nas cinco tabelas; a cláusula fica e passa a
+  > ser verdade.
 - **TASK-116 → emenda da §3.5 e da §4.4** — só depois de 112–115 no ar.
 
 ### API de dados fechada e workflows com permissão mínima (CR Tipo C · ADR-023) ✅ FECHADO em 2026-09-10
