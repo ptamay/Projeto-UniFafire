@@ -22,6 +22,7 @@
 | Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
+| PWA | **Só o manifest (`public/manifest.json`), sem service worker** (ADR-030) | 📋 aprovado em 2026-09-14, entra na TASK-129. O `@ducanh2912/next-pwa` sai: exige webpack, e sob o Turbopack do Next 16 nunca gerou nada. Service worker novo (inclusive Serwist) entra por CR próprio |
 | Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | ✅ no ar desde 2026-09-14 (TASK-126), verificado em produção. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
 
 ## 2. Decisões e Justificativas
@@ -121,8 +122,10 @@
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e
 > implementado, e a tela não o alcançava. Relato com captura: "Erro ao limpar histórico.".
-- [x] **TASK-127 → a tela chama DELETE.** ✅ **FEITA em 2026-09-14** (branch
-  `fix/task-127-limpar-historico`). A tela chamava `POST /api/history/clear`; a rota exporta só
+- [x] **TASK-127 → a tela chama DELETE.** ✅ **NO AR em 2026-09-14** (#85, `37d95ae`; `pos-deploy`
+  verde, health 200). O primeiro CI do #85 caiu por instabilidade da E2E (o dev server derrubou o
+  `POST /api/auth/logout` com `ECONNRESET` no meio do `pull-flow`; a solicitação pendente sujou a base
+  e derrubou mais dois specs em cascata) — re-execução verde. A tela chamava `POST /api/history/clear`; a rota exporta só
   `DELETE` desde 2026-05-21 (`fd7d603`), e o contrato de API diz `DELETE` → 405. **Quatro meses
   quebrado em produção**, com três testes cobrindo a rota — todos importam o handler e o chamam
   direto, nenhum olhava a costura tela → rota. `tests/fetch-contrato.test.ts`: toda chamada
@@ -132,6 +135,28 @@
   sucesso, `history` 6 → 0, `CLEAR_HISTORY` na trilha (o gatilho da TASK-124 deixa passar — a rota
   usa o modo de manutenção). ⚠️ A mesma cegueira pode existir no sentido inverso (rota exportando
   método que nenhuma tela usa) — não é defeito, não foi cobrada.
+
+### Aberta por Change Request — o PWA é o manifest, sem service worker (CR Tipo C · ADR-030)
+> Aprovado pelo usuário em 2026-09-14 (opção D). Medição dele: `/sw.js` → 404 em produção, e o
+> `next build` local não o gera. **O SW nunca existiu**: projeto nascido no Next 16 (Turbopack no
+> build), e o `@ducanh2912/next-pwa` entrou (`fd7d603`) junto com o `turbopack: {}` que desliga o
+> callback `webpack` onde ele gera o `sw.js` e injeta o registro. Medido na worktree: `--webpack`
+> gera o SW (e reprova no type-check do `POST(request?)` do logout), com `NetworkFirst` em `/api/*` e
+> nas páginas por 24 h — dado autenticado no aparelho, contra a §6 ("Sem modo offline"). Em produção:
+> nenhum chunk tenta registrar SW, 0 requisições a `/sw.js`, console limpo; `manifest.json` 200; o
+> único ícone é 300×283, declarado como 192 e 512.
+- **TASK-129 → PWA sem service worker.** Tirar `@ducanh2912/next-pwa` (`package.json`, lockfile) e o
+  `withPWA` do `next.config.ts`; tirar `sw.js` e `workbox-*.js` da `ARQUIVOS_PUBLICOS` do `proxy.ts` e
+  do `proxy-authorization.test.ts` (manifest e ícones continuam públicos); ícones 192×192 e 512×512
+  quadrados com `purpose: "any"` e um maskable separado, e o manifest apontando para eles (a marca só
+  existe em PNG de 300×283 — o `logo.svg` é o logotipo horizontal; sem vetor da marca, a ampliação
+  fica registrada como débito e a arte é pedida ao usuário). `tests/pwa.test.ts` vira guarda: manifest
+  válido com os campos de instalação; cada ícone existe, é PNG quadrado com as dimensões declaradas;
+  há 192 e 512 com `any`; nada no código/config promete SW que o build não produz — vermelho conferido
+  cenário a cenário, inclusive recolocando o `withPWA` e o ícone antigo. `next build` verde,
+  `npm audit --omit=dev` 0. Depois do merge: manifest e ícones 200 em produção, `/sw.js` sem 200,
+  DevTools sem erro de ícone, e **instalação real num Android (menu) e num iPhone (Adicionar à Tela
+  de Início), pelo usuário**, registrada aqui. Sem migration.
 
 ### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
 > Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o
@@ -169,7 +194,9 @@
 > e o `loading.tsx` troca a página inteira — menu junto. De lado: o menu remonta a cada navegação
 > (a assinatura dele publica "conectando" de novo, e o timer do logout e o tutorial são recriados),
 > e seis telas passam `isOpen`/`onMobileClose` que nenhuma usa.
-- [x] **TASK-125 → menu no layout.** ✅ **FEITA em 2026-09-14** (branch `feat/task-125-menu-no-layout`).
+- [x] **TASK-125 → menu no layout.** ✅ **NO AR em 2026-09-14** (#84, `64a53c6`, CI verde; em produção
+  sem sessão: `/login` sem menu, as nove telas 307 → `/login`, `/api/keys` 401. A parte logada — o
+  menu parado e o ponto do tempo real — espera o usuário conferir). ADR-027 fechado em código.
   `src/app/(app)/layout.tsx` desenha a moldura e o menu (em `.no-print`); as nove telas foram para
   o grupo por `git mv` (URLs iguais, `/login` fora) e desenham só o `main`. O layout lê a sessão
   pelo JWT (`verifySessionEdge`), SEM banco — com `verifySession` cada renderização completa

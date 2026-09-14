@@ -242,11 +242,30 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   diz DELETE) → 405 → "Erro ao limpar histórico.". Nenhum teste viu: todos chamam o handler direto.
   Correção = TASK-127 (tela → DELETE + guarda que confere todo `fetch` das telas contra os métodos
   exportados pelas rotas).
-- ✅ #84 merged (TASK-125 NO AR, `64a53c6`, pela outra sessão, CI verde). ✅ **TASK-127 FEITA** (branch
-  `fix/task-127-limpar-historico`, PR a abrir): a tela chama DELETE; guarda `tests/fetch-contrato.test.ts`
-  confere as ~40 chamadas das telas contra os métodos das rotas. Verificado no navegador (DELETE 200,
-  6 → 0, trilha registrada). Sem migration.
-- Próxima Ação: merge da TASK-127. Do usuário: token de
+- ✅ #84 merged (TASK-125 NO AR, `64a53c6`, pela outra sessão, CI verde). Verificado em produção SEM
+  sessão (pela outra sessão): deploy às 04:48 UTC, `pos-deploy` verde, `/login` 200 sem menu e sem
+  moldura, as nove telas 307 → `/login`, `/api/keys` 401 — a autorização continua com o layout novo.
+  ⚠️ **A parte logada não foi vista em produção:** o menu parado na troca de tela e o ponto do tempo
+  real (volta ou não a "Conectando…") — o usuário confere ao entrar.
+- ✅ **TASK-127 NO AR** (#85 merged, `37d95ae`; `pos-deploy` verde, health 200): o "Limpar Histórico"
+  chama DELETE; guarda `tests/fetch-contrato.test.ts` confere as ~40 chamadas das telas contra os
+  métodos das rotas. Verificado no navegador local (DELETE 200, 6 → 0, trilha registrada); em
+  produção, só o usuário (ADMIN) exercita — apaga o histórico de verdade.
+- ⚠️ **E2E INSTÁVEL NO CI (visto no #85):** o servidor de dev derrubou o `POST /api/auth/logout`
+  (`ECONNRESET`, "The destination stream closed early") no meio do `pull-flow`; a solicitação ficou
+  pendente na base e derrubou em cascata as tentativas e dois specs de chave do celular. Re-execução
+  do job: verde. Não é defeito de código, mas os specs de fluxo NÃO se isolam — um fluxo interrompido
+  suja a base para os seguintes. Candidato a task se repetir.
+- 📋 **CR do PWA SEM SERVICE WORKER (Tipo C, ADR-030), aprovado pelo usuário (opção D), 2026-09-14**
+  (branch `cr/pwa-sem-service-worker`, PR a abrir): **o `sw.js` NUNCA existiu** — projeto nascido no
+  Next 16 (Turbopack no build), e o `next-pwa` entrou (`fd7d603`) junto com o `turbopack: {}` que
+  desliga o callback `webpack` onde ele gera o SW e injeta o registro. Nenhum bundle tenta registrar;
+  instalar pelo menu funciona sem SW. REQ-018 reescrito; TASK-129: tirar o plugin, tirar
+  `sw.js`/`workbox-*` do proxy, ícones quadrados 192/512 (o único é 300×283), guarda no `pwa.test.ts`.
+  ⚠️ **NÃO ligar `--webpack`:** o SW do plugin faz `NetworkFirst` em `/api/*` e nas páginas por 24 h.
+  ⚠️ Números: **ADR-029 e TASK-128 são do CR da transição suave** (outra sessão, `cr/transicao-suave`).
+- Próxima Ação: merge do CR do PWA → TASK-129. Do usuário: conferir em produção a parte logada da TASK-125 e,
+  se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
   (vencida), PR #43 do Dependabot (re-run do check), majors TS/ESLint/Vitest, `keys.db` no histórico
@@ -499,8 +518,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: fix/task-127-limpar-historico (PR a abrir). PRs #15–#84 merged; aberto só o #43 do
-  Dependabot.
+- Branch atual: cr/pwa-sem-service-worker (CR do ADR-030, PR a abrir). PRs #15–#86 merged; aberto
+  só o #43 do Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.
