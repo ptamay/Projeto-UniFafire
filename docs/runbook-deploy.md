@@ -606,7 +606,7 @@ O que o ADMIN precisa saber, e o modal diz:
   nunca recuam.
 - Só aparecem backups **posteriores à última migration**: um dump de antes tem outro
   schema, e o motor o recusaria. Para esses, o caminho é o §6.5.2 numa base nova.
-- O resultado aparece na mesma seção em alguns minutos, e fica na trilha:
+- O resultado aparece na mesma seção quando o workflow termina (a duração em produção ainda não foi medida), e fica na trilha:
   `RESTAURACAO_SOLICITADA` (antes de executar, §3.5) → `BACKUP_RESTAURADO`,
   `RESTAURACAO_RECUSADA` ou `RESTAURACAO_FALHOU`.
 

@@ -152,7 +152,9 @@ export default function SettingsClient({ userRole, username }: Props) {
             });
             const d = await res.json();
             if (Array.isArray(d?.restauraveis)) setRestauracao(d);
-            if (res.ok) toast.success('Restauração pedida. Primeiro sai um backup de segurança; o resultado aparece aqui em alguns minutos.');
+            // Sem prazo prometido: a duração da restauração em produção ainda não foi medida
+            // (a guarda da TASK-123 reprova "alguns minutos" na tela).
+            if (res.ok) toast.success('Restauração pedida. Primeiro sai um backup de segurança; o resultado aparece nesta seção quando terminar.');
             else { toast.error(d.error || 'Não foi possível pedir a restauração.'); fetchRestauracao(); }
         } catch { toast.error('Erro de conexão.'); }
         setPedindoRestauracao(false);
