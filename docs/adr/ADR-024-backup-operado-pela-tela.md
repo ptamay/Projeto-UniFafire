@@ -9,7 +9,15 @@
   backup (push forçado com lease); retenção desconhecida não apaga nada. TASK-114 feita em
   2026-09-13: `POST /api/backups/executar` dispara o `backup.yml` por `workflow_dispatch`; o botão
   só aparece com `BACKUP_DISPARO_TOKEN` e `BACKUP_DISPARO_REPO` configurados; pedido pendente até
-  aparecer execução nova em `backup_runs` (expira em 60 min)
+  aparecer execução nova em `backup_runs` (expira em 60 min). TASK-115 feita em 2026-09-13 — com
+  três decisões do usuário que a decisão 4 não previa: (a) **a trilha deixa de ter FK para `users`**
+  (migration `202609131200`): `action_logs.user_id` e `audit_logs.actor_id/target_user_id`
+  impediam tirar de `users` quem foi criado depois do backup, e o CASCADE apagaria a trilha;
+  as sequências nunca recuam, para um `user_id` antigo jamais apontar para outra pessoa;
+  (b) `login_attempts` e `rate_limit_hits` ficam como estão; (c) o modal exige digitar
+  RESTAURAR. Também preservada: `settings` (voltar a retenção de um backup antigo poderia apagar
+  backups no envio seguinte). Negócio = `users`, `keys`, `key_transactions`, `history`. Restauração
+  na Zona de Perigo (ADR-025), e um modo `ensaio` no workflow que faz tudo em produção e desfaz
 - **Data:** 2026-09-10
 - **Tipo de Change Request:** **D** (a restauração pela tela mexe no que a §3.5 e a §4.4 da
   constitution dizem; a agenda e a retenção sozinhas seriam Tipo C)

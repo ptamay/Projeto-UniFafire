@@ -204,8 +204,15 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `POST /api/backups/executar` → `workflow_dispatch` do `backup.yml`. Só aparece com
   `BACKUP_DISPARO_TOKEN` + `BACKUP_DISPARO_REPO` na Vercel. ⚠️ O disparo REAL só se prova depois que
   o USUÁRIO criar o token (runbook §6.3) e apertar o botão uma vez.
-- Próxima Ação: PR da TASK-114 → merge → usuário cria o token e cadastra na Vercel → apertar o
-  botão uma vez em produção → TASK-115 (restaurar da lista) → 116. Fila restante: `auto_logout_time = "30"` (usuário salva pela
+- ✅ #74 merged (TASK-114 no ar, SEM token ainda). ✅ **TASK-115 FEITA em 2026-09-13** (branch
+  `feat/task-115-restaurar`, PR a abrir): restaurar da lista, na Zona de Perigo, digitando
+  RESTAURAR; `restaurar.yml` com backup de segurança antes; motor `db/restaurar-backup.mjs` numa
+  transação, trilha preservada; modo `ensaio`. Decisões do usuário: **FKs da trilha para `users`
+  removidas** (migration `202609131200`), segurança preservada, RESTAURAR digitado. Ensaiada sobre
+  cópia de produção (dumps de 11 e 13/09, apagados depois).
+  🔴 **Aplicar a `202609131200` pelo roteiro no editor ANTES do merge** (senão health 503).
+- Próxima Ação: usuário aplica o roteiro → merge da TASK-115 → usuário cria o token (TASK-114) →
+  backup manual → ENSAIO da restauração pelo Actions → TASK-116 (emenda da §3.5/§4.4, por último). Fila restante: `auto_logout_time = "30"` (usuário salva pela
   tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
   da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
   v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
@@ -438,7 +445,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-114-backup-manual (PR a abrir). PRs #15–#73 merged; aberto só o #43 do
+- Branch atual: feat/task-115-restaurar (PR a abrir). PRs #15–#74 merged; aberto só o #43 do
   Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
