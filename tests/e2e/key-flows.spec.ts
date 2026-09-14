@@ -12,20 +12,31 @@ import { login, logout, abrirAbaTodas, expectNoHorizontalScroll } from './helper
 
 const KEY_NAME = 'Chave E2E';
 
-// Abre o modal de retirada/devolução da chave: no mobile tocando no card,
-// no desktop pelo botão da linha ('Solicitar' ou 'Devolver').
+// Abre o modal de retirada/devolução da chave pelo VERBO da linha ('Pegar' ou
+// 'Devolver') — no celular na plaqueta, no desktop na linha da lista. Desde a TASK-134
+// a linha não age ao toque: quem age é o botão com o verbo escrito.
 // Clique com retry até o modal abrir — o botão existe no HTML do SSR antes de a
 // hidratação do React anexar o onClick, então o primeiro clique pode ser inerte.
-async function openKeyAction(page: Page, isMobile: boolean, buttonName: 'Solicitar' | 'Devolver', modalTitle: string) {
+async function openKeyAction(page: Page, isMobile: boolean, buttonName: 'Pegar' | 'Devolver', modalTitle: string) {
     await expect(async () => {
-        if (isMobile) {
-            await page.locator('.key-card', { hasText: KEY_NAME }).locator('.key-card-title').click({ timeout: 3000 });
-        } else {
-            const row = page.locator('.dashboard-list-row', { hasText: KEY_NAME });
-            await row.getByRole('button', { name: buttonName, exact: true }).click({ timeout: 3000 });
-        }
+        const linha = isMobile
+            ? page.locator('.plaqueta', { hasText: KEY_NAME })
+            : page.locator('.dashboard-list-row', { hasText: KEY_NAME });
+        await linha.getByRole('button', { name: buttonName, exact: true }).click({ timeout: 3000 });
         await expect(page.getByText(modalTitle)).toBeVisible({ timeout: 3000 });
     }).toPass({ timeout: 30_000 });
+}
+
+// Envia a solicitação e ESPERA a resposta do servidor. Sem isto o `goto('/confirm')`
+// seguinte corria com o POST: a página vem com os dados do servidor (TASK-131), montada
+// antes de a transação existir — "Nenhuma confirmação pendente", com o menu já dizendo
+// "Confirmações 1". Visto na verificação da TASK-134, e é o mesmo caso que a TASK-120
+// corrigiu no passo do porteiro.
+async function enviarSolicitacao(page: Page) {
+    await Promise.all([
+        page.waitForResponse(r => new URL(r.url()).pathname === '/api/transactions' && r.request().method() === 'POST'),
+        page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click(),
+    ]);
 }
 
 test.describe('Ciclo de vida da chave — dupla confirmação', () => {
@@ -39,8 +50,8 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
 
         // O aluno entra em "Minhas Chaves" (TASK-052), e a chave a retirar ainda não é dele.
         await abrirAbaTodas(page);
-        await openKeyAction(page, isMobile, 'Solicitar', 'Solicitar Retirada?');
-        await page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
+        await openKeyAction(page, isMobile, 'Pegar', 'Solicitar Retirada?');
+        await enviarSolicitacao(page);
 
         // Aluno iniciou → já confirmou como usuário; aguarda o porteiro
         await page.goto('/confirm');
@@ -62,7 +73,7 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         // Sem abrir "Todas": a chave agora é dele e tem de aparecer na aba de entrada,
         // "Minhas Chaves" — que é por onde o portador real devolve.
         await openKeyAction(page, isMobile, 'Devolver', 'Solicitar Devolução?');
-        await page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
+        await enviarSolicitacao(page);
 
         // Porteiro fecha o ciclo na Central de Confirmações
         await logout(page);
@@ -79,12 +90,12 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         // continuava em uso: a falha parecia da devolução e era do spec.
         await expect(page.getByText('Nenhuma confirmação pendente no momento.')).toBeVisible();
 
-        // Chave volta a 'disponível' — ciclo completo, estado restaurado
+        // Chave volta a 'livre' — ciclo completo, estado restaurado
         await page.goto('/');
         const keyContainer = isMobile
-            ? page.locator('.key-card', { hasText: KEY_NAME })
+            ? page.locator('.plaqueta', { hasText: KEY_NAME })
             : page.locator('.dashboard-list-row', { hasText: KEY_NAME });
-        await expect(keyContainer.getByText(/dispon[ií]vel/i)).toBeVisible();
+        await expect(keyContainer.getByText(/^Livre$/)).toBeVisible();
         await expectNoHorizontalScroll(page);
     });
 });

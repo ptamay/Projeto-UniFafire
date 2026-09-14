@@ -2,9 +2,11 @@ import { test, expect, Page } from '@playwright/test';
 import { login } from './helpers';
 
 // TASK-052 — a aba de ENTRADA do Dashboard depende do papel, e a ordem dos chips também:
-//   ALUNO/FUNCIONARIO → "Minhas Chaves" primeiro e ativa (quem porta chave quer as dele);
-//   PORTEIRO          → sem "Minhas Chaves", "Disponíveis" ativa (o balcão entrega chave);
-//   ADMIN/GESTOR      → sem "Minhas Chaves", "Todas" ativa (visão de gestão).
+//   ALUNO/FUNCIONARIO → "Minhas" primeiro e ativa (quem porta chave quer as dele);
+//   PORTEIRO          → sem "Minhas", "Livres" ativa (o balcão entrega chave);
+//   ADMIN/GESTOR      → sem "Minhas", "Todas" ativa (visão de gestão).
+// TASK-134: os rótulos encurtaram ("Minhas Chaves" → "Minhas", "Disponíveis" → "Livres") e
+// cada filtro traz a contagem depois da palavra ("Livres 9") — daí o \b no lugar do $.
 //
 // TASK-120 — este spec nasceu com a TASK-052 e NUNCA passou: procurava um `h1`
 // "Dashboard" (o título é "Monitoramento de Chaves") e classes Tailwind de exemplo
@@ -29,16 +31,16 @@ async function expectAbas(page: Page, rotulos: RegExp[], ativa: RegExp) {
 test.describe('Dashboard — aba de entrada por papel (TASK-052)', () => {
     test('ALUNO entra em "Minhas Chaves", a primeira aba', async ({ page }) => {
         await abrirDashboard(page, 'e2e_aluno');
-        await expectAbas(page, [/^Minhas Chaves/, /^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Minhas Chaves/);
+        await expectAbas(page, [/^Minhas\b/, /^Todas\b/, /^Livres\b/, /^Em uso\b/], /^Minhas\b/);
     });
 
     test('PORTEIRO não tem "Minhas Chaves" e entra em "Disponíveis"', async ({ page }) => {
         await abrirDashboard(page, 'e2e_porteiro');
-        await expectAbas(page, [/^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Disponíveis$/);
+        await expectAbas(page, [/^Todas\b/, /^Livres\b/, /^Em uso\b/], /^Livres\b/);
     });
 
     test('ADMIN não tem "Minhas Chaves" e entra em "Todas"', async ({ page }) => {
         await abrirDashboard(page, 'e2e_admin');
-        await expectAbas(page, [/^Todas$/, /^Disponíveis$/, /^Em Uso$/], /^Todas$/);
+        await expectAbas(page, [/^Todas\b/, /^Livres\b/, /^Em uso\b/], /^Todas\b/);
     });
 });

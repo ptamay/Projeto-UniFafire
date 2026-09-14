@@ -10,17 +10,22 @@ import { login, logout, abrirAbaTodas, expectNoHorizontalScroll } from './helper
 
 const PULL_KEY = 'Chave Pull E2E';
 
-// Abre o modal de solicitação e envia. No mobile via botão do card, no desktop via botão da linha.
+// Abre o modal de solicitação e envia, pelo verbo "Pedir" — na plaqueta (celular) ou na linha (desktop).
 // Clique com retry até o modal abrir (o botão existe no SSR antes de a hidratação anexar o onClick).
 async function requestKey(page: Page, isMobile: boolean) {
     await expect(async () => {
         const container = isMobile
-            ? page.locator('.key-card', { hasText: PULL_KEY })
+            ? page.locator('.plaqueta', { hasText: PULL_KEY })
             : page.locator('.dashboard-list-row', { hasText: PULL_KEY });
-        await container.getByRole('button', { name: 'Solicitar', exact: true }).click({ timeout: 3000 });
+        await container.getByRole('button', { name: 'Pedir', exact: true }).click({ timeout: 3000 });
         await expect(page.getByText('Solicitar esta Chave?')).toBeVisible({ timeout: 3000 });
     }).toPass({ timeout: 30_000 });
-    await page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click();
+    // Espera a resposta antes de seguir: o passo seguinte navega, e a navegação corria
+    // com o POST (a mesma corrida vista no key-flows na TASK-134).
+    await Promise.all([
+        page.waitForResponse(r => new URL(r.url()).pathname === '/api/transactions' && r.request().method() === 'POST'),
+        page.getByRole('button', { name: 'Enviar solicitação', exact: true }).click(),
+    ]);
 }
 
 // O portador aceita a solicitação na Central de Confirmações.
@@ -38,7 +43,7 @@ async function expectHolder(page: Page, isMobile: boolean, holderName: string) {
     // transferência a chave é, por construção, de OUTRA pessoa.
     await abrirAbaTodas(page);
     const container = isMobile
-        ? page.locator('.key-card', { hasText: PULL_KEY })
+        ? page.locator('.plaqueta', { hasText: PULL_KEY })
         : page.locator('.dashboard-list-row', { hasText: PULL_KEY });
     await expect(container.getByText(holderName)).toBeVisible();
 }

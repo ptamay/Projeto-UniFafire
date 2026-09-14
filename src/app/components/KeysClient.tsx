@@ -151,7 +151,7 @@ export default function KeysClient({
                                         <td data-label="Sala/Local" style={{ color: 'var(--text-secondary)' }}>{key.room}</td>
                                         <td data-label="Status">
                                             <span className={`status-tag ${key.status === 'available' ? 'status-available' : 'status-inuse'}`}>
-                                                {key.status === 'available' ? 'Disponível' : 'Em uso'}
+                                                {key.status === 'available' ? 'Livre' : 'Em uso'}
                                             </span>
                                         </td>
                                         <td className="td-actions" style={{ textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

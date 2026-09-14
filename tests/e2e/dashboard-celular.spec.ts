@@ -14,6 +14,12 @@ const VERBOS = /^(Pegar|Entregar|Devolver|Pedir|Cancelar)$/;
 async function abrirNoCelularPequeno(page: Page, usuario: string) {
     await page.setViewportSize({ width: 360, height: 640 });
     await login(page, usuario);
+    // A aba de entrada depende do papel (TASK-052): quem não está com chave nenhuma entra
+    // em "Minhas" vazia. Nesse caso a medição é feita em "Todas", que sempre tem chaves.
+    await expect(page.locator('.plaqueta').first().or(page.locator('.empty-state'))).toBeVisible();
+    if (await page.locator('.plaqueta').count() === 0) {
+        await page.locator('.dashboard-filter-chip', { hasText: /^Todas\b/ }).click();
+    }
     await page.locator('.plaqueta').first().waitFor();
 }
 

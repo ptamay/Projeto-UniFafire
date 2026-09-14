@@ -31,7 +31,7 @@ test.describe('Sem scroll horizontal para quem porta chave (REQ-016)', () => {
         await login(page, 'e2e_aluno');
         // Premissa: a barra de QUATRO chips, que é o que alarga o main.
         await expect(page.locator('.dashboard-filter-chip')).toHaveCount(4);
-        await expect(page.getByRole('button', { name: /^Minhas Chaves/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Minhas\b/ })).toBeVisible();
         await expectNoHorizontalScroll(page);
     });
 });
