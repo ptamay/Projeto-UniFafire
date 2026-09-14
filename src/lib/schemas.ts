@@ -126,3 +126,11 @@ export const AgendaBackupSchema = z.object({
     // envio, então ela só muda quando alguém a escolhe, nunca por omissão de um campo.
     dias: z.number().int('A retenção é um número inteiro de dias.').min(3, 'Guarde pelo menos 3 dias de backups.').max(30, 'No máximo 30 dias de backups.'),
 }).strict();
+
+// TASK-115 (ADR-024) — pedir uma restauração. A palavra é exata (decisão do usuário): é a
+// única operação da tela que desfaz trabalho de dias. O arquivo é conferido de novo contra
+// a lista do servidor — este schema só barra o que nem tem forma de pedido.
+export const RestauracaoSchema = z.object({
+    arquivo: z.string().min(1).max(200),
+    confirmacao: z.literal('RESTAURAR', { message: 'Digite RESTAURAR para confirmar.' }),
+}).strict();

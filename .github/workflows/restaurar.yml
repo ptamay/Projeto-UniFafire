@@ -1,0 +1,198 @@
+# TASK-115 (CR Tipo D · ADR-024, decisão 4) — restaurar um backup verificado,
+# escolhido da lista na tela de Configurações.
+#
+# ## Quem dispara
+#
+# A tela, pela API do GitHub (`POST /api/backups/restaurar`, só ADMIN), com o mesmo
+# token do backup manual (TASK-114). Também dá para disparar à mão — e é assim que se
+# faz o ENSAIO: `ensaio: true` percorre o caminho inteiro em produção e desfaz no fim.
+#
+# ## O que acontece, em ordem
+#
+#   1. o pedido é validado: caminho no padrão EXATO de um dump do sistema (§1.5) e
+#      registrado como verificado em `backup_runs`;
+#   2. o dump escolhido é baixado do repositório privado ANTES do backup de segurança —
+#      o envio do backup de segurança aplica a retenção, e não pode apagar o escolhido;
+#   3. BACKUP DE SEGURANÇA do estado atual: gerado, verificado por restauração, guardado
+#      e registrado. O que a restauração vai desfazer fica guardado. Falhou, para aqui;
+#   4. o dump escolhido é restaurado na base DESCARTÁVEL — nunca por cima da produção;
+#   5. `db/restaurar-backup.mjs` recusa schema diferente e, numa transação da produção,
+#      troca só as tabelas de negócio. A trilha fica, e registra a restauração.
+#
+# O comportamento está em `db/restaurar-backup.mjs`, testado contra bancos de verdade.
+# Este arquivo é orquestração — e só fica provado rodando (lição do go-live).
+
+name: Restaurar backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      arquivo:
+        description: 'Caminho do dump no repositório privado (backups/AAAA/MM/...sql.gz)'
+        required: true
+        type: string
+      pedido_por:
+        description: 'Quem pediu (username) — vai para a trilha'
+        required: true
+        type: string
+      ensaio:
+        description: 'Ensaio: faz o caminho inteiro em produção e desfaz no fim'
+        required: false
+        type: boolean
+        default: false
+
+# O MESMO grupo do backup: uma restauração nunca roda junto com um backup — os dois
+# escrevem no repositório privado, e o backup leria a produção no meio da troca.
+concurrency:
+  group: backup-diario
+  cancel-in-progress: false
+
+# TASK-110 — o token padrão só lê o próprio código. O repositório privado vai com o
+# BACKUP_REPO_TOKEN, e a produção com o PROD_DATABASE_URL.
+permissions:
+  contents: read
+
+jobs:
+  restaurar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # Base DESCARTÁVEL: primeiro verifica o backup de segurança, depois recebe o dump
+      # escolhido. A produção só é tocada pelo motor, numa transação.
+      verificacao:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verificacao
+          POSTGRES_DB: verificacao
+        ports: ['55433:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGDUMP_IMAGE: postgres:17
+      ARQUIVO_SEGURANCA: seguranca.sql.gz
+      ARQUIVO_ALVO: alvo.sql.gz
+      VERIFICACAO_HOST: localhost
+      VERIFICACAO_PORTA: '55433'
+      VERIFICACAO_USUARIO: postgres
+      VERIFICACAO_BANCO: verificacao
+      # O pedido entra SÓ por aqui, como texto. Nunca `${{ inputs.* }}` dentro de um
+      # `run:` — seria colado no script antes de o shell rodar (injeção de script).
+      ARQUIVO_PEDIDO: ${{ inputs.arquivo }}
+      PEDIDO_POR: ${{ inputs.pedido_por }}
+      ENSAIO: ${{ inputs.ensaio }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Montar a URL da base de verificacao
+        run: |
+          echo "VERIFICACAO_URL=postgresql://${VERIFICACAO_USUARIO}:${POSTGRES_PASSWORD}@${VERIFICACAO_HOST}:${VERIFICACAO_PORTA}/${VERIFICACAO_BANCO}" >> "$GITHUB_ENV"
+        env:
+          POSTGRES_PASSWORD: verificacao
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # 1. Caminho no padrão exato de um dump do sistema (§1.5) e verificado em
+      #    backup_runs. Recusado, fica na trilha como RESTAURACAO_RECUSADA.
+      - name: Validar o pedido
+        id: validar
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
+        run: node db/restaurar-backup.mjs validar --arquivo "$ARQUIVO_PEDIDO" --pedido-por "$PEDIDO_POR" >> "$GITHUB_OUTPUT"
+
+      # 2. Antes do backup de segurança: o envio dele aplica a retenção.
+      - name: Baixar o backup escolhido
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${BACKUP_REPO}.git" privado
+          test -f "privado/$ARQUIVO_PEDIDO" || { echo "::error::o dump escolhido não está mais no repositório privado (retenção?)"; exit 1; }
+          cp "privado/$ARQUIVO_PEDIDO" "$ARQUIVO_ALVO"
+          rm -rf privado
+
+      # 3. Backup de segurança — as mesmas invariantes do backup.yml: `--schema=public`
+      #    (sem as extensões da plataforma), base descartável esvaziada, ON_ERROR_STOP=1.
+      - name: Backup de segurança — gerar
+        id: dump
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          docker run --rm --network host \
+            "$PGDUMP_IMAGE" pg_dump "$DATABASE_URL" \
+            --schema=public \
+            --no-owner --no-privileges --format=plain \
+            | gzip -9 > "$ARQUIVO_SEGURANCA"
+          echo "size=$(stat -c%s "$ARQUIVO_SEGURANCA")" >> "$GITHUB_OUTPUT"
+
+      - name: Backup de segurança — verificar por restauração
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          docker run --rm --network host "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q -c 'DROP SCHEMA IF EXISTS public CASCADE;'
+          gunzip -c "$ARQUIVO_SEGURANCA" | docker run --rm -i --network host "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q
+          node db/verify-dump-cli.mjs "$DATABASE_URL" "$VERIFICACAO_URL"
+
+      - name: Backup de segurança — ler a retenção
+        id: agenda
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          EVENTO: workflow_dispatch
+        run: node db/agenda-backup.mjs >> "$GITHUB_OUTPUT"
+
+      - name: Backup de segurança — guardar no repositório privado
+        id: enviar
+        env:
+          GH_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}
+          RETENCAO: ${{ steps.agenda.outputs.retencao }}
+        run: node db/enviar-backup.mjs --arquivo "$ARQUIVO_SEGURANCA" --dias "$RETENCAO" >> "$GITHUB_OUTPUT"
+
+      # Registrado ANTES da troca: o backup de segurança aparece na lista como verificado,
+      # e é por ele que se desfaz uma restauração que não devia ter acontecido.
+      - name: Backup de segurança — registrar
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          TAMANHO: ${{ steps.dump.outputs.size }}
+          DESTINO: ${{ steps.enviar.outputs.destino }}
+        run: node db/backup-run.mjs --ok --size "$TAMANHO" --dest "$DESTINO"
+
+      # 4. O escolhido vai para a base descartável — nunca por cima da produção.
+      - name: Restaurar o escolhido na base descartável
+        run: |
+          set -euo pipefail
+          docker run --rm --network host "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q -c 'DROP SCHEMA IF EXISTS public CASCADE;'
+          gunzip -c "$ARQUIVO_ALVO" | docker run --rm -i --network host "$PGDUMP_IMAGE" psql "$VERIFICACAO_URL" -v ON_ERROR_STOP=1 -q
+
+      # 5. A troca, numa transação da produção. No ensaio, desfeita no fim.
+      - name: Restaurar na produção
+        id: restaurar
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          EXTRA=""
+          if [ "$ENSAIO" = "true" ]; then EXTRA="--ensaio"; fi
+          node db/restaurar-backup.mjs restaurar --arquivo "$ARQUIVO_PEDIDO" --pedido-por "$PEDIDO_POR" $EXTRA >> "$GITHUB_OUTPUT"
+
+      # Falha que não foi recusa (a recusa já está na trilha): registra, para a tela
+      # deixar de dizer "em andamento" e dizer que falhou.
+      - name: Registrar a falha na trilha
+        if: failure() && steps.validar.outputs.recusada != 'true' && steps.restaurar.outputs.recusada != 'true'
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: node db/restaurar-backup.mjs falhou --arquivo "$ARQUIVO_PEDIDO" --pedido-por "$PEDIDO_POR" --motivo "a execução $GITHUB_RUN_ID falhou — ver o Actions"

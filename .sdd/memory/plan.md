@@ -275,6 +275,38 @@
 - **TASK-114 → backup manual.** Rota ADMIN que dispara o workflow pela API do GitHub com token
   fino (só `Actions: write` neste repositório) — **criado pelo usuário**, secret na Vercel. Estado
   lido do `backup_runs`; entrada na trilha.
+- ✅ **TASK-115 FEITA em 2026-09-13** (branch `feat/task-115-restaurar`), em quatro ciclos TDD.
+  > 🔎 **Achado que mudou o schema:** a trilha tinha FK para `users` (`action_logs.user_id`,
+  > `audit_logs.actor_id/target_user_id`) — restaurar era impossível sem apagá-la em cascata.
+  > Decisão do usuário: tirar as três (migration `202609131200_trilha_independente_de_users`, só
+  > restrição). Também decididos: `login_attempts`/`rate_limit_hits` preservadas; RESTAURAR digitado.
+  > `settings` preservada por mim (retenção antiga apagaria backups no envio seguinte) — registrado.
+  1. **Classificação:** negócio = `users`, `keys`, `key_transactions`, `history` (ordem das FKs);
+     o resto preservado; tabela nova sem lado reprova a suíte; nenhuma FK de preservada → negócio.
+  2. **Motor** `db/restaurar-backup.mjs`: recusa registro de migrations diferente (nome+checksum;
+     sem registro = anterior a 10/09) antes de tocar; numa transação: `TRUNCATE` SEM CASCADE, carga
+     por `json_populate_recordset`, sequências que NUNCA recuam, `BACKUP_RESTAURADO` na trilha;
+     `ensaio` desfaz e grava `RESTAURACAO_ENSAIADA`. §1.5: só o padrão exato de nome; só backup
+     verificado. Dois bancos reais nos testes; sabotagens pegas (sequência recuando, sem checar
+     schema, ensaio gravando).
+  3. **Workflow** `restaurar.yml` (só `workflow_dispatch`, grupo `backup-diario`): valida → baixa o
+     escolhido ANTES do backup de segurança → segurança gerada/verificada/guardada/registrada →
+     base descartável → produção. Inputs só por `env` (injeção de script). Falha na trilha sem
+     duplicar a recusa.
+  4. **Tela e rota** `GET/POST /api/backups/restaurar`: lista = verificado + na retenção + depois da
+     última migration (ocultos por schema contados); servidor reconfere o arquivo; trilha ANTES do
+     disparo (§3.5); bloco na **Zona de Perigo**; `ConfirmModal` com `exigirTexto`.
+  > ✅ **Ensaio sobre CÓPIA DE PRODUÇÃO** (ADR-022): dumps reais de 13/09 ("produção") e 11/09
+  > ("backup"), migration aplicada pelo runner nas duas, motor pela CLI como o workflow chama.
+  > `validar` ok; arquivo inexistente RECUSADO na trilha; ensaio 13→7 movimentações / 10→6
+  > histórico e desfeito (só `action_logs` mudou); restauração real: as 4 tabelas IDÊNTICAS às do
+  > backup, preservadas intactas, sequências paradas em 13/10 (sem recuar). Dumps e bases apagados.
+  > ✅ Roteiro da `202609131200` ensaiado: aplica (12→13 registros, 3→0 FKs), reaplicar aborta,
+  > sabotagem no meio não deixa nada.
+  > 🔴 **Aplicar a `202609131200` em produção ANTES do merge** (roteiro no editor) — senão health 503.
+  > ⚠️ **Depois do merge:** a lista fica VAZIA até o primeiro backup posterior à migration (os
+  > anteriores têm outro schema). Com o token configurado: um backup manual, e então UM ENSAIO pelo
+  > Actions (`ensaio: true`) para provar o caminho em produção sem mudar nada.
 - **TASK-115 → restaurar escolhendo da lista (sem upload).** Workflow de restauração: backup de
   segurança antes; `TRUNCATE` + carga só das tabelas de NEGÓCIO numa transação; trilha
   (`action_logs`, `audit_logs`, `app_logs`, `backup_runs`, `migracoes_aplicadas`) preservada e

@@ -580,8 +580,45 @@ possíveis, e eles não significam a mesma coisa:
 
 ### 6.5 Restaurar um backup
 
-> Não existe botão de restaurar na tela. Foi removido na TASK-075: restauração é
-> procedimento com credencial, feito aqui.
+Há dois caminhos, para dois problemas diferentes.
+
+#### 6.5.1 Pela tela — os DADOS deram errado, e o banco está de pé (TASK-115)
+
+Configurações → **Zona de Perigo** → *Restaurar um backup* (só ADMIN, com o disparo
+configurado — §6.3). Escolha o backup, digite **RESTAURAR** no modal. O
+`.github/workflows/restaurar.yml` então:
+
+1. valida o pedido (caminho no padrão exato de um dump do sistema, verificado em
+   `backup_runs`) e baixa o dump escolhido;
+2. faz um **backup de segurança** do estado atual — gerado, verificado, guardado e
+   registrado. **É por ele que se desfaz uma restauração errada**: restaure-o do mesmo jeito;
+3. restaura o escolhido numa base descartável e **recusa** se o registro de migrations
+   dele não for idêntico ao da produção;
+4. numa transação da produção, troca **só** `users`, `keys`, `key_transactions` e
+   `history`. Ficam como estão: a trilha (`action_logs`, `audit_logs`, `app_logs`,
+   `backup_runs`), `migracoes_aplicadas`, `login_attempts`, `rate_limit_hits` e `settings`.
+
+O que o ADMIN precisa saber, e o modal diz:
+
+- **Senhas voltam** ao que eram na data do backup; quem foi cadastrado depois deixa de
+  existir. A trilha dessas pessoas fica (a migration `202609131200` tirou as FKs da trilha
+  para `users` exatamente para isso), e os IDs não são reaproveitados — as sequências
+  nunca recuam.
+- Só aparecem backups **posteriores à última migration**: um dump de antes tem outro
+  schema, e o motor o recusaria. Para esses, o caminho é o §6.5.2 numa base nova.
+- O resultado aparece na mesma seção quando o workflow termina (a duração em produção ainda não foi medida), e fica na trilha:
+  `RESTAURACAO_SOLICITADA` (antes de executar, §3.5) → `BACKUP_RESTAURADO`,
+  `RESTAURACAO_RECUSADA` ou `RESTAURACAO_FALHOU`.
+
+**Ensaio (provar o caminho sem mudar nada):** GitHub → Actions → *Restaurar backup* →
+*Run workflow*, com `arquivo` = o caminho de um backup da lista, `pedido_por` = seu
+usuário e **`ensaio` marcado**. Faz tudo — inclusive o backup de segurança e a troca na
+produção — e desfaz a troca no fim; a trilha registra `RESTAURACAO_ENSAIADA` com os números
+que teriam ficado. A troca segura as quatro tabelas por alguns segundos durante o ensaio.
+
+#### 6.5.2 Pelo terminal — o BANCO deu errado, ou o backup é de antes da última migration
+
+> Procedimento com credencial, feito aqui.
 
 1. **Não sobrescreva a evidência.** Se o banco atual está corrompido mas
    acessível, não o apague — crie uma base nova e restaure nela.

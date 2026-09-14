@@ -89,13 +89,11 @@ function explicar(status: number): string {
     return `O GitHub não aceitou o disparo (HTTP ${status}). Tente de novo em alguns minutos.`;
 }
 
-/** Pede ao GitHub que rode o workflow de backup agora. 204 é o sucesso do `workflow_dispatch`. */
-export async function dispararBackup({ token, repo }: ConfiguracaoDoDisparo): Promise<void> {
+/** POST de `workflow_dispatch`. 204 é o sucesso; o resto vira `DisparoRecusado`. */
+async function pedirAoGitHub(url: string, token: string, corpo: object): Promise<void> {
     let res: Response;
     try {
-        // O nome do workflow é literal, e não constante: é o que a guarda de dois lados
-        // (tests/backup-manual.test.ts, BDD 7) procura para aceitar o botão na tela.
-        res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/backup.yml/dispatches`, {
+        res = await fetch(url, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -103,11 +101,28 @@ export async function dispararBackup({ token, repo }: ConfiguracaoDoDisparo): Pr
                 'X-GitHub-Api-Version': '2022-11-28',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ ref: RAMO }),
+            body: JSON.stringify(corpo),
             signal: AbortSignal.timeout(10_000),
         });
     } catch {
         throw new DisparoRecusado('Não foi possível falar com o GitHub agora. Tente de novo em alguns minutos.', null);
     }
     if (res.status !== 204) throw new DisparoRecusado(explicar(res.status), res.status);
+}
+
+// Os nomes dos workflows são literais, e não constante: é o que as guardas de dois lados
+// (tests/backup-manual.test.ts, BDD 7) procuram para aceitar os botões na tela.
+
+/** Pede ao GitHub que rode o workflow de backup agora. */
+export async function dispararBackup({ token, repo }: ConfiguracaoDoDisparo): Promise<void> {
+    await pedirAoGitHub(`https://api.github.com/repos/${repo}/actions/workflows/backup.yml/dispatches`, token, { ref: RAMO });
+}
+
+/** TASK-115 — pede ao GitHub que restaure este backup (`.github/workflows/restaurar.yml`).
+ *  O workflow revalida tudo: o caminho, o registro em `backup_runs` e o schema. */
+export async function dispararRestauracao(
+    { token, repo }: ConfiguracaoDoDisparo, { arquivo, pedidoPor }: { arquivo: string; pedidoPor: string },
+): Promise<void> {
+    await pedirAoGitHub(`https://api.github.com/repos/${repo}/actions/workflows/restaurar.yml/dispatches`, token,
+        { ref: RAMO, inputs: { arquivo, pedido_por: pedidoPor } });
 }
