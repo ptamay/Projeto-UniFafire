@@ -256,8 +256,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   pendente na base e derrubou em cascata as tentativas e dois specs de chave do celular. Re-execução
   do job: verde. Não é defeito de código, mas os specs de fluxo NÃO se isolam — um fluxo interrompido
   suja a base para os seguintes. Candidato a task se repetir.
-- 📋 **CR do PWA SEM SERVICE WORKER (Tipo C, ADR-030), aprovado pelo usuário (opção D), 2026-09-14**
-  (branch `cr/pwa-sem-service-worker`, PR a abrir): **o `sw.js` NUNCA existiu** — projeto nascido no
+- ✅ **CR do PWA SEM SERVICE WORKER (Tipo C, ADR-030 — FECHADO), aprovado pelo usuário (opção D),
+  2026-09-14** (#88 o CR, #91 a TASK-129, #93 o memory sync): **o `sw.js` NUNCA existiu** — projeto nascido no
   Next 16 (Turbopack no build), e o `next-pwa` entrou (`fd7d603`) junto com o `turbopack: {}` que
   desliga o callback `webpack` onde ele gera o SW e injeta o registro. Nenhum bundle tenta registrar;
   instalar pelo menu funciona sem SW. REQ-018 reescrito; TASK-129: tirar o plugin, tirar
@@ -271,9 +271,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   maskable 512×512 e apple-touch 180×180 (opacos) — medidos no cabeçalho do PNG; `/sw.js` e
   `/workbox-*.js` → 307 `/login`; `/login` com o `apple-touch-icon` novo. ⚠️ O `logo.svg` é TRAÇADO
   e traz o xadrez de transparência como paths `#D6D6D6` — quem usar a arte precisa limpar.
-  **Falta só a instalação real num Android e num iPhone (usuário)** para fechar o ADR-030.
-- Próxima Ação: do usuário — instalar num Android (menu) e num iPhone (Adicionar à Tela de Início) e
-  fechar o ADR-030; conferir em produção a parte logada da TASK-125 e,
+  ✅ **ADR-030 FECHADO em 2026-09-14:** o usuário instalou num Android e num iPhone, e funcionou nos
+  dois.
+- Próxima Ação: do usuário — conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
