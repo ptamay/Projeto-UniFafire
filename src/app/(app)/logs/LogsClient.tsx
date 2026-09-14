@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatTimestamp } from '@/lib/time-filters';
+import type { PaginaDeLogs } from '@/lib/logs-query';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
 
@@ -16,16 +17,17 @@ interface LogEntry {
     details?: string;
 }
 
-export default function LogsClient() {
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [loading, setLoading] = useState(true);
+/** TASK-131: a primeira página vem do servidor — a tela abre com ela, sem "Carregando…". */
+export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLogs }) {
+    const [logs, setLogs] = useState<LogEntry[]>(logsIniciais.logs as LogEntry[]);
+    const [loading, setLoading] = useState(false);
     const [category, setCategory] = useState<LogCategory>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
     const [hourFilter, setHourFilter] = useState('');
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [totalPages, setTotalPages] = useState(logsIniciais.totalPages || 1);
     const router = useRouter();
 
     const fetchLogs = useCallback(async () => {
@@ -57,7 +59,14 @@ export default function LogsClient() {
         }
     }, [category, page, searchTerm, dateFilter, monthFilter, hourFilter, router]);
 
+    // A primeira execução do efeito é a da montagem, com os filtros no padrão — exatamente a
+    // página que o servidor já entregou. Pular só ela; filtro e paginação buscam pela rota.
+    const primeiraExecucao = useRef(true);
     useEffect(() => {
+        if (primeiraExecucao.current) {
+            primeiraExecucao.current = false;
+            return;
+        }
         const timer = setTimeout(() => {
             fetchLogs();
         }, 300); // Debounce search

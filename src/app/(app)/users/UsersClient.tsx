@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import type { UsuarioAtivo } from '@/lib/usuarios';
 import toast from 'react-hot-toast';
 
 type User = { 
@@ -39,9 +40,9 @@ const maskPhone = (v: string) => {
     return v;
 };
 
-export default function UsersClient() {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+/** TASK-131: a lista vem do servidor — a tela abre com ela, sem spinner. */
+export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: UsuarioAtivo[] }) {
+    const [users, setUsers] = useState<User[]>(usuariosIniciais as User[]);
     const [showForm, setShowForm] = useState(false);
     const [editUser, setEditUser] = useState<User | null>(null);
     const [formData, setFormData] = useState({ username: '', role: 'FUNCIONARIO', full_name: '', matricula: '', phone: '' });
@@ -56,12 +57,7 @@ export default function UsersClient() {
     const [filterRole, setFilterRole] = useState('all');
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        fetch('/api/users').then(r => r.json()).then(d => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });
-        // A busca da senha padrao saiu com a TASK-093: esta tela nao tem mais o
-        // que fazer com ela. O campo em si so desaparece de `/api/settings` e da
-        // tela de Configuracoes na TASK-094.
-    }, []);
+    // TASK-131: a busca na montagem saiu — a lista chegou pelo servidor, junto com a tela.
 
     const openNew = () => {
         setEditUser(null);
@@ -214,9 +210,7 @@ export default function UsersClient() {
                     <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
                 </div>
 
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner" style={{ width: 32, height: 32 }} /></div>
-                ) : (
+                {(
                     <div className="table-wrapper table-cards card">
                         <table className="table">
                             <thead>

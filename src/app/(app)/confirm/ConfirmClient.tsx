@@ -3,27 +3,16 @@ import { useState, useEffect } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import type { Pendencia } from '@/lib/pendencias';
 
-interface PendingTransaction {
-    id: number;
-    key_id: number;
-    user_id: number;
-    action: 'withdraw' | 'return' | 'transfer';
-    status: 'pending' | 'porteiro_confirmed';
-    key_name: string;
-    key_room: string;
-    user_username: string;
-    user_full_name: string;
-    porteiro_username?: string;
-    porteiro_id?: number;
-    initiated_at: string;
-    user_confirmed_at?: string;
-    porteiro_confirmed_at?: string;
-}
+// TASK-131: o mesmo tipo da consulta que a rota e a página usam (`src/lib/pendencias.ts`).
+type PendingTransaction = Pendencia;
 
 interface Props {
     userRole: string;
     userId: number;
+    /** TASK-131: as pendências vêm do servidor — a tela abre com elas, sem cartões cinzas. */
+    pendenciasIniciais: Pendencia[];
 }
 
 // Ícones do vocabulário SVG do app (stroke) — substituem os glifos unicode
@@ -38,26 +27,19 @@ const IconClock = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-export default function ConfirmClient({ userRole, userId }: Props) {
+export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: Props) {
     const router = useRouter();
-    const [pendingTxs, setPendingTxs] = useState<PendingTransaction[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [pendingTxs, setPendingTxs] = useState<PendingTransaction[]>(pendenciasIniciais);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
 
     const fetchPending = async () => {
-        try {
-            const res = await fetch('/api/transactions/pending');
-            if (res.ok) {
-                const data = await res.json();
-                setPendingTxs(data);
-            }
-        } finally {
-            setLoading(false);
-        }
+        const res = await fetch('/api/transactions/pending');
+        if (res.ok) setPendingTxs(await res.json());
     };
 
     useEffect(() => {
-        fetchPending();
+        // TASK-131: sem busca na montagem — a lista chegou pelo servidor, fresca, junto com a
+        // tela. Buscar de novo aqui só custaria uma ida à rota a cada visita.
         // Poll no mesmo ritmo do Dashboard e reage na hora a qualquer ação local
         // (retirada/devolução/confirmação/cancelamento) — fluxo de balcão sem F5.
         const handleUpdate = () => fetchPending();
@@ -130,30 +112,7 @@ export default function ConfirmClient({ userRole, userId }: Props) {
                 </header>
 
                 {/* ── CONTEÚDO ── */}
-                {loading ? (
-                    // Skeleton com a MESMA anatomia dos cards reais (badge, título,
-                    // contexto, ações) — o conteúdo chega sem salto de layout,
-                    // no lugar do spinner central (registro de produto).
-                    <div aria-hidden="true" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
-                        {[0, 1, 2].map(i => (
-                            <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                                        <div className="skeleton" style={{ width: 120, height: 18, borderRadius: 'var(--radius-full)' }} />
-                                        <div className="skeleton" style={{ width: '60%', height: 22 }} />
-                                        <div className="skeleton" style={{ width: '35%', height: 14 }} />
-                                    </div>
-                                    <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0 }} />
-                                </div>
-                                <div className="skeleton" style={{ width: '100%', height: 64 }} />
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <div className="skeleton" style={{ flex: 1, height: 44 }} />
-                                    <div className="skeleton" style={{ width: 100, height: 44 }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : displayTxs.length === 0 ? (
+                {displayTxs.length === 0 ? (
                     <div className="empty-state">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 1rem', opacity: 0.3 }}>
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>

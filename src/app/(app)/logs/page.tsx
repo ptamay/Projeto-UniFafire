@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
+import { listarLogs } from '@/lib/logs-query';
 import LogsClient from './LogsClient';
 
 export default async function LogsPage() {
@@ -20,5 +21,8 @@ export default async function LogsPage() {
     }
     if (!sessionData) redirect('/login');
     if (sessionData.role !== 'ADMIN' && sessionData.role !== 'GESTOR') redirect('/');
-    return <LogsClient />;
+    // TASK-131: a primeira página da trilha vai junto — a tela não abre em "Carregando…".
+    // Mesma consulta e mesmos padrões da tela (50 por página, sem filtro).
+    const logsIniciais = await listarLogs({ page: 1, limit: 50 });
+    return <LogsClient logsIniciais={logsIniciais} />;
 }

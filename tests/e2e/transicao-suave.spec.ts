@@ -131,3 +131,54 @@ test.describe('TASK-128 — a troca de tela não tem corte seco (ADR-029)', () =
         expect(await animacao()).toBe('none');
     });
 });
+
+// TASK-131 (emenda do ADR-029) — Confirmações, Logs e Usuários chegam COM os dados.
+//
+// Depois da TASK-128 a navegação ficou suave, mas estas três telas abriam vazias e buscavam os
+// dados no navegador: cartões cinzas, spinner ou "Carregando…" — a tela chegava suave e piscava
+// por dentro. As rotas de API delas ficam SEGURADAS aqui por 1,5 s: se a tela ainda dependesse
+// delas para abrir, o estado de carregamento estaria na tela durante todo esse tempo.
+test.describe('TASK-131 — as telas chegam com os dados, sem piscar por dentro', () => {
+    test.beforeEach(async ({ page }) => {
+        await login(page, 'e2e_admin');
+        await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
+    });
+
+    test('Confirmações, Logs e Usuários: nenhum quadro com cinza, spinner ou "Carregando"', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name === 'mobile', 'Logs e Usuários ficam na gaveta do celular; o que se prova é a página, não o menu');
+        await page.route(/\/api\/(transactions\/pending|logs|users)(\?|$)/, async (route) => {
+            await new Promise(r => setTimeout(r, ATRASO_MS));
+            await route.continue();
+        });
+
+        for (const destino of ['/confirm', '/logs', '/users']) {
+            await page.locator(`aside.sidebar a[href="${destino}"]`).first().click();
+            await page.waitForURL((u) => new URL(u).pathname === destino);
+            const quadros = await page.evaluate(async () => {
+                const out: { cinza: boolean; carregando: boolean }[] = [];
+                const t0 = performance.now();
+                await new Promise<void>(fim => {
+                    const passo = () => {
+                        const main = document.querySelector('main.main-content');
+                        out.push({
+                            cinza: !!main?.querySelector('.skeleton, .spinner'),
+                            carregando: /Carregando/i.test(main?.textContent ?? ''),
+                        });
+                        if (performance.now() - t0 < 1600) requestAnimationFrame(passo); else fim();
+                    };
+                    requestAnimationFrame(passo);
+                });
+                return out;
+            });
+            expect(quadros.length, `${destino}: a gravação não viu quadros`).toBeGreaterThan(30);
+            expect(quadros.filter(q => q.cinza).length, `${destino}: cinza/spinner na tela nova`).toBe(0);
+            expect(quadros.filter(q => q.carregando).length, `${destino}: "Carregando" na tela nova`).toBe(0);
+        }
+
+        // E o conteúdo está lá — a prova não passa numa tela que simplesmente não mostra nada.
+        await expect(page.locator('main.main-content tbody tr').first()).toBeVisible();   // Usuários
+        await page.locator('aside.sidebar a[href="/logs"]').first().click();
+        await page.waitForURL((u) => new URL(u).pathname === '/logs');
+        await expect(page.locator('main.main-content tbody tr').first()).toBeVisible();   // Logs (os logins da suíte)
+    });
+});

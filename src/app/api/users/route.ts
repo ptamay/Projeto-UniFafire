@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { query, queryOne, execute } from '@/lib/pg';
+import { listarUsuariosAtivos } from '@/lib/usuarios';
+import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
@@ -25,8 +26,8 @@ export async function GET() {
         const session = await verifySession(sessionCookie.value);
         if (!session || (session.role !== 'ADMIN' && session.role !== 'GESTOR' && session.role !== 'PORTEIRO')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        const users = await query('SELECT id, username, full_name, matricula, phone, role FROM users WHERE active');
-        return NextResponse.json(users);
+        // TASK-131: a mesma consulta que a pagina /users usa na abertura.
+        return NextResponse.json(await listarUsuariosAtivos());
     } catch {
         return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
     }
