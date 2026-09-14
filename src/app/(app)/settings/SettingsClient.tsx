@@ -66,6 +66,9 @@ export default function SettingsClient({ userRole }: Props) {
     const [savingSettings, setSavingSettings] = useState(false);
     const [isClearingDb, setIsClearingDb] = useState(false);
     const [showClearModal, setShowClearModal] = useState(false);
+    // TASK-135: "Limpar histórico" veio do topo do Histórico para cá (REQ-014 inalterado).
+    const [limpandoHistorico, setLimpandoHistorico] = useState(false);
+    const [confirmandoLimparHistorico, setConfirmandoLimparHistorico] = useState(false);
     const [bkpReliability, setBkpReliability] = useState<BackupReliability | null>(null);
     // Falha de LEITURA da metrica nao pode virar "nenhuma execucao": as duas
     // aparecem iguais na tela e so uma delas significa que o backup parou.
@@ -225,6 +228,23 @@ export default function SettingsClient({ userRole }: Props) {
         }
         setIsClearingDb(false);
         setShowClearModal(false);
+    };
+
+    // TASK-135 — a limpeza do histórico mora na Zona de Perigo. Antes era o PRIMEIRO botão
+    // do Histórico, vermelho, no caminho do polegar. Mesma rota (DELETE), mesma restrição a
+    // ADMIN no servidor, mesma confirmação — só muda de lugar (ADR-031, decisão 7).
+    // TASK-127: DELETE, como a rota e o contrato de API dizem — era POST, e dava 405.
+    const limparHistorico = async () => {
+        setLimpandoHistorico(true);
+        try {
+            const res = await fetch('/api/history/clear', { method: 'DELETE' });
+            if (res.ok) toast.success('Histórico limpo.');
+            else toast.error('Não foi possível limpar o histórico.');
+        } catch {
+            toast.error('Erro de conexão.');
+        }
+        setLimpandoHistorico(false);
+        setConfirmandoLimparHistorico(false);
     };
 
     return (
@@ -494,6 +514,24 @@ export default function SettingsClient({ userRole }: Props) {
                         </div>
                     )}
 
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ maxWidth: 520 }}>
+                            <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar histórico</div>
+                            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                                Apaga todas as movimentações de chaves do Histórico. Chaves, usuários e a trilha de
+                                auditoria ficam. <strong>Não há desfazer</strong> — só pelo backup.
+                            </p>
+                        </div>
+                        <button
+                            className="btn btn-perigo"
+                            onClick={() => setConfirmandoLimparHistorico(true)}
+                            disabled={limpandoHistorico}
+                            style={{ flexShrink: 0 }}
+                        >
+                            {limpandoHistorico ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Limpar histórico'}
+                        </button>
+                    </div>
+
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                         <div style={{ maxWidth: 520 }}>
                             <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Banco de Dados</div>
@@ -518,6 +556,17 @@ export default function SettingsClient({ userRole }: Props) {
                     </div>
                 </section>
                 )}
+
+<ConfirmModal
+                    isOpen={confirmandoLimparHistorico}
+                    title="Limpar histórico?"
+                    message="Todas as movimentações de chaves serão apagadas do Histórico. Chaves, usuários e a trilha de auditoria continuam. Não há desfazer — só pelo backup."
+                    confirmText="Limpar histórico"
+                    cancelText="Cancelar"
+                    onConfirm={limparHistorico}
+                    onCancel={() => setConfirmandoLimparHistorico(false)}
+                    danger={true}
+                />
 
 <ConfirmModal 
                     isOpen={showClearModal}

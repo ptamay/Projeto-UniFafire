@@ -13,6 +13,7 @@ interface HistorySearchParams {
     userId?: string;
     keyId?: string;
     action?: string;
+    q?: string;
 }
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<HistorySearchParams> }) {
@@ -48,6 +49,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         userId: p.userId || '',
         keyId: p.keyId || '',
         action: p.action || '',
+        // TASK-135: busca por chave, sala ou pessoa — estreita dentro do teto acima.
+        q: p.q || '',
         page: parseInt(p.page || '1', 10) || 1,
     });
 
@@ -96,6 +99,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
             userId: p.userId || '',
             keyId: p.keyId || '',
             action: p.action || '',
+            q: p.q || '',
         }}
     />;
 }

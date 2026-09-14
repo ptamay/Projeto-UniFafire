@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatTimestamp } from '@/lib/time-filters';
 import type { PaginaDeLogs } from '@/lib/logs-query';
+import FolhaDeFiltros from '@/app/components/FolhaDeFiltros';
+import MenuDeAcoes from '@/app/components/MenuDeAcoes';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
 
@@ -79,119 +81,111 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
         <>
             <main className="main-content animate-fade">
                 <div className="card w-full">
-                    <div className="page-header mb-6" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <h1 className="page-title m-0">Logs do Sistema</h1>
-                        </div>
-
-                        <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                            gap: '0.75rem', 
-                            width: '100%',
-                            background: 'rgba(255,255,255,0.02)',
-                            padding: '1rem',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid var(--border)'
-                        }}>
-                            <div className="input-group">
-                                <label className="input-label">Buscar</label>
-                                <div className="search-bar" style={{ maxWidth: '100%' }}>
-                                    <input
-                                        type="text"
-                                        className="input"
-                                        placeholder="Buscar nos registros..."
-                                        value={searchTerm}
-                                        onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                    />
-                                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                </div>
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label">Categoria</label>
-                                <select 
-                                    className="input" 
-                                    value={category}
-                                    onChange={(e) => { setCategory(e.target.value as LogCategory); setPage(1); setLogs([]); setLoading(true); }}
-                                >
-                                    <option value="all">Todas as Ações</option>
-                                    <option value="system">Ações do Sistema</option>
-                                    <option value="security">Auditoria de Segurança</option>
-                                    <option value="login">Eventos de Login</option>
-                                </select>
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label">Mês</label>
-                                <input 
-                                    type="month" 
-                                    className="input" 
-                                    value={monthFilter}
-                                    onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); setPage(1); }}
-                                />
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label">Data Específica</label>
-                                <input 
-                                    type="date" 
-                                    className="input" 
-                                    value={dateFilter}
-                                    onChange={(e) => { setDateFilter(e.target.value); setMonthFilter(''); setPage(1); }}
-                                />
-                            </div>
-
-                            <div className="input-group">
-                                <label className="input-label">Hora (0-23)</label>
-                                <select 
-                                    className="input" 
-                                    value={hourFilter}
-                                    onChange={(e) => { setHourFilter(e.target.value); setPage(1); }}
-                                >
-                                    <option value="">Todas</option>
-                                    {Array.from({ length: 24 }).map((_, i) => (
-                                        <option key={i} value={i.toString().padStart(2, '0')}>
-                                            {i.toString().padStart(2, '0')}:00
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
-                                <button 
-                                    className="btn btn-ghost btn-sm" 
-                                    onClick={() => {
-                                        setSearchTerm('');
-                                        setDateFilter('');
-                                        setMonthFilter('');
-                                        setHourFilter('');
-                                        setCategory('all');
-                                        setPage(1);
-                                    }}
-                                >
-                                    Limpar Filtros
-                                </button>
-                                <button 
-                                    className="btn btn-principal btn-sm"
-                                    onClick={() => {
-                                        if (logs.length === 0) return;
-                                        const csv = 'Data/Hora,Usuário,Ação Realizada,Alvo,Endereço IP,Detalhes\n' + 
-                                            logs.map(l => `"${formatTimestamp(l.timestamp)}","${l.username || ''}","${l.action || ''}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
-                                        
-                                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `logs_${category}_${new Date().toISOString().split('T')[0]}.csv`;
-                                        a.click();
-                                    }}
-                                >
-                                    Exportar CSV
-                                </button>
-                            </div>
-                        </div>
+                    <div className="page-header cabecalho-enxuto">
+                        <h1 className="page-title m-0">Logs do Sistema</h1>
                     </div>
+
+                    {/* TASK-135: a busca à vista; tipo, mês, dia e hora numa folha (no celular), e a
+                        planilha no menu "⋯". Antes a primeira tela inteira era filtro. */}
+                    <FolhaDeFiltros
+                        ativos={[category !== 'all', monthFilter, dateFilter, hourFilter].filter(Boolean).length}
+                        aoLimpar={() => {
+                            setDateFilter('');
+                            setMonthFilter('');
+                            setHourFilter('');
+                            setCategory('all');
+                            setPage(1);
+                        }}
+                        busca={
+                            <div className="search-bar" style={{ maxWidth: '100%' }}>
+                                <input
+                                    type="search"
+                                    className="input"
+                                    aria-label="Buscar nos registros"
+                                    placeholder="Buscar"
+                                    enterKeyHint="search"
+                                    value={searchTerm}
+                                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                />
+                                <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </div>
+                        }
+                        acoes={
+                            <MenuDeAcoes acoes={[{
+                                rotulo: 'Baixar planilha (CSV)',
+                                desabilitada: logs.length === 0,
+                                aoEscolher: () => {
+                                    if (logs.length === 0) return;
+                                    const csv = 'Data/Hora,Usuário,Ação Realizada,Alvo,Endereço IP,Detalhes\n' +
+                                        logs.map(l => `"${formatTimestamp(l.timestamp)}","${l.username || ''}","${l.action || ''}","${l.target || ''}","${l.ip_address || ''}","${l.details || ''}"`).join('\n');
+                                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `logs_${category}_${new Date().toISOString().split('T')[0]}.csv`;
+                                    a.click();
+                                },
+                            }]} />
+                        }
+                    >
+                        <div className="input-group">
+                            <label className="input-label" htmlFor="logs-tipo">Tipo de registro</label>
+                            <select
+                                id="logs-tipo"
+                                className="input"
+                                value={category}
+                                onChange={(e) => { setCategory(e.target.value as LogCategory); setPage(1); setLogs([]); setLoading(true); }}
+                            >
+                                <option value="all">Todos</option>
+                                <option value="system">Ações no sistema</option>
+                                <option value="security">Segurança</option>
+                                <option value="login">Entradas no sistema</option>
+                            </select>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label" htmlFor="logs-mes">Mês</label>
+                            <input
+                                id="logs-mes"
+                                type="month"
+                                className="input"
+                                value={monthFilter}
+                                aria-describedby="logs-dica-mes"
+                                onChange={(e) => { setMonthFilter(e.target.value); setDateFilter(''); setPage(1); }}
+                            />
+                            <span id="logs-dica-mes" className="dica-campo">Mostra o mês inteiro</span>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label" htmlFor="logs-dia">Dia</label>
+                            <input
+                                id="logs-dia"
+                                type="date"
+                                className="input"
+                                value={dateFilter}
+                                aria-describedby="logs-dica-dia"
+                                onChange={(e) => { setDateFilter(e.target.value); setMonthFilter(''); setPage(1); }}
+                            />
+                            <span id="logs-dica-dia" className="dica-campo">Ou escolha um dia só</span>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label" htmlFor="logs-hora">Hora do dia</label>
+                            <select
+                                id="logs-hora"
+                                className="input"
+                                value={hourFilter}
+                                onChange={(e) => { setHourFilter(e.target.value); setPage(1); }}
+                            >
+                                <option value="">Qualquer hora</option>
+                                {Array.from({ length: 24 }).map((_, i) => (
+                                    <option key={i} value={i.toString().padStart(2, '0')}>
+                                        Das {i.toString().padStart(2, '0')}:00 às {i.toString().padStart(2, '0')}:59
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </FolhaDeFiltros>
 
                     <div className="table-wrapper table-cards">
                         <table className="table">
@@ -236,7 +230,7 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                         </tr>
                                     )})
                                 ) : (
-                                    <tr><td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>Nenhum registro encontrado.</td></tr>
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Nenhum registro encontrado.</td></tr>
                                 )}
                             </tbody>
                         </table>

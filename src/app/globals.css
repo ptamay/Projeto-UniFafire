@@ -1838,3 +1838,127 @@ textarea:focus-visible,
 .bkp-status--alerta { border-color: var(--pendente-fg); background: var(--pendente-bg); }
 .bkp-status--alerta strong { color: var(--pendente-fg); }
 
+
+/* ── Busca, filtros e ações — Histórico e Logs (TASK-135 · ADR-031 · REQ-033b) ─────────
+   No celular a primeira tela era filtro: seis campos antes de qualquer registro. Agora a
+   busca fica à vista; os filtros moram numa FOLHA que sobe de baixo ao tocar em
+   "Filtros (n)"; as ações de relatório, num menu "⋯". No desktop os campos continuam
+   na página, como eram (decisão 8 do ADR-031) — a folha é a mesma marcação. */
+.barra-busca-filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.barra-busca { flex: 1; min-width: 0; max-width: 28rem; }
+.btn-filtros { display: none; }
+.folha-veu { display: none; }
+.folha-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.folha-cabecalho { display: none; }
+.folha-campos { display: contents; }
+.folha-rodape { display: flex; align-items: flex-end; }
+.btn-ver-resultados { display: none; }
+/* Texto de apoio sob mês e dia: o campo vazio ("--------- de ----") parecia quebrado. */
+.dica-campo { font-size: var(--fs-1); color: var(--text-secondary); line-height: 1.4; }
+.cabecalho-enxuto { margin-bottom: 1.5rem; }
+
+.menu-acoes { position: relative; margin-left: auto; }
+.menu-acoes-lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: var(--z-dropdown);
+  min-width: 13rem;
+  padding: 0.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevacao);
+}
+.menu-acoes-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-primary);
+  font-size: var(--fs-3);
+  text-align: left;
+  cursor: pointer;
+}
+.menu-acoes-item:hover:not(:disabled) { background: var(--bg-elevated); }
+.menu-acoes-item:disabled { color: var(--text-muted); cursor: not-allowed; }
+
+@keyframes folha-sobe { from { transform: translateY(100%); } }
+
+@media (max-width: 768px) {
+  .barra-busca-filtros { margin-bottom: 0.75rem; }
+  .barra-busca { max-width: none; }
+  .btn-filtros { display: inline-flex; flex-shrink: 0; }
+  .menu-acoes { margin-left: 0; }
+
+  /* A folha: fechada, não existe na tela; aberta, sobe de baixo e encosta na borda. */
+  .folha-filtros {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    max-height: 85dvh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 1rem;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--elevacao);
+  }
+  .folha-filtros.is-aberta {
+    display: flex;
+    flex-direction: column;
+    animation: folha-sobe 220ms var(--ease-out-quart);
+  }
+  .folha-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.75rem 0;
+    background: var(--bg-surface);
+  }
+  .folha-titulo { font-size: var(--fs-4); font-weight: 700; color: var(--text-primary); }
+  .folha-campos { display: flex; flex-direction: column; gap: 1rem; }
+  /* O recuo de baixo fica DENTRO do rodapé preso: fora dele, o que rola aparecia por baixo. */
+  .folha-rodape {
+    position: sticky;
+    bottom: 0;
+    gap: 0.5rem;
+    padding: 1rem 0 calc(1rem + var(--safe-bottom));
+    background: var(--bg-surface);
+  }
+  .folha-rodape .btn { flex: 1; }
+  .btn-ver-resultados { display: inline-flex; }
+  .folha-veu {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) - 1);
+    background: var(--veu);
+  }
+
+  /* Métricas de relatório não são o que se faz no pátio: saem do celular. */
+  .metricas-negocio { display: none !important; }
+  .cabecalho-enxuto { margin-bottom: 0 !important; }
+}

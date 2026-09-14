@@ -172,6 +172,25 @@
   de apoio; ações num menu "⋯" com um PDF só; "Limpar Histórico" para Configurações → Zona de Perigo
   (mesma rota, modal e restrição a ADMIN — REQ-014 inalterado); métricas em linguagem simples ou fora do
   celular. Critério: a 360×640, o primeiro registro aparece sem rolar.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-135-historico-logs-celular`). Busca à vista; filtros numa
+  **folha que sobe de baixo** (`FolhaDeFiltros`, com "Filtros (n)"); ações num **"⋯"** (`MenuDeAcoes`) —
+  no Histórico **um PDF só** ("Baixar PDF"; `PrintButton` removido), nos Logs "Baixar planilha (CSV)";
+  desktop com os campos na página, como era. **"Limpar histórico" → Configurações → Zona de Perigo**
+  (mesma rota DELETE, modal, só ADMIN — REQ-014 inalterado; antes o GESTOR via o botão e levava recusa
+  do servidor). Rótulos: "Mês"/"Dia" com texto de apoio, "Hora do dia", "Pessoa", "Tipo"; métricas em
+  linguagem simples, fora do celular. **Busca no Histórico** (`q` em `buildHistoryQuery`): chave, sala ou
+  pessoa, sem acento (`translate` com maiúsculas no mapa, antes do `lower`) e sem maiúscula; `%`/`_`
+  literais (ESCAPE `!` — a barra invertida virava outra coisa a cada camada); por parâmetro; a contagem
+  leva as junções; o **teto** da TASK-088 continua valendo. ⚠️ **Achado de ambiente:** o cluster
+  Postgres nativo (`initdb --locale=C`) era **SQL_ASCII** — CI e Supabase são UTF-8; ali `translate` age
+  em bytes e a busca sem acento falhava sem ser defeito. Suíte rodada numa base UTF-8 (memória
+  atualizada). Guarda `tests/historico-logs-celular.test.ts` (11) + 8 cenários de consulta em
+  `history-query.test.ts` (7 vermelhos; o do termo vazio preserva comportamento; o de `%`/`_` foi
+  corrigido no verde — `test_aluno` tem `_` no nome, e buscar só "_" acha tudo com razão) + E2E
+  `tests/e2e/historico-logs-celular.spec.ts` (10; na `main` falhavam os 8 da primeira versão; o de busca
+  entrou na verificação). Verificado: vitest 890 ok (mesmas 4 + 1 do `better-sqlite3`), E2E completa no
+  build de produção **85 ok / 23 pulados / 0**, detector 0, capturas só com os 5 tamanhos e sem rolagem
+  horizontal.
 - **TASK-136 → Chaves e Usuários em lista no celular.** Linha com nome, sala/papel e estado; editar e
   remover como secundárias, remover com confirmação. Ao fim: nova crítica do impeccable (meta ≥ 32/40,
   estética ≥ 3) e registro aqui.
