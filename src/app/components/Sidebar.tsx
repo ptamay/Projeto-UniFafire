@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Tutorial from './Tutorial';
+import IndicadorDeNavegacao from './IndicadorDeNavegacao';
 
 // TASK-111 (ADR-025) — o estado do tempo real, dito em poucas palavras.
 //
@@ -218,8 +219,10 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
     // prefetch: cada clique comecava do zero, e com todas as paginas dinamicas a
     // tela anterior ficava parada ate o servidor responder.
     //
-    // O `<Link>` prefetcha, e com os `loading.tsx` no lugar o prefetch de rota
-    // dinamica busca so ate o boundary — barato.
+    // O `<Link>` fica com `prefetch={false}` (medido na TASK-096). Desde a TASK-128
+    // (ADR-029) nao ha `loading.tsx`: a tela atual espera a proxima, e cada link leva o
+    // `<IndicadorDeNavegacao />` — item marcado e barra no topo enquanto a navegacao dele
+    // esta pendente.
     //
     // ⚠️ `closeMobile` continua em CADA link: o `navigate()` antigo fazia duas
     // coisas, e trocar por `<Link>` so resolve a navegacao. Sem isso o drawer fica
@@ -354,6 +357,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                                 </span>
                                             )}
                                         </span>
+                                        <IndicadorDeNavegacao />
                                     </Link>
                                 ))}
                             </div>
@@ -453,10 +457,12 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                 <Link href="/account/profile" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="user" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Meu Perfil</span>
+                                    <IndicadorDeNavegacao />
                                 </Link>
                                 <Link href="/account/security" className="nav-item" onClick={closeMobile} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem', marginBottom: '2px' }}>
                                     <span className="nav-icon"><Icon name="shield" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: '0.8125rem' }}>Segurança</span>
+                                    <IndicadorDeNavegacao />
                                 </Link>
                                 <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
                                 <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
@@ -545,6 +551,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                 </span>
                             )}
                             <span className="bottom-nav-label">{item.label}</span>
+                            <IndicadorDeNavegacao />
                         </Link>
                     );
                 })}

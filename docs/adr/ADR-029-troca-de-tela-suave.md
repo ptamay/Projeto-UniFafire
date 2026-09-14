@@ -85,6 +85,10 @@ sem cinza) sai com CSS comum. Fica como evolução possível, não como base.
 **Negativas / riscos**
 - **Primeiro carregamento (F5, abrir o sistema) sem esqueleto:** o navegador espera o servidor
   renderizar a tela inteira antes de mostrar algo. O menu e a tela chegam juntos. Aceito pelo usuário.
+- **Três telas ainda piscam por dentro** (achado na implementação): Confirmações, Logs e Usuários
+  buscam os dados no navegador depois de abrir — Confirmações com cartões cinzas, as outras com
+  "Carregando…". A navegação chega suave; o conteúdo delas não. A correção é entregar os dados
+  iniciais pelo servidor, com autorização por papel na página (§3.2) — fica para decisão à parte.
 - **Mudar filtros do Histórico** continua sem indicador (já era assim: o esqueleto não reaparece em
   mudança de query string). Fica registrado, fora deste CR.
 - Uma navegação por `router.push` que sobrar (redirecionamentos de autorização em Logs e Chaves) não

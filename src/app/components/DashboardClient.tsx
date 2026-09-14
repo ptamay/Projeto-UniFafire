@@ -4,6 +4,8 @@ import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import Tutorial from './Tutorial';
 import { buscarDadosDoDashboard } from '@/lib/dashboard-refresh';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import IndicadorDeNavegacao from './IndicadorDeNavegacao';
 import PendingInline from './PendingInline';
 import toast from 'react-hot-toast';
 import { findDelayedKeys } from '@/lib/business-rules';
@@ -1091,10 +1093,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                             <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.375rem' }}>Nenhuma chave cadastrada ainda</p>
                             <p style={{ maxWidth: '34rem', margin: '0 auto' }}>As chaves da portaria aparecem aqui. Cadastre a primeira para começar a registrar retiradas e devoluções.</p>
                             {isPorteiroOrAdmin ? (
-                                <button className="btn btn-green btn-sm" style={{ marginTop: '1.25rem' }} onClick={() => router.push('/keys')}>
+                                <Link href="/keys" prefetch={false} className="btn btn-green btn-sm" style={{ marginTop: '1.25rem' }}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                                     Cadastrar chave
-                                </button>
+                                    <IndicadorDeNavegacao />
+                                </Link>
                             ) : (
                                 <p style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>Peça a um gestor para cadastrar as chaves.</p>
                             )}
