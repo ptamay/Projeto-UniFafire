@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
+import { naoDeuPara } from '@/lib/mensagens';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string };
 
@@ -68,7 +69,7 @@ export default function KeysClient({
             toast.success('Chave criada com sucesso!');
         } else {
             const err = await res.json();
-            toast.error(err.error || 'Erro ao criar chave.');
+            toast.error(err.error || naoDeuPara('criar a chave'));
         }
     };
 
@@ -93,7 +94,7 @@ export default function KeysClient({
             refreshData();
             toast.success('Chave atualizada com sucesso!');
         } else {
-            toast.error('Erro ao atualizar chave.');
+            toast.error(naoDeuPara('salvar a chave'));
         }
     };
 
@@ -118,7 +119,7 @@ export default function KeysClient({
             refreshData();
         } else {
             const err = await res.json();
-            toast.error(err.error || 'Erro ao remover chave.');
+            toast.error(err.error || naoDeuPara('remover a chave'));
         }
     };
 
@@ -134,7 +135,34 @@ export default function KeysClient({
                         <button className="btn btn-principal" onClick={() => setShowAddKeyModal(true)}>+ Nova Chave</button>
                     </div>
 
-                    <div className="table-wrapper table-cards">
+                    {/* TASK-136 (ADR-031): no celular, cada chave é uma LINHA — nome, sala e
+                        estado —, e não a tabela de "rótulo: valor" de antes. "Editar" e
+                        "Remover" são ações secundárias; remover pede confirmação. */}
+                    <div className="mobile-only">
+                        <ul className="lista-linhas" aria-label="Chaves">
+                            {keys.map(key => (
+                                <li key={key.id} className="linha-lista">
+                                    <div className="linha-texto">
+                                        <div className="linha-nome">{key.name}</div>
+                                        <div className="linha-apoio">{key.room || 'Sem sala'}</div>
+                                        <div className={`linha-estado ${key.status === 'available' ? 'is-livre' : 'is-em-uso'}`}>
+                                            <span>
+                                                {key.status === 'available' ? 'Livre'
+                                                    : key.employee_name ? <>Com <strong>{key.employee_name}</strong></> : 'Em uso'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="linha-acoes">
+                                        <button className="btn btn-ghost btn-sm" onClick={() => handleEditKey(key)}>Editar</button>
+                                        <button className="btn btn-ghost btn-sm btn-remover" onClick={() => handleDeleteKey(key)}>Remover</button>
+                                    </div>
+                                </li>
+                            ))}
+                            {keys.length === 0 && <li className="linha-vazia">Nenhuma chave cadastrada.</li>}
+                        </ul>
+                    </div>
+
+                    <div className="table-wrapper desktop-only">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -162,7 +190,7 @@ export default function KeysClient({
                                                 Editar
                                             </button>
                                             <button
-                                                className="btn btn-perigo btn-sm"
+                                                className="btn btn-ghost btn-sm btn-remover"
                                                 onClick={() => handleDeleteKey(key)}
                                             >
                                                 Remover
@@ -240,8 +268,10 @@ export default function KeysClient({
                 title="Remover chave"
                 message={keyToDelete ? `Remover a chave "${keyToDelete.name}"${keyToDelete.room ? ` (${keyToDelete.room})` : ''}? Esta ação não pode ser desfeita.` : ''}
                 confirmText="Remover"
+                cancelText="Cancelar"
                 onConfirm={confirmDeleteKey}
                 onCancel={() => setKeyToDelete(null)}
+                danger={true}
             />
         </>
     );

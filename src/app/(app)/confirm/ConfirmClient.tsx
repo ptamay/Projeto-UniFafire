@@ -4,6 +4,7 @@ import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import type { Pendencia } from '@/lib/pendencias';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 // TASK-131: o mesmo tipo da consulta que a rota e a página usam (`src/lib/pendencias.ts`).
 type PendingTransaction = Pendencia;
@@ -66,10 +67,10 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                 window.dispatchEvent(new CustomEvent('pending-transactions-updated'));
                 router.refresh(); // Força a revalidação do cache para atualizar o Dashboard
             } else {
-                toast.error(data.error || 'Erro ao confirmar.');
+                toast.error(data.error || naoDeuPara('confirmar'));
             }
         } catch {
-            toast.error('Erro de conexão.');
+            toast.error(SEM_CONEXAO);
         } finally {
             setActionLoading(null);
         }
@@ -85,9 +86,9 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                 window.dispatchEvent(new CustomEvent('pending-transactions-updated'));
                 router.refresh(); // Força a revalidação do cache para atualizar o Dashboard
             } else {
-                toast.error('Falha ao cancelar.');
+                toast.error(naoDeuPara('cancelar'));
             }
-        } catch { toast.error('Erro de conexão.'); }
+        } catch { toast.error(SEM_CONEXAO); }
         finally { setActionLoading(null); }
     };
 

@@ -11,6 +11,7 @@ import { rotuloDoPapel } from '@/lib/papeis';
 import toast from 'react-hot-toast';
 import { findDelayedKeys } from '@/lib/business-rules';
 import { useClientClock } from '@/lib/use-client-clock';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 export interface Key {
     id: number;
@@ -427,10 +428,10 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     setSelectedEmployee(prev => { const n = { ...prev }; delete n[keyId]; return n; });
                 }
             } else {
-                toast.error(data.error || 'Erro na operação.');
+                toast.error(data.error || naoDeuPara('registrar'));
             }
         } catch {
-            toast.error('Erro de conexão.');
+            toast.error(SEM_CONEXAO);
         } finally {
             setActionLoading(null);
             setConfirmModal({ open: false, keyId: 0, keyName: '', type: 'withdraw' });
@@ -457,7 +458,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                 toast.error(data.error || 'Não foi possível cancelar a solicitação.');
             }
         } catch {
-            toast.error('Erro de conexão ao cancelar.');
+            toast.error(SEM_CONEXAO);
         } finally {
             setCancelLoading(null);
         }
@@ -1015,7 +1016,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                 style={{ minHeight: '44px', minWidth: '90px' }}
                                 disabled={!qaConfirmEnabled}
                                 onClick={() => {
-                                    if (!qaResolvedKey) return toast.error('Chave inválida.');
+                                    if (!qaResolvedKey) return toast.error('Essa chave não está na lista. Escolha uma das sugestões.');
                                     if (qaStep === 'withdraw') {
                                         if (isPorteiroOrAdmin) {
                                             if (!qaResolvedEmp) return toast.error('Usuário não encontrado. Selecione da lista.');

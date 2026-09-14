@@ -403,7 +403,38 @@ export default function HistoryClient({
                         </FolhaDeFiltros>
                     </div>
 
-                    <div className="table-wrapper table-cards">
+                    {/* TASK-136 (ADR-031): no celular, cada movimentação é uma LINHA — chave e
+                        sala, quem, quando e o tipo — como as chaves do Dashboard, e não o cartão
+                        de seis "rótulo: valor" de antes. A tabela fica para o desktop e o PDF. */}
+                    <div className="mobile-only no-print">
+                        <ul className="lista-linhas" aria-label="Movimentações">
+                            {history.map(item => (
+                                <li key={item.id} className="linha-lista">
+                                    <div className="linha-texto">
+                                        <div className="linha-nome">{item.key_name}</div>
+                                        <div className="linha-apoio">{item.room}{item.employee_name ? ` · ${item.employee_name}` : ''}</div>
+                                        <div className="linha-meta">
+                                            {formatTimestamp(item.timestamp)}
+                                            {item.confirmed_by ? ` · confirmou @${item.confirmed_by}` : ''}
+                                        </div>
+                                        {item.justification && <div className="linha-meta">Motivo: {item.justification}</div>}
+                                    </div>
+                                    <span className={`status-tag ${item.action === 'withdraw' ? 'status-withdraw' : item.action === 'transfer' ? 'status-transfer' : 'status-return'}`}>
+                                        {item.action === 'withdraw' ? 'Retirada' : item.action === 'transfer' ? 'Transferência' : 'Devolução'}
+                                    </span>
+                                </li>
+                            ))}
+                            {history.length === 0 && (
+                                <li className="linha-vazia">
+                                    {hasActiveFilter || busca.trim()
+                                        ? 'Nenhuma movimentação encontrada para a busca ou os filtros.'
+                                        : 'Nenhum histórico registrado.'}
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+
+                    <div className="table-wrapper desktop-only full-width-print">
                         <table className="table">
                             <thead>
                                 <tr>

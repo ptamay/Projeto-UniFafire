@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import ConfirmModal from '@/app/components/ConfirmModal';
+import { rotuloDoPapel } from '@/lib/papeis';
 import type { UsuarioAtivo } from '@/lib/usuarios';
 import toast from 'react-hot-toast';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 type User = { 
     id: number; 
@@ -87,7 +89,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...formData } : u));
                     toast.success('Usuário atualizado!');
                     setShowForm(false);
-                } else { toast.error(data.error || 'Erro ao atualizar.'); }
+                } else { toast.error(data.error || naoDeuPara('salvar o usuário')); }
             } else {
                 // Create new user — omite username quando vazio (gerado automaticamente pelo servidor)
                 const { username, ...rest } = formData;
@@ -105,9 +107,9 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     setCodigoRevelado({ username: data.username, codigo: data.codigoDeAcesso,
                         validadeMinutos: data.validadeMinutos, motivo: data.reactivated ? 'reativado' : 'criado' });
                     setShowForm(false);
-                } else { toast.error(data.error || 'Erro ao criar usuário.'); }
+                } else { toast.error(data.error || naoDeuPara('criar o usuário')); }
             }
-        } catch { toast.error('Erro de conexão.'); }
+        } catch { toast.error(SEM_CONEXAO); }
         setSaving(false);
     };
 
@@ -117,8 +119,8 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
             const res = await fetch('/api/users', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: deleteModal.id }) });
             const data = await res.json();
             if (res.ok) { setUsers(prev => prev.filter(u => u.id !== deleteModal.id)); toast.success('Usuário removido.'); }
-            else { toast.error(data.error || 'Erro ao remover.'); }
-        } catch { toast.error('Erro de conexão.'); }
+            else { toast.error(data.error || naoDeuPara('remover o usuário')); }
+        } catch { toast.error(SEM_CONEXAO); }
         setDeleteModal(null);
     };
 
@@ -141,8 +143,8 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     validadeMinutos: data.validadeMinutos, motivo: 'resetado',
                 });
             }
-            else { toast.error(data.error || 'Erro.'); }
-        } catch { toast.error('Erro de conexao.'); }
+            else { toast.error(data.error || naoDeuPara('gerar o código')); }
+        } catch { toast.error(SEM_CONEXAO); }
         setResetModal(null);
     };
 
@@ -171,25 +173,22 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     </button>
                 </div>
 
-                {/* Role Stats */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                {/* TASK-136: os filtros por papel são BOTÕES com estado (aria-pressed) e a contagem
+                    dentro — como os filtros do Dashboard. Antes eram caixas clicáveis que não eram
+                    botão: sem teclado, e o leitor de tela não sabia qual estava ligado. */}
+                <div className="filtros-papel" role="group" aria-label="Filtrar por perfil">
                     {ROLES.map(r => {
                         const count = users.filter(u => u.role === r.value).length;
                         return (
-                            <div key={r.value} style={{
-                                border: `1px solid ${filterRole === r.value ? 'var(--acao)' : 'var(--border)'}`,
-                                background: filterRole === r.value ? 'var(--acao-bg)' : 'var(--bg-card)',
-                                borderRadius: 'var(--radius-md)',
-                                padding: '0.75rem 1.25rem',
-                                cursor: 'pointer',
-                                transition: 'background-color 0.15s, border-color 0.15s',
-                                display: 'flex', alignItems: 'center', gap: '0.75rem'
-                            }} onClick={() => setFilterRole(filterRole === r.value ? 'all' : r.value)}>
-                                <div>
-                                    <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', fontWeight: 600 }}>{r.label}</div>
-                                    <div style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{count}</div>
-                                </div>
-                            </div>
+                            <button
+                                key={r.value}
+                                type="button"
+                                className="btn btn-sm filtro-papel"
+                                aria-pressed={filterRole === r.value}
+                                onClick={() => setFilterRole(filterRole === r.value ? 'all' : r.value)}
+                            >
+                                {r.label} <span className="filtro-conta">{count}</span>
+                            </button>
                         );
                     })}
                 </div>
@@ -198,18 +197,39 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                 <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center' }}>
                     <div className="search-bar" style={{ maxWidth: 360 }}>
                         <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input className="input" style={{ paddingLeft: '2.5rem' }} placeholder="Buscar por nome, usuário ou matrícula..." value={search} onChange={e => setSearch(e.target.value)} />
+                        <input type="search" aria-label="Buscar usuário por nome, usuário ou matrícula" className="input" style={{ paddingLeft: '2.5rem' }} placeholder="Buscar" enterKeyHint="search" value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
                     {filterRole !== 'all' && (
                         <button className="btn btn-ghost btn-sm" onClick={() => setFilterRole('all')}>
                             Limpar filtro
                         </button>
                     )}
-                    <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-2)', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
+                </div>
+
+                {/* TASK-136 (ADR-031): no celular, cada usuário é uma LINHA — nome, "@usuário ·
+                    papel" — com as ações embaixo, secundárias; remover pede confirmação. */}
+                <div className="mobile-only">
+                    <ul className="lista-linhas" aria-label="Usuários">
+                        {filteredUsers.map(u => (
+                            <li key={u.id} className="linha-lista linha-lista--acoes-embaixo">
+                                <div className="linha-texto">
+                                    <div className="linha-nome">{u.full_name || u.username}</div>
+                                    <div className="linha-apoio">@{u.username} · {rotuloDoPapel(u.role)}{u.matricula ? ` · ${u.matricula}` : ''}</div>
+                                </div>
+                                <div className="linha-acoes">
+                                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)}>Editar</button>
+                                    <button className="btn btn-ghost btn-sm" onClick={() => setResetModal(u)}>Novo código</button>
+                                    <button className="btn btn-ghost btn-sm btn-remover" onClick={() => setDeleteModal(u)}>Remover</button>
+                                </div>
+                            </li>
+                        ))}
+                        {filteredUsers.length === 0 && <li className="linha-vazia">Nenhum usuário encontrado.</li>}
+                    </ul>
                 </div>
 
                 {(
-                    <div className="table-wrapper table-cards card">
+                    <div className="table-wrapper card desktop-only">
                         <table className="table">
                             <thead>
                                 <tr>
@@ -244,9 +264,9 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                                 </button>
                                                 <button className="btn btn-ghost btn-sm" onClick={() => setResetModal(u)}>
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                                    Redefinir
+                                                    Novo código
                                                 </button>
-                                                <button className="btn btn-perigo btn-sm" onClick={() => setDeleteModal(u)}>
+                                                <button className="btn btn-ghost btn-sm btn-remover" onClick={() => setDeleteModal(u)}>
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                                                     Remover
                                                 </button>
@@ -330,7 +350,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     isOpen={true} 
                     title="Gerar Código de Acesso" 
                     message={`O acesso de "${resetModal.full_name || resetModal.username}" será invalidado e um código de uso único será gerado. Você verá o código UMA vez e deverá entregá-lo em mãos; com ele, a pessoa define a própria senha no primeiro acesso.`} 
-                    confirmText="Redefinir" 
+                    confirmText="Gerar código" 
                     onConfirm={handleResetPass} 
                     onCancel={() => setResetModal(null)} 
                 />
@@ -376,7 +396,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                 </div>
             )}
 
-            <ConfirmModal isOpen={!!deleteModal} title="Remover Usuário" message={`Remover o usuário "${deleteModal?.full_name || deleteModal?.username}"? O acesso será revogado imediatamente.`} confirmText="Remover" onConfirm={handleDelete} onCancel={() => setDeleteModal(null)} />
+            <ConfirmModal isOpen={!!deleteModal} title="Remover Usuário" message={`Remover o usuário "${deleteModal?.full_name || deleteModal?.username}"? O acesso será revogado imediatamente.`} confirmText="Remover" cancelText="Cancelar" onConfirm={handleDelete} onCancel={() => setDeleteModal(null)} danger={true} />
         </>
     );
 }

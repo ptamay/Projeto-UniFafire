@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 export default function SecurityClient() {
     const [loading, setLoading] = useState(false);
@@ -36,14 +37,14 @@ export default function SecurityClient() {
             const data = await res.json();
             
             if (!res.ok) {
-                toast.error(data.error || 'Erro ao trocar a senha');
+                toast.error(data.error || naoDeuPara('trocar a senha'));
             } else {
                 toast.success('Senha atualizada com sucesso! Outros dispositivos foram desconectados.');
                 setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 // Limpa o form após sucesso
             }
         } catch {
-            toast.error('Erro de conexão');
+            toast.error(SEM_CONEXAO);
         } finally {
             setLoading(false);
         }

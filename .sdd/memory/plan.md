@@ -194,6 +194,26 @@
 - **TASK-136 → Chaves e Usuários em lista no celular.** Linha com nome, sala/papel e estado; editar e
   remover como secundárias, remover com confirmação. Ao fim: nova crítica do impeccable (meta ≥ 32/40,
   estética ≥ 3) e registro aqui.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-136-listas-celular`). Chaves e Usuários no celular em
+  **lista de linhas** (nome, apoio, estado; tabela só no desktop, `table-cards` removido do CSS);
+  **"Remover" secundário** (`btn-remover`: texto vermelho sem caixa) e **modal de perigo** nas duas telas;
+  filtros por papel viraram **botões com `aria-pressed`** e contagem (eram `<div onClick>`, sem
+  teclado); busca de usuários `type="search"`; "Redefinir" → **"Novo código"** (é o código de uso único
+  do ADR-017). Na rodada da crítica: **Histórico e Logs também em linha** no celular (o padrão de
+  "rótulo: valor" que o CR veio tirar); **mensagens de erro com o próximo passo** (`src/lib/mensagens.ts`
+  — "Sem conexão… confira a internet e tente de novo", "Não deu para X…"); recuo mínimo nos botões
+  (detector no navegador: `cramped-padding`). `DESIGN.md` **regravado** nas 8 seções canônicas a partir do
+  construído, e `.impeccable/design.json` (ainda descrevia o "Colégio São José") refeito.
+  **Crítica final: 30/40** (era 23), estética **3/4** (era 1) — `.impeccable/critique/2026-09-14T19-46-39Z__src-app-app.md`,
+  rodada em contexto único (sem sub-agentes nesta sessão). ⚠️ **REQ-033f NÃO ATINGIDO: meta ≥ 32, faltam 2.**
+  O que segura a nota (P2, cada um uma tela ainda fora do quadro de chaves): Usuários com três faixas antes
+  da lista (busca não é o primeiro controle); Confirmações em cartões; Logs em código de sistema
+  (`LOGIN_SUCCESS`, "User logged in"). Detector: 0 na linha de comando; no navegador, só o falso positivo
+  `layout-transition` no `<body>`, causado pelo painel do próprio detector. Guarda
+  `tests/listas-celular.test.ts` (10) + E2E `tests/e2e/listas-celular.spec.ts` (7, só celular; 7 falhavam
+  na `main`). Verificado: E2E completa no build de produção **92 ok / 30 pulados / 0**, guardas 92/92,
+  tsc 0, eslint 0. Próximo passo é decisão do usuário (fechar o CR com 30/40 ou uma task para as três
+  telas) — ⚠️ TASK-137+ e ADR-032+ estão reservados pela outra sessão (§2.2): confirmar número antes.
 
 ### Aberta por Change Request — a troca de tela fica suave (CR Tipo C · ADR-029)
 > Aprovado pelo usuário em 2026-09-14. Relato com capturas, depois da TASK-125 no ar: "parece seco

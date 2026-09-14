@@ -187,7 +187,28 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                         </div>
                     </FolhaDeFiltros>
 
-                    <div className="table-wrapper table-cards">
+                    {/* TASK-136 (ADR-031): no celular, cada registro é uma LINHA — a ação, quem,
+                        sobre o quê e quando —, e não o cartão de seis "rótulo: valor". */}
+                    <div className="mobile-only">
+                        <ul className="lista-linhas" aria-label="Registros">
+                            {loading ? (
+                                <li className="linha-vazia">Carregando…</li>
+                            ) : logs.length > 0 ? logs.map(log => (
+                                <li key={log.id} className="linha-lista">
+                                    <div className="linha-texto">
+                                        <div className="linha-nome"><span className="codigo-trilha">{log.action}</span></div>
+                                        <div className="linha-apoio">{log.username}{log.target ? ` · ${log.target}` : ''}</div>
+                                        <div className="linha-meta">{formatTimestamp(log.timestamp)}{log.ip_address ? ` · ${log.ip_address}` : ''}</div>
+                                        {log.details && <div className="linha-meta">{log.details}</div>}
+                                    </div>
+                                </li>
+                            )) : (
+                                <li className="linha-vazia">Nenhum registro encontrado.</li>
+                            )}
+                        </ul>
+                    </div>
+
+                    <div className="table-wrapper desktop-only">
                         <table className="table">
                             <thead>
                                 <tr>

@@ -78,179 +78,236 @@ spacing:
   md: "1rem"
   lg: "1.5rem"
   xl: "2rem"
+components:
+  button-principal:
+    backgroundColor: "{colors.acao}"
+    textColor: "{colors.acao-texto}"
+    rounded: "{rounded.sm}"
+    typography: "{typography.texto}"
+    height: "48px"
+    padding: "6px 24px"
+  button-principal-hover:
+    backgroundColor: "{colors.acao-hover}"
+  button-secundario:
+    backgroundColor: "{colors.bg-surface}"
+    textColor: "{colors.acao}"
+    rounded: "{rounded.sm}"
+    typography: "{typography.apoio}"
+    height: "40px"
+    padding: "6px 18px"
+  button-perigo:
+    backgroundColor: "{colors.alerta}"
+    textColor: "{colors.branco}"
+    rounded: "{rounded.sm}"
+    height: "40px"
+  button-remover:
+    textColor: "{colors.alerta-fg}"
+    rounded: "{rounded.sm}"
+    height: "40px"
+  campo:
+    backgroundColor: "{colors.bg-page}"
+    textColor: "{colors.text-primary}"
+    rounded: "{rounded.sm}"
+    typography: "{typography.texto}"
+    height: "44px"
+  etiqueta-livre:
+    textColor: "{colors.livre}"
+    rounded: "{rounded.full}"
+    typography: "{typography.apoio}"
+  etiqueta-em-uso:
+    textColor: "{colors.em-uso}"
+    rounded: "{rounded.full}"
+    typography: "{typography.apoio}"
+  plaqueta:
+    backgroundColor: "{colors.bg-surface}"
+    textColor: "{colors.text-primary}"
+    rounded: "{rounded.md}"
+    padding: "12px 16px"
 ---
 
 # Design System: UniFAFIRE — Gestão de Chaves
 
-> **Substituído em 2026-09-14** (TASK-132 · ADR-031). O documento anterior prescrevia o visual que o
-> usuário leu como "slop de IA" — botão com gradiente que sobe e brilha, sombra em todo cartão,
-> rótulo em maiúsculas espaçadas — e descrevia outra instituição. Este documento tem duas camadas,
-> sempre marcadas: **Em vigor** (o que o código faz hoje, e o que o hook de design confere) e
-> **Contrato** (o que as TASK-134 a 136 constroem). Ao fim da TASK-136, o documento é regravado a
-> partir do mundo construído. A TASK-133 (componentes globais e cor) passou de contrato a em vigor.
+> Regravado em 2026-09-14 ao fim da TASK-136, a partir do sistema construído e medido nas
+> TASK-132 a 136 (ADR-031). Os tokens da frente são normativos: são os do `globals.css`, e as
+> guardas `tests/escala-tipografica.test.ts` e `tests/componentes-quadro.test.ts` conferem que o
+> código não sai deles. Nada aqui é contrato por cumprir.
 
-## 1. Direção: o quadro de chaves
+## Overview
 
-**North star.** O sistema é o quadro de chaves da portaria, levado para a tela. No quadro, cada chave
-tem uma plaqueta num gancho: se está no gancho, está livre; se o gancho está vazio, alguém a levou — e
-todo mundo sabe ler isso de longe, sem instrução. A tela tem de ser lida do mesmo jeito.
+**Creative North Star: "O quadro de chaves da portaria"**
 
-Registro utilitário: o de um app de banco ou de transporte público. Texto grande, frases curtas,
-poucas cores e sempre com significado, superfícies planas, verbos do dia a dia. Quem guia as decisões
-são funcionários de apoio e porteiros, parte com pouca instrução (PRODUCT.md).
+O sistema é o quadro de chaves da portaria, levado para a tela. No quadro, cada chave tem uma
+plaqueta num gancho: se está no gancho, está livre; se o gancho está vazio, alguém a levou — e todo
+mundo lê isso de longe, sem instrução. A tela é lida do mesmo jeito: acha-se a plaqueta, vê-se se
+está livre ou com quem, e toca-se o verbo.
 
-### Contrato de direção
+O registro é utilitário, o de um app de banco ou de transporte público: texto grande, frases
+curtas, poucas cores e sempre com significado, superfícies planas, verbos do dia a dia. Quem guia as
+decisões são funcionários de apoio e porteiros, parte com pouca instrução e fonte do celular
+aumentada (PRODUCT.md). O tema segue o do aparelho na primeira visita; o botão de tema grava a
+escolha.
 
-- **THESIS:** cada chave é uma plaqueta num gancho — livre ou com alguém —, e a tela serve para achar a
-  plaqueta e agir sobre ela. Recusa o painel escuro genérico de cartões com brilho e contadores.
-- **OWN-WORLD:** chapa do quadro como fundo plano; a chave como linha com plaqueta (nome, sala, estado);
-  cor fixa por significado — livre, em uso, pendente, alerta —, vermelho só para alerta e para o que
-  apaga; um botão de ação por tela que salta aos olhos; nada de gradiente, brilho ou sombra de repouso.
-- **STORY:** a pessoa abre, digita ou toca o nome da sala, vê se a chave está livre ou com quem, e
-  toca o verbo ("Pegar", "Devolver", "Pedir"). Nunca precisa adivinhar o que é tocável.
-- **FIRST VIEWPORT (celular, Dashboard):** barra do topo com o nome da tela; a busca como primeiro
-  controle, presa ao rolar; logo abaixo, os estados como filtros ("Livres 12 · Em uso 3"); a lista de
-  plaquetas começa sem rolar num aparelho de 360×640, cada linha com o verbo à direita, ao alcance do
-  polegar.
-- **FORM:** candidata 3 da lista fundamentada ("quadro de chaves da portaria"), sorteada pelo
-  `concept-seed` do impeccable, chave **64e53132**; confirmada pelo usuário em 2026-09-14. Disciplinas
-  herdadas dos desafiantes recusados: cor com significado fixo e vermelho só para alerta (teletexto);
-  uma única ação que salta aos olhos por tela (bancada de hardware).
-- **FINISH:** unreviewed and undocumented is unfinished; this build ends with the finish review, the
-  verdict, DESIGN.md, and every shipping raster carrying its provenance.
+**Key Characteristics:**
+- Cada item é uma LINHA com nome, apoio e estado — nunca uma tabela de "rótulo: valor".
+- Toda ação tem o verbo escrito ("Pegar", "Entregar", "Devolver", "Pedir", "Passar para outra
+  pessoa"); a linha em si não age ao toque.
+- A busca é o primeiro controle de toda tela de lista; filtros moram em contadores ou numa folha.
+- Cor por significado, a mesma em todas as telas; vermelho só para alerta e para o que apaga.
+- Superfícies planas, uma elevação só, cinco tamanhos de texto, três pesos.
 
-## 2. Tipografia — em vigor
+## Colors
 
-**Fonte:** Atkinson Hyperlegible Next, variável, pelo `next/font` (`--font-sistema`). Desenhada pelo
-Braille Institute para baixa visão: I/l/1, O/0 e a/o não se confundem. Escolha do usuário.
+Verde, âmbar e vermelho são o semáforo — livre, esperando, alerta — lido sem legenda por quem tem
+pouca instrução. O azul UniFAFIRE é a ação. Cada par tem valor para o escuro (a chapa escura) e para
+o claro (sufixo `-claro`), com contraste AA conferido por teste.
 
-**Escala: cinco degraus, e nenhum outro** — tokens `--fs-1` a `--fs-5` no `globals.css`, guardados por
-`tests/escala-tipografica.test.ts`. Antes eram 20 tamanhos, quase todos entre 10 e 14 px.
+### Primary
+- **Azul de ação** (acao / acao-claro): o botão principal da tela, o item ativo do menu e da barra
+  inferior, o foco, os links. No escuro é o azul claro com texto marinho; no claro, o marinho com
+  texto branco.
 
-| Token | Tamanho | Papel |
-|---|---|---|
-| `--fs-5` | 28 px (1.75rem) | título da tela |
-| `--fs-4` | 20 px (1.25rem) | título de seção e de cartão |
-| `--fs-3` | 16 px (1rem) | texto, campo, nome — **o piso de leitura** |
-| `--fs-2` | 14 px (0.875rem) | texto de apoio, rótulo de campo |
-| `--fs-1` | 12 px (0.75rem) | metadado, etiqueta, rótulo da barra inferior |
+### Secondary
+- **Verde livre** (livre / livre-claro): a chave está no gancho — etiqueta, contador de livres,
+  marca de ponto cheio.
+- **Âmbar pendente** (pendente, pendente-fg / pendente-claro, pendente-fg-claro): esperando alguém
+  confirmar; também o contador de pendências e o backup atrasado.
 
-**Pesos: três** — `--fw-regular` 400, `--fw-semibold` 600, `--fw-bold` 700. Negrito é para destacar;
-com tudo em negrito (o 800 estava em 29 lugares), nada destaca.
+### Tertiary
+- **Vermelho alerta** (alerta, alerta-fg / alerta-claro): atraso, erro e o que apaga — o botão de
+  perigo nos modais e na Zona de Perigo, o "Remover" como texto.
+- **Idioma dos registros** (registro-retirada, registro-devolucao, registro-transferencia): no
+  Histórico e nas Confirmações — retirada âmbar, devolução verde, transferência roxa —, casado com o
+  estado que a ação produz.
 
-Tamanhos em `rem`: a fonte aumentada do celular tem de funcionar.
+### Neutral
+- **Chapa** (bg-page / bg-page-claro): o fundo. **Superfície** (bg-surface / bg-surface-claro):
+  listas, cartões de configuração, barras. **Elevado** (bg-elevated): linha em hover, cabeçalho de
+  tabela, avatar.
+- **Tinta** (text-primary, text-secondary, text-muted e as versões claras): no claro, o azul
+  UniFAFIRE é a tinta do texto. **Em uso** (em-uso / em-uso-claro) é cinza de propósito.
+- **Borda de campo** (borda-campo / borda-campo-claro): contraste de controle (≥ 3:1), mais forte
+  que a borda de enfeite.
 
-**Caixa normal (em vigor desde a TASK-133):** nenhum `text-transform: uppercase` e nenhum
-espaçamento de letras aberto (≥ 0,04 em) — rótulos de campo, cabeçalhos de tabela, etiquetas de
-status e títulos de seção do menu estão em caixa normal. Guardado por `tests/componentes-quadro.test.ts`.
+**The Semáforo Rule.** Livre é verde, pendente é âmbar, alerta é vermelho — em todas as telas, e
+nenhuma dessas três cores aparece com outro sentido.
 
-## 3. Cor — em vigor (TASK-133)
+**The Red Means Delete Rule.** Vermelho só para atraso, erro e o que apaga. "Sair", "Cancelar" e
+contador de pendências não são vermelhos.
 
-A paleta do quadro de chaves, nos dois temas. **Cor sempre por token, e cada token significa uma coisa
-só, em todas as telas:**
+**The One Action Color Rule.** O azul de ação é o que se toca e fica a ≥ 60° de matiz de qualquer
+cor de estado; o verde nunca é botão.
 
-| Significado | Token | Escuro | Claro | Onde |
-|---|---|---|---|---|
-| **livre** — a chave está no gancho | `--livre-fg` / `--livre-bg` | `#34D399` | `#047857` | etiqueta "Disponível", contador de livres |
-| **em uso** — o gancho está vazio, alguém levou; é normal, não é alarme | `--em-uso-fg` / `--em-uso-bg` | `#CBD5E1` | `#334155` | etiqueta "Em uso" |
-| **pendente** — esperando alguém confirmar | `--pendente-fg` / `--pendente-bg`, `--pendente` sólido | `#FBBF24` | `#92400E` | pendências, contadores do menu e da barra inferior, backup atrasado |
-| **alerta** — atraso, erro, e o que apaga | `--alerta-fg` / `--alerta-bg`, `--alerta` sólido | `#FCA5A5` / `#DC2626` | `#B91C1C` | chaves em atraso, erros, botão de apagar, Zona de Perigo |
-| **ação** — o que se toca | `--acao`, `--acao-hover`, `--acao-texto`, `--acao-bg` | `#9DB4FF` (texto marinho) | `#1E3A9C` (texto branco) | botão principal, item ativo do menu, foco, links |
+## Typography
 
-- **Verde, âmbar e vermelho são o semáforo:** livre, esperando, alerta — lido sem legenda por quem tem
-  pouca instrução. "Em uso" é cinza de propósito: o gancho vazio é o estado mais comum do quadro.
-- **Vermelho só para alerta e para o que apaga.** "Sair" e "Cancelar" não são vermelhos (não apagam
-  nada); o contador de pendências é âmbar, não vermelho.
-- **A cor de ação é o azul UniFAFIRE**, a ≥ 60° de matiz de qualquer cor de estado. O verde deixou de
-  ser o botão: verde agora quer dizer "livre".
-- **O idioma dos registros continua** e casa com o estado que a ação produz: retirada = âmbar ·
-  devolução = verde (→ livre) · transferência = roxo (`--action-*`).
-- **Papéis não têm cor** (`.badge`): o papel é identidade, e seis cores de papel disputavam com as de
-  estado — o âmbar do ALUNO era o âmbar de "pendente".
-- Contraste AA de cada par (texto de estado sobre a etiqueta, texto sobre os sólidos, texto apagado
-  sobre a página) conferido nos dois temas por `tests/componentes-quadro.test.ts`. Borda de campo com
-  contraste de controle (`--borda-campo`, ≥ 3:1).
+**Fonte:** Atkinson Hyperlegible Next, pelo `next/font`, com system-ui de reserva. Desenhada para
+baixa visão: I/l/1, O/0 e a/o não se confundem.
 
-**Tema (em vigor):** na primeira visita, **segue o do aparelho** (`prefers-color-scheme`); a escolha
-feita no botão de tema é gravada e vence. Aplicado por um script no `<head>`, antes da primeira pintura
-(`src/lib/tema.ts`). O claro deixa de ser exceção: ele é o que abre no celular de quem está no pátio.
+### Hierarchy
+- **Tela** (1.75rem, 700): o título da página — no celular recortado da vista, porque a barra do
+  topo já diz o nome.
+- **Título** (1.25rem, 700): título de seção, de modal e da folha de filtros.
+- **Texto** (1rem, 400; 600 no nome da chave): o piso de leitura — nomes, campos, o botão principal.
+- **Apoio** (0.875rem, 400): sala, "@usuário · papel", rótulos de campo, botões secundários,
+  etiquetas de estado.
+- **Meta** (0.75rem, 600): metadado curto, rótulo da barra inferior, texto de apoio sob mês e dia.
 
-## 4. Superfície e elevação — em vigor (TASK-133)
+**The Five Sizes Rule.** São cinco tamanhos e três pesos (400, 600, 700), e nenhum outro — a guarda
+reprova qualquer `font-size` fora dos tokens, também dentro de `<style jsx>`.
 
-Superfícies **planas**: página (`--bg-page`, a chapa), superfície e cartão (`--bg-surface` =
-`--bg-card`), separados por borda de 1 px e por espaço, nunca por sombra. **Uma elevação só**,
-`--elevacao`, e só no que flutua de verdade: modal, menu, lista suspensa, gaveta aberta, dica. Os
-tokens `--shadow-*` saíram. Nada de brilho (sombra sem deslocamento com desfoque), nada de gradiente
-(inclusive na tela de entrada, que perdeu os "orbes" de fundo).
+**The Normal Case Rule.** Nada em maiúsculas forçadas nem com letras espaçadas; o texto escrito em
+maiúsculas no código também é pego pela E2E. Siglas curtas e o código da trilha nos Logs são a
+exceção.
 
-**Nunca cartão dentro de cartão:** no celular, o cartão que embrulhava Chaves, Histórico e Logs fica
-plano — a página já é a superfície. Sem faixa colorida na borda de cartão ou de linha (a de 4 px nos
-cartões de chave e nas linhas do Dashboard saiu); o estado vai na etiqueta.
+## Layout
 
-## 5. Componentes
+- **Celular (≤ 768 px):** barra do topo fixa (nome da tela à esquerda, ajuda e tema juntos à
+  direita), barra inferior com as telas principais, conteúdo com 1rem de margem. A 360×640, a busca é
+  o primeiro controle e o primeiro item aparece sem rolar, em todas as telas de lista.
+- **Dashboard no celular:** busca e filtros-contadores presos logo abaixo da barra do topo ao rolar;
+  depois alerta, pendências, atalhos do balcão, a lista, e por último a explicação da dupla
+  confirmação.
+- **Histórico e Logs:** busca à vista, "Filtros (n)" abre uma folha de baixo para cima, ações num
+  menu "⋯".
+- **Desktop (> 768 px):** menu lateral fixo; as mesmas telas com tabela e filtros na página. O
+  desktop herdou componentes e cores, sem redesenho de layout.
 
-**Em vigor (TASK-133):**
+**The Search First Rule.** Em toda lista, a primeira coisa que se toca é a busca; título, contadores
+soltos e explicações vêm depois ou saem do celular.
 
-- **Botões:** cor sólida, sem gradiente, sem brilho, sem subir no hover. O nome diz o papel:
-  `.btn-principal` (azul de ação, **48 px**, um por tela), `.btn-secundario` (contorno, 40 px),
-  `.btn-ghost` (o mais discreto), `.btn-perigo` (vermelho, o que apaga), `.btn-sm` (compacto de linha,
-  40 px). No celular os secundários sobem para 44 px de toque; o principal fica com 48.
-- **Campos:** borda de 1 px com contraste de controle; foco em azul de ação com anel de 3 px.
-- **Etiqueta de status:** caixa normal, `--fs-2` semibold, e a marca do quadro — **ponto cheio =
-  livre** (a chave no gancho), **anel vazio = em uso** (o gancho vazio). Quem não distingue cor lê
-  pela forma.
-- **Barra do topo (celular):** o nome da tela à esquerda, junto do menu; ajuda ("?") e tema juntos na
-  borda direita. O h1 da página sai da vista no celular (recortado, continua para o leitor de tela), e
-  o subtítulo sai junto.
-- **Barra inferior:** a aba ativa numa pílula de ação atrás do ícone; contador de pendências âmbar.
-- **Menu lateral:** tokens do tema (sai o slate fixo); item ativo com fundo e texto de ação, sem
-  barra colorida na borda.
-- **Ícones:** SVG de traço único; os emojis 🖨️ e 🔍 viraram ícones desenhados.
+## Elevation & Depth
 
-**Em vigor (TASK-134) — Dashboard no celular:**
+Superfícies planas. Página, superfície e cartão se separam por borda de 1 px e por espaço, nunca por
+sombra. Há uma elevação só, para o que flutua de verdade: modal, menu "⋯", lista suspensa, folha de
+filtros, gaveta aberta e dica. Atrás do que flutua, um véu escuro único.
 
-- **Plaqueta da chave:** uma LINHA numa lista com divisórias, não um cartão — nome em `--fs-3`
-  semibold, sala inteira em `--fs-2` (quebra, nunca reticências), estado em palavra com a marca
-  ("● Livre", "○ Com Fulano", "Aguardando: …"), e o verbo à direita. A linha não age ao toque: quem age
-  é o botão com o verbo escrito.
-- **Verbos:** "Pegar" (a chave livre, para si), "Entregar" (no balcão, para alguém), "Devolver",
-  "Pedir" (a chave que está com outra pessoa) e "Passar para outra pessoa" (texto de ação sob a linha).
-  "Solicitar" e "Transferir" saíram dos botões — o primeiro nomeava duas ações diferentes. No desktop,
-  os mesmos verbos ("Passar" visível, com o nome completo para o leitor de tela).
-- **Primeira tela (360×640):** a busca é o primeiro controle e fica PRESA abaixo da barra do topo junto
-  com os filtros; os filtros são os contadores ("Todas 3 · Livres 1 · Em uso 2 · Minhas 2"); os
-  contadores soltos do cabeçalho saem do celular; alerta, pendências, atalhos do balcão ("Mais usadas"),
-  a lista e, por último, a explicação da dupla confirmação.
-- A palavra do estado livre é **"Livre"** (antes "Disponível"), em todas as telas.
+**The One Elevation Rule.** Sombra em repouso não existe; brilho (sombra sem deslocamento, com
+desfoque) também não. A guarda aceita só a elevação única, anel de foco e nenhuma.
 
-**Em vigor (TASK-135) — Histórico e Logs no celular:**
+## Shapes
 
-- **Busca + "Filtros (n)" + "⋯":** a busca fica à vista (no Histórico, por chave, sala ou pessoa, sem
-  acento nem maiúscula); os demais filtros moram numa **folha** que sobe de baixo (`FolhaDeFiltros`),
-  com o n de filtros ativos no botão, "Limpar filtros" e "Ver resultados"; as ações de relatório num
-  menu **"⋯"** (`MenuDeAcoes`) — no Histórico, **um PDF só** ("Baixar PDF"; o "Imprimir" saiu), nos
-  Logs, "Baixar planilha (CSV)". No desktop a mesma marcação deixa os campos na página.
-- **Rótulos do dia a dia:** "Mês" e "Dia" com texto de apoio (o campo vazio parecia quebrado), "Hora do
-  dia", "Pessoa", "Tipo". Métricas em linguagem simples ("Confirmadas em até 10 min", "Tempo até
-  confirmar"), fora do celular.
-- **O que apaga não fica no caminho do polegar:** "Limpar histórico" saiu do topo do Histórico para
-  Configurações → Zona de Perigo (mesma rota, modal, só ADMIN).
+- **Cantos:** suaves e poucos — 10 px em botões e campos, 14 px em listas e cartões, 20 px em modais
+  e no topo da folha de filtros, pílula (9999 px) em etiquetas e contadores.
+- **A marca do estado:** ponto cheio de 8 px = livre (a chave no gancho); anel vazio de 8 px = em uso
+  (o gancho vazio). Quem não distingue cor lê pela forma.
+- Sem faixas coloridas na borda de linhas ou cartões; sem gradiente.
 
-**Contrato:**
-- **Listas de Chaves e Usuários (TASK-136):** linha com nome, sala/papel e estado; "Remover" como ação
-  secundária, com confirmação.
+## Components
 
-## 6. Faça e não faça
+### Buttons
+- **Principal** (48 px, azul de ação, texto 1rem): um por tela — "+ Nova chave", "Novo usuário",
+  "Ver resultados", o confirmar dos modais.
+- **Secundário** (40 px, 44 no celular; contorno com texto azul): o verbo de cada linha — "Pegar",
+  "Entregar", "Devolver", "Pedir".
+- **Discreto** (contorno cinza): "Editar", "Cancelar", "Filtros", "Limpar filtros".
+- **Perigo** (vermelho cheio): só no modal que confirma apagar e na Zona de Perigo.
+- **Remover** (texto vermelho, sem caixa): o apagar como ação secundária numa linha.
+- Nenhum botão sobe, encolhe ou brilha no hover; o recuo vertical mínimo garante que o texto nunca
+  encoste na borda.
 
-### Faça
-- Diga a ação em palavra: "Pegar", "Devolver", "Pedir", "Passar para outra pessoa".
+### Chips
+- **Filtro-contador** ("Livres 9", "Aluno 3"): botão com a contagem dentro; o ativo é o azul de ação,
+  com `aria-pressed`. Rola na horizontal no celular quando não cabe.
+- **Etiqueta de estado** (pílula, apoio semibold): "Livre", "Em uso", "Aguardando", e no Histórico
+  "Retirada", "Devolução", "Transferência".
+- **Etiqueta de papel**: neutra — o papel é identidade, não estado.
+
+### Cards / Containers
+- **Lista de linhas** (superfície com borda, divisória entre itens): Dashboard, Chaves, Usuários,
+  Histórico e Logs no celular. Nunca cartão dentro de cartão; no celular o cartão que embrulhava a
+  página fica plano.
+- **Cartão de configuração**: seções de Configurações, com a Zona de Perigo em moldura vermelha
+  própria.
+
+### Inputs / Fields
+- 44 px de altura, borda de campo, foco com borda e anel em azul de ação. Busca com ícone de lupa
+  desenhado. Mês e dia com texto de apoio embaixo ("Mostra o mês inteiro", "Ou escolha um dia só").
+
+### Navigation
+- **Barra do topo** (celular): menu, nome da tela, e à direita "?" (tutorial do papel) e tema.
+- **Barra inferior** (celular): ícone de traço + rótulo; a aba ativa numa pílula de ação; contador
+  de pendências âmbar.
+- **Menu lateral** (desktop): item ativo com fundo e texto de ação, sem barra colorida na borda.
+
+### Plaqueta
+A assinatura do sistema: uma linha com o nome da chave (texto semibold), a sala inteira (apoio,
+quebra em vez de reticências), o estado em palavra com a marca ("● Livre", "○ Com Fulano",
+"Aguardando: …") e o verbo à direita, ao alcance do polegar. "Passar para outra pessoa" vem como
+texto de ação embaixo, quando cabe.
+
+## Do's and Don'ts
+
+### Do:
+- Diga a ação em palavra: "Pegar", "Entregar", "Devolver", "Pedir", "Passar para outra pessoa".
 - Ponha a busca e a lista antes de qualquer título, contador ou filtro no celular.
-- Use só os cinco tamanhos e os três pesos.
+- Use só os cinco tamanhos e os três pesos, e só os tokens de cor.
 - Mantenha alvos de toque ≥ 44 px e contraste AA nos dois temas.
+- Diga, no erro, o que aconteceu e o próximo passo ("Sem conexão com o sistema. Confira a internet e
+  tente de novo.").
 
-### Não faça
+### Don't:
 - Gradiente, brilho, "subir no hover", sombra de repouso em cartão.
-- Rótulo em maiúsculas espaçadas.
-- Cartão dentro de cartão.
+- Rótulo em maiúsculas espaçadas, ou texto escrito em maiúsculas.
+- Cartão dentro de cartão, ou tabela de "rótulo: valor" no celular.
 - Vermelho fora de alerta e de ação que apaga; ação destrutiva como primeiro ou maior botão.
 - Emoji no lugar de ícone.
+- Linha que age ao toque sem dizer o que faz.

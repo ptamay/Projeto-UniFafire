@@ -1,95 +1,127 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-04T10:45:00Z",
-  "title": "Design System: Colégio São José - Gerenciamento de Chaves",
+  "generatedAt": "2026-09-14T19:45:00Z",
+  "title": "Design System: UniFAFIRE — Gestão de Chaves",
   "extensions": {
     "colorMeta": {
-      "primary-action": { "role": "primary", "displayName": "Verde Ação (Green 400)", "canonical": "#28a35c", "tonalRamp": ["#083318", "#125930", "#1D8046", "#28a35c", "#45c47a", "#77de9e", "#b8f0cf", "#e6f9ef"] },
-      "brand-blue": { "role": "secondary", "displayName": "Azul Institucional (Blue 900)", "canonical": "#0F1D57", "tonalRamp": ["#060e2a", "#0F1D57", "#162a75", "#1e3a9c", "#2a4ebf", "#3b62d8", "#6279d8", "#8a9deb"] },
-      "bg-page": { "role": "neutral", "displayName": "Dark Page (Slate/Blue 950)", "canonical": "#060B19", "tonalRamp": ["#020409", "#060B19", "#0F172A", "#1E293B", "#334155", "#475569", "#64748b", "#94A3B8"] }
+      "acao": { "role": "primary", "displayName": "Azul de ação (escuro)", "canonical": "#9DB4FF", "tonalRamp": ["#0B1540", "#162A75", "#1E3A9C", "#3B5BDB", "#6E8BF0", "#9DB4FF", "#C9D5FF", "#EEF2FF"] },
+      "acao-claro": { "role": "primary", "displayName": "Azul UniFAFIRE (claro)", "canonical": "#1E3A9C", "tonalRamp": ["#0B1540", "#162A75", "#1E3A9C", "#3B5BDB", "#6E8BF0", "#9DB4FF", "#C9D5FF", "#EEF2FF"] },
+      "livre": { "role": "secondary", "displayName": "Verde livre", "canonical": "#34D399", "tonalRamp": ["#022C22", "#064E3B", "#047857", "#059669", "#10B981", "#34D399", "#A7F3D0", "#ECFDF5"] },
+      "pendente": { "role": "secondary", "displayName": "Âmbar pendente", "canonical": "#F59E0B", "tonalRamp": ["#1A1200", "#451A03", "#92400E", "#B45309", "#D97706", "#F59E0B", "#FDE68A", "#FFFBEB"] },
+      "alerta": { "role": "tertiary", "displayName": "Vermelho alerta", "canonical": "#DC2626", "tonalRamp": ["#450A0A", "#7F1D1D", "#991B1B", "#B91C1C", "#DC2626", "#F87171", "#FCA5A5", "#FEF2F2"] },
+      "em-uso": { "role": "neutral", "displayName": "Cinza em uso (gancho vazio)", "canonical": "#CBD5E1", "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#F1F5F9"] },
+      "bg-page": { "role": "neutral", "displayName": "Chapa (escuro)", "canonical": "#0A0F1C", "tonalRamp": ["#05080F", "#0A0F1C", "#111827", "#1B2434", "#2A3446", "#3B4658", "#535E6E", "#7C8699"] },
+      "bg-page-claro": { "role": "neutral", "displayName": "Chapa (claro)", "canonical": "#F2F4F7", "tonalRamp": ["#7C8699", "#A5ADBB", "#C9CFD9", "#DDE2E9", "#EEF1F5", "#F2F4F7", "#F8F9FB", "#FFFFFF"] }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Títulos principais de páginas e cabeçalhos grandes." },
-      "label": { "displayName": "Label All-Caps", "purpose": "Cabeçalhos de tabelas, nomes de campos, metadados menores." }
+      "tela": { "displayName": "Tela", "purpose": "Título da página; no celular recortado da vista (a barra do topo diz o nome)." },
+      "titulo": { "displayName": "Título", "purpose": "Seção, modal e folha de filtros." },
+      "texto": { "displayName": "Texto", "purpose": "O piso de leitura: nomes, campos, o botão principal." },
+      "apoio": { "displayName": "Apoio", "purpose": "Sala, @usuário · papel, rótulos, botões secundários, etiquetas." },
+      "meta": { "displayName": "Meta", "purpose": "Metadado curto, rótulo da barra inferior, texto de apoio de campo." }
     },
     "shadows": [
-      { "name": "shadow-sm", "value": "0 1px 3px rgba(0,0,0,0.4)", "purpose": "Cards default." },
-      { "name": "shadow-md", "value": "0 4px 16px rgba(0,0,0,0.5)", "purpose": "Cards hover, popovers." },
-      { "name": "shadow-lg", "value": "0 8px 32px rgba(0,0,0,0.6)", "purpose": "Modais focados." },
-      { "name": "shadow-accent", "value": "0 0 24px rgba(29,128,70,0.15)", "purpose": "Glow ao redor de ações primárias ou cards estáticos de alta importância." }
+      { "name": "elevacao", "value": "0 8px 24px rgba(0, 0, 0, 0.5)", "purpose": "A única elevação, só no que flutua: modal, menu ⋯, lista suspensa, folha de filtros, gaveta, dica. No claro: 0 8px 24px rgba(15, 29, 87, 0.16)." }
     ],
     "motion": [
-      { "name": "default-transition", "value": "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Padrão para interações de botões e inputs (rápido e direto)." }
+      { "name": "entrar-tela", "value": "200ms cubic-bezier(0.2, 0.7, 0.2, 1)", "purpose": "A tela nova entra com fade + 4 px (TASK-128); desligada com movimento reduzido." },
+      { "name": "folha-sobe", "value": "220ms cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "A folha de filtros sobe de baixo no celular." }
     ],
     "breakpoints": [
-      { "name": "mobile", "value": "768px" }
+      { "name": "celular", "value": "768px" }
     ]
   },
   "components": [
     {
-      "name": "Button Primary",
+      "name": "Botão principal",
       "kind": "button",
-      "refersTo": "btn-green",
-      "description": "Ação principal e rápida para o fluxo da portaria.",
-      "html": "<button class=\"ds-btn ds-btn-green\">Registrar Saída</button>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; border: none; outline: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .ds-btn-green { background: linear-gradient(135deg, #5cb884, #23824d); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(29, 128, 70, 0.25); } .ds-btn-green:hover { background: linear-gradient(135deg, #7ec9a0, #2d965d); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(29, 128, 70, 0.35); }"
+      "refersTo": "button-principal",
+      "description": "A ação da tela, uma por tela: azul de ação, 48 px.",
+      "html": "<button class=\"ds-btn-principal\">+ Nova chave</button>",
+      "css": ".ds-btn-principal { display: inline-flex; align-items: center; min-height: 48px; padding: 6px 24px; border: 1px solid transparent; border-radius: 10px; background: var(--acao, #1E3A9C); color: var(--acao-texto, #FFFFFF); font: 600 1rem/1.2 'Atkinson Hyperlegible Next', system-ui, sans-serif; cursor: pointer; transition: background-color .15s; } .ds-btn-principal:hover { background: var(--acao-hover, #162A75); } .ds-btn-principal:focus-visible { outline: 3px solid var(--acao, #1E3A9C); outline-offset: 2px; }"
     },
     {
-      "name": "Button Ghost",
+      "name": "Verbo da linha",
       "kind": "button",
-      "refersTo": "btn-ghost",
-      "description": "Ações secundárias, botões de cancelamento ou edição rápida.",
-      "html": "<button class=\"ds-btn ds-btn-ghost\">Cancelar</button>",
-      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 10px; font-size: 0.875rem; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-ghost { background: #0F172A; color: #F8FAFC; border: 2px solid rgba(255, 255, 255, 0.24); } .ds-btn-ghost:hover { background: #334155; border-color: #28a35c; color: #45c47a; transform: translateY(-1px); }"
+      "refersTo": "button-secundario",
+      "description": "O verbo ao lado de cada chave: Pegar, Entregar, Devolver, Pedir.",
+      "html": "<button class=\"ds-btn-verbo\">Devolver</button>",
+      "css": ".ds-btn-verbo { min-height: 40px; min-width: 5.5rem; padding: 6px 14px; border: 1px solid var(--border-strong, rgba(15,29,87,.32)); border-radius: 10px; background: var(--bg-surface, #FFFFFF); color: var(--acao, #1E3A9C); font: 600 .875rem/1.2 'Atkinson Hyperlegible Next', system-ui, sans-serif; cursor: pointer; transition: background-color .15s, border-color .15s; } .ds-btn-verbo:hover { background: var(--acao-bg, rgba(30,58,156,.08)); border-color: var(--acao, #1E3A9C); } .ds-btn-verbo:focus-visible { outline: 3px solid var(--acao, #1E3A9C); outline-offset: 2px; }"
     },
     {
-      "name": "Status Tag (Available)",
-      "kind": "chip",
-      "refersTo": "status-tag",
-      "description": "Sinaliza chaves ou itens disponíveis (Verde).",
-      "html": "<div class=\"ds-status-tag ds-status-available\">Disponível</div>",
-      "css": ".ds-status-tag { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.875rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 800; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s ease; } .ds-status-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; } .ds-status-available { background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); } .ds-status-available::before { background: #10b981; box-shadow: 0 0 8px #10b981; }"
+      "name": "Remover (secundário)",
+      "kind": "button",
+      "refersTo": "button-remover",
+      "description": "O que apaga numa linha: texto vermelho sem caixa, sempre com modal de confirmação.",
+      "html": "<button class=\"ds-btn-remover\">Remover</button>",
+      "css": ".ds-btn-remover { min-height: 40px; padding: 6px 14px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--alerta-fg, #B91C1C); font: 600 .875rem/1.2 'Atkinson Hyperlegible Next', system-ui, sans-serif; cursor: pointer; } .ds-btn-remover:hover { background: var(--alerta-bg, rgba(220,38,38,.1)); } .ds-btn-remover:focus-visible { outline: 3px solid var(--acao, #1E3A9C); outline-offset: 2px; }"
     },
     {
-      "name": "Base Card",
-      "kind": "card",
-      "refersTo": "card",
-      "description": "Contêiner padrão da interface.",
-      "html": "<div class=\"ds-card\"><h3 style=\"margin: 0; font-family: Inter; color: #F8FAFC; font-size: 1.125rem;\">Título do Card</h3><p style=\"margin-top: 0.5rem; font-family: Inter; color: #94A3B8;\">O card recebe um hover state bem definido.</p></div>",
-      "css": ".ds-card { background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 1.5rem; transition: border-color 0.2s, box-shadow 0.2s; } .ds-card:hover { border-color: rgba(255, 255, 255, 0.24); box-shadow: 0 4px 16px rgba(0,0,0,0.5); }"
-    },
-    {
-      "name": "Input Field",
+      "name": "Busca",
       "kind": "input",
-      "refersTo": "input",
-      "description": "Campo de busca ou entrada de dados, super visível.",
-      "html": "<div style=\"display: flex; flex-direction: column; gap: 0.5rem;\"><label class=\"ds-input-label\">Busca rápida</label><input type=\"text\" class=\"ds-input\" placeholder=\"Digite o nome da chave...\" /></div>",
-      "css": ".ds-input-label { display: block; font-family: 'Inter', sans-serif; font-size: 0.8125rem; font-weight: 600; color: #CBD5E1; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; } .ds-input { width: 100%; background: #0F172A; border: 2px solid rgba(255, 255, 255, 0.24); border-radius: 10px; color: #F8FAFC; font-family: 'Inter', sans-serif; font-size: 0.9375rem; padding: 0.875rem 1rem; outline: none; transition: all 0.2s; box-sizing: border-box; } .ds-input::placeholder { color: #94A3B8; } .ds-input:focus { border-color: #28a35c; box-shadow: 0 0 0 4px rgba(29, 128, 70, 0.15); }"
+      "refersTo": "campo",
+      "description": "O primeiro controle de toda lista: campo de 44 px com lupa desenhada.",
+      "html": "<label class=\"ds-busca\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg><input type=\"search\" placeholder=\"Buscar chave ou sala\"></label>",
+      "css": ".ds-busca { display: flex; align-items: center; gap: .625rem; padding: 0 1rem; border: 1px solid var(--borda-campo, #7C8699); border-radius: 14px; background: var(--bg-surface, #FFFFFF); color: var(--text-muted, #535E6E); } .ds-busca input { flex: 1; min-height: 44px; border: 0; outline: 0; background: transparent; color: var(--text-primary, #0F1D57); font: 400 1rem 'Atkinson Hyperlegible Next', system-ui, sans-serif; } .ds-busca:focus-within { border-color: var(--acao, #1E3A9C); box-shadow: 0 0 0 3px var(--acao-bg, rgba(30,58,156,.08)); }"
+    },
+    {
+      "name": "Filtro-contador",
+      "kind": "chip",
+      "refersTo": "button-secundario",
+      "description": "Filtra e conta ao mesmo tempo; o ativo é o azul de ação, com aria-pressed.",
+      "html": "<div class=\"ds-filtros\"><button class=\"ds-filtro\" aria-pressed=\"true\">Livres <b>9</b></button><button class=\"ds-filtro\" aria-pressed=\"false\">Em uso <b>3</b></button></div>",
+      "css": ".ds-filtros { display: flex; gap: .25rem; } .ds-filtro { min-height: 44px; padding: 6px 8px; border: 1px solid var(--border-strong, rgba(15,29,87,.32)); border-radius: 10px; background: transparent; color: var(--text-secondary, #3B4658); font: 600 .875rem 'Atkinson Hyperlegible Next', system-ui, sans-serif; cursor: pointer; } .ds-filtro[aria-pressed=\"true\"] { background: var(--acao, #1E3A9C); border-color: var(--acao, #1E3A9C); color: var(--acao-texto, #FFFFFF); } .ds-filtro:focus-visible { outline: 3px solid var(--acao, #1E3A9C); outline-offset: 2px; }"
+    },
+    {
+      "name": "Etiquetas de estado",
+      "kind": "chip",
+      "refersTo": "etiqueta-livre",
+      "description": "Palavra + cor + forma: ponto cheio = livre, anel vazio = em uso.",
+      "html": "<span class=\"ds-etq ds-livre\">Livre</span> <span class=\"ds-etq ds-emuso\">Em uso</span> <span class=\"ds-etq ds-pendente\">Aguardando</span>",
+      "css": ".ds-etq { display: inline-flex; align-items: center; gap: .375rem; padding: 2px 10px 2px 8px; border-radius: 9999px; font: 600 .875rem/1.5 'Atkinson Hyperlegible Next', system-ui, sans-serif; } .ds-etq::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; } .ds-livre { background: rgba(16,185,129,.12); color: #047857; } .ds-emuso { background: rgba(100,116,139,.14); color: #334155; } .ds-emuso::before { background: transparent; box-shadow: inset 0 0 0 2px currentColor; } .ds-pendente { background: rgba(217,119,6,.12); color: #92400E; }"
+    },
+    {
+      "name": "Plaqueta",
+      "kind": "custom",
+      "refersTo": "plaqueta",
+      "description": "A assinatura: a chave numa linha — nome, sala inteira, estado em palavra e o verbo à direita.",
+      "html": "<ul class=\"ds-plaquetas\"><li class=\"ds-plaqueta\"><div><div class=\"ds-p-nome\">Laboratório de Química</div><div class=\"ds-p-sala\">Bloco C — sala 5</div><div class=\"ds-p-estado ds-p-livre\">Livre</div></div><button class=\"ds-p-verbo\">Pegar</button></li><li class=\"ds-plaqueta\"><div><div class=\"ds-p-nome\">Auditório</div><div class=\"ds-p-sala\">Térreo</div><div class=\"ds-p-estado ds-p-emuso\">Com <strong>Ana Souza</strong></div></div><button class=\"ds-p-verbo\">Pedir</button></li></ul>",
+      "css": ".ds-plaquetas { list-style: none; margin: 0; padding: 0; background: var(--bg-surface, #FFFFFF); border: 1px solid var(--border, rgba(15,29,87,.14)); border-radius: 14px; } .ds-plaqueta { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .75rem; align-items: center; padding: 12px 16px; font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; } .ds-plaqueta + .ds-plaqueta { border-top: 1px solid var(--border, rgba(15,29,87,.14)); } .ds-p-nome { font: 600 1rem/1.3 inherit; color: var(--text-primary, #0F1D57); } .ds-p-sala { font-size: .875rem; color: var(--text-secondary, #3B4658); } .ds-p-estado { display: flex; align-items: center; gap: .375rem; font-size: .875rem; font-weight: 600; } .ds-p-estado::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; } .ds-p-livre { color: #047857; } .ds-p-emuso { color: var(--text-secondary, #3B4658); font-weight: 400; } .ds-p-emuso::before { background: transparent; box-shadow: inset 0 0 0 2px #334155; } .ds-p-verbo { min-height: 40px; min-width: 5.5rem; padding: 6px 14px; border: 1px solid var(--border-strong, rgba(15,29,87,.32)); border-radius: 10px; background: var(--bg-surface, #FFFFFF); color: var(--acao, #1E3A9C); font: 600 .875rem inherit; cursor: pointer; } .ds-p-verbo:hover { background: var(--acao-bg, rgba(30,58,156,.08)); }"
     }
   ],
   "narrative": {
-    "northStar": "The Efficient Concierge",
-    "overview": "Institucional, transmitindo a confiança e o legado do colégio com foco total na clareza de leitura. O sistema existe para um cenário de uso intensivo na portaria, onde a fricção deve ser absolutamente zero. A informação é a interface, ancorada por elementos claros e alvos de toque acessíveis.",
+    "northStar": "O quadro de chaves da portaria",
+    "overview": "O sistema é o quadro de chaves da portaria, levado para a tela. No quadro, cada chave tem uma plaqueta num gancho: se está no gancho, está livre; se o gancho está vazio, alguém a levou — e todo mundo lê isso de longe, sem instrução. A tela é lida do mesmo jeito: acha-se a plaqueta, vê-se se está livre ou com quem, e toca-se o verbo.\n\nO registro é utilitário, o de um app de banco ou de transporte público: texto grande, frases curtas, poucas cores e sempre com significado, superfícies planas, verbos do dia a dia. Quem guia as decisões são funcionários de apoio e porteiros, parte com pouca instrução e fonte do celular aumentada (PRODUCT.md). O tema segue o do aparelho na primeira visita; o botão de tema grava a escolha.",
     "keyCharacteristics": [
-      "Zero Fricção: Navegação direta, rápida e óbvia.",
-      "Tolerante ao Foco: Interfaces calmas, com dados bem segmentados por padding.",
-      "Contraste Acessível: Fundos escuros profundos contra textos de alto contraste."
+      "Cada item é uma LINHA com nome, apoio e estado — nunca uma tabela de \"rótulo: valor\".",
+      "Toda ação tem o verbo escrito (\"Pegar\", \"Entregar\", \"Devolver\", \"Pedir\", \"Passar para outra pessoa\"); a linha em si não age ao toque.",
+      "A busca é o primeiro controle de toda tela de lista; filtros moram em contadores ou numa folha.",
+      "Cor por significado, a mesma em todas as telas; vermelho só para alerta e para o que apaga.",
+      "Superfícies planas, uma elevação só, cinco tamanhos de texto, três pesos."
     ],
     "rules": [
-      { "name": "The One Voice Rule", "body": "O Verde Ação é reservado estritamente para CTAs primárias e status positivo. Jamais utilize-o como elemento decorativo sem interatividade.", "section": "colors" },
-      { "name": "The Capital Label Rule", "body": "Para separar metadados ou nomes de campo dos dados reais, as labels devem sempre utilizar uppercase e um sutil letter-spacing.", "section": "typography" },
-      { "name": "The Lift and Glow Rule", "body": "Quando um elemento interativo recebe hover, ele não apenas muda de cor: ele deve subir no eixo Y (translado) e projetar uma sombra ligeiramente maior.", "section": "elevation" }
+      { "name": "The Semáforo Rule", "body": "Livre é verde, pendente é âmbar, alerta é vermelho — em todas as telas, e nenhuma dessas três cores aparece com outro sentido.", "section": "colors" },
+      { "name": "The Red Means Delete Rule", "body": "Vermelho só para atraso, erro e o que apaga. \"Sair\", \"Cancelar\" e contador de pendências não são vermelhos.", "section": "colors" },
+      { "name": "The One Action Color Rule", "body": "O azul de ação é o que se toca e fica a ≥ 60° de matiz de qualquer cor de estado; o verde nunca é botão.", "section": "colors" },
+      { "name": "The Five Sizes Rule", "body": "São cinco tamanhos e três pesos (400, 600, 700), e nenhum outro — a guarda reprova qualquer font-size fora dos tokens, também dentro de <style jsx>.", "section": "typography" },
+      { "name": "The Normal Case Rule", "body": "Nada em maiúsculas forçadas nem com letras espaçadas; o texto escrito em maiúsculas no código também é pego pela E2E. Siglas curtas e o código da trilha nos Logs são a exceção.", "section": "typography" },
+      { "name": "The Search First Rule", "body": "Em toda lista, a primeira coisa que se toca é a busca; título, contadores soltos e explicações vêm depois ou saem do celular.", "section": "typography" },
+      { "name": "The One Elevation Rule", "body": "Sombra em repouso não existe; brilho (sombra sem deslocamento, com desfoque) também não. A guarda aceita só a elevação única, anel de foco e nenhuma.", "section": "elevation" }
     ],
     "dos": [
-      "Do manter botões e inputs com alturas que atinjam o touch-target mínimo de 44px.",
-      "Do priorizar a tipografia Label para separar metadados dos dados brutos.",
-      "Do aplicar o 'Lift and Glow' nos botões primários."
+      "Diga a ação em palavra: \"Pegar\", \"Entregar\", \"Devolver\", \"Pedir\", \"Passar para outra pessoa\".",
+      "Ponha a busca e a lista antes de qualquer título, contador ou filtro no celular.",
+      "Use só os cinco tamanhos e os três pesos, e só os tokens de cor.",
+      "Mantenha alvos de toque ≥ 44 px e contraste AA nos dois temas.",
+      "Diga, no erro, o que aconteceu e o próximo passo (\"Sem conexão com o sistema. Confira a internet e tente de novo.\")."
     ],
     "donts": [
-      "Don't criar sistemas excessivamente complexos com menus escondidos.",
-      "Don't abusar do Verde Institucional como decoração passiva de backgrounds inteiros.",
-      "Don't remover os indicadores de contraste ou o suporte vital ao Dark e Light modes.",
-      "Don't criar layouts extremamente adensados sem o devido padding nas tabelas ou cards."
+      "Gradiente, brilho, \"subir no hover\", sombra de repouso em cartão.",
+      "Rótulo em maiúsculas espaçadas, ou texto escrito em maiúsculas.",
+      "Cartão dentro de cartão, ou tabela de \"rótulo: valor\" no celular.",
+      "Vermelho fora de alerta e de ação que apaga; ação destrutiva como primeiro ou maior botão.",
+      "Emoji no lugar de ícone.",
+      "Linha que age ao toque sem dizer o que faz."
     ]
   }
 }

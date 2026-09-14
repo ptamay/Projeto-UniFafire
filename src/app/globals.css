@@ -300,7 +300,9 @@ small { font-size: var(--fs-2); }
   justify-content: center;
   gap: 0.5rem;
   min-height: var(--btn-h);
-  padding: 0 1.125rem;
+  /* O min-height dá a altura; o recuo vertical mínimo é para o texto nunca encostar na
+     borda quando quebra ou quando o botão perde a caixa (detector: cramped-padding). */
+  padding: 0.375rem 1.125rem;
   border-radius: var(--radius-sm);
   font-size: var(--fs-2);
   font-weight: 600;
@@ -318,7 +320,7 @@ small { font-size: var(--fs-2); }
 
 .btn-principal {
   min-height: var(--btn-h-principal);
-  padding: 0 1.5rem;
+  padding: 0.375rem 1.5rem;
   background: var(--acao);
   color: var(--acao-texto);
   font-size: var(--fs-3);
@@ -346,8 +348,8 @@ small { font-size: var(--fs-2); }
 .btn-perigo:hover:not(:disabled) { background: var(--alerta-hover); }
 
 .btn-sm,
-.btn-principal.btn-sm { min-height: var(--btn-h); padding: 0 0.875rem; font-size: var(--fs-2); }
-.btn-lg { min-height: var(--btn-h-principal); padding: 0 1.75rem; font-size: var(--fs-3); }
+.btn-principal.btn-sm { min-height: var(--btn-h); padding: 0.375rem 0.875rem; font-size: var(--fs-2); }
+.btn-lg { min-height: var(--btn-h-principal); padding: 0.375rem 1.75rem; font-size: var(--fs-3); }
 .btn-icon { padding: 0; width: var(--btn-h); height: var(--btn-h); }
 
 /* ── Inputs ───────────────────────────────────────────────── */
@@ -1501,57 +1503,8 @@ textarea:focus-visible,
     padding: 1.25rem;
   }
 
-  /* ── TASK-026: padrão tabela→card ──
-     Aplicar a classe .table-cards ao .table-wrapper. A tabela permanece o
-     markup primário (desktop intacto); no mobile cada <tr> vira um card e
-     cada <td> exibe seu rótulo via atributo data-label. */
-  .table-cards { overflow-x: visible; border: none; }
-  .table-cards .table,
-  .table-cards .table tbody,
-  .table-cards .table tbody tr,
-  .table-cards .table tbody td { display: block; width: 100%; }
-  .table-cards .table thead { display: none; }
-  .table-cards .table tbody tr {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    margin-bottom: 0.75rem;
-    padding: 0.75rem 1rem;
-  }
-  .table-cards .table tbody td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 0;
-    border-bottom: 1px solid var(--border);
-    text-align: right;
-  }
-  .table-cards .table tbody td:last-child { border-bottom: none; padding-bottom: 0; }
-  .table-cards .table tbody td::before {
-    content: attr(data-label);
-    font-size: var(--fs-2);
-    font-weight: 600;
-    color: var(--text-muted);
-    text-align: left;
-    flex-shrink: 0;
-  }
-  .table-cards .table tbody td[data-label=''],
-  .table-cards .table tbody td:not([data-label])::before { content: none; }
-
-  .table-cards .table tbody td.td-actions,
-  .table-cards .table tbody td:last-child:has(.btn) {
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0;
-    padding-top: 0.75rem;
-    /* A célula de cima já traz a linha de baixo: uma borda aqui dava linha dupla. */
-  }
-  .table-cards .table tbody td.td-actions .btn,
-  .table-cards .table tbody td:last-child:has(.btn) .btn {
-    width: auto;
-    flex: 0 1 auto;
-  }
+  /* (O padrão tabela→cartão da TASK-026 saiu na TASK-136: Chaves, Usuários, Histórico e Logs
+     têm lista própria no celular — a linha, não o cartão de "rótulo: valor".) */
 
   /* ── Dashboard no celular (TASK-134 · ADR-031 · REQ-033b/c) ──────────────────
      O quadro de chaves na mão: a busca é o primeiro controle e fica presa ao rolar;
@@ -1669,7 +1622,9 @@ textarea:focus-visible,
   .plaqueta-extra .btn {
     border-color: transparent;
     background: transparent;
-    padding-inline: 0;
+    /* Recuo lateral para o toque e o foco; a margem negativa alinha o texto ao nome. */
+    padding-inline: 0.5rem;
+    margin-left: -0.5rem;
     color: var(--acao);
   }
 
@@ -1962,3 +1917,102 @@ textarea:focus-visible,
   .metricas-negocio { display: none !important; }
   .cabecalho-enxuto { margin-bottom: 0 !important; }
 }
+
+/* ── Listas de Chaves e Usuários (TASK-136 · ADR-031 · REQ-033c/d) ─────────────────────
+   No celular, cada item era uma tabela de "rótulo: valor" (NOME / SALA/LOCAL / STATUS) com
+   um "Remover" vermelho CHEIO do tamanho do "Editar". Agora cada item é uma LINHA, como a
+   plaqueta do Dashboard: nome, apoio (sala ou "@usuário · papel") e estado; as ações são
+   secundárias, e remover pede confirmação. */
+.lista-linhas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.linha-lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+}
+.linha-lista + .linha-lista { border-top: 1px solid var(--border); }
+/* Três ações não cabem ao lado do texto: descem para uma faixa própria, embaixo. */
+.linha-lista--acoes-embaixo { grid-template-columns: minmax(0, 1fr); row-gap: 0.5rem; }
+.linha-texto { min-width: 0; }
+.linha-nome {
+  font-size: var(--fs-3);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.linha-apoio {
+  font-size: var(--fs-2);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.linha-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.125rem;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.linha-estado::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+.linha-estado.is-livre { color: var(--livre-fg); }
+.linha-estado.is-em-uso { color: var(--text-secondary); font-weight: 400; }
+.linha-estado.is-em-uso::before { background: transparent; box-shadow: inset 0 0 0 2px var(--em-uso-fg); }
+.linha-estado strong { color: var(--text-primary); font-weight: 600; }
+.linha-acoes { display: flex; flex-direction: column; gap: 0.25rem; }
+.linha-lista--acoes-embaixo .linha-acoes { flex-direction: row; flex-wrap: wrap; gap: 0.5rem; }
+.linha-vazia { padding: 2rem 1rem; text-align: center; color: var(--text-muted); }
+
+/* O que apaga, como ação SECUNDÁRIA: texto vermelho, sem caixa cheia. Vermelho porque
+   apaga; sem fundo porque não é o que se faz na tela. A confirmação é o modal de perigo. */
+.btn-remover {
+  background: transparent;
+  color: var(--alerta-fg);
+  border-color: transparent;
+}
+.btn-remover:hover:not(:disabled) { background: var(--alerta-bg); color: var(--alerta-fg); }
+
+/* Filtros por papel em Usuários: botões com estado (aria-pressed) e a contagem dentro. */
+.filtros-papel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.filtro-papel {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+.filtro-papel:hover:not(:disabled) { background: var(--bg-elevated); color: var(--text-primary); }
+.filtro-papel[aria-pressed="true"] { background: var(--acao); color: var(--acao-texto); border-color: var(--acao); }
+.filtro-conta { font-weight: 700; }
+
+@media (max-width: 768px) {
+  .filtros-papel {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .filtro-papel { flex: 0 0 auto; white-space: nowrap; }
+}
+/* Registros (Histórico, Logs): uma terceira linha, de metadado — quando, quem confirmou. */
+.linha-meta { font-size: var(--fs-2); color: var(--text-muted); line-height: 1.4; overflow-wrap: anywhere; }
