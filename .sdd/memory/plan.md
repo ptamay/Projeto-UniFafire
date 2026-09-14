@@ -22,6 +22,7 @@
 | Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
+| Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | 📋 aprovado em 2026-09-14, entra na TASK-126. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
 
 ## 2. Decisões e Justificativas
 
@@ -86,6 +87,19 @@
 - TASK-022: runbook de operação (`docs/runbook.md`): iniciar/parar PM2, restaurar backup, RPO/RTO, responsável.
 
 ## 4. Backlog — Próximas Sprints
+
+### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
+> Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o
+> pacote. Hoje só o servidor é medido (§7.2); o que a pessoa vê no navegador nunca teve número — as
+> queixas do ADR-018 e do ADR-027 existiram só como relato. Medido em produção, sem sessão: o script
+> antigo (`/_vercel/speed-insights/script.js`) responde 200 fora do proxy, mas `/_vercel/insights/`
+> (recurso não ativado) leva 307 — o proxy roda em `/_vercel/*`. A v2 usa caminho aleatório gerado no
+> build, que só um deploy verifica.
+- **TASK-126 → Speed Insights no layout raiz.** Componente de cliente próprio, único importador do
+  pacote, com `beforeSend` que tira query string e fragmento (os filtros do Histórico andam na URL);
+  desenhado só com `VERCEL=1` (nada local, na E2E nem no CI). Proxy intocado, salvo se o deploy
+  mostrar 307 — aí só os dois caminhos da configuração do build. Guardas + verificação no deploy da
+  Vercel com e sem sessão, e o resultado registrado aqui.
 
 ### Aberta por Change Request — o menu não some na navegação (CR Tipo C · ADR-027)
 > Aprovado pelo usuário em 2026-09-14 (caminho A). Relato com captura: ao trocar de tela, o menu

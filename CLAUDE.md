@@ -237,6 +237,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
   (vencida), PR #43 do Dependabot (re-run do check), majors TS/ESLint/Vitest, `keys.db` no histórico
   antigo, RTO de 4 h não medido.
+- 📋 **CR do SPEED INSIGHTS (Tipo C, ADR-028), aprovado pelo usuário, 2026-09-14:** ele ativou no
+  painel da Vercel e instalou `@vercel/speed-insights` 2.0.0. TASK-126: componente próprio no layout
+  raiz, só com `VERCEL=1`, URL sem query string. ⚠️ O proxy RODA em `/_vercel/*` quando o recurso não
+  está ativo (`/_vercel/insights/` → 307, medido); o caminho aleatório da v2 só se verifica no deploy.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
