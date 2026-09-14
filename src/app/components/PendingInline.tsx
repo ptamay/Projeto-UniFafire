@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import toast from 'react-hot-toast';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 // TASK-049 (REQ-029b, ADR-010) — painel compacto de pendências no Dashboard:
 // ver e confirmar/aceitar/cancelar sem navegar a /confirm. Reutiliza os
@@ -69,10 +70,10 @@ export default function PendingInline({ userRole, userId }: Props) {
                 fetchPending();
                 window.dispatchEvent(new CustomEvent('pending-transactions-updated'));
             } else {
-                toast.error(data.error || 'Erro na operação.');
+                toast.error(data.error || naoDeuPara('registrar'));
             }
         } catch {
-            toast.error('Erro de conexão.');
+            toast.error(SEM_CONEXAO);
         } finally {
             setActionLoading(null);
         }

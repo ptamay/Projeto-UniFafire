@@ -6,6 +6,7 @@ import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-re
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
 import { AGENDA_PADRAO, LIMITES, descreverHorarios } from '@/lib/agenda-backup.mjs';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 // TASK-075: a tela deixou de listar arquivos `.db` em disco. Os dumps vivem num
 // repositorio privado (TASK-078); o que a aplicacao conhece e o REGISTRO de cada
@@ -156,7 +157,7 @@ export default function SettingsClient({ userRole }: Props) {
             // (a guarda da TASK-123 reprova "alguns minutos" na tela).
             if (res.ok) toast.success('Restauração pedida. Primeiro sai um backup de segurança; o resultado aparece nesta seção quando terminar.');
             else { toast.error(d.error || 'Não foi possível pedir a restauração.'); fetchRestauracao(); }
-        } catch { toast.error('Erro de conexão.'); }
+        } catch { toast.error(SEM_CONEXAO); }
         setPedindoRestauracao(false);
     };
 
@@ -168,7 +169,7 @@ export default function SettingsClient({ userRole }: Props) {
             if (typeof d?.configurado === 'boolean') setManual(d);
             if (res.ok) toast.success('Backup pedido ao GitHub. Ele aparece em "Último backup" quando terminar.');
             else toast.error(d.error || 'Não foi possível pedir o backup.');
-        } catch { toast.error('Erro de conexão.'); }
+        } catch { toast.error(SEM_CONEXAO); }
         setPedindoBackup(false);
     };
 
@@ -182,8 +183,8 @@ export default function SettingsClient({ userRole }: Props) {
             });
             const d = await res.json();
             if (res.ok) toast.success(`Backup agendado para ${descreverHorarios(d)}, guardado por ${d.dias} dias.`);
-            else toast.error(d.error || 'Erro ao salvar a agenda.');
-        } catch { toast.error('Erro de conexão.'); }
+            else toast.error(d.error || naoDeuPara('salvar a agenda'));
+        } catch { toast.error(SEM_CONEXAO); }
         setSalvandoAgenda(false);
     };
 
@@ -196,8 +197,8 @@ export default function SettingsClient({ userRole }: Props) {
                 body: JSON.stringify({ autoLogoutTime }) 
             });
             if (res.ok) toast.success('Configurações salvas!');
-            else { const d = await res.json(); toast.error(d.error || 'Erro ao salvar.'); }
-        } catch { toast.error('Erro de conexão.'); }
+            else { const d = await res.json(); toast.error(d.error || naoDeuPara('salvar')); }
+        } catch { toast.error(SEM_CONEXAO); }
         setSavingSettings(false);
     };
 
@@ -221,10 +222,10 @@ export default function SettingsClient({ userRole }: Props) {
                 toast.success('Banco de dados limpo com sucesso!');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                toast.error(d.error || 'Erro ao limpar banco de dados.');
+                toast.error(d.error || naoDeuPara('limpar o banco de dados'));
             }
         } catch {
-            toast.error('Erro de conexão.');
+            toast.error(SEM_CONEXAO);
         }
         setIsClearingDb(false);
         setShowClearModal(false);
@@ -239,9 +240,9 @@ export default function SettingsClient({ userRole }: Props) {
         try {
             const res = await fetch('/api/history/clear', { method: 'DELETE' });
             if (res.ok) toast.success('Histórico limpo.');
-            else toast.error('Não foi possível limpar o histórico.');
+            else toast.error(naoDeuPara('limpar o histórico'));
         } catch {
-            toast.error('Erro de conexão.');
+            toast.error(SEM_CONEXAO);
         }
         setLimpandoHistorico(false);
         setConfirmandoLimparHistorico(false);

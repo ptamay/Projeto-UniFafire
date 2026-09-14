@@ -26,7 +26,7 @@ test.describe('TASK-135 — Histórico e Logs no celular', () => {
             await abrir(page, rota);
             const medidas = await page.evaluate(() => {
                 const main = document.querySelector('main.main-content')!;
-                const registro = main.querySelector('.table-cards tbody tr')!.getBoundingClientRect();
+                const registro = main.querySelector('.lista-linhas .linha-lista')!.getBoundingClientRect();
                 const barraInferior = document.querySelector('.mobile-bottom-nav')!.getBoundingClientRect().top;
                 const visivel = (el: Element) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
                 const campos = [...main.querySelectorAll('input, select')].filter(visivel);
@@ -72,9 +72,10 @@ test.describe('TASK-135 — Histórico e Logs no celular', () => {
         await abrir(page, '/history');
         await page.getByRole('searchbox', { name: 'Buscar por chave, sala ou pessoa' }).fill('pull');
         await expect(page).toHaveURL(/[?&]q=pull\b/);
-        const linhas = page.locator('.table-cards tbody tr');
+        // TASK-136: no celular cada movimentação é uma linha (.linha-lista), e a chave é o nome dela.
+        const linhas = page.locator('.lista-linhas .linha-lista');
         await expect(linhas.first()).toBeVisible();
-        const chaves = await linhas.locator('td[data-label="Chave"]').allTextContents();
+        const chaves = await linhas.locator('.linha-nome').allTextContents();
         expect(chaves.length).toBeGreaterThan(0);
         for (const c of chaves) expect(c).toMatch(/Pull/);
     });

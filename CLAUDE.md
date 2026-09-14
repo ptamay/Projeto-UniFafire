@@ -309,8 +309,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   mesma rota/modal); busca `q` no Histórico (sem acento, `%`/`_` literais com ESCAPE '!', teto mantido).
   E2E completa 85/23/0. ⚠️ **Cluster PG nativo era SQL_ASCII** (initdb --locale=C) — CI e Supabase são UTF-8;
   suíte agora em `unifafire_test_u8` (UTF-8) na 15439.
-- Próxima Ação: PR e merge da TASK-135 → TASK-136 (Chaves e Usuários em lista no celular; "Remover"
-  secundário com confirmação; nova crítica do impeccable ≥ 32/40; documenter e finish reviewer). Do usuário: conferir em produção a parte logada da TASK-125 e,
+  ✅ #100 merged (TASK-135 no ar, `9c7f782`). ✅ **TASK-136 FEITA** (branch `feat/task-136-listas-celular`, PR a
+  abrir): Chaves e Usuários em lista no celular; "Remover" secundário (`btn-remover`) + modal de perigo;
+  filtros por papel com `aria-pressed`; Histórico e Logs também em linha; mensagens de erro com o próximo
+  passo (`src/lib/mensagens.ts`); `DESIGN.md` regravado (8 seções canônicas) e `.impeccable/design.json` refeito.
+  **Crítica final 30/40 (era 23), estética 3 (era 1) — REQ-033f (≥ 32) NÃO atingido, faltam 2**: Usuários
+  (três faixas antes da lista), Confirmações em cartões, Logs em código de sistema. E2E completa 92/30/0.
+- Próxima Ação: PR e merge da TASK-136 → DECISÃO DO USUÁRIO: fechar o ADR-031 com 30/40 ou abrir task para
+  as três telas (⚠️ TASK-137+/ADR-032+ reservados pela outra sessão — confirmar número). Do usuário: conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -570,7 +576,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-135-historico-logs-celular (TASK-135, PR a abrir). PRs #15–#99 merged (o #43 do
+- Branch atual: feat/task-136-listas-celular (TASK-136, PR a abrir). PRs #15–#100 merged (o #43 do
   Dependabot entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em

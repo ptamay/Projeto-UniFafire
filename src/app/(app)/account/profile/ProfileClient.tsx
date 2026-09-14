@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { SEM_CONEXAO, naoDeuPara } from '@/lib/mensagens';
 
 interface ProfileClientProps {
     initialData: { full_name?: string; matricula?: string; phone?: string };
@@ -29,12 +30,12 @@ export default function ProfileClient({ initialData }: ProfileClientProps) {
             });
             const data = await res.json();
             if (!res.ok) {
-                toast.error(data.error || 'Erro ao atualizar perfil');
+                toast.error(data.error || naoDeuPara('salvar o perfil'));
             } else {
                 toast.success('Perfil atualizado com sucesso!');
             }
         } catch {
-            toast.error('Erro de conexão');
+            toast.error(SEM_CONEXAO);
         } finally {
             setLoading(false);
         }
