@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { query, execute } from '@/lib/pg';
+import { query } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-081 (Sprint 22 · Etapa 7a do ADR-012) — a trilha de auditoria é
 // esperada, não largada. REQ-010 + REQ-031, critério de aceite (d).
@@ -66,7 +67,7 @@ function fontesDeSrc(): { rel: string; fonte: string }[] {
 }
 
 beforeEach(async () => {
-    await execute('DELETE FROM action_logs');
+    await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs'));
 });
 
 describe('TASK-081 — nenhuma chamada da trilha fica sem espera', () => {

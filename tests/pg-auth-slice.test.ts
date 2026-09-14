@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { queryOne, execute } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-069 fatia (b) (Sprint 21 · Etapa 4 do ADR-012) — autenticação e conta
 // passam a falar Postgres.
@@ -54,7 +55,7 @@ beforeEach(async () => {
     // action_logs ANTES de users: o Postgres impõe a chave estrangeira que o
     // SQLite deixava passar. Não é atrito do teste — é a integridade que a
     // migração compra, aparecendo na primeira vez que alguém a exercita.
-    await execute('DELETE FROM action_logs WHERE user_id >= 800');
+    await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs WHERE user_id >= 800'));
     await execute('DELETE FROM users WHERE id >= 800');
 });
 
