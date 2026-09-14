@@ -299,6 +299,9 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   ✅ #87/#89 merged (TASK-128 no ar, `411ee8e`). 📋 **TASK-131 aprovada** (emenda do ADR-029): as três telas
   recebem os dados pelo servidor; consulta em `src/lib` (`listar*`), página verifica papel; guarda da
   TASK-090 perde a exceção de `/confirm` e passa a contar `listar*` como consulta.
+  ✅ #90 (CR) aberto. ✅ **TASK-131 FEITA** (branch `feat/task-131-dados-iniciais`): vitest 833/87, E2E 6 ok no
+  build de produção, reprova contra a `main`. ✅ TASK-128 validada com LOCK em `users` (0 quadros em
+  branco em 54 navegações). ⚠️ Prova de espera: LOCK na base, não `page.route` no `?_rsc=`.
 - ⚠️ **O CHECKOUT PRINCIPAL PODE ESTAR COM OUTRA SESSÃO** (em 14/09, a TASK-124 rodava lá, com
   arquivos alterados). `git switch` ali leva a branch dela junto. Trabalho paralelo vai numa worktree.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,

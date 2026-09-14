@@ -123,6 +123,16 @@
   página depois do papel verificado; clientes nascem com os dados, sem `loading` inicial. Confirmações
   escopa por papel com TETO (`restritoAoUsuarioId`). Guarda da TASK-090: sai a exceção de `/confirm`,
   `listar*` conta como consulta. E2E com navegação e APIs atrasadas: zero `.skeleton`/"Carregando".
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-131-dados-iniciais`). 19 cenários em
+  `tests/dados-iniciais-no-servidor.test.ts` + 2 na guarda da TASK-090, vermelhos um a um (com módulos
+  vazios). Vitest INTEIRA 833/87 contra Postgres nativo privado (sem Docker, `globalSetup` de rascunho).
+  E2E no build de produção: 6 ok / 2 pulados; rotas de API seguradas 1,5 s e todos os quadros gravados —
+  zero cinza/spinner/"Carregando" nas três. **Contra a `main` reprova** ("/confirm: cinza/spinner").
+  ✅ **TASK-128 validada com espera REALISTA** (sessão da TASK-130): `LOCK TABLE users` 1,5 s — layout e
+  proxy só leem o JWT, só a página espera —, build de produção da `main` com o #89: 54 navegações
+  (9 telas × desktop/celular × 3), **0 quadros sem `main` e 0 com esqueleto**; antes do #89,
+  `/settings → /account/profile` tinha 90/91 quadros em branco. ⚠️ Segurar a resposta `?_rsc=` inteira
+  pelo `page.route` NÃO reproduz o servidor real (ele manda o layout antes) — usar o LOCK.
 
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e

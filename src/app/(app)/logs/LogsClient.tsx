@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatTimestamp } from '@/lib/time-filters';
+import type { PaginaDeLogs } from '@/lib/logs-query';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
 
@@ -16,16 +17,17 @@ interface LogEntry {
     details?: string;
 }
 
-export default function LogsClient() {
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [loading, setLoading] = useState(true);
+/** TASK-131: a primeira página vem do servidor — a tela abre com ela, sem "Carregando…". */
+export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLogs }) {
+    const [logs, setLogs] = useState<LogEntry[]>(logsIniciais.logs as LogEntry[]);
+    const [loading, setLoading] = useState(false);
     const [category, setCategory] = useState<LogCategory>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [monthFilter, setMonthFilter] = useState('');
     const [hourFilter, setHourFilter] = useState('');
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [totalPages, setTotalPages] = useState(logsIniciais.totalPages || 1);
     const router = useRouter();
 
     const fetchLogs = useCallback(async () => {
@@ -57,12 +59,21 @@ export default function LogsClient() {
         }
     }, [category, page, searchTerm, dateFilter, monthFilter, hourFilter, router]);
 
+    // A página com os filtros no padrão já veio do servidor. O efeito só busca quando os filtros
+    // DIFEREM dos da última página carregada — e não "pula a primeira execução": em
+    // desenvolvimento o React (StrictMode) executa o efeito DUAS vezes na montagem, a primeira
+    // gastava o pulo e a segunda buscava de novo, com "Carregando…" na tela (visto no CI da
+    // TASK-131, 79 quadros). Comparando os filtros, as duas execuções veem a mesma chave.
+    const chaveDosFiltros = JSON.stringify([category, page, searchTerm, dateFilter, monthFilter, hourFilter]);
+    const chaveCarregada = useRef(JSON.stringify(['all', 1, '', '', '', '']));
     useEffect(() => {
+        if (chaveDosFiltros === chaveCarregada.current) return;
         const timer = setTimeout(() => {
+            chaveCarregada.current = chaveDosFiltros;
             fetchLogs();
         }, 300); // Debounce search
         return () => clearTimeout(timer);
-    }, [fetchLogs]);
+    }, [fetchLogs, chaveDosFiltros]);
 
     return (
         <>
