@@ -124,12 +124,20 @@
 > e o `loading.tsx` troca a página inteira — menu junto. De lado: o menu remonta a cada navegação
 > (a assinatura dele publica "conectando" de novo, e o timer do logout e o tutorial são recriados),
 > e seis telas passam `isOpen`/`onMobileClose` que nenhuma usa.
-- **TASK-125 → menu no layout.** Grupo de rotas `src/app/(app)/` com `layout.tsx` (lê a sessão SÓ
-  para desenhar o menu; a autorização continua em cada página — §3.2, TASK-090); páginas desenham
-  só o `main`; `/login` fora do grupo; estado morto removido. Guardas: nenhuma página desenha o
-  menu; E2E navegando prova que o elemento do menu não desmonta e fica visível no esqueleto.
-  Verificar desktop, celular e a impressão do Histórico. `git mv` por pasta; ~12 testes citam os
-  caminhos e mudam junto.
+- [x] **TASK-125 → menu no layout.** ✅ **FEITA em 2026-09-14** (branch `feat/task-125-menu-no-layout`).
+  `src/app/(app)/layout.tsx` desenha a moldura e o menu (em `.no-print`); as nove telas foram para
+  o grupo por `git mv` (URLs iguais, `/login` fora) e desenham só o `main`. O layout lê a sessão
+  pelo JWT (`verifySessionEdge`), SEM banco — com `verifySession` cada renderização completa
+  consultaria duas vezes, e o `router.refresh()` do Dashboard roda a cada sinal; não redireciona
+  nem decide por papel (guarda). Saíram o estado morto da gaveta e as props que só existiam para o
+  menu; `/` e `/keys` tinham `main` dentro de `main`; Perfil e Segurança usavam uma moldura sem
+  CSS. `tests/rotas-de-pagina.ts` tira os grupos da rota (as guardas das TASK-090/096 procurariam
+  `/(app)/history`). E2E com `MutationObserver`: o menu é o MESMO elemento e nunca sai, desktop e
+  celular — vermelha antes (desmontava), verde depois. E2E completa 34 ok / 2 pulados. No navegador,
+  com a consulta de `/keys` presa por LOCK na base local, o esqueleto aparece COM o menu nos dois.
+  ⚠️ Não medido: o ponto do tempo real voltar ou não a "Conectando…" — local não tem Realtime; só
+  em produção. ⚠️ Lição: `npm run dev` APAGA a `.next` antes de subir — com a E2E rodando, derruba
+  o servidor dela (foi a causa de uma falha falsa nesta task). Não subir dev durante a E2E.
 
 ### Aberta por Change Request — a trilha de auditoria imutável de verdade (CR Tipo C · ADR-026)
 > Aprovado pelo usuário em 2026-09-13, opções recomendadas. Achado da TASK-116: a §3.5 e dois

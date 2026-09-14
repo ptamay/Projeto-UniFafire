@@ -232,7 +232,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   modo. Roteiro ensaiado. 🔴 **Aplicar o roteiro no editor ANTES do merge** (senão health 503).
   ✅ #80 merged. (A queixa da `higiene-de-carga` com o `@vercel/speed-insights` não commitado no
   checkout principal some com o #81: o pacote entra junto com o importador.)
-- Próxima Ação: roteiro da 124 em produção → merge → TASK-125 (menu no layout). Do usuário: token de
+- ✅ #80 merged (TASK-124 NO AR, `7ef0c5d`): roteiro aplicado pelo usuário ANTES do merge (14 linhas
+  no registro, checksum `79a6f140…`), `pos-deploy` verde, health 200. ADR-026 fechado.
+- ✅ **TASK-125 FEITA em 2026-09-14** (branch `feat/task-125-menu-no-layout`, PR #84): o menu vai
+  para `src/app/(app)/layout.tsx` e fica na tela durante o esqueleto — o fenômeno da captura do
+  usuário. Sem migration. ⚠️ `npm run dev` APAGA a `.next`: não subir dev com a E2E rodando.
+- 🐛 **"Limpar Histórico" QUEBRADO EM PRODUÇÃO desde 2026-05-21** (`fd7d603`), relatado pelo usuário
+  com captura: a tela chama `POST /api/history/clear` e a rota só exporta `DELETE` (o contrato de API
+  diz DELETE) → 405 → "Erro ao limpar histórico.". Nenhum teste viu: todos chamam o handler direto.
+  Correção = TASK-127 (a 126 é a do Speed Insights, da outra sessão) (tela → DELETE + guarda que confere todo `fetch` das telas contra os métodos
+  exportados pelas rotas).
+- Próxima Ação: merge do #84 (TASK-125) → TASK-127 (Limpar Histórico). Do usuário: token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
   (vencida), PR #43 do Dependabot (re-run do check), majors TS/ESLint/Vitest, `keys.db` no histórico
@@ -476,7 +486,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-124-trilha-imutavel (PR a abrir). PRs #15–#78 merged; aberto só o #43 do
+- Branch atual: feat/task-125-menu-no-layout (PR #84). PRs #15–#80 merged; aberto só o #43 do
   Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
