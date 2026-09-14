@@ -181,8 +181,10 @@ describe('TASK-135 — busca por texto no histórico (q)', () => {
     it('% e _ valem como letra, não como curinga', async () => {
         expect(await rodar({ q: '100%' })).toHaveLength(1);
         expect(await rodar({ q: 'anexo_' })).toHaveLength(1);
-        expect(await rodar({ q: '%' })).toHaveLength(1);
-        expect(await rodar({ q: '_' })).toHaveLength(1);
+        // Como curinga, "a%q" acharia "Laboratório de Química" (a … q) e "sala_1" acharia
+        // "Sala 100%" (o _ casando o espaço). Como letra, nenhum dos dois existe.
+        expect(await rodar({ q: 'a%q' })).toHaveLength(0);
+        expect(await rodar({ q: 'sala_1' })).toHaveLength(0);
     });
 
     it('a contagem acompanha a busca, para a paginação não mentir', async () => {

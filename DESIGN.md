@@ -223,9 +223,20 @@ cartões de chave e nas linhas do Dashboard saiu); o estado vai na etiqueta.
   a lista e, por último, a explicação da dupla confirmação.
 - A palavra do estado livre é **"Livre"** (antes "Disponível"), em todas as telas.
 
+**Em vigor (TASK-135) — Histórico e Logs no celular:**
+
+- **Busca + "Filtros (n)" + "⋯":** a busca fica à vista (no Histórico, por chave, sala ou pessoa, sem
+  acento nem maiúscula); os demais filtros moram numa **folha** que sobe de baixo (`FolhaDeFiltros`),
+  com o n de filtros ativos no botão, "Limpar filtros" e "Ver resultados"; as ações de relatório num
+  menu **"⋯"** (`MenuDeAcoes`) — no Histórico, **um PDF só** ("Baixar PDF"; o "Imprimir" saiu), nos
+  Logs, "Baixar planilha (CSV)". No desktop a mesma marcação deixa os campos na página.
+- **Rótulos do dia a dia:** "Mês" e "Dia" com texto de apoio (o campo vazio parecia quebrado), "Hora do
+  dia", "Pessoa", "Tipo". Métricas em linguagem simples ("Confirmadas em até 10 min", "Tempo até
+  confirmar"), fora do celular.
+- **O que apaga não fica no caminho do polegar:** "Limpar histórico" saiu do topo do Histórico para
+  Configurações → Zona de Perigo (mesma rota, modal, só ADMIN).
+
 **Contrato:**
-- **Filtros (TASK-135):** uma busca e um botão "Filtros (n)" que abre uma folha de baixo para cima; o
-  primeiro registro aparece sem rolar.
 - **Listas de Chaves e Usuários (TASK-136):** linha com nome, sala/papel e estado; "Remover" como ação
   secundária, com confirmação.
 

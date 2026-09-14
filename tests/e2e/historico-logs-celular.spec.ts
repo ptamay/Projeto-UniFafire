@@ -68,6 +68,17 @@ test.describe('TASK-135 — Histórico e Logs no celular', () => {
         });
     }
 
+    test('/history: a busca filtra pelo nome da chave, sem acento nem maiúscula, e vai para a URL', async ({ page }) => {
+        await abrir(page, '/history');
+        await page.getByRole('searchbox', { name: 'Buscar por chave, sala ou pessoa' }).fill('pull');
+        await expect(page).toHaveURL(/[?&]q=pull\b/);
+        const linhas = page.locator('.table-cards tbody tr');
+        await expect(linhas.first()).toBeVisible();
+        const chaves = await linhas.locator('td[data-label="Chave"]').allTextContents();
+        expect(chaves.length).toBeGreaterThan(0);
+        for (const c of chaves) expect(c).toMatch(/Pull/);
+    });
+
     test('o Histórico não tem mais "Limpar Histórico"; ele está na Zona de Perigo, e não é o primeiro botão da tela', async ({ page }) => {
         await abrir(page, '/history');
         await expect(page.getByRole('button', { name: /Limpar hist[óo]rico/i })).toHaveCount(0);

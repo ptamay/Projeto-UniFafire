@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import PrintButton from '@/app/components/PrintButton';
+import FolhaDeFiltros from '@/app/components/FolhaDeFiltros';
+import MenuDeAcoes from '@/app/components/MenuDeAcoes';
 import { formatTimestamp } from '@/lib/time-filters';
 import { HISTORY_ACTIONS } from '@/lib/history-query';
 import { useClientClock } from '@/lib/use-client-clock';
@@ -44,6 +45,7 @@ interface HistoryClientProps {
         userId?: string;
         keyId?: string;
         action?: string;
+        q?: string;
     };
 }
 
@@ -52,8 +54,6 @@ export default function HistoryClient({
     currentPage = 1, totalPages = 1, totalRecords = 0,
     filterOptions = { users: [], keys: [] },
 }: HistoryClientProps) {
-    const [showClearConfirm, setShowClearConfirm] = useState(false);
-
     // TASK-058: vazio no servidor e na hidratação, preenchido depois. Renderizar
     // o relógio direto no JSX fazia SSR e cliente caírem em segundos diferentes,
     // e o React descartava a árvore vinda do servidor.
@@ -72,6 +72,12 @@ export default function HistoryClient({
     const hasActiveFilter = Boolean(
         dateFilter || monthFilter || hourFilter || userFilter || keyFilter || actionFilter
     );
+    // TASK-135: quantos filtros da folha estão valendo — vai no botão "Filtros (n)".
+    const filtrosAtivos = [dateFilter, monthFilter, hourFilter, userFilter, keyFilter, actionFilter].filter(Boolean).length;
+
+    // TASK-135: busca por chave, sala ou pessoa. Vai para a URL (q) depois de uma pausa na
+    // digitação, e a página consulta de novo no servidor — com o mesmo teto por papel.
+    const [busca, setBusca] = useState(initialFilters?.q || '');
 
     const isPorteiroOrAdmin = ['ADMIN', 'GESTOR', 'PORTEIRO'].includes(userRole);
     const [bizMetrics, setBizMetrics] = useState<BusinessMetrics | null>(null);
@@ -86,25 +92,6 @@ export default function HistoryClient({
             .catch(() => {});
     }, [isPorteiroOrAdmin]);
 
-    const handleClearHistory = async () => {
-        try {
-            // TASK-127: DELETE, como a rota e o contrato de API dizem. Era POST, e a rota só
-            // exporta DELETE desde 2026-05-21 — 405 e "Erro ao limpar histórico." por quatro
-            // meses. `tests/fetch-contrato.test.ts` confere toda chamada das telas.
-            const res = await fetch('/api/history/clear', { method: 'DELETE' });
-            if (res.ok) {
-                setShowClearConfirm(false);
-                router.refresh();
-                toast.success('Histórico limpo com sucesso.');
-            } else {
-                toast.error('Erro ao limpar histórico.');
-            }
-        } catch (error) {
-            console.error('Failed to clear history', error);
-            toast.error('Erro ao limpar histórico.');
-        }
-    };
-
     const goToPage = (page: number) => {
         const params = new URLSearchParams(window.location.search);
         params.set('page', String(page));
@@ -113,9 +100,12 @@ export default function HistoryClient({
 
     const updateFilters = (newFilters: {
         date?: string, month?: string, hour?: string,
-        userId?: string, keyId?: string, action?: string,
+        userId?: string, keyId?: string, action?: string, q?: string,
     }) => {
         const params = new URLSearchParams(window.location.search);
+        if (newFilters.q !== undefined) {
+            if (newFilters.q.trim()) params.set('q', newFilters.q.trim()); else params.delete('q');
+        }
         if (newFilters.date !== undefined) {
             if (newFilters.date) params.set('date', newFilters.date); else params.delete('date');
             params.delete('month'); // Mutual exclusivity for clarity
@@ -149,6 +139,16 @@ export default function HistoryClient({
         params.set('page', '1');
         router.push(`/history?${params.toString()}`);
     };
+
+    // A busca vai para a URL depois de 400 ms sem digitar — cada letra não vira uma ida ao
+    // servidor. Só quando o termo DIFERE do que a página já mostra.
+    useEffect(() => {
+        const atual = new URLSearchParams(window.location.search).get('q') ?? '';
+        if (busca.trim() === atual) return;
+        const t = setTimeout(() => updateFilters({ q: busca }), 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [busca]);
 
     const [gerandoPDF, setGerandoPDF] = useState(false);
 
@@ -249,96 +249,120 @@ export default function HistoryClient({
                         }
                     `}</style>
 
-                    <div className="page-header mb-6 no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '1rem' }}>
-                            <h1 className="page-title m-0">Histórico de Movimentações</h1>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                                {(userRole === 'ADMIN' || userRole === 'GESTOR') && (
-                                    <button
-                                        className="btn btn-perigo"
-                                        onClick={() => setShowClearConfirm(true)}
-                                    >
-                                        Limpar Histórico
-                                    </button>
-                                )}
-                                <button className="btn btn-secundario" onClick={handleExportPDF} disabled={gerandoPDF}>
-                                    {gerandoPDF ? 'Gerando…' : 'Exportar PDF'}
-                                </button>
-                                <PrintButton />
-                            </div>
-                        </div>
+                    <div className="page-header cabecalho-enxuto no-print" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem' }}>
+                        <h1 className="page-title m-0">Histórico de Movimentações</h1>
 
+                        {/* TASK-135: as métricas dizem o que medem, em palavras — "Dupla
+                            confirmação 75%" e "Tempo de balcão" eram jargão do projeto. No
+                            celular saem da tela: relatório, não o que se faz no pátio. */}
                         {isPorteiroOrAdmin && bizMetrics && (
-                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <div title="% de transações (30 dias) confirmadas pelo portador em até 10 min — alvo ≥ 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Dupla confirmação</span>
+                            <div className="metricas-negocio" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <div title="Nos últimos 30 dias, quantas movimentações a outra pessoa confirmou em até 10 minutos — o alvo é 95%" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Confirmadas em até 10 min</span>
                                     <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: bizMetrics.doubleConfirmationRate !== null && bizMetrics.doubleConfirmationRate >= 95 ? 'var(--livre-fg)' : 'var(--text-primary)' }}>
                                         {bizMetrics.doubleConfirmationRate !== null ? `${bizMetrics.doubleConfirmationRate}%` : '—'}
                                     </span>
                                 </div>
-                                <div title="Tempo mediano (30 dias) entre criação da transação e confirmação — alvo ≤ 2 min" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Tempo de balcão</span>
+                                <div title="Nos últimos 30 dias, o tempo típico entre pedir e a outra pessoa confirmar — o alvo é até 2 minutos" style={{ background: 'var(--bg-card)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>Tempo até confirmar</span>
                                     <span style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)' }}>
                                         {bizMetrics.medianCounterMinutes !== null ? `${bizMetrics.medianCounterMinutes} min` : '—'}
                                     </span>
                                 </div>
                             </div>
                         )}
+                    </div>
 
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                            gap: '0.75rem', 
-                            width: '100%',
-                            background: 'rgba(255,255,255,0.02)',
-                            padding: '1rem',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid var(--border)'
-                        }}>
+                    {/* TASK-135: a busca à vista; os demais filtros numa folha (no celular) e as
+                        ações num menu "⋯" com um PDF só. O botão de apagar o histórico — que era o PRIMEIRO
+                        botão, vermelho, no caminho do polegar — foi para Configurações → Zona de
+                        Perigo (mesma rota, mesmo modal, só ADMIN: REQ-014). */}
+                    <div className="no-print">
+                        <FolhaDeFiltros
+                            ativos={filtrosAtivos}
+                            aoLimpar={() => {
+                                setDateFilter('');
+                                setMonthFilter('');
+                                setHourFilter('');
+                                setUserFilter('');
+                                setKeyFilter('');
+                                setActionFilter('');
+                                router.push(busca.trim() ? `/history?q=${encodeURIComponent(busca.trim())}` : '/history');
+                            }}
+                            busca={
+                                <div className="search-bar" style={{ maxWidth: '100%' }}>
+                                    <input
+                                        type="search"
+                                        className="input"
+                                        aria-label="Buscar por chave, sala ou pessoa"
+                                        placeholder="Buscar"
+                                        enterKeyHint="search"
+                                        value={busca}
+                                        onChange={(e) => setBusca(e.target.value)}
+                                    />
+                                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                </div>
+                            }
+                            acoes={
+                                <MenuDeAcoes acoes={[{
+                                    rotulo: gerandoPDF ? 'Gerando o PDF…' : 'Baixar PDF',
+                                    aoEscolher: handleExportPDF,
+                                    desabilitada: gerandoPDF || history.length === 0,
+                                }]} />
+                            }
+                        >
                             <div className="input-group">
-                                <label className="input-label">Filtrar Mês</label>
-                                <input 
-                                    type="month" 
-                                    className="input" 
+                                <label className="input-label" htmlFor="filtro-mes">Mês</label>
+                                <input
+                                    id="filtro-mes"
+                                    type="month"
+                                    className="input"
                                     value={monthFilter}
+                                    aria-describedby="dica-mes"
                                     onChange={(e) => updateFilters({ month: e.target.value })}
                                 />
+                                <span id="dica-mes" className="dica-campo">Mostra o mês inteiro</span>
                             </div>
 
                             <div className="input-group">
-                                <label className="input-label">Data Específica</label>
-                                <input 
-                                    type="date" 
-                                    className="input" 
+                                <label className="input-label" htmlFor="filtro-dia">Dia</label>
+                                <input
+                                    id="filtro-dia"
+                                    type="date"
+                                    className="input"
                                     value={dateFilter}
+                                    aria-describedby="dica-dia"
                                     onChange={(e) => updateFilters({ date: e.target.value })}
                                 />
+                                <span id="dica-dia" className="dica-campo">Ou escolha um dia só</span>
                             </div>
 
                             <div className="input-group">
-                                <label className="input-label">Hora (0-23)</label>
-                                <select 
-                                    className="input" 
+                                <label className="input-label" htmlFor="filtro-hora">Hora do dia</label>
+                                <select
+                                    id="filtro-hora"
+                                    className="input"
                                     value={hourFilter}
                                     onChange={(e) => updateFilters({ hour: e.target.value })}
                                 >
-                                    <option value="">Todas</option>
+                                    <option value="">Qualquer hora</option>
                                     {Array.from({ length: 24 }).map((_, i) => (
                                         <option key={i} value={i.toString().padStart(2, '0')}>
-                                            {i.toString().padStart(2, '0')}:00
+                                            Das {i.toString().padStart(2, '0')}:00 às {i.toString().padStart(2, '0')}:59
                                         </option>
                                     ))}
                                 </select>
                             </div>
 
                             <div className="input-group">
-                                <label className="input-label">Portador</label>
+                                <label className="input-label" htmlFor="filtro-pessoa">Pessoa</label>
                                 <select
+                                    id="filtro-pessoa"
                                     className="input"
                                     value={userFilter}
                                     onChange={(e) => updateFilters({ userId: e.target.value })}
                                 >
-                                    <option value="">Todos</option>
+                                    <option value="">Todas</option>
                                     {filterOptions.users.map(u => (
                                         <option key={u.id} value={String(u.id)}>{u.name}</option>
                                     ))}
@@ -346,8 +370,9 @@ export default function HistoryClient({
                             </div>
 
                             <div className="input-group">
-                                <label className="input-label">Chave</label>
+                                <label className="input-label" htmlFor="filtro-chave">Chave</label>
                                 <select
+                                    id="filtro-chave"
                                     className="input"
                                     value={keyFilter}
                                     onChange={(e) => updateFilters({ keyId: e.target.value })}
@@ -362,37 +387,20 @@ export default function HistoryClient({
                             </div>
 
                             <div className="input-group">
-                                <label className="input-label">Movimentação</label>
+                                <label className="input-label" htmlFor="filtro-tipo">Tipo</label>
                                 <select
+                                    id="filtro-tipo"
                                     className="input"
                                     value={actionFilter}
                                     onChange={(e) => updateFilters({ action: e.target.value })}
                                 >
-                                    <option value="">Todas</option>
+                                    <option value="">Todos</option>
                                     {HISTORY_ACTIONS.map(a => (
                                         <option key={a.value} value={a.value}>{a.label}</option>
                                     ))}
                                 </select>
                             </div>
-
-                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                <button
-                                    className="btn btn-ghost btn-sm w-full"
-                                    disabled={!hasActiveFilter}
-                                    onClick={() => {
-                                        setDateFilter('');
-                                        setMonthFilter('');
-                                        setHourFilter('');
-                                        setUserFilter('');
-                                        setKeyFilter('');
-                                        setActionFilter('');
-                                        router.push('/history');
-                                    }}
-                                >
-                                    Limpar Filtros
-                                </button>
-                            </div>
-                        </div>
+                        </FolhaDeFiltros>
                     </div>
 
                     <div className="table-wrapper table-cards">
@@ -434,8 +442,8 @@ export default function HistoryClient({
                                 ))}
                                 {history.length === 0 && (
                                     <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                                        {hasActiveFilter
-                                            ? 'Nenhuma movimentação encontrada para os filtros selecionados.'
+                                        {hasActiveFilter || busca.trim()
+                                            ? 'Nenhuma movimentação encontrada para a busca ou os filtros.'
                                             : 'Nenhum histórico registrado.'}
                                     </td></tr>
                                 )}
@@ -481,23 +489,6 @@ export default function HistoryClient({
                 </div>
             </main>
 
-            {/* Clear History Confirmation Modal */}
-            {showClearConfirm && (
-                <div className="modal-overlay" onClick={() => setShowClearConfirm(false)}>
-                    <div className="modal-box" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Atenção</h3>
-                        </div>
-                        <p style={{ color: 'var(--text-secondary)' }}>Esta ação apagará todos os registros de movimentação. Deseja realmente limpar o histórico?</p>
-                        <div className="action-row mt-6">
-                            <button className="btn btn-ghost" onClick={() => setShowClearConfirm(false)}>Cancelar</button>
-                            <button className="btn btn-perigo" onClick={handleClearHistory}>
-                                Confirmar Limpeza
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

@@ -42,6 +42,12 @@ export interface HistoryFilters {
     restritoAoUsuarioId?: number;
     keyId?: string;
     action?: string;
+    /**
+     * TASK-135 — busca livre pelo nome da chave, pela sala ou pela pessoa. Sem acento e
+     * sem maiúscula dos dois lados; `%` e `_` valem como letra. Vai como PARÂMETRO, e o
+     * teto (`restritoAoUsuarioId`) continua valendo: a busca estreita, nunca alarga.
+     */
+    q?: string;
     page?: number;
     limit?: number;
 }
@@ -67,6 +73,24 @@ const SELECT = `
         LEFT JOIN users u ON h.user_id = u.id
         LEFT JOIN key_transactions kt ON h.transaction_id = kt.id
         LEFT JOIN users p ON kt.porteiro_id = p.id`;
+
+// Sem acento e sem maiúscula nos dois lados da comparação, sem depender da extensão
+// `unaccent` (o Supabase a tem, a base de teste não): o banco aplica `translate` na
+// coluna, e o termo chega já normalizado do JavaScript. As maiúsculas acentuadas estão no
+// mapa e o `translate` vem ANTES do `lower`: com locale C, `lower('Á')` não vira `á`.
+const COM_ACENTO = 'áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ';
+const SEM_ACENTO = 'aaaaaeeeeiiiiooooouuuucnaaaaaeeeeiiiiooooouuuucn';
+const semAcento = (coluna: string) => `lower(translate(${coluna}, '${COM_ACENTO}', '${SEM_ACENTO}'))`;
+
+/**
+ * Termo de busca pronto para ILIKE: sem acento, minúsculo, e com `%` e `_` valendo como
+ * letra. O caractere de escape é `!` (ESCAPE '!'), e não a barra invertida: a barra
+ * atravessa JavaScript, template string e SQL, e em cada camada vira outra coisa.
+ */
+function padraoDeBusca(q: string): string {
+    const termo = q.trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+    return `%${termo.replace(/[!%_]/g, c => '!' + c)}%`;
+}
 
 /** Id positivo, ou null quando ausente/inválido — filtro impossível é ignorado, não quebra a tela. */
 function parseId(raw?: string): number | null {
@@ -124,6 +148,13 @@ export function buildHistoryQuery(filters: HistoryFilters): HistoryQuery {
         params.push(filters.action);
     }
 
+    if (filters.q && filters.q.trim()) {
+        const i = p();
+        const casa = (coluna: string) => `${semAcento(coluna)} ILIKE ${i} ESCAPE '!'`;
+        conditions.push(`(${casa('k.name')} OR ${casa("COALESCE(k.room, '')")} OR ${casa('COALESCE(u.full_name, u.username)')})`);
+        params.push(padraoDeBusca(filters.q));
+    }
+
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
 
     const limit = filters.limit ?? HISTORY_PAGE_SIZE;
@@ -132,7 +163,9 @@ export function buildHistoryQuery(filters: HistoryFilters): HistoryQuery {
 
     return {
         sql: `${SELECT}${where} ORDER BY h.timestamp DESC LIMIT ${p()} OFFSET ${p(1)}`,
-        countSql: `SELECT COUNT(*) as total FROM history h${where}`,
+        // A contagem leva as mesmas junções da busca (`k`, `u`): sem elas, a condição do `q`
+        // referenciaria tabelas que não estão na consulta.
+        countSql: `SELECT COUNT(*) as total FROM history h LEFT JOIN keys k ON h.key_id = k.id LEFT JOIN users u ON h.user_id = u.id${where}`,
         params: [...params, limit, offset],
         countParams: params,
         page,
