@@ -223,6 +223,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   tela; não verificável daqui), §2.2 (dados de saída acumulam desde 08/09 — ler pelo editor), §0
   da constitution (vencida), PR #43 do Dependabot (re-run do check), `checkout/setup-node@v4` →
   v5 (Node 20), majors TS/ESLint/Vitest, `keys.db` no histórico antigo, RTO de 4 h não medido.
+- 📋 **CR do MENU NO LAYOUT (Tipo C, ADR-027), aprovado pelo usuário (caminho A), 2026-09-14:** ao
+  trocar de tela o menu some e só o esqueleto aparece — cada uma das nove telas desenha o próprio
+  `Sidebar`, e o `loading.tsx` troca a página inteira. TASK-125: grupo de rotas `(app)` com
+  `layout.tsx`; autorização continua em cada página. Independente do CR da trilha (#77).
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.

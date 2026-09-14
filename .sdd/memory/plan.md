@@ -87,6 +87,19 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — o menu não some na navegação (CR Tipo C · ADR-027)
+> Aprovado pelo usuário em 2026-09-14 (caminho A). Relato com captura: ao trocar de tela, o menu
+> lateral some e só o esqueleto aparece. Causa: cada uma das nove telas desenha o PRÓPRIO `Sidebar`,
+> e o `loading.tsx` troca a página inteira — menu junto. De lado: o menu remonta a cada navegação
+> (a assinatura dele publica "conectando" de novo, e o timer do logout e o tutorial são recriados),
+> e seis telas passam `isOpen`/`onMobileClose` que nenhuma usa.
+- **TASK-125 → menu no layout.** Grupo de rotas `src/app/(app)/` com `layout.tsx` (lê a sessão SÓ
+  para desenhar o menu; a autorização continua em cada página — §3.2, TASK-090); páginas desenham
+  só o `main`; `/login` fora do grupo; estado morto removido. Guardas: nenhuma página desenha o
+  menu; E2E navegando prova que o elemento do menu não desmonta e fica visível no esqueleto.
+  Verificar desktop, celular e a impressão do Histórico. `git mv` por pasta; ~12 testes citam os
+  caminhos e mudam junto.
+
 ### Aberta por Change Request — os testes rodam no CI (CR Tipo A · 2026-09-12)
 > Pedido do usuário depois da TASK-120. Tipo A: infraestrutura nova, nenhuma funcionalidade muda.
 > Motivo, medido: **nenhum teste roda no CI** — nem a E2E nem a vitest; o `ci-gates.sh` também
