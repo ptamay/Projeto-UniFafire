@@ -47,8 +47,6 @@ export default function LoginPage() {
 
     return (
         <div className="login-page">
-            <div className="login-bg-orb login-bg-orb-1" />
-            <div className="login-bg-orb login-bg-orb-2" />
 
             <div className="login-container animate-slide">
                 <div className="login-brand">
@@ -189,7 +187,7 @@ export default function LoginPage() {
                     <button
                         id="btn-login"
                         type="submit"
-                        className="btn btn-green btn-lg login-submit"
+                        className="btn btn-principal btn-lg login-submit"
                         disabled={loading}
                     >
                         {loading ? (
@@ -215,7 +213,7 @@ export default function LoginPage() {
                                 type="button"
                                 className="btn-link"
                                 onClick={() => setShowForgotPopup(true)}
-                                style={{ background: 'none', border: 'none', color: 'var(--green-500)', fontSize: 'var(--fs-2)', cursor: 'pointer', textDecoration: 'underline' }}
+                                style={{ background: 'none', border: 'none', color: 'var(--acao)', fontSize: 'var(--fs-2)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px', minHeight: 'var(--touch-target)' }}
                             >
                                 Esqueci minha senha
                             </button>
@@ -238,7 +236,7 @@ export default function LoginPage() {
                             Por favor, <strong>entre em contato com um Administrador ou Gestor</strong> para que sua senha seja redefinida no painel de controle.
                         </p>
                         <div className="action-row mt-6" style={{ justifyContent: 'center' }}>
-                            <button className="btn btn-green w-full" onClick={() => setShowForgotPopup(false)}>Entendido</button>
+                            <button className="btn btn-principal w-full" onClick={() => setShowForgotPopup(false)}>Entendido</button>
                         </div>
                     </div>
                 </div>

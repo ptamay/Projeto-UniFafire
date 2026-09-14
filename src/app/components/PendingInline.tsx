@@ -121,7 +121,7 @@ export default function PendingInline({ userRole, userId }: Props) {
                         <div className="pending-inline-actions">
                             {canConfirm && (
                                 <button
-                                    className="btn btn-green btn-sm"
+                                    className="btn btn-principal btn-sm"
                                     disabled={actionLoading === tx.id}
                                     onClick={() => act(tx.id, 'user-confirm', 'Confirmado com sucesso!')}
                                 >
@@ -131,7 +131,6 @@ export default function PendingInline({ userRole, userId }: Props) {
                             {canCancel && (
                                 <button
                                     className="btn btn-ghost btn-sm"
-                                    style={{ color: 'var(--danger-text)', border: '1px solid var(--danger-bg)' }}
                                     disabled={actionLoading === tx.id}
                                     onClick={() => act(tx.id, 'cancel', 'Solicitação cancelada.')}
                                 >

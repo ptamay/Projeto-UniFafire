@@ -3,22 +3,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--blue-950);
+    background: var(--bg-page);
     position: relative;
-    overflow: hidden;
     padding: 1rem;
 }
-.login-bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
-.login-bg-orb-1 {
-    width: 520px; height: 520px;
-    background: radial-gradient(circle, var(--blue-800) 0%, transparent 70%);
-    top: -120px; left: -120px;
-}
-.login-bg-orb-2 {
-    width: 420px; height: 420px;
-    background: radial-gradient(circle, rgba(29,128,70,0.18) 0%, transparent 70%);
-    bottom: -90px; right: -90px;
-}
+/* (Os dois "orbes" desfocados de fundo e o filete em gradiente saíram na TASK-133 — eram
+   enfeite de template. A entrada é uma superfície plana, como o resto do sistema.) */
 .login-container {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -26,16 +16,8 @@
     padding: 2.5rem 2rem;
     width: 100%;
     max-width: 420px;
-    box-shadow: var(--shadow-lg);
     position: relative;
     z-index: 1;
-}
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 10%; right: 10%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--green-400), transparent);
 }
 .login-brand { text-align: center; margin-bottom: 1.75rem; }
 .login-logo-wrap {
@@ -46,19 +28,17 @@
     background-color: #ffffff;
     border-radius: var(--radius-md);
     padding: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
     display: block; 
 }
-.login-subtitle { font-size: var(--fs-2); color: var(--text-muted); letter-spacing: 0.02em; }
+.login-subtitle { font-size: var(--fs-3); color: var(--text-secondary); }
 .login-divider {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1.75rem;
-    color: var(--text-muted);
-    font-size: var(--fs-1);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    font-size: var(--fs-2);
     font-weight: 600;
 }
 .login-divider::before, .login-divider::after {
@@ -68,8 +48,8 @@
 .login-error {
     display: flex; align-items: center; gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: var(--status-inuse-bg);
-    border: 1px solid var(--border-strong);
+    background: var(--alerta-bg);
+    border: 1px solid var(--alerta-fg);
     border-radius: var(--radius-sm);
     color: var(--text-primary); font-size: var(--fs-2);
 }
@@ -88,7 +68,7 @@
     cursor: pointer; padding: 4px; border-radius: var(--radius-sm);
     transition: color 0.15s; display: flex; align-items: center;
 }
-.input-action-btn:hover { color: var(--accent-primary); }
+.input-action-btn:hover { color: var(--acao); }
 .login-submit { width: 100%; margin-top: 0.25rem; min-height: 48px; }
 .login-footer-text {
     text-align: center; font-size: var(--fs-1);
@@ -103,6 +83,4 @@
         padding-top: max(1.5rem, 6dvh);
     }
     .login-container { padding: 2rem 1.25rem; }
-    .login-bg-orb-1 { width: 320px; height: 320px; }
-    .login-bg-orb-2 { width: 260px; height: 260px; }
 }

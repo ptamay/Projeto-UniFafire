@@ -9,7 +9,7 @@ import { login } from './helpers';
 // TASK-120 — este spec nasceu com a TASK-052 e NUNCA passou: procurava um `h1`
 // "Dashboard" (o título é "Monitoramento de Chaves") e classes Tailwind de exemplo
 // ("bg-white") que o componente não usa. Agora cobra o contrato do componente: os
-// chips são `.dashboard-filter-chip`, e o ativo é o `btn-green`.
+// chips são `.dashboard-filter-chip`, e o ativo é o `btn-principal`.
 
 const chips = (page: Page) => page.locator('.dashboard-filter-chip');
 
@@ -22,8 +22,8 @@ async function abrirDashboard(page: Page, usuario: string) {
 async function expectAbas(page: Page, rotulos: RegExp[], ativa: RegExp) {
     await expect(chips(page)).toHaveText(rotulos);
     // Exatamente UMA ativa, e é a esperada.
-    await expect(page.locator('.dashboard-filter-chip.btn-green')).toHaveCount(1);
-    await expect(page.locator('.dashboard-filter-chip.btn-green')).toHaveText(ativa);
+    await expect(page.locator('.dashboard-filter-chip.btn-principal')).toHaveCount(1);
+    await expect(page.locator('.dashboard-filter-chip.btn-principal')).toHaveText(ativa);
 }
 
 test.describe('Dashboard — aba de entrada por papel (TASK-052)', () => {

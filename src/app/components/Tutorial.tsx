@@ -127,7 +127,7 @@ export default function Tutorial({ papel, abrirAoMontar = false, aberto, aoFecha
                 style={{ maxWidth: 460 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-secondary)' }}>
                         Passo {passo + 1} de {passos.length}
                     </span>
                     <button
@@ -156,9 +156,8 @@ export default function Tutorial({ papel, abrirAoMontar = false, aberto, aoFecha
                             <span
                                 key={i}
                                 style={{
-                                    width: i === passo ? 20 : 7, height: 7, borderRadius: 4,
-                                    background: i === passo ? 'var(--green-400)' : 'var(--border-strong)',
-                                    transition: 'width .2s',
+                                    width: i === passo ? 20 : 8, height: 8, borderRadius: 'var(--radius-full)',
+                                    background: i === passo ? 'var(--acao)' : 'var(--border-strong)',
                                 }}
                             />
                         ))}
@@ -169,7 +168,7 @@ export default function Tutorial({ papel, abrirAoMontar = false, aberto, aoFecha
                         </button>
                     )}
                     <button
-                        className="btn btn-green"
+                        className="btn btn-principal"
                         onClick={() => (ultimo ? fechar() : setPasso(p => p + 1))}
                     >
                         {ultimo ? 'Entendi' : 'Próximo'}

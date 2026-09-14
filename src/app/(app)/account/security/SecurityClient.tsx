@@ -111,9 +111,8 @@ export default function SecurityClient() {
                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                 <button 
                                     type="submit" 
-                                    className="btn btn-primary" 
+                                    className="btn btn-principal"
                                     disabled={loading}
-                                    style={{ padding: '0.75rem 1.5rem', background: 'var(--blue-600)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
                                 >
                                     {loading ? 'Atualizando...' : 'Atualizar Senha'}
                                 </button>

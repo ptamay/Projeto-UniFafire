@@ -14,11 +14,11 @@ type User = {
 };
 
 const ROLES = [
-    { value: 'ADMIN', label: 'Administrador', color: 'var(--text-primary)', desc: 'Acesso total ao sistema' },
-    { value: 'GESTOR', label: 'Gestor', color: 'var(--blue-300)', desc: 'Gerencia o sistema' },
-    { value: 'PORTEIRO', label: 'Porteiro', color: 'var(--blue-400)', desc: 'Operação de chaves' },
-    { value: 'FUNCIONARIO', label: 'Funcionário', color: 'var(--text-secondary)', desc: 'Confirma retirada/devolução' },
-    { value: 'ALUNO', label: 'Aluno', color: 'var(--green-400)', desc: 'Confirma retirada/devolução' },
+    { value: 'ADMIN', label: 'Administrador', desc: 'Acesso total ao sistema' },
+    { value: 'GESTOR', label: 'Gestor', desc: 'Gerencia o sistema' },
+    { value: 'PORTEIRO', label: 'Porteiro', desc: 'Operação de chaves' },
+    { value: 'FUNCIONARIO', label: 'Funcionário', desc: 'Confirma retirada/devolução' },
+    { value: 'ALUNO', label: 'Aluno', desc: 'Confirma retirada/devolução' },
 ];
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
@@ -165,7 +165,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                         <h1 className="page-title">Usuários do Sistema</h1>
                         <p className="page-subtitle">Gerencie acessos e perfis de todos os usuários</p>
                     </div>
-                    <button className="btn btn-green" onClick={openNew}>
+                    <button className="btn btn-principal" onClick={openNew}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Novo Usuário
                     </button>
@@ -177,18 +177,16 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                         const count = users.filter(u => u.role === r.value).length;
                         return (
                             <div key={r.value} style={{
-                                background: 'var(--bg-card)',
-                                border: `1px solid ${filterRole === r.value ? r.color : 'var(--border)'}`,
+                                border: `1px solid ${filterRole === r.value ? 'var(--acao)' : 'var(--border)'}`,
+                                background: filterRole === r.value ? 'var(--acao-bg)' : 'var(--bg-card)',
                                 borderRadius: 'var(--radius-md)',
                                 padding: '0.75rem 1.25rem',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                boxShadow: filterRole === r.value ? `0 0 0 2px ${r.color}33` : 'none',
+                                transition: 'background-color 0.15s, border-color 0.15s',
                                 display: 'flex', alignItems: 'center', gap: '0.75rem'
                             }} onClick={() => setFilterRole(filterRole === r.value ? 'all' : r.value)}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
                                 <div>
-                                    <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{r.label}</div>
+                                    <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', fontWeight: 600 }}>{r.label}</div>
                                     <div style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{count}</div>
                                 </div>
                             </div>
@@ -229,7 +227,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                     <tr key={u.id}>
                                         <td data-label="Usuário">
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--blue-700), var(--blue-400))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
+                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-secondary)', flexShrink: 0 }}>
                                                     {(u.full_name || u.username)[0].toUpperCase()}
                                                 </div>
                                                 <span style={{ fontWeight: 600 }}>@{u.username}</span>
@@ -248,7 +246,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                                     Redefinir
                                                 </button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => setDeleteModal(u)}>
+                                                <button className="btn btn-perigo btn-sm" onClick={() => setDeleteModal(u)}>
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                                                     Remover
                                                 </button>
@@ -277,7 +275,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                 <label className="input-label">Nome e Sobrenome {editUser ? '' : '*'}</label>
                                 <input className="input" value={formData.full_name} onChange={e => setFormData(p => ({ ...p, full_name: e.target.value }))} placeholder="ex: João da Silva Pereira" required={!editUser} />
                                 {!editUser && formData.full_name.trim().length > 2 && (
-                                    <span style={{ fontSize: 'var(--fs-2)', color: 'var(--blue-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <span style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                                         O nome de usuário gerado será algo parecido com: <strong>@{(() => {
                                             const parts = formData.full_name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").split(/\s+/);
@@ -311,13 +309,13 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                                 </select>
                             </div>
                             {selectedRole && (
-                                <div style={{ padding: '0.75rem', background: `${selectedRole.color}15`, border: `1px solid ${selectedRole.color}40`, borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>
-                                    <strong style={{ color: selectedRole.color }}>⬤ {selectedRole.label}:</strong> {selectedRole.desc}
+                                <div style={{ padding: '0.75rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', color: 'var(--text-secondary)' }}>
+                                    <strong style={{ color: 'var(--text-primary)' }}>{selectedRole.label}:</strong> {selectedRole.desc}
                                 </div>
                             )}
                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                 <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-green" disabled={saving}>
+                                <button type="submit" className="btn btn-principal" disabled={saving}>
                                     {saving ? <div className="spinner" style={{ width: 16, height: 16 }} /> : (editUser ? 'Salvar Alterações' : 'Criar Usuário')}
                                 </button>
                             </div>
@@ -342,7 +340,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
             {codigoRevelado && (
                 <div className="modal-overlay" onClick={() => setCodigoRevelado(null)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', textAlign: 'center' }}>
-                        <div style={{ width: '48px', height: '48px', background: 'var(--green-100)', color: 'var(--green-600)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                        <div style={{ width: '48px', height: '48px', background: 'var(--livre-bg)', color: 'var(--livre-fg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         </div>
                         <h2 style={{ fontSize: 'var(--fs-4)', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
@@ -354,7 +352,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
 
                         {codigoRevelado.codigo && (
                             <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', border: '1px dashed var(--border-strong)' }}>
-                                <div style={{ fontSize: 'var(--fs-1)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: 600 }}>Código de uso único</div>
+                                <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', marginBottom: '0.25rem', fontWeight: 600 }}>Código de uso único</div>
                                 {/* Fonte monoespaçada e espaçamento largo: este valor é
                                     DITADO e transcrito à mão. O alfabeto já exclui os
                                     caracteres ambíguos; a tipografia faz a outra metade. */}
@@ -362,7 +360,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                             </div>
                         )}
 
-                        <div style={{ padding: '0.75rem', background: 'var(--orange-50)', color: 'var(--orange-600)', borderRadius: 'var(--radius-md)', fontSize: 'var(--fs-2)', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
+                        <div style={{ padding: '0.75rem', background: 'var(--pendente-bg)', color: 'var(--pendente-fg)', borderRadius: 'var(--radius-md)', fontSize: 'var(--fs-2)', marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', textAlign: 'left', alignItems: 'flex-start' }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             <span>
                                 Anote agora: <strong>este código não será exibido de novo</strong>.
@@ -371,7 +369,7 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                             </span>
                         </div>
 
-                        <button className="btn btn-green w-full" onClick={() => setCodigoRevelado(null)}>
+                        <button className="btn btn-principal w-full" onClick={() => setCodigoRevelado(null)}>
                             Concluído
                         </button>
                     </div>

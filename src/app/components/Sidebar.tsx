@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Tutorial from './Tutorial';
+import { rotuloDoPapel } from '@/lib/papeis';
 import IndicadorDeNavegacao from './IndicadorDeNavegacao';
 import { temaAtual, aplicarTema } from '@/lib/tema';
 
@@ -19,7 +20,7 @@ const SINAL: Record<EstadoSinal, { rotulo: string; detalhe: string; cor: string 
     assinado: {
         rotulo: 'Tempo real ativo',
         detalhe: 'As mudanças feitas em outro dispositivo aparecem aqui em segundos, sem recarregar a página.',
-        cor: 'var(--green-400)',
+        cor: 'var(--livre-fg)',
     },
     conectando: {
         rotulo: 'Conectando…',
@@ -30,7 +31,7 @@ const SINAL: Record<EstadoSinal, { rotulo: string; detalhe: string; cor: string 
         rotulo: 'Modo de espera',
         detalhe: 'A conexão instantânea não está disponível — costuma ser rede ou firewall. Nada se perde: '
             + `as telas se atualizam a cada ${INTERVALO_POLLING_LARGO / 1000} s, com um pouco mais de atraso.`,
-        cor: 'var(--orange-600)',
+        cor: 'var(--pendente-fg)',
     },
     'sem-configuracao': {
         rotulo: 'Tempo real desligado',
@@ -228,15 +229,8 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
         FUNCIONARIO: 'badge-funcionario',
         ALUNO: 'badge-aluno',
     };
-    const roleLabelMap: Record<string, string> = {
-        ADMIN: 'Administrador',
-        GESTOR: 'Gestor',
-        PORTEIRO: 'Porteiro',
-        FUNCIONARIO: 'Funcionário',
-        ALUNO: 'Aluno',
-    };
     const roleBadge = roleBadgeMap[userRole] || 'badge-user';
-    const roleLabel = roleLabelMap[userRole] || userRole;
+    const roleLabel = rotuloDoPapel(userRole);
 
     // TASK-072: `fetchPendingCount` saiu de dentro do efeito para o escopo do
     // componente. Ela precisa ser alcancavel pelo `useSinalDeMudanca`, que e um
@@ -295,7 +289,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                             <Image src="/logo/unifafire_logo.png" alt="UniFAFIRE" width={44} height={44} style={{ objectFit: 'contain', flexShrink: 0 }} />
                             <div className="sidebar-logo-text">
                                 <div style={{ whiteSpace: 'nowrap', fontWeight: 700, letterSpacing: '-0.01em' }}>Sistema de</div>
-                                <div style={{ fontSize: 'var(--fs-1)', color: 'var(--green-200)', whiteSpace: 'nowrap', marginTop: '2px', opacity: 0.8 }}>Gestão de Chaves</div>
+                                <div style={{ fontSize: 'var(--fs-1)', color: 'var(--text-secondary)', fontWeight: 400, whiteSpace: 'nowrap', marginTop: '2px' }}>Gestão de Chaves</div>
                             </div>
                         </div>
                     )}
@@ -336,16 +330,15 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                                 <span style={{
                                                     position: 'absolute', top: -2, right: -2,
                                                     width: 10, height: 10,
-                                                    background: 'var(--danger)', borderRadius: '50%',
-                                                    border: '2px solid var(--blue-900)',
-                                                    boxShadow: '0 0 8px var(--danger-bg)'
+                                                    background: 'var(--pendente)', borderRadius: '50%',
+                                                    border: '2px solid var(--bg-surface)',
                                                 }} />
                                             )}
                                         </span>
                                         <span className="nav-item-text" style={{ marginLeft: '0.125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
                                             {item.label}
                                             {item.href === '/confirm' && pendingCount > 0 && !isCollapsed && (
-                                                <span style={{ background: 'var(--danger)', color: '#fff', fontSize: 'var(--fs-1)', fontWeight: 700, padding: '1px 6px', borderRadius: '10px', marginLeft: 'auto' }}>
+                                                <span style={{ background: 'var(--pendente)', color: 'var(--pendente-texto)', fontSize: 'var(--fs-1)', fontWeight: 700, padding: '1px 6px', borderRadius: 'var(--radius-full)', marginLeft: 'auto' }}>
                                                     {pendingCount}
                                                 </span>
                                             )}
@@ -400,7 +393,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                         {!isCollapsed && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, marginLeft: '0.75rem' }}>
                                 <span className="nav-item-text">Modo {theme === 'dark' ? 'Claro' : 'Escuro'}</span>
-                                <div style={{ width: 32, height: 16, background: theme === 'light' ? 'var(--green-500)' : 'var(--blue-700)', borderRadius: 99, position: 'relative' }}>
+                                <div style={{ width: 32, height: 16, background: theme === 'light' ? 'var(--acao)' : 'var(--border-strong)', borderRadius: 99, position: 'relative' }}>
                                     <div style={{ width: 12, height: 12, background: '#fff', borderRadius: '50%', position: 'absolute', top: 2, left: theme === 'light' ? 18 : 2, transition: mounted ? '0.3s' : 'none' }} />
                                 </div>
                             </div>
@@ -414,16 +407,16 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                             style={{ 
                                 width: '100%', display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 0.875rem', 
-                                marginBottom: '0.625rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', 
+                                marginBottom: '0.625rem', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', 
                                 justifyContent: isCollapsed ? 'center' : 'flex-start', cursor: 'pointer', border: 'none', textAlign: 'left'
                             }}
                         >
-                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--green-600), var(--green-300))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: '#ffffff', flexShrink: 0 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--acao)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--acao-texto)', flexShrink: 0 }}>
                                 {username?.[0]?.toUpperCase() || 'U'}
                             </div>
                             {!isCollapsed && (
                                 <div style={{ flex: 1, minWidth: 0 }} className="user-info-text">
-                                    <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
+                                    <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: '0.625rem' }}>{username || 'Usuário'}</div>
                                     <span className={`badge ${roleBadge}`} style={{ marginTop: '2px', display: 'inline-flex' }}>{roleLabel}</span>
                                 </div>
                             )}
@@ -439,7 +432,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                         {/* Dropdown Menu */}
                         {isUserMenuOpen && (
                             <div className="sidebar-user-menu" style={{
-                                background: 'rgba(15, 29, 87, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)',
+                                background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
                                 padding: '0.5rem', marginBottom: '0.5rem',
                                 position: isCollapsed ? 'absolute' : 'static',
                                 bottom: isCollapsed ? '100%' : 'auto',
@@ -457,8 +450,8 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                                     <span className="nav-item-text" style={{ fontSize: 'var(--fs-2)' }}>Segurança</span>
                                     <IndicadorDeNavegacao />
                                 </Link>
-                                <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                                <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
+                                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                                <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ width: '100%', justifyContent: 'flex-start', padding: '0.5rem 0.75rem' }}>
                                     <span className="nav-icon"><Icon name="log-out" size={16} /></span>
                                     <span className="nav-item-text" style={{ fontSize: 'var(--fs-2)' }}>Sair</span>
                                 </button>
@@ -467,7 +460,7 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                     </div>
                     
                     {!isUserMenuOpen && (
-                        <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ color: 'var(--danger-text)', width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
+                        <button className="nav-item" onClick={() => void handleLogout('manual')} style={{ width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start', marginTop: isCollapsed ? '0' : '0.5rem' }}>
                             <span className="nav-icon"><Icon name="log-out" size={18} /></span>
                             <span className="nav-item-text">Sair</span>
                         </button>
@@ -495,29 +488,33 @@ export default function Sidebar({ userRole, username }: SidebarProps) {
                     <span key={currentPageTitle} className="mobile-topbar-title">{currentPageTitle}</span>
                 </div>
 
-                {/* TASK-111 — no celular a barra lateral é uma gaveta fechada: o "?" só
-                    lá ficaria a dois toques, que é onde ajuda deixa de ser usada. */}
-                <button
-                    onClick={() => setVerTutorial(true)}
-                    className="mobile-topbar-icon-btn"
-                    data-tooltip="Como usar"
-                    data-tooltip-pos="bottom"
-                    aria-label="Abrir tutorial (ajuda)"
-                >
-                    <Icon name="help" size={20} />
-                </button>
+                {/* TASK-133 — ajuda e tema juntos, na borda direita: antes o espaçamento
+                    automático da barra jogava o "?" para o meio, solto entre o título e o tema. */}
+                <div className="mobile-topbar-acoes">
+                    {/* TASK-111 — no celular a barra lateral é uma gaveta fechada: o "?" só
+                        lá ficaria a dois toques, que é onde ajuda deixa de ser usada. */}
+                    <button
+                        onClick={() => setVerTutorial(true)}
+                        className="mobile-topbar-icon-btn"
+                        data-tooltip="Como usar"
+                        data-tooltip-pos="bottom"
+                        aria-label="Abrir tutorial (ajuda)"
+                    >
+                        <Icon name="help" size={20} />
+                    </button>
 
-                <button
-                    onClick={toggleTheme}
-                    className="mobile-topbar-icon-btn"
-                    data-tooltip={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-                    data-tooltip-pos="bottom"
-                    aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
-                >
-                    <span key={theme} className="theme-icon-swap">
-                        {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
-                    </span>
-                </button>
+                    <button
+                        onClick={toggleTheme}
+                        className="mobile-topbar-icon-btn"
+                        data-tooltip={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                        data-tooltip-pos="bottom"
+                        aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+                    >
+                        <span key={theme} className="theme-icon-swap">
+                            {theme === 'dark' ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
+                        </span>
+                    </button>
+                </div>
             </div>
 
             {/* ── BARRA DE NAVEGAÇÃO INFERIOR (Mobile) ──

@@ -124,6 +124,27 @@
   sem cartão dentro de cartão (sai o cartão que embrulha a página no celular); etiquetas de status em
   caixa normal, sem brilho; barra do topo sem título duplicado e com o "?" no lugar; barra inferior;
   ícones SVG no lugar de 🖨️/🔍.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-133-componentes`). Paleta do quadro de chaves nos dois
+  temas, por significado: **livre = verde · em uso = cinza · pendente = âmbar · alerta = vermelho** (o
+  semáforo, lido sem legenda) e **ação = azul UniFAFIRE** (o verde deixou de ser botão). "Em uso" era
+  rosa-vermelho; o contador de pendências e o "Sair" eram vermelhos; papéis tinham seis cores (o âmbar do
+  ALUNO era o de "pendente") — agora neutros. Tokens com nome de significado (`--livre-*`, `--em-uso-*`,
+  `--pendente-*`, `--alerta-*`, `--acao-*`); os antigos (`--status-*`, `--warning`, `--danger`,
+  `--accent-*`, `--shadow-*`) saíram de todo o código. Botões por papel (`btn-principal` 48 px ·
+  `btn-secundario` · `btn-ghost` · `btn-perigo` · `btn-sm` 40), sem gradiente/brilho/lift; uma elevação
+  (`--elevacao`) só no que flutua; etiqueta com ponto cheio (livre) e anel vazio (em uso); caixa normal em
+  todo lugar; cartão da página plano no celular; h1 recortado no celular (e h2→h1 em Chaves, Histórico e
+  Logs); "?" e tema juntos na barra do topo; tela de entrada sem os "orbes" de gradiente;
+  `src/lib/papeis.ts` (rótulo do papel, uma fonte). Guarda `tests/componentes-quadro.test.ts` (24
+  cenários, vermelhos um a um — o do vermelho nascia vazio e foi endurecido) + E2E
+  `tests/e2e/componentes-globais.spec.ts` (26 no build de produção; 21 reprovavam na `main`). Achado na
+  inspeção: "EM USO", "DISPONÍVEL" e "ALUNO" vinham ESCRITOS em maiúsculas no código, sem
+  `text-transform` — cenário novo na E2E (visto vermelho antes da correção); o código da trilha nos Logs
+  (`LOGOUT`) fica, marcado `.codigo-trilha`. De lado: `--orange-50/600` (usados no aviso do código de
+  acesso e no ponto "Modo de espera") nunca existiram — saíam sem cor. Verificado: vitest inteira 864 ok
+  contra Postgres nativo (4 falhas + 1 arquivo = `better-sqlite3` sem binário na worktree, alheio), E2E
+  completa no build de produção **68 ok / 6 pulados / 0**, detector do impeccable **12 → 0**, 12 capturas
+  logadas só com os 5 tamanhos e sem rolagem horizontal.
 - **TASK-134 → Dashboard no celular.** Busca primeiro e presa ao rolar; contadores viram os filtros (no
   lugar dos quatro botões); cada chave numa linha — nome, sala inteira, estado e o verbo da ação
   ("Pegar", "Devolver", "Pedir", "Passar para outra pessoa"); "Minhas chaves" primeiro para quem porta
