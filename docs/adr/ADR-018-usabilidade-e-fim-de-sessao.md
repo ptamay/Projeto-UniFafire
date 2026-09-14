@@ -42,6 +42,8 @@ explicações compatíveis com esses dados, e nenhuma se confirma daqui:
 - o **logout automático das 18:30** disparando numa aba aberta;
 - **superfícies diferentes** — o app é PWA com service worker, e no iOS a versão
   instalada na tela inicial tem cookies separados do Safari;
+  *(nota de 2026-09-14, ADR-030: não há service worker — ele nunca foi gerado. A
+  hipótese continua valendo, porque depende de o app estar instalado, não de SW);*
 - o **idle** sendo cruzado em outros dias.
 
 ### 2. Por que não dá para distinguir: o fim de sessão não deixa rastro
