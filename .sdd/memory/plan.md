@@ -118,6 +118,11 @@
   chega suave e então pisca por dentro. Resolver = entregar os dados iniciais pelo servidor, com a
   autorização por papel na página (§3.2, guarda TASK-090) e a consulta extraída da rota de API.
   Decisão do usuário; candidata a TASK-131.
+- **TASK-131 → dados iniciais pelo servidor** (emenda do ADR-029, aprovada pelo usuário em 2026-09-14).
+  `listarPendencias` / `listarLogs` / `listarUsuariosAtivos` em `src/lib`, chamadas pela rota E pela
+  página depois do papel verificado; clientes nascem com os dados, sem `loading` inicial. Confirmações
+  escopa por papel com TETO (`restritoAoUsuarioId`). Guarda da TASK-090: sai a exceção de `/confirm`,
+  `listar*` conta como consulta. E2E com navegação e APIs atrasadas: zero `.skeleton`/"Carregando".
 
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e

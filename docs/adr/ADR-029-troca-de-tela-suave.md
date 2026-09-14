@@ -103,3 +103,28 @@ sem cinza) sai com CSS comum. Fica como evolução possível, não como base.
   `useLinkStatus` em todos os links de navegação; barra no topo; fade de entrada na `.main-content`
   com `prefers-reduced-motion`; o "Cadastrar chave" do Dashboard vira link. Guardas substituem as da
   TASK-096 que exigiam `loading.tsx`. E2E nova com a resposta atrasada, desktop e celular.
+
+## Emenda de 2026-09-14 — TASK-131: os dados iniciais vêm do servidor
+
+Aprovada pelo usuário depois da TASK-128 no ar. A navegação ficou suave, mas **Confirmações, Logs e
+Usuários** ainda piscavam POR DENTRO: abriam vazias e buscavam os dados no navegador, com cartões
+cinzas (Confirmações — é a primeira captura do relato) ou "Carregando…". A tela nova precisa
+chegar **com o conteúdo**.
+
+1. A consulta sai das rotas `/api/transactions/pending`, `/api/logs` e `/api/users` para `src/lib`
+   (`listarPendencias`, `listarLogs`, `listarUsuariosAtivos`). Rota e página chamam a MESMA
+   função — duas cópias da consulta divergiriam, e a divergência seria silenciosa.
+2. A página chama a função **depois** de verificar sessão e papel (§3.2) e entrega o resultado ao
+   componente de cliente, que nasce com os dados e sem estado de carregamento. As buscas seguintes
+   (tempo real, filtros, paginação) continuam pela rota.
+3. **O escopo por papel fica à vista na página.** Confirmações é de todos os papéis e escopa: quem
+   não opera o balcão vê só as próprias pendências — a restrição é TETO passado à função, como o
+   `restritoAoUsuarioId` do Histórico (TASK-088). Sai a exceção de `/confirm` da guarda da
+   TASK-090 ("não consulta no servidor" deixa de ser verdade), e a guarda passa a reconhecer as
+   funções `listar*` como consulta ao banco — senão ela ficaria cega para as três páginas.
+4. Datas saem em ISO da função, como saíam no JSON da rota: o componente recebe o mesmo formato
+   pelos dois caminhos.
+
+**Critério de aceite:** E2E com a resposta da navegação E as rotas de API atrasadas — do primeiro
+quadro da tela nova até 2 s depois, nenhum `.skeleton` e nenhum "Carregando" dentro da
+`.main-content` nas três telas; contra a `main` de antes, o mesmo spec reprova.
