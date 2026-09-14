@@ -1,6 +1,10 @@
 # ADR-024 — O backup volta à tela, desta vez de verdade: agenda, retenção, execução e restauração
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-10; implementação nas TASK-112 a 116.
+- **Status:** Aceito — aprovado pelo usuário em 2026-09-10; **implementado nas TASK-112 a 116**
+  (a última, a emenda da §3.5/§4.4, em 2026-09-13). Verificado em produção: agenda (112), retenção
+  (113) e atraso honesto (123). **Falta executar de verdade** o backup manual (114) e a restauração
+  (115) — os dois esperam o token de disparo que o usuário cria (runbook §6.3); a restauração, com um
+  ensaio pelo Actions primeiro.
   TASK-112 feita em 2026-09-10 — com uma diferença do texto: a retenção NÃO entrou na tela na 112,
   e sim na 113 junto com a poda (campo que nada obedece seria o controle inerte do ADR-013); e as
   chaves são novas (`backup_hora`, `backup_vezes_por_dia`), porque a órfã `backup_time` valia
