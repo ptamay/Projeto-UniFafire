@@ -223,7 +223,7 @@ describe('TASK-114 — sem token, sem botão (critério do ADR-013)', () => {
     });
 
     it('BDD 7: a tela só mostra o botão quando o estado diz "configurado"', () => {
-        const tela = semComentarios('src/app/settings/SettingsClient.tsx');
+        const tela = semComentarios('src/app/(app)/settings/SettingsClient.tsx');
         expect(tela, 'a tela não consulta o estado do backup manual').toMatch(/\/api\/backups\/executar/);
         expect(tela, 'o botão não depende de estar configurado').toMatch(/configurado/);
         expect(tela, 'sem botão de backup manual').toMatch(/Fazer backup agora/);

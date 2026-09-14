@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import { useRouter } from 'next/navigation';
-import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
 
 interface PendingTransaction {
@@ -24,7 +23,6 @@ interface PendingTransaction {
 
 interface Props {
     userRole: string;
-    username: string;
     userId: number;
 }
 
@@ -40,9 +38,8 @@ const IconClock = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-export default function ConfirmClient({ userRole, username, userId }: Props) {
+export default function ConfirmClient({ userRole, userId }: Props) {
     const router = useRouter();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [pendingTxs, setPendingTxs] = useState<PendingTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -116,9 +113,7 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
     const displayTxs = isPorteiroOrAdmin ? pendingTxs : pendingTxs.filter(tx => tx.user_id === userId || tx.porteiro_id === userId);
 
     return (
-        <div className="page-wrapper">
-            <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
-
+        <>
             <main className="main-content animate-fade">
                 {/* ── HEADER ── */}
                 <header className="page-header">
@@ -318,6 +313,6 @@ export default function ConfirmClient({ userRole, username, userId }: Props) {
                     </div>
                 )}
             </main>
-        </div>
+        </>
     );
 }

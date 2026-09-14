@@ -33,7 +33,7 @@ import path from 'path';
 // junto o que estava certo.
 
 const RAIZ = process.cwd();
-const TELA = 'src/app/settings/SettingsClient.tsx';
+const TELA = 'src/app/(app)/settings/SettingsClient.tsx';
 
 function semComentarios(arquivo: string) {
     return fs.readFileSync(path.resolve(RAIZ, arquivo), 'utf-8')

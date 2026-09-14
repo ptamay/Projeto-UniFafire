@@ -40,8 +40,6 @@ const SINAL: Record<EstadoSinal, { rotulo: string; detalhe: string; cor: string 
 interface SidebarProps {
     userRole: string;
     username?: string;
-    onMobileClose?: () => void;
-    isOpen?: boolean;
 }
 
 const navItems = [
@@ -90,7 +88,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     }
 }
 
-export default function Sidebar({ userRole, username, onMobileClose, isOpen }: SidebarProps) {
+export default function Sidebar({ userRole, username }: SidebarProps) {
     const pathname = usePathname();
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -102,14 +100,11 @@ export default function Sidebar({ userRole, username, onMobileClose, isOpen }: S
     const [verTutorial, setVerTutorial] = useState(false);
     // Lê a assinatura que `useAtualizacaoDeChaves` (abaixo) já mantém: não abre outra.
     const sinal = SINAL[useEstadoDoSinal()];
-    // TASK-023: o Sidebar é dono do próprio estado de drawer mobile — o botão da
-    // topbar funciona em TODAS as telas, mesmo nas que não passam isOpen/onMobileClose.
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const drawerOpen = Boolean(isOpen) || mobileOpen;
-    const closeMobile = () => {
-        setMobileOpen(false);
-        onMobileClose?.();
-    };
+    // TASK-023: o Sidebar é dono do próprio estado de drawer mobile. TASK-125: e só dele —
+    // as telas passavam `isOpen`/`onMobileClose`, mas nenhuma abria a gaveta; o estado
+    // morto saiu quando o menu foi para o layout compartilhado (ADR-027).
+    const [drawerOpen, setMobileOpen] = useState(false);
+    const closeMobile = () => setMobileOpen(false);
 
     useEffect(() => {
         // Sincronização única com localStorage (estado externo) na montagem —

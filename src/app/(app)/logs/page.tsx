@@ -20,5 +20,5 @@ export default async function LogsPage() {
     }
     if (!sessionData) redirect('/login');
     if (sessionData.role !== 'ADMIN' && sessionData.role !== 'GESTOR') redirect('/');
-    return <LogsClient userRole={sessionData.role} username={sessionData.username} />;
+    return <LogsClient />;
 }

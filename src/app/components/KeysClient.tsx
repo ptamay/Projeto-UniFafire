@@ -3,19 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import Sidebar from './Sidebar';
 import ConfirmModal from './ConfirmModal';
 
 type Key = { id: number; name: string; room: string; status: 'available' | 'in_use'; employee_name?: string };
 
 export default function KeysClient({
     initialKeys = [],
-    userRole,
-    username
+    userRole
 }: {
     initialKeys: Key[],
-    userRole: string,
-    username: string
+    userRole: string
 }) {
     const [keys, setKeys] = useState<Key[]>(initialKeys);
     const router = useRouter();
@@ -128,9 +125,7 @@ export default function KeysClient({
     if (userRole !== 'ADMIN' && userRole !== 'GESTOR' && userRole !== 'PORTEIRO') return null; // Avoid flicker
 
     return (
-        <div className="page-wrapper">
-            <Sidebar userRole={userRole} username={username} />
-
+        <>
             {/* Main Content */}
             <main className="main-content animate-fade">
                 <div className="card w-full">
@@ -248,6 +243,6 @@ export default function KeysClient({
                 onConfirm={confirmDeleteKey}
                 onCancel={() => setKeyToDelete(null)}
             />
-        </div>
+        </>
     );
 }

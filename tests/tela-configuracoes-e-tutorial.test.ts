@@ -25,7 +25,7 @@ const semComentarios = (f: string) =>
         .replace(/^\s*\/\/.*$/gm, '');
 
 const SIDEBAR = 'src/app/components/Sidebar.tsx';
-const TELA = 'src/app/settings/SettingsClient.tsx';
+const TELA = 'src/app/(app)/settings/SettingsClient.tsx';
 
 describe('TASK-111 — o tutorial é alcançável de qualquer tela, por todos os papéis', () => {
     it('BDD 1: o shell (Sidebar, presente em toda página) abre o tutorial', () => {

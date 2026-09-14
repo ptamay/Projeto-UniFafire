@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import { query as pgQuery, queryOne } from '@/lib/pg';
-import DashboardClient, { type Key, type User } from './components/DashboardClient';
+import DashboardClient, { type Key, type User } from '@/app/components/DashboardClient';
 
 interface RawKeyRow {
     id: number;
@@ -116,15 +116,13 @@ export default async function Home() {
     const { keys, users } = await getData(operaBalcao);
 
     return (
-        <main>
-            <DashboardClient
-                initialKeys={keys}
-                initialUsers={users}
-                userRole={sessionData.role || 'FUNCIONARIO'}
-                userId={sessionData.id}
-                username={sessionData.username}
-                tutorialPendente={tutorialPendente}
-            />
-        </main>
+        <DashboardClient
+            initialKeys={keys}
+            initialUsers={users}
+            userRole={sessionData.role || 'FUNCIONARIO'}
+            userId={sessionData.id}
+            username={sessionData.username}
+            tutorialPendente={tutorialPendente}
+        />
     );
 }

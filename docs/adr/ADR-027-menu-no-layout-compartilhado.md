@@ -1,6 +1,9 @@
 # ADR-027 — O menu sai das páginas e vai para um layout compartilhado
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-14 (caminho A); implementação na TASK-125
+- **Status:** Aceito — aprovado pelo usuário em 2026-09-14 (caminho A); **implementado na TASK-125 em
+  2026-09-14**. Duas precisões da implementação: o layout lê a sessão pelo JWT (`verifySessionEdge`),
+  sem ir ao banco — a checagem estrita continua na página; e o risco do nome desatualizado no menu
+  não existe: o Perfil edita nome completo, matrícula e telefone, e o menu mostra o `username`.
 - **Data:** 2026-09-14
 - **Tipo de Change Request:** **C** (muda a estrutura de uma decisão já implementada — o esqueleto de
   carregamento da TASK-096; nenhum requisito muda)

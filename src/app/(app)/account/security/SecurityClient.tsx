@@ -1,21 +1,14 @@
 'use client';
 import { useState } from 'react';
-import Sidebar from '@/app/components/Sidebar';
 import toast from 'react-hot-toast';
 
-interface ProfileClientProps {
-    userRole: string;
-    username: string;
-    initialData: { full_name?: string; matricula?: string; phone?: string };
-}
-
-export default function ProfileClient({ userRole, username, initialData }: ProfileClientProps) {
-    const [isSidebarOpen, setSidebarOpen] = useState(false);
+export default function SecurityClient() {
     const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
-        full_name: initialData.full_name || '',
-        matricula: initialData.matricula || '',
-        phone: initialData.phone || ''
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,18 +17,30 @@ export default function ProfileClient({ userRole, username, initialData }: Profi
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (formData.newPassword !== formData.confirmPassword) {
+            toast.error('A nova senha e a confirmação não coincidem');
+            return;
+        }
+
         setLoading(true);
         try {
-            const res = await fetch('/api/account/profile', {
+            const res = await fetch('/api/account/security/password', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    currentPassword: formData.currentPassword,
+                    newPassword: formData.newPassword
+                })
             });
             const data = await res.json();
+            
             if (!res.ok) {
-                toast.error(data.error || 'Erro ao atualizar perfil');
+                toast.error(data.error || 'Erro ao trocar a senha');
             } else {
-                toast.success('Perfil atualizado com sucesso!');
+                toast.success('Senha atualizada com sucesso! Outros dispositivos foram desconectados.');
+                setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                // Limpa o form após sucesso
             }
         } catch {
             toast.error('Erro de conexão');
@@ -45,58 +50,60 @@ export default function ProfileClient({ userRole, username, initialData }: Profi
     };
 
     return (
-        <div className="layout-container">
-            <Sidebar 
-                userRole={userRole} 
-                username={username} 
-                isOpen={isSidebarOpen} 
-                onMobileClose={() => setSidebarOpen(false)} 
-            />
-            
-            <div className="main-content">
+        <>
+            <main className="main-content">
                 <header className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div>
-                        <h1 className="page-title">Meu Perfil</h1>
-                        <p className="page-subtitle">Gerencie suas informações pessoais</p>
+                        <h1 className="page-title">Segurança</h1>
+                        <p className="page-subtitle">Altere sua senha e gerencie a segurança da sua conta</p>
                     </div>
                 </header>
 
                 <div className="content-grid" style={{ maxWidth: '600px' }}>
                     <div className="glass-card" style={{ padding: '2rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Trocar Senha</h2>
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             
                             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Nome Completo</label>
+                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Senha Atual</label>
                                 <input 
+                                    type="password"
                                     className="form-input" 
-                                    name="full_name"
-                                    value={formData.full_name} 
+                                    name="currentPassword"
+                                    value={formData.currentPassword} 
                                     onChange={handleChange} 
-                                    placeholder="Digite seu nome completo"
+                                    placeholder="Digite sua senha atual"
+                                    required
                                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
                                 />
                             </div>
                             
                             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Telefone de Contato</label>
+                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Nova Senha</label>
                                 <input 
+                                    type="password"
                                     className="form-input" 
-                                    name="phone"
-                                    value={formData.phone} 
+                                    name="newPassword"
+                                    value={formData.newPassword} 
                                     onChange={handleChange} 
-                                    placeholder="(00) 00000-0000"
+                                    placeholder="No mínimo 8 caracteres"
+                                    required
+                                    minLength={8}
                                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
                                 />
                             </div>
                             
                             <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Matrícula</label>
+                                <label className="form-label" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Confirmar Nova Senha</label>
                                 <input 
+                                    type="password"
                                     className="form-input" 
-                                    name="matricula"
-                                    value={formData.matricula} 
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword} 
                                     onChange={handleChange} 
-                                    placeholder="Nº de Matrícula (opcional)"
+                                    placeholder="Digite a nova senha novamente"
+                                    required
+                                    minLength={8}
                                     style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
                                 />
                             </div>
@@ -108,14 +115,14 @@ export default function ProfileClient({ userRole, username, initialData }: Profi
                                     disabled={loading}
                                     style={{ padding: '0.75rem 1.5rem', background: 'var(--blue-600)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: 600 }}
                                 >
-                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                    {loading ? 'Atualizando...' : 'Atualizar Senha'}
                                 </button>
                             </div>
                             
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
+            </main>
+        </>
     );
 }

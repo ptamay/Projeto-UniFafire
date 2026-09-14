@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import PrintButton from '../components/PrintButton';
-import Sidebar from '../components/Sidebar';
+import PrintButton from '@/app/components/PrintButton';
 import { formatTimestamp } from '@/lib/time-filters';
 import { HISTORY_ACTIONS } from '@/lib/history-query';
 import { useClientClock } from '@/lib/use-client-clock';
@@ -34,7 +33,6 @@ export interface HistoryFilterOptions {
 interface HistoryClientProps {
     history: HistoryItem[];
     userRole: string;
-    username: string;
     currentPage?: number;
     totalPages?: number;
     totalRecords?: number;
@@ -50,7 +48,7 @@ interface HistoryClientProps {
 }
 
 export default function HistoryClient({
-    history, userRole, username, initialFilters,
+    history, userRole, initialFilters,
     currentPage = 1, totalPages = 1, totalRecords = 0,
     filterOptions = { users: [], keys: [] },
 }: HistoryClientProps) {
@@ -203,11 +201,7 @@ export default function HistoryClient({
     };
 
     return (
-        <div className="page-wrapper">
-            <div className="no-print">
-                <Sidebar userRole={userRole} username={username} />
-            </div>
-
+        <>
             <main className="main-content animate-fade">
 
                 {/* Print Header (Only visible when printing) */}
@@ -501,6 +495,6 @@ export default function HistoryClient({
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

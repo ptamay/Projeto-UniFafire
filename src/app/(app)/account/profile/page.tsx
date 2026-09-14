@@ -21,10 +21,6 @@ export default async function ProfilePage() {
     if (!user) redirect('/login');
 
     return (
-        <ProfileClient 
-            userRole={session.role} 
-            username={session.username} 
-            initialData={user} 
-        />
+        <ProfileClient initialData={user} />
     );
 }

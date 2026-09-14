@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
-import SecurityClient from './SecurityClient';
+import ConfirmClient from './ConfirmClient';
 
-export default async function SecurityPage() {
+export default async function ConfirmPage() {
     const sessionCookie = (await cookies()).get('session');
     if (!sessionCookie) redirect('/login');
 
@@ -13,10 +13,5 @@ export default async function SecurityPage() {
         if (!session) throw new Error();
     } catch { redirect('/login'); }
 
-    return (
-        <SecurityClient 
-            userRole={session.role} 
-            username={session.username} 
-        />
-    );
+    return <ConfirmClient userRole={session.role} userId={session.id} />;
 }

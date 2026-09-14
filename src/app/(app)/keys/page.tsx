@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession } from '@/lib/session';
 import { query as pgQuery, queryOne } from '@/lib/pg';
-import KeysClient from '../components/KeysClient';
+import KeysClient from '@/app/components/KeysClient';
 import type { KeyTableRow } from '@/lib/db-rows';
 
 export default async function KeysPage() {
@@ -33,8 +33,6 @@ export default async function KeysPage() {
     const keys = rawKeys.map((k) => ({ ...k, room: k.room ?? '' }));
 
     return (
-        <main>
-            <KeysClient initialKeys={keys} userRole={session.role} username={session.username} />
-        </main>
+        <KeysClient initialKeys={keys} userRole={session.role} />
     );
 }

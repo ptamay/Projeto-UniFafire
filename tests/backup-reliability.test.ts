@@ -217,7 +217,7 @@ describe('TASK-075 — "nunca rodou" e "rodou e falhou" são estados diferentes'
     });
 
     it('BDD 2: a tela usa a descrição, e não um "> 0" que esconde o bloco', () => {
-        const fonte = fs.readFileSync(path.resolve(RAIZ, 'src/app/settings/SettingsClient.tsx'), 'utf-8');
+        const fonte = fs.readFileSync(path.resolve(RAIZ, 'src/app/(app)/settings/SettingsClient.tsx'), 'utf-8');
         expect(fonte, 'a tela precisa da descrição dos estados').toMatch(/descreverConfiabilidade/);
         expect(
             fonte,

@@ -230,7 +230,7 @@ describe('TASK-115 — a aplicação e o workflow falam a mesma língua', () => 
 });
 
 describe('TASK-115 — a tela', () => {
-    const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
+    const tela = () => semComentarios('src/app/(app)/settings/SettingsClient.tsx');
 
     it('BDD 19: lista, botão "Restaurar…" e o modal que exige digitar RESTAURAR', () => {
         const t = tela();

@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
-import ConfirmModal from '../components/ConfirmModal';
+import ConfirmModal from '@/app/components/ConfirmModal';
 import { descreverConfiabilidade, type BackupReliability } from '@/lib/backup-reliability';
 import { formatTimestamp } from '@/lib/time-filters';
 import { AUTO_LOGOUT_PADRAO } from '@/lib/settings-policy';
@@ -58,11 +57,9 @@ const RESULTADO_DA_RESTAURACAO: Record<string, string> = {
 
 interface Props {
     userRole: string;
-    username: string;
 }
 
-export default function SettingsClient({ userRole, username }: Props) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function SettingsClient({ userRole }: Props) {
     const [autoLogoutTime, setAutoLogoutTime] = useState(AUTO_LOGOUT_PADRAO);
     const [runs, setRuns] = useState<BackupRun[]>([]);
     const [loadingBkp, setLoadingBkp] = useState(true);
@@ -231,9 +228,7 @@ export default function SettingsClient({ userRole, username }: Props) {
     };
 
     return (
-        <div className="page-wrapper">
-            <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
-
+        <>
             <main className="main-content animate-fade">
                 <div className="page-header">
                     <div>
@@ -559,6 +554,6 @@ export default function SettingsClient({ userRole, username }: Props) {
                     );
                 })()}
             </main>
-        </div>
+        </>
     );
 }

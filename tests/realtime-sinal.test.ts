@@ -160,7 +160,7 @@ describe('TASK-072 — os quatro pollings de 3 s deixam de existir', () => {
         'src/app/components/DashboardClient.tsx',
         'src/app/components/PendingInline.tsx',
         'src/app/components/Sidebar.tsx',
-        'src/app/confirm/ConfirmClient.tsx',
+        'src/app/(app)/confirm/ConfirmClient.tsx',
     ];
 
     it('BDD 5: nenhum dos quatro tem mais intervalo de 3.000 ms', () => {

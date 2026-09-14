@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Sidebar from '../components/Sidebar';
 import { formatTimestamp } from '@/lib/time-filters';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
@@ -17,7 +16,7 @@ interface LogEntry {
     details?: string;
 }
 
-export default function LogsClient({ userRole, username }: { userRole: string, username: string }) {
+export default function LogsClient() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState<LogCategory>('all');
@@ -66,9 +65,7 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
     }, [fetchLogs]);
 
     return (
-        <div className="page-wrapper">
-            <Sidebar userRole={userRole} username={username} />
-
+        <>
             <main className="main-content animate-fade">
                 <div className="card w-full">
                     <div className="page-header mb-6" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1.5rem' }}>
@@ -253,6 +250,6 @@ export default function LogsClient({ userRole, username }: { userRole: string, u
                     </div>
                 </div>
             </main>
-        </div>
+        </>
     );
 }

@@ -96,7 +96,7 @@ describe('TASK-094 — a senha compartilhada some da superfície', () => {
     it('BDD 2: a constante e o campo da tela não existem mais', () => {
         expect(semComentarios('src/lib/settings-policy.ts'), 'SENHA_PADRAO_RESET sobreviveu')
             .not.toMatch(/SENHA_PADRAO_RESET/);
-        expect(semComentarios('src/app/settings/SettingsClient.tsx'), 'a tela ainda tem o campo')
+        expect(semComentarios('src/app/(app)/settings/SettingsClient.tsx'), 'a tela ainda tem o campo')
             .not.toMatch(/defaultResetPassword/);
     });
 
