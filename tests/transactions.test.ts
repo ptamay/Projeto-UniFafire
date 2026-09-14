@@ -4,6 +4,7 @@ import { GET as PendingGET } from '@/app/api/transactions/pending/route';
 import { POST as CancelPOST } from '@/app/api/transactions/[id]/cancel/route';
 import { POST as ConfirmPOST } from '@/app/api/transactions/[id]/user-confirm/route';
 import { queryOne, execute, withTransaction } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // Mock cookies and session
 vi.mock('next/headers', () => {
@@ -336,7 +337,7 @@ describe('Devolução forçada ampla (REQ-028)', () => {
             await t.execute('DELETE FROM history');
         });
         await execute('DELETE FROM key_transactions');
-        await execute('DELETE FROM action_logs');
+        await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs'));
         await execute("UPDATE keys SET status = 'available', user_id = NULL");
     });
 

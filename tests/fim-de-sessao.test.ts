@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { execute, queryOne } from '@/lib/pg';
+import { queryOne } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-095 (CR Tipo B · ADR-018) — a saída entra na trilha. REQ-010, §7.1.
 //
@@ -66,7 +67,7 @@ async function ultimoLogout() {
 }
 
 beforeEach(async () => {
-    await execute("DELETE FROM action_logs WHERE action = 'LOGOUT'");
+    await withMaintenanceMode(tx => tx.execute("DELETE FROM action_logs WHERE action = 'LOGOUT'"));
 });
 
 describe('TASK-095 — a saída entra na trilha', () => {
@@ -90,7 +91,7 @@ describe('TASK-095 — a saída entra na trilha', () => {
         expect(automatico!.details, 'não dá para saber que foi o logout das 18:30')
             .toMatch(/autom/i);
 
-        await execute("DELETE FROM action_logs WHERE action = 'LOGOUT'");
+        await withMaintenanceMode(tx => tx.execute("DELETE FROM action_logs WHERE action = 'LOGOUT'"));
         await POST(pedidoDeLogout({ motivo: 'manual' }));
         const manual = await ultimoLogout();
         expect(manual!.details, 'manual e automático ficaram indistinguíveis')

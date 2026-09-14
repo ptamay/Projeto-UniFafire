@@ -4,6 +4,7 @@ import path from 'path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { execute, queryOne, withTransaction } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-115 (CR Tipo D · ADR-024, decisão 4) — ciclo 4: a rota e a tela.
 //
@@ -79,7 +80,7 @@ beforeEach(async () => {
         await tx.execute("SELECT set_config('app.maintenance_mode', 'on', true)");
         await tx.execute('DELETE FROM backup_runs');
     });
-    await execute(`DELETE FROM action_logs WHERE action LIKE 'RESTAURACAO_%' OR action = 'BACKUP_RESTAURADO'`);
+    await withMaintenanceMode(tx => tx.execute(`DELETE FROM action_logs WHERE action LIKE 'RESTAURACAO_%' OR action = 'BACKUP_RESTAURADO'`));
     await execute(`DELETE FROM settings WHERE key = 'backup_retencao_dias'`);
     // A "última migration" foi há 30 h: só backup feito depois dela é restaurável. TODAS as
     // linhas recuam — a suíte aplicou todas agora, e o que conta é o `max(aplicada_em)`.

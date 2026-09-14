@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { query, queryOne, execute, getPool } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 import { bootstrapAdmin, gerarSenha, CUSTO_BCRYPT } from '../db/bootstrap-admin.mjs';
 
 // TASK-080 (Sprint 22 · Etapa 7a do ADR-012) — bootstrap do primeiro ADMIN.
@@ -40,9 +41,9 @@ function executor() {
 }
 
 async function baseVazia() {
-    await execute(
+    await withMaintenanceMode(tx => tx.execute(
         'TRUNCATE users, keys, key_transactions, history, action_logs, audit_logs, login_attempts, settings, rate_limit_hits RESTART IDENTITY CASCADE',
-    );
+    ));
 }
 
 function login(body: Record<string, unknown>) {

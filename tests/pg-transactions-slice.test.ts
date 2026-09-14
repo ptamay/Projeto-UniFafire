@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { query, queryOne, execute, withTransaction } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // TASK-069 fatia (c) (Sprint 21 · Etapa 4 do ADR-012) — o ciclo de vida das
 // chaves passa a falar Postgres.
@@ -52,7 +53,7 @@ beforeEach(async () => {
         await tx.execute('DELETE FROM history WHERE key_id = $1', [KEY_ID]);
     });
     await execute('DELETE FROM key_transactions WHERE key_id = $1', [KEY_ID]);
-    await execute('DELETE FROM action_logs WHERE user_id = $1', [USER_ID]);
+    await withMaintenanceMode(tx => tx.execute('DELETE FROM action_logs WHERE user_id = $1', [USER_ID]));
     await execute('DELETE FROM keys WHERE id = $1', [KEY_ID]);
     await execute('DELETE FROM users WHERE id = $1', [USER_ID]);
 

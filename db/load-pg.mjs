@@ -10,7 +10,8 @@
 //
 // Uso (a carga real da Etapa 7 terá um runner sobre a DATABASE_URL):
 //   node db/load-pg.mjs <origem.db>            imprime o SQL de carga no stdout
-//   node db/load-pg.mjs <origem.db> --truncate TRUNCATE ... RESTART IDENTITY antes
+//   node db/load-pg.mjs <origem.db> --truncate TRUNCATE ... RESTART IDENTITY antes, numa transação
+//                                              com o modo de manutenção (a trilha recusa sem ele)
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -119,6 +120,12 @@ export function buildLoadPlan(dbPath, opts = {}) {
         const statements = [];
 
         if (opts.truncate) {
+            // TASK-124 (ADR-026): a trilha (history, action_logs, audit_logs) recusa
+            // TRUNCATE fora do modo de manutenção. O ajuste é local à transação, então a
+            // recarga inteira vira UMA transação — o que, de quebra, a torna tudo ou nada:
+            // uma carga que falha no meio não deixa o destino vazio.
+            statements.push('BEGIN;');
+            statements.push("SELECT set_config('app.maintenance_mode', 'on', true);");
             // RESTART IDENTITY zera as sequências; CASCADE porque as FKs encadeiam.
             statements.push(`TRUNCATE ${LOAD_ORDER.join(', ')} RESTART IDENTITY CASCADE;`);
         }
@@ -132,6 +139,7 @@ export function buildLoadPlan(dbPath, opts = {}) {
         }
 
         statements.push(buildSequenceResets());
+        if (opts.truncate) statements.push('COMMIT;');
         return { counts, statements };
     } finally {
         db.close();

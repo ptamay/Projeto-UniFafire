@@ -12,6 +12,7 @@ import {
     TABLE_COLUMNS,
     LOAD_ORDER,
 } from '../db/load-pg.mjs';
+import { getPool } from '@/lib/pg';
 
 // TASK-067 (Sprint 20 · Etapa 3 do ADR-012) — carga de dados para o Postgres,
 // com reconciliação de contagens.
@@ -217,5 +218,34 @@ describe('TASK-067 — plano de carga e reconciliação', () => {
         const idxTrunc = comTruncate.statements.findIndex(s => /TRUNCATE/i.test(s));
         const idxIns = comTruncate.statements.findIndex(s => /INSERT INTO/i.test(s));
         expect(idxTrunc).toBeLessThan(idxIns);
+    });
+
+    it('TASK-124: com --truncate, a recarga liga o modo de manutenção na MESMA transação — e passa no banco real', async () => {
+        // ADR-026: a trilha (history, action_logs, audit_logs) recusa TRUNCATE fora do modo
+        // de manutenção, e o `set_config(..., true)` só vale dentro da transação. O plano
+        // inteiro vira uma transação: sem ela, o bypass morreria antes do TRUNCATE.
+        const plano = buildLoadPlan(fonte, { truncate: true });
+        expect(plano.statements[0]).toMatch(/^BEGIN;?$/i);
+        expect(plano.statements.at(-1)).toMatch(/^COMMIT;?$/i);
+        const idxModo = plano.statements.findIndex(s => /set_config\('app\.maintenance_mode',\s*'on',\s*true\)/.test(s));
+        const idxTrunc = plano.statements.findIndex(s => /TRUNCATE/i.test(s));
+        expect(idxModo, 'o modo de manutenção não é ligado').toBeGreaterThan(0);
+        expect(idxModo).toBeLessThan(idxTrunc);
+
+        // Aplicado de verdade, até o fim — trocando só o COMMIT por ROLLBACK, para não
+        // deixar a carga sintética no banco dos outros testes.
+        const c = await getPool().connect();
+        try {
+            await c.query(plano.statements.slice(0, -1).join('\n'));
+            const { rows } = await c.query<{ n: string }>('SELECT count(*)::text AS n FROM history');
+            expect(Number(rows[0].n)).toBe(plano.counts.history);
+        } finally {
+            await c.query('ROLLBACK');
+            c.release();
+        }
+    });
+
+    it('TASK-124: sem --truncate, a carga não liga o bypass — não há o que apagar', () => {
+        expect(buildLoadPlan(fonte).statements.join('\n')).not.toMatch(/maintenance_mode/);
     });
 });

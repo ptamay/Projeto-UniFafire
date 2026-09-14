@@ -1,6 +1,8 @@
 # ADR-026 — A trilha de auditoria passa a ser imutável de verdade
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-13; implementação na TASK-124
+- **Status:** Aceito — aprovado pelo usuário em 2026-09-13; **implementado na TASK-124 em
+  2026-09-14** (migration `202609141200_trilha_imutavel`). A garantia só vale em produção depois
+  que o roteiro da migration for aplicado lá — antes do merge, senão o health responde 503.
 - **Data:** 2026-09-13
 - **Tipo de Change Request:** **C** (muda um controle de segurança já implementado; nenhum
   requisito muda, e a constitution não é emendada — ela passa a ser VERDADE)

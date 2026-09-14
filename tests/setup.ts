@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 
 // Importa a instância global inicializada do banco (já que setamos DB_PATH)
 import { execute, closePool } from '@/lib/pg';
+import { withMaintenanceMode } from '@/lib/db-maintenance';
 
 // Um hash SO: bcrypt sorteia salt novo a cada chamada, entao semear SQLite e
 // Postgres com hashSync separados produziria hashes DIFERENTES para a mesma
@@ -17,9 +18,12 @@ export const TEST_PASSWORD_HASH = bcrypt.hashSync(TEST_PASSWORD, 10);
 // O duplo dialeto previsto na decisão D4 acabou aqui: o schema SQLite saiu do
 // setup na TASK-070, junto com src/lib/db.ts. Restam só as tabelas do Postgres.
 beforeAll(async () => {
-    await execute(
+    // TASK-124 (ADR-026): a trilha recusa TRUNCATE fora do modo de manutenção. O seed
+    // passa pelo mesmo bypass que o Limpar Banco usa — é o preço, e diz onde a trilha
+    // era apagada sem cerimônia.
+    await withMaintenanceMode(tx => tx.execute(
         'TRUNCATE users, keys, key_transactions, history, action_logs, audit_logs, login_attempts, settings, rate_limit_hits RESTART IDENTITY CASCADE',
-    );
+    ));
 
     const hash = TEST_PASSWORD_HASH;
     const papeis = ['ADMIN', 'GESTOR', 'PORTEIRO', 'FUNCIONARIO', 'ALUNO', 'ALUNO'];

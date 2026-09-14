@@ -130,12 +130,20 @@
 > passam em `action_logs` e `audit_logs`, e `TRUNCATE` passa nas cinco tabelas da trilha (gatilho de
 > linha não dispara nele). A §3.5 só se cumpria por acaso, pela cópia de todo `logAction` no
 > `app_logs`. Nenhuma emenda: a constitution passa a ser VERDADE.
-- **TASK-124 → trilha imutável.** Migration: gatilhos UPDATE/DELETE em `action_logs` e `audit_logs`
-  (mesmo bypass do `history`) + `BEFORE TRUNCATE` nas cinco (`history`, `action_logs`, `audit_logs`,
-  `app_logs`, `backup_runs`) + `REVOKE UPDATE, DELETE`. Guarda: toda tabela da trilha tem os três
-  gatilhos, e eles recusam fora do modo de manutenção. `db/load-pg.mjs --truncate` e os testes que
-  esvaziam a trilha passam a usar o bypass. Limpar Banco (REQ-014) inalterado — já usa o modo.
-  🔴 Roteiro para produção ANTES do merge (a migration entra na lista esperada).
+- [x] **TASK-124 → trilha imutável.** ✅ **FEITA em 2026-09-14** (branch `feat/task-124-trilha-imutavel`).
+  Migration `202609141200_trilha_imutavel`: `trilha_imutavel()` em UPDATE/DELETE de `action_logs` e
+  `audit_logs` (mesmo bypass do `history`) + `trilha_sem_truncate()` em `BEFORE TRUNCATE ... FOR EACH
+  STATEMENT` nas cinco — dispara também por CASCADE (`TRUNCATE keys CASCADE` chega ao `history` e é
+  recusado) + `REVOKE UPDATE, DELETE, TRUNCATE` (no-op hoje: a 1600 já fechou `anon`/`authenticated`;
+  o DOWN não devolve nada, e a ida e volta confirma). `tests/trilha-imutavel.test.ts`: comportamento
+  no banco real + guarda de catálogo (a trilha é EXATAMENTE o conjunto com gatilho de TRUNCATE).
+  `db/load-pg.mjs --truncate` virou uma transação com o modo ligado — aplicada de verdade no teste e
+  desfeita. 13 testes que esvaziavam a trilha passaram pelo bypass (é a lista de onde ela era apagada
+  sem cerimônia). Sabotagens pegas: gatilho a menos no UP, DROP a menos no DOWN, bypass tirado do
+  loader. Roteiro de produção ensaiado em base descartável: sabotado não deixa nada, aplica (9
+  gatilhos, checksum `79a6f140…`), reaplicar aborta, controle exercitado, `conferir` limpo.
+  🔴 **Aplicar o roteiro em produção ANTES do merge** (a migration está na lista esperada → health 503).
+  ⚠️ Enquanto não for aplicado lá, a §3.5 continua valendo só na suíte.
 
 ### Aberta por Change Request — os testes rodam no CI (CR Tipo A · 2026-09-12)
 > Pedido do usuário depois da TASK-120. Tipo A: infraestrutura nova, nenhuma funcionalidade muda.
