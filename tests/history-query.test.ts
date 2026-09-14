@@ -127,3 +127,83 @@ describe('TASK-056 — filtros executados contra o banco', () => {
         expect(total).toBe(3);
     });
 });
+
+// TASK-135 (ADR-031) — o Histórico ganha BUSCA. No celular, a primeira tela era
+// filtro: seis campos antes de qualquer registro. Agora a busca fica em cima e os
+// filtros vão para uma folha; a pergunta "quem pegou a chave do laboratório?" se
+// responde digitando — sem acento, sem maiúscula, pelo nome da chave, da sala ou da
+// pessoa.
+describe('TASK-135 — busca por texto no histórico (q)', () => {
+    const ANA = 4;   // test_funcionario
+    const BRUNO = 5; // test_aluno
+
+    beforeAll(async () => {
+        await withTransaction(async (t) => {
+            await t.execute("SELECT set_config('app.maintenance_mode', 'on', true)");
+            await t.execute('DELETE FROM history');
+        });
+        await execute(`INSERT INTO keys (id, name, room, status) OVERRIDING SYSTEM VALUE
+            VALUES (92, 'Laboratório de Química', 'Bloco C — sala 5', 'available'),
+                   (93, 'Sala 100%', 'Anexo_1', 'available')
+            ON CONFLICT (id) DO NOTHING`);
+        const ins = (u: number, k: number, a: string, t: string) => execute(
+            'INSERT INTO history (user_id, key_id, action, timestamp) VALUES ($1, $2, $3, $4)', [u, k, a, t]);
+        await ins(ANA, 92, 'withdraw', '2026-08-20T13:00:00.000Z');
+        await ins(BRUNO, 92, 'withdraw', '2026-08-21T13:00:00.000Z');
+        await ins(BRUNO, 93, 'withdraw', '2026-08-22T13:00:00.000Z');
+    });
+
+    const rodar = (f: Parameters<typeof buildHistoryQuery>[0]) => {
+        const q = buildHistoryQuery(f);
+        return query<{ key_name: string; employee_name: string }>(q.sql, q.params as never[]);
+    };
+    const contar = async (f: Parameters<typeof buildHistoryQuery>[0]) => {
+        const q = buildHistoryQuery(f);
+        return Number((await queryOne<{ total: string }>(q.countSql, q.countParams as never[]))!.total);
+    };
+
+    it('acha pelo nome da chave, sem acento e sem maiúscula', async () => {
+        const linhas = await rodar({ q: 'laboratorio' });
+        expect(linhas).toHaveLength(2);
+        expect(linhas.every(l => l.key_name === 'Laboratório de Química')).toBe(true);
+    });
+
+    it('acha pela sala', async () => {
+        expect(await rodar({ q: 'BLOCO c' })).toHaveLength(2);
+    });
+
+    it('acha pela pessoa', async () => {
+        const linhas = await rodar({ q: 'funcionario' });
+        expect(linhas).toHaveLength(1);
+        expect(linhas[0].key_name).toBe('Laboratório de Química');
+    });
+
+    it('% e _ valem como letra, não como curinga', async () => {
+        expect(await rodar({ q: '100%' })).toHaveLength(1);
+        expect(await rodar({ q: 'anexo_' })).toHaveLength(1);
+        expect(await rodar({ q: '%' })).toHaveLength(1);
+        expect(await rodar({ q: '_' })).toHaveLength(1);
+    });
+
+    it('a contagem acompanha a busca, para a paginação não mentir', async () => {
+        expect(await contar({ q: 'laboratorio' })).toBe(2);
+        expect(await contar({ q: 'nada disso existe' })).toBe(0);
+    });
+
+    it('o teto continua valendo: com restritoAoUsuarioId, a busca não vê o histórico alheio', async () => {
+        const linhas = await rodar({ q: 'laboratorio', restritoAoUsuarioId: BRUNO, userId: String(ANA) });
+        expect(linhas).toHaveLength(1);
+        expect(await contar({ q: 'laboratorio', restritoAoUsuarioId: BRUNO })).toBe(1);
+    });
+
+    it('termo vazio ou só espaços não filtra nada', async () => {
+        expect(await rodar({ q: '   ' })).toHaveLength(3);
+        expect(buildHistoryQuery({ q: '  ' }).sql).not.toContain('WHERE');
+    });
+
+    it('o termo vai como parâmetro, nunca no texto do SQL', async () => {
+        const q = buildHistoryQuery({ q: "x'); DROP TABLE history; --" });
+        expect(q.sql).not.toContain('DROP TABLE');
+        expect(await rodar({ q: "x'); DROP TABLE history; --" })).toHaveLength(0);
+    });
+});
