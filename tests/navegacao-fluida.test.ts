@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { listarPaginas } from './rotas-de-pagina';
 
 // TASK-096 (CR Tipo C · ADR-018) — a troca de abas deixa de parecer travada.
 //
@@ -33,45 +32,11 @@ const semComentarios = (arquivo: string) =>
     fs.readFileSync(arquivo, 'utf-8')
         .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-// TASK-125: a rota vem do helper, que tira os grupos de rota (`(app)`) do caminho.
-const rotasComPagina = () => listarPaginas().map(({ rota, dir }) => ({ rota, dir }));
-
-describe('TASK-096 — toda rota mostra que está carregando', () => {
-    // Exceções em LISTA, com o motivo escrito. Rota sem boundary é rota que fica
-    // com a tela anterior parada, e isso tem de ser decisão, não descuido.
-    const EXCECOES: Record<string, string> = {
-        '/login': 'estática (`○` no build) — servida da borda, não espera servidor',
-    };
-
-    it('BDD 1: nenhuma rota dinâmica fica sem `loading.tsx`', () => {
-        const sem = rotasComPagina()
-            .filter(r => !(r.rota in EXCECOES))
-            .filter(r => !fs.existsSync(path.join(r.dir, 'loading.tsx')))
-            .map(r => r.rota);
-        expect(sem, `rotas que deixam a tela anterior parada:\n${sem.join('\n')}`).toEqual([]);
-    });
-
-    it('BDD 1: a lista de exceções não cresceu sem alguém decidir', () => {
-        expect(Object.keys(EXCECOES).sort()).toEqual(['/login']);
-        const existentes = rotasComPagina().map(r => r.rota);
-        for (const rota of Object.keys(EXCECOES)) {
-            expect(existentes, `exceção obsoleta: ${rota}`).toContain(rota);
-        }
-    });
-
-    it('BDD 1: o esqueleto tem conteúdo — arquivo vazio não é boundary', () => {
-        // Um `loading.tsx` que devolve `null` satisfaz o Next e **não mostra nada**:
-        // o boundary existe, a tela continua parada, e o teste acima passa. É a
-        // forma mais fácil de esta task virar teatro.
-        for (const { rota, dir } of rotasComPagina()) {
-            const arquivo = path.join(dir, 'loading.tsx');
-            if (!fs.existsSync(arquivo)) continue;
-            const fonte = semComentarios(arquivo);
-            expect(fonte.length, `${rota}: loading.tsx quase vazio`).toBeGreaterThan(120);
-            expect(fonte, `${rota}: loading.tsx não devolve nada visível`).not.toMatch(/return\s+null\s*;/);
-        }
-    });
-});
+// ⚠️ O bloco "toda rota mostra que está carregando" (BDD 1: `loading.tsx` obrigatório) SAIU
+// na TASK-128 (ADR-029). O esqueleto resolveu a tela parada ao preço de um corte seco a cada
+// troca — relato do usuário em 2026-09-14. Agora a tela atual espera e o link clicado
+// sinaliza; a guarda é o OPOSTO (nenhuma `loading.tsx`), em `tests/troca-de-tela-suave.test.ts`.
+// O BDD 2 abaixo continua valendo inteiro.
 
 describe('TASK-096 — o menu navega com `<Link>`', () => {
     const sidebar = () => semComentarios(path.resolve(RAIZ, 'src/app/components/Sidebar.tsx'));
