@@ -264,14 +264,16 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   `sw.js`/`workbox-*` do proxy, ícones quadrados 192/512 (o único é 300×283), guarda no `pwa.test.ts`.
   ⚠️ **NÃO ligar `--webpack`:** o SW do plugin faz `NetworkFirst` em `/api/*` e nas páginas por 24 h.
   ⚠️ Números: **ADR-029 e TASK-128 são do CR da transição suave** (outra sessão, `cr/transicao-suave`).
-  ✅ #88 merged (CR, `acadbe7`). ✅ **TASK-129 FEITA** (branch `feat/task-129-pwa-sem-service-worker`,
-  PR a abrir): plugin fora (228 pacotes, nenhuma versão mudou), `sw.js`/`workbox` fora do proxy,
-  ícones em `public/icons/` recortados do emblema VETORIAL do `logo.svg` (havia arte-fonte), iOS
-  opaco. Verificado com `next start` local. ⚠️ O `logo.svg` é TRAÇADO e traz o xadrez de
-  transparência como paths `#D6D6D6` — quem usar a arte precisa limpar. Falta: produção pós-merge
-  e instalação real num Android e num iPhone (usuário).
-- Próxima Ação: PR e merge da TASK-129 → conferir manifest/ícones em produção. Do usuário: instalar
-  num Android e num iPhone; conferir em produção a parte logada da TASK-125 e,
+  ✅ #88 merged (CR, `acadbe7`). ✅ **TASK-129 NO AR E VERIFICADA** (#91 merged, `8f8f0a3`, CI verde;
+  `pos-deploy` verde, health 200): plugin fora (228 pacotes, nenhuma versão mudou), `sw.js`/`workbox`
+  fora do proxy, ícones em `public/icons/` recortados do emblema VETORIAL do `logo.svg`, iOS opaco.
+  Em produção, sem sessão: manifest 200 com os três ícones; 192×192, 512×512 (transparentes),
+  maskable 512×512 e apple-touch 180×180 (opacos) — medidos no cabeçalho do PNG; `/sw.js` e
+  `/workbox-*.js` → 307 `/login`; `/login` com o `apple-touch-icon` novo. ⚠️ O `logo.svg` é TRAÇADO
+  e traz o xadrez de transparência como paths `#D6D6D6` — quem usar a arte precisa limpar.
+  **Falta só a instalação real num Android e num iPhone (usuário)** para fechar o ADR-030.
+- Próxima Ação: do usuário — instalar num Android (menu) e num iPhone (Adicionar à Tela de Início) e
+  fechar o ADR-030; conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -528,8 +530,8 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-129-pwa-sem-service-worker (TASK-129, PR a abrir). PRs #15–#88 merged;
-  aberto só o #43 do Dependabot.
+- Branch atual: main (nenhuma task ativa desta frente). PRs #15–#91 merged; aberto só o #43 do
+  Dependabot.
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
   aberto naquele ADR, esperando dados da TASK-095.
