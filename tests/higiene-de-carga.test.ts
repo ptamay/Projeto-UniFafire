@@ -29,7 +29,7 @@ describe('TASK-099 — jsPDF não desce para quem só quer consultar', () => {
         // Import estático em componente de CLIENTE entra no bundle da rota. Medido
         // em 2026-09-08: o chunk que contém jsPDF tem 459 KB — o maior do app — e
         // desce para todo mundo que abre a tela, use ou não a exportação.
-        const fonte = semComentarios(ler('src/app/history/HistoryClient.tsx'));
+        const fonte = semComentarios(ler('src/app/(app)/history/HistoryClient.tsx'));
         expect(fonte, 'jspdf continua no carregamento inicial de /history')
             .not.toMatch(/^\s*import\s+.*from\s+['"]jspdf/m);
         expect(fonte, 'jspdf-autotable continua no carregamento inicial de /history')
@@ -40,7 +40,7 @@ describe('TASK-099 — jsPDF não desce para quem só quer consultar', () => {
         // Guarda contra a correção passar do ponto: tirar o import resolveria o
         // número e quebraria a feature. O histórico impresso tem uso real numa
         // portaria.
-        const fonte = ler('src/app/history/HistoryClient.tsx');
+        const fonte = ler('src/app/(app)/history/HistoryClient.tsx');
         expect(fonte, 'a exportação em PDF sumiu junto com o import')
             .toMatch(/import\s*\(\s*['"]jspdf['"]\s*\)/);
     });

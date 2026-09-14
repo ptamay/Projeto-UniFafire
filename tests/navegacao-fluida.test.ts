@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { listarPaginas } from './rotas-de-pagina';
 
 // TASK-096 (CR Tipo C · ADR-018) — a troca de abas deixa de parecer travada.
 //
@@ -27,27 +28,13 @@ import path from 'path';
 // ninguém percebe, porque a página funciona.
 
 const RAIZ = process.cwd();
-const APP = path.resolve(RAIZ, 'src/app');
 
 const semComentarios = (arquivo: string) =>
     fs.readFileSync(arquivo, 'utf-8')
         .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-function rotasComPagina(): { rota: string; dir: string }[] {
-    const achados: { rota: string; dir: string }[] = [];
-    const varrer = (dir: string) => {
-        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-            const p = path.join(dir, e.name);
-            if (e.isDirectory() && e.name !== 'api') varrer(p);
-            else if (e.name === 'page.tsx') {
-                const rel = path.relative(APP, dir).split(path.sep).join('/');
-                achados.push({ rota: rel ? `/${rel}` : '/', dir });
-            }
-        }
-    };
-    varrer(APP);
-    return achados;
-}
+// TASK-125: a rota vem do helper, que tira os grupos de rota (`(app)`) do caminho.
+const rotasComPagina = () => listarPaginas().map(({ rota, dir }) => ({ rota, dir }));
 
 describe('TASK-096 — toda rota mostra que está carregando', () => {
     // Exceções em LISTA, com o motivo escrito. Rota sem boundary é rota que fica

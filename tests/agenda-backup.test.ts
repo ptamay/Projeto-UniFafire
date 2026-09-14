@@ -229,7 +229,7 @@ describe('TASK-112 — as linhas órfãs do ADR-013 saem', () => {
 });
 
 describe('TASK-112 — a tela oferece o que o sistema faz, e só isso', () => {
-    const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
+    const tela = () => semComentarios('src/app/(app)/settings/SettingsClient.tsx');
 
     it('BDD 5: hora e vezes por dia, lidas e gravadas pela rota da agenda', () => {
         expect(tela()).toMatch(/\/api\/backups\/agenda/);
@@ -256,7 +256,7 @@ describe('TASK-112 — a tela oferece o que o sistema faz, e só isso', () => {
 // portão só executa com horário vencido — nunca antes), às vezes HORAS depois, e sai
 // todo dia (o portão recupera o disparo perdido; RPO de 24 h cumprido nos três dias).
 describe('TASK-123 — a tela diz o atraso real do agendamento', () => {
-    const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
+    const tela = () => semComentarios('src/app/(app)/settings/SettingsClient.tsx');
 
     it('BDD 1: não promete atraso de minutos — medido, foi de horas', () => {
         expect(tela(), 'a tela ainda promete atraso de minutos').not.toMatch(/alguns minutos/i);

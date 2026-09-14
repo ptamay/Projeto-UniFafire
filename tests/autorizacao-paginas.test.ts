@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
-import path from 'path';
+import { listarPaginas as paginas } from './rotas-de-pagina';
 
 // TASK-088/089/090 (Sprint 27 · CR Tipo C, ADR-015) — Server Components
 // verificam papel antes de consultar o banco. constitution §3.2.
@@ -30,29 +30,15 @@ import path from 'path';
 // certa nunca pediu o que não devia. Corrigir as três sem a varredura deixaria a
 // quarta nascer igual.
 
-const RAIZ = process.cwd();
-const APP = path.resolve(RAIZ, 'src/app');
-
 function semComentarios(arquivo: string) {
     return fs.readFileSync(arquivo, 'utf-8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/^\s*\/\/.*$/gm, '');
 }
 
+// TASK-125: a rota vem do helper, que tira os grupos de rota (`(app)`) do caminho.
 function listarPaginas(): { rota: string; arquivo: string; fonte: string }[] {
-    const achados: { rota: string; arquivo: string; fonte: string }[] = [];
-    const varrer = (dir: string) => {
-        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-            const p = path.join(dir, e.name);
-            if (e.isDirectory() && e.name !== 'api') varrer(p);
-            else if (e.name === 'page.tsx') {
-                const rel = path.relative(APP, path.dirname(p)).split(path.sep).join('/');
-                achados.push({ rota: rel ? `/${rel}` : '/', arquivo: p, fonte: semComentarios(p) });
-            }
-        }
-    };
-    varrer(APP);
-    return achados;
+    return paginas().map(p => ({ rota: p.rota, arquivo: p.arquivo, fonte: semComentarios(p.arquivo) }));
 }
 
 /** Consulta o banco no próprio Server Component. É o que torna a página uma

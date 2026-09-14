@@ -433,7 +433,7 @@ describe('TASK-113 — só ADMIN altera a retenção, e fica na trilha', () => {
 });
 
 describe('TASK-113 — a tela oferece a retenção, porque agora ela é aplicada', () => {
-    const tela = () => semComentarios('src/app/settings/SettingsClient.tsx');
+    const tela = () => semComentarios('src/app/(app)/settings/SettingsClient.tsx');
 
     it('BDD 12: há o campo de dias, gravado pela rota da agenda', () => {
         expect(tela(), 'sem campo de retenção').toMatch(/id="bkp-dias"/);

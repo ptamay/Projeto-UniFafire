@@ -4,7 +4,6 @@ import { useAtualizacaoDeChaves } from '@/lib/realtime-sinal';
 import Tutorial from './Tutorial';
 import { buscarDadosDoDashboard } from '@/lib/dashboard-refresh';
 import { useRouter } from 'next/navigation';
-import Sidebar from './Sidebar';
 import PendingInline from './PendingInline';
 import toast from 'react-hot-toast';
 import { findDelayedKeys } from '@/lib/business-rules';
@@ -237,7 +236,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     const mappedUsers = useMemo(() => (initialUsers || []).map(u => ({ ...u, name: u.full_name || u.username || '' })), [initialUsers]);
     const [employees, setEmployees] = useState<User[]>(mappedUsers);
     
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [search, setSearch] = useState('');
     // O filter inicial depende do papel: ADMIN/GESTOR -> 'all', PORTEIRO -> 'available', outros -> 'mine'
     const [filter, setFilter] = useState<'all' | 'available' | 'in_use' | 'mine'>(
@@ -706,13 +704,11 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
     interactingRef.current = showKeyDrops || showEmpDrops || confirmModal.open || qaStep !== null || actionLoading !== null;
 
     return (
-        <div className="page-wrapper">
+        <>
             {/* TASK-098 — abre sozinho no primeiro acesso, e so aqui: e a tela onde
                 a pessoa sempre cai depois de entrar. Nao bloqueia — sai com Escape,
                 com "Pular" ou clicando fora. */}
             <Tutorial papel={userRole} abrirAoMontar={tutorialPendente} />
-
-            <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
             <main className="main-content">
                 {/* Header */}
@@ -1595,6 +1591,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

@@ -72,7 +72,7 @@ describe('TASK-073 — nenhuma tela fica sem rede de segurança', () => {
         'src/app/components/DashboardClient.tsx',
         'src/app/components/PendingInline.tsx',
         'src/app/components/Sidebar.tsx',
-        'src/app/confirm/ConfirmClient.tsx',
+        'src/app/(app)/confirm/ConfirmClient.tsx',
     ];
 
     it('BDD 1: os quatro usam o hook que JÁ inclui a degradação', () => {

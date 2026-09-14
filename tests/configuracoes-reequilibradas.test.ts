@@ -35,7 +35,7 @@ import path from 'path';
 // combater. Ele entra JUNTO com o tutorial, não antes.
 
 const RAIZ = process.cwd();
-const TELA = 'src/app/settings/SettingsClient.tsx';
+const TELA = 'src/app/(app)/settings/SettingsClient.tsx';
 
 const semComentarios = (f: string) =>
     fs.readFileSync(path.resolve(RAIZ, f), 'utf-8')

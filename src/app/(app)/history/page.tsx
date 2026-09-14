@@ -85,7 +85,6 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     return <HistoryClient
         history={history}
         userRole={session.role}
-        username={session.username}
         currentPage={query.page}
         totalPages={totalPages}
         totalRecords={total}

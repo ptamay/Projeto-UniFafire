@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
-import ConfirmModal from '../components/ConfirmModal';
+import ConfirmModal from '@/app/components/ConfirmModal';
 import toast from 'react-hot-toast';
 
 type User = { 
@@ -40,14 +39,8 @@ const maskPhone = (v: string) => {
     return v;
 };
 
-interface Props {
-    userRole: string;
-    username: string;
-}
-
-export default function UsersClient({ userRole, username }: Props) {
+export default function UsersClient() {
     const [users, setUsers] = useState<User[]>([]);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editUser, setEditUser] = useState<User | null>(null);
@@ -169,10 +162,7 @@ export default function UsersClient({ userRole, username }: Props) {
     const selectedRole = ROLES.find(r => r.value === formData.role);
 
     return (
-        <div className="page-wrapper">
-            <Sidebar userRole={userRole} username={username} isOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
-            
-
+        <>
             <main className="main-content animate-fade">
                 <div className="page-header">
                     <div>
@@ -395,6 +385,6 @@ export default function UsersClient({ userRole, username }: Props) {
             )}
 
             <ConfirmModal isOpen={!!deleteModal} title="Remover Usuário" message={`Remover o usuário "${deleteModal?.full_name || deleteModal?.username}"? O acesso será revogado imediatamente.`} confirmText="Remover" onConfirm={handleDelete} onCancel={() => setDeleteModal(null)} />
-        </div>
+        </>
     );
 }
