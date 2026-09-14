@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { query, execute, withTransaction } from '@/lib/pg';
+import { paginaDe } from './rotas-de-pagina';
 import { buildHistoryQuery } from '@/lib/history-query';
 
 // TASK-069 fatia (e) (Sprint 21 · Etapa 4 do ADR-012) — Server Components e a
@@ -162,8 +163,8 @@ describe('TASK-069(e) — ordenação sem diferenciar maiúsculas', () => {
 
 describe('TASK-069(e) — os Server Components saem do SQLite', () => {
     it('nenhum dos quatro importa mais @/lib/db', () => {
-        for (const rel of ['page.tsx', 'history/page.tsx', 'keys/page.tsx', 'account/profile/page.tsx']) {
-            const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/app', rel), 'utf-8')
+        for (const rel of ['/', '/history', '/keys', '/account/profile']) {
+            const fonte = fs.readFileSync(paginaDe(rel).arquivo, 'utf-8')
                 .replace(/\/\/.*$/gm, '');
             expect(fonte, `${rel} ainda usa o SQLite`).not.toMatch(/@\/lib\/db['"]/);
         }
@@ -172,8 +173,8 @@ describe('TASK-069(e) — os Server Components saem do SQLite', () => {
     it('continuam sendo Server Components — nenhum virou client', () => {
         // A saída fácil para "consulta virou assíncrona" é empurrar a página para
         // o cliente. Isso perderia o SSR e mandaria a consulta para o navegador.
-        for (const rel of ['page.tsx', 'history/page.tsx', 'keys/page.tsx', 'account/profile/page.tsx']) {
-            const fonte = fs.readFileSync(path.resolve(process.cwd(), 'src/app', rel), 'utf-8');
+        for (const rel of ['/', '/history', '/keys', '/account/profile']) {
+            const fonte = fs.readFileSync(paginaDe(rel).arquivo, 'utf-8');
             expect(fonte, `${rel} virou client component`).not.toMatch(/^\s*['"]use client['"]/m);
         }
     });
