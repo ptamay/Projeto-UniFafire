@@ -46,9 +46,14 @@ function listarPaginas(): { rota: string; arquivo: string; fonte: string }[] {
  *
  *  O `(<[^>]*>)?` não é preciosismo: as chamadas reais são `pgQuery<HistoryItem>(`
  *  — com parâmetro de tipo entre o nome e o parêntese. Sem ele, a varredura
- *  achava que NENHUMA página consulta o banco. */
+ *  achava que NENHUMA página consulta o banco.
+ *
+ *  TASK-131: `listar*` também conta. As consultas de Confirmações, Logs e Usuários
+ *  moram em `src/lib` (`listarPendencias`, `listarLogs`, `listarUsuariosAtivos`),
+ *  chamadas pela rota E pela página. Sem este termo a varredura não enxergaria as
+ *  três páginas consultando — cega exatamente onde a fronteira mudou. */
 function consultaBanco(fonte: string) {
-    return /\b(pgQuery|queryOne|query)\s*(<[^>]*>)?\s*\(/.test(fonte);
+    return /\b(pgQuery|queryOne|query|listar[A-Z]\w*)\s*(<[^>]*>)?\s*\(/.test(fonte);
 }
 
 /**
@@ -122,6 +127,25 @@ describe('TASK-089 — o dashboard escopa o que entrega', () => {
     });
 });
 
+describe('TASK-131 — /confirm consulta no servidor e escopa por papel', () => {
+    it('BDD 5: a página consulta as pendências — e a varredura enxerga', () => {
+        // Até a TASK-131, /confirm era exceção: "não consulta no servidor". Deixou de ser
+        // verdade, e a exceção saiu. Se esta asserção falhar, a varredura voltou a ficar
+        // cega para `listar*`.
+        const p = listarPaginas().find(x => x.rota === '/confirm')!;
+        expect(consultaBanco(p.fonte), 'a varredura não vê a consulta de /confirm').toBe(true);
+        expect(verificaPapel(p.fonte), '/confirm consulta sem decidir pelo papel').toBe(true);
+    });
+
+    it('BDD 5: o escopo é TETO passado à consulta, como no Histórico', () => {
+        // /confirm é de TODOS os papéis: não bloqueia, escopa. Quem não opera o balcão
+        // recebe só as próprias pendências — e a restrição vai como campo separado.
+        const p = listarPaginas().find(x => x.rota === '/confirm')!;
+        expect(p.fonte).toMatch(/restritoAoUsuarioId/);
+        expect(p.fonte, '/confirm passou a barrar papéis').not.toMatch(/redirect\s*\(\s*['"]\/['"]\s*\)/);
+    });
+});
+
 describe('TASK-090 — nenhuma página consulta o banco sem verificar papel', () => {
     // Exceções em LISTA, com o motivo escrito. Página que lê dados de terceiros é
     // fronteira de autorização, e crescer essa lista tem de ser deliberado.
@@ -129,7 +153,8 @@ describe('TASK-090 — nenhuma página consulta o banco sem verificar papel', ()
         '/login': 'pública — não consulta e não exige sessão',
         '/account/profile': 'próprio cadastro: o dono é a sessão, não o papel',
         '/account/security': 'próprio cadastro: o dono é a sessão, não o papel',
-        '/confirm': 'não consulta no servidor; a API escopa as pendências por papel',
+        // '/confirm' SAIU na TASK-131: passou a consultar no servidor, e agora escopa por
+        // papel na própria página (cenários "TASK-131" abaixo).
     };
 
     it('BDD 3: a varredura não encontra página desprotegida', () => {
@@ -145,7 +170,7 @@ describe('TASK-090 — nenhuma página consulta o banco sem verificar papel', ()
         // Se mudar, é decisão de arquitetura — não pode passar num diff sem que
         // este teste obrigue a olhar. Mesma postura da guarda de filesystem.
         expect(Object.keys(EXCECOES).sort()).toEqual([
-            '/account/profile', '/account/security', '/confirm', '/login',
+            '/account/profile', '/account/security', '/login',
         ]);
         for (const rota of Object.keys(EXCECOES)) {
             expect(listarPaginas().some(p => p.rota === rota), `exceção obsoleta: ${rota}`).toBe(true);
