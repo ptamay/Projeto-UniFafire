@@ -88,6 +88,21 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
+> Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e
+> implementado, e a tela não o alcançava. Relato com captura: "Erro ao limpar histórico.".
+- [x] **TASK-127 → a tela chama DELETE.** ✅ **FEITA em 2026-09-14** (branch
+  `fix/task-127-limpar-historico`). A tela chamava `POST /api/history/clear`; a rota exporta só
+  `DELETE` desde 2026-05-21 (`fd7d603`), e o contrato de API diz `DELETE` → 405. **Quatro meses
+  quebrado em produção**, com três testes cobrindo a rota — todos importam o handler e o chamam
+  direto, nenhum olhava a costura tela → rota. `tests/fetch-contrato.test.ts`: toda chamada
+  `fetch('/api/…')` de `src/` resolve para um `route.ts` que exporta o método usado (GET sem
+  `method`; ternário reconhecido; `${…}` casa com `[param]` ou com o nível todo). Das ~40
+  chamadas, só esta reprovava. No navegador (dev, base local, ADMIN): DELETE 200, toast de
+  sucesso, `history` 6 → 0, `CLEAR_HISTORY` na trilha (o gatilho da TASK-124 deixa passar — a rota
+  usa o modo de manutenção). ⚠️ A mesma cegueira pode existir no sentido inverso (rota exportando
+  método que nenhuma tela usa) — não é defeito, não foi cobrada.
+
 ### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
 > Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o
 > pacote. Hoje só o servidor é medido (§7.2); o que a pessoa vê no navegador nunca teve número — as
