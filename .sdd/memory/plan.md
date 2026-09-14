@@ -247,6 +247,32 @@
   ⚠️ Não medido: o ponto do tempo real voltar ou não a "Conectando…" — local não tem Realtime; só
   em produção. ⚠️ Lição: `npm run dev` APAGA a `.next` antes de subir — com a E2E rodando, derruba
   o servidor dela (foi a causa de uma falha falsa nesta task). Não subir dev durante a E2E.
+- [x] **TASK-130 → a prova do menu nas nove telas.** ✅ **FEITA em 2026-09-14** (branch
+  `feat/task-130-e2e-menu-nove-telas`). Só teste e config; nada de `src/` mudou. A E2E da TASK-125
+  andava por três telas como PORTEIRO e passava sem ter observado espera nenhuma — e o relato de
+  2026-09-14 foi no Histórico e nos Logs, que ela não visitava. `tests/e2e/menu-no-layout.spec.ts`
+  agora: as NOVE telas como ADMIN (celular pela barra inferior e pela gaveta); a janela de espera
+  vai do CLIQUE à chegada da tela nova, e em cada quadro (rAF) o menu está visível e por cima
+  (`elementFromPoint`), é o mesmo elemento, e — guarda de regressão do ADR-029, a pedido da sessão
+  da TASK-128 — há conteúdo na tela e nenhum esqueleto; a espera tem de ter durado o tempo segurado
+  (senão reprova por não ter observado nada); e, com JavaScript desligado, cada tela aberta direto
+  MOSTRA o menu (antes do #84 ele estava no HTML, escondido no pedaço do streaming).
+  **Como segurar a espera — achado:** segurar a resposta `?_rsc=` por `page.route` NÃO reproduz a
+  espera de produção: medido ainda com os `loading.tsx`, o esqueleto aparecia em 0 a ~20 quadros
+  (zero em metade das telas). O que a reproduz é segurar a PÁGINA: `LOCK TABLE users` numa transação
+  da prova — toda página lê `users` em `verifySession`, layout e proxy só o JWT. Com os `loading.tsx`,
+  esqueleto em ~75–90 de ~92 quadros. (Repassado à TASK-128, cujo spec usa o `page.route`.)
+  **Vermelho, pelo motivo certo, nas duas metades:** antes do #84, menu ausente em 79 de 98 quadros
+  (desktop) e 90 de 93 (celular) na primeira navegação, e sem JS o menu escondido; em `37d95ae`
+  (menu no layout, antes do #89), o menu passa e reprova no esqueleto (66 e 90 de 94 quadros).
+  **Verde na `main` com o #89:** dev 2×, build de produção 3× — 54 navegações, 0 quadros com
+  esqueleto, 0 sem conteúdo —, E2E completa 41 ok / 3 pulados, vitest 812/86, tsc 0, eslint 0.
+  `E2E_SERVIDOR=producao` (novo no `playwright.config.ts`) roda a suíte sobre `next start`; o CI
+  segue em `next dev`. **Achado de lado, já corrigido pelo #89:** antes dele, no build de produção,
+  Configurações → Meu Perfil passava a espera INTEIRA em branco (90 de 91 quadros sem `main` nem
+  esqueleto); em `next dev`, nunca. ⚠️ Lição: "a tela nova chegou" não se detecta por identidade do
+  elemento — o Dashboard troca o próprio `main`, e a tela anterior pode seguir no DOM escondida
+  (altura 0); só conta conteúdo VISÍVEL. Sem isso a janela fechava em 30 ms.
 
 ### Aberta por Change Request — a trilha de auditoria imutável de verdade (CR Tipo C · ADR-026)
 > Aprovado pelo usuário em 2026-09-13, opções recomendadas. Achado da TASK-116: a §3.5 e dois

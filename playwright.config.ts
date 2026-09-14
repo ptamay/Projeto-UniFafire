@@ -39,7 +39,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- -p ${E2E_PORT}`,
+    // TASK-130 — `E2E_SERVIDOR=producao` roda a suíte sobre o build de produção
+    // (`next start`; exige `npm run build` antes). Navegação, prefetch e `loading.tsx`
+    // se comportam diferente em `next dev`, que compila cada rota na primeira visita —
+    // o que o usuário vê é o de produção. O CI segue em `next dev`.
+    command: process.env.E2E_SERVIDOR === 'producao'
+      ? `npx next start -p ${E2E_PORT}`
+      : `npm run dev -- -p ${E2E_PORT}`,
     url: E2E_BASE_URL,
     // Nunca reaproveitar: um dev server já no ar aponta para o `.env.local`, não
     // para a base E2E. Porta própria (3100) para não disputar com ele.
