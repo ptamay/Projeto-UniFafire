@@ -105,6 +105,21 @@
   celular, pesos 400·600·700, rótulos em caixa normal, um nível de elevação, botões 48/40 px, sem
   gradiente, brilho nem lift; tokens no `globals.css`; guarda que reprova tamanho de fonte fora dos
   tokens (hoje 103); tema segue `prefers-color-scheme` na primeira visita, escolha salva continua valendo.
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-132-fundacao-visual`). Decisões do usuário na rodada do
+  impeccable: mundo **"quadro de chaves"** (candidata sorteada pelo `concept-seed`, chave `64e53132`),
+  fonte **Atkinson Hyperlegible Next**, telas guiadas por **funcionários de apoio e porteiros**, **nenhuma
+  obrigação de marca**. Tokens `--fs-1..5` (12/14/16/20/28 px, em rem) e `--fw-*` (400/600/700); os 20
+  tamanhos migrados pelo valor (190 trocas, nada abaixo de 12 px), 800/900 → 700. `SCRIPT_TEMA` no
+  `<head>` (`src/lib/tema.ts`). `PRODUCT.md` reescrito; `DESIGN.md` substituído (em vigor + contrato das
+  133–136). Guarda `tests/escala-tipografica.test.ts` (18 cenários com `tema-inicial`) — ampliada no
+  verde: o Histórico escondia `font-size: 12px` num `<style jsx>`, e o `<small>` saía a 13,33 px.
+  Verificado: E2E completa sobre o build de produção (Postgres 17 nativo na 15439, base própria) **42 ok /
+  4 pulados / 0 falhas**; capturas logadas de Dashboard, Chaves, Histórico e Logs (celular claro/escuro,
+  desktop): só os 5 tamanhos, tema segue o aparelho, sem rolagem horizontal. Detector: **115 → 12**, zero
+  de tamanho de fonte (sobram 8 cores, 3 raios, 1 transição — escopo da 133). ⚠️ O Playwright emula
+  aparelho em modo CLARO por padrão: a E2E agora abre clara (só o `light-sidebar` mede cor, e define o
+  tema). ⚠️ O `.impeccable/design.json` (sidecar) ainda descreve o sistema antigo — o documenter o
+  regrava no fim da 136.
 - **TASK-133 → Componentes globais.** Botões sólidos 48/40 px; campos; cartões sem sombra de repouso e
   sem cartão dentro de cartão (sai o cartão que embrulha a página no celular); etiquetas de status em
   caixa normal, sem brilho; barra do topo sem título duplicado e com o "?" no lugar; barra inferior;
