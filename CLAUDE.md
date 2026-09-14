@@ -231,6 +231,10 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   trocar de tela o menu some e só o esqueleto aparece — cada uma das nove telas desenha o próprio
   `Sidebar`, e o `loading.tsx` troca a página inteira. TASK-125: grupo de rotas `(app)` com
   `layout.tsx`; autorização continua em cada página. Independente do CR da trilha (#77).
+- 📋 **CR do SPEED INSIGHTS (Tipo C, ADR-028), aprovado pelo usuário, 2026-09-14:** ele ativou no
+  painel da Vercel e instalou `@vercel/speed-insights` 2.0.0. TASK-126: componente próprio no layout
+  raiz, só com `VERCEL=1`, URL sem query string. ⚠️ O proxy RODA em `/_vercel/*` quando o recurso não
+  está ativo (`/_vercel/insights/` → 307, medido); o caminho aleatório da v2 só se verifica no deploy.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
   `\b` → backspace) — `String.raw`; o `pg_dump` 17 emite `\restrict <chave aleatória>`
   a cada execução, e comparar dumps por hash sem filtrá-la dá "DIVERGIU" falso.
