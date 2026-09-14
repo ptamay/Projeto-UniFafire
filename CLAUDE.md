@@ -303,8 +303,14 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   ⚠️ `html, body { overflow-x: hidden }` fazia o `body` virar contêiner de rolagem e o sticky não prendia
   (busca em −226 px) — agora `clip`. ⚠️ Specs de fluxo esperam o POST antes do `goto` (corrida vista).
   E2E completa 76/14/0; guarda `dashboard-celular` 7 + E2E 8 (só celular, 360×640).
-- Próxima Ação: PR e merge da TASK-134 → TASK-135 (Histórico e Logs no celular: busca + "Filtros (n)" em
-  folha inferior, ações num "⋯", "Limpar Histórico" para a Zona de Perigo). Do usuário: conferir em produção a parte logada da TASK-125 e,
+  ✅ #99 merged (TASK-134 no ar, `7f69a7b`). ✅ **TASK-135 FEITA** (branch `feat/task-135-historico-logs-celular`,
+  PR a abrir): Histórico e Logs com busca à vista, `FolhaDeFiltros` (folha que sobe de baixo, "Filtros (n)")
+  e `MenuDeAcoes` ("⋯", um PDF só; `PrintButton` removido); "Limpar histórico" → Zona de Perigo (só ADMIN,
+  mesma rota/modal); busca `q` no Histórico (sem acento, `%`/`_` literais com ESCAPE '!', teto mantido).
+  E2E completa 85/23/0. ⚠️ **Cluster PG nativo era SQL_ASCII** (initdb --locale=C) — CI e Supabase são UTF-8;
+  suíte agora em `unifafire_test_u8` (UTF-8) na 15439.
+- Próxima Ação: PR e merge da TASK-135 → TASK-136 (Chaves e Usuários em lista no celular; "Remover"
+  secundário com confirmação; nova crítica do impeccable ≥ 32/40; documenter e finish reviewer). Do usuário: conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -564,7 +570,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-134-dashboard-celular (TASK-134, PR a abrir). PRs #15–#98 merged (o #43 do
+- Branch atual: feat/task-135-historico-logs-celular (TASK-135, PR a abrir). PRs #15–#99 merged (o #43 do
   Dependabot entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
