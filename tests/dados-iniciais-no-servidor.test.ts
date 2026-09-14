@@ -152,6 +152,15 @@ describe('TASK-131 — página e rota chamam a mesma função, e o cliente nasce
         });
     }
 
+    it('BDD 4: o Logs não "pula a primeira execução" do efeito — o StrictMode executa duas', () => {
+        // A primeira versão pulava a montagem com `useRef(true)`. Em produção, verde; no CI (next
+        // dev, StrictMode), a segunda execução buscava de novo e a E2E viu "Carregando…" em 79
+        // quadros. O efeito compara os filtros com os da última página carregada.
+        const fonte = semComentarios('src/app/(app)/logs/LogsClient.tsx');
+        expect(fonte, 'voltou o pulo por booleano').not.toMatch(/useRef\(\s*true\s*\)/);
+        expect(fonte, 'o efeito não compara os filtros com os já carregados').toMatch(/chaveDosFiltros\s*===\s*chaveCarregada\.current/);
+    });
+
     it('BDD 4: a consulta das pendências não ficou duplicada na rota', () => {
         expect(semComentarios('src/app/api/transactions/pending/route.ts')).not.toMatch(/FROM\s+key_transactions/);
     });

@@ -59,19 +59,21 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
         }
     }, [category, page, searchTerm, dateFilter, monthFilter, hourFilter, router]);
 
-    // A primeira execução do efeito é a da montagem, com os filtros no padrão — exatamente a
-    // página que o servidor já entregou. Pular só ela; filtro e paginação buscam pela rota.
-    const primeiraExecucao = useRef(true);
+    // A página com os filtros no padrão já veio do servidor. O efeito só busca quando os filtros
+    // DIFEREM dos da última página carregada — e não "pula a primeira execução": em
+    // desenvolvimento o React (StrictMode) executa o efeito DUAS vezes na montagem, a primeira
+    // gastava o pulo e a segunda buscava de novo, com "Carregando…" na tela (visto no CI da
+    // TASK-131, 79 quadros). Comparando os filtros, as duas execuções veem a mesma chave.
+    const chaveDosFiltros = JSON.stringify([category, page, searchTerm, dateFilter, monthFilter, hourFilter]);
+    const chaveCarregada = useRef(JSON.stringify(['all', 1, '', '', '', '']));
     useEffect(() => {
-        if (primeiraExecucao.current) {
-            primeiraExecucao.current = false;
-            return;
-        }
+        if (chaveDosFiltros === chaveCarregada.current) return;
         const timer = setTimeout(() => {
+            chaveCarregada.current = chaveDosFiltros;
             fetchLogs();
         }, 300); // Debounce search
         return () => clearTimeout(timer);
-    }, [fetchLogs]);
+    }, [fetchLogs, chaveDosFiltros]);
 
     return (
         <>
