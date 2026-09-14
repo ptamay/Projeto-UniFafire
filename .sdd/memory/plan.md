@@ -22,7 +22,7 @@
 | Hospedagem | **Vercel** (ADR-012) | ✅ **NO AR desde 2026-09-06** — https://projeto-uni-fafire.vercel.app. O aparato local (PM2, `.bat`, `ecosystem.config.js`, `show-ip.js`, `/api/server-info`) foi removido na TASK-079. Saúde em `/api/health`; passo a passo em `docs/runbook-deploy.md` |
 | Testes | Vitest (unit/integração, **contra Postgres real em container** — ver D-11) + Playwright (E2E smoke) | ✅ container na Sprint 21: `npm run test:db:up`. `globalSetup` reproduz a baseline da plataforma Supabase e aplica `db/migrations-pg/` |
 | Qualidade | ESLint + `npm audit` (gate de release) | Semgrep opcional |
-| PWA | **Só o manifest (`public/manifest.json`), sem service worker** (ADR-030) | ✅ TASK-129 feita em 2026-09-14; ícones em `public/icons/`. O `@ducanh2912/next-pwa` sai: exige webpack, e sob o Turbopack do Next 16 nunca gerou nada. Service worker novo (inclusive Serwist) entra por CR próprio |
+| PWA | **Só o manifest (`public/manifest.json`), sem service worker** (ADR-030) | ✅ TASK-129 no ar e verificada em produção em 2026-09-14 (#91); ícones em `public/icons/`. O `@ducanh2912/next-pwa` sai: exige webpack, e sob o Turbopack do Next 16 nunca gerou nada. Service worker novo (inclusive Serwist) entra por CR próprio |
 | Desempenho no navegador | **`@vercel/speed-insights`, plano gratuito** (ADR-028) | ✅ no ar desde 2026-09-14 (TASK-126), verificado em produção. Só na Vercel (`VERCEL=1`), URL sem query string, um componente no layout raiz. Complementa a §7.2 (o logger continua medindo as rotas); ir para o Plus, que é pago, seria Tipo D |
 
 ## 2. Decisões e Justificativas
@@ -170,7 +170,15 @@
   o Gate 1 reprovaria). Vitest dos dois arquivos 26/26, `tsc` 0, `eslint` 0, `npm audit --omit=dev`
   0, `next build` verde sem `sw.js`; `next start` local sem sessão: ícones 200 nos tamanhos medidos,
   `/sw.js` e `/workbox-*.js` redirecionam, 0 registros, console limpo. Suíte inteira: no CI (Docker
-  local fora do ar). ⚠️ Falta: produção depois do merge, e a instalação real — do usuário.
+  local fora do ar).
+  ✅ **NO AR E VERIFICADA em 2026-09-14** (#88 do CR e #91 mesclados, `8f8f0a3`; CI verde — vitest e
+  E2E —, `pos-deploy` verde, health 200). Em produção, SEM sessão: `manifest.json` 200 com os três
+  ícones; `icon-192` 192×192 e `icon-512` 512×512 com alfa, `icon-maskable-512` 512×512 e
+  `apple-touch-icon` 180×180 opacos (dimensões e tipo de cor lidos do cabeçalho do PNG baixado, não
+  do que o manifest declara); `/sw.js` e `/workbox-4754cb34.js` → **307 `/login`**, a negação por
+  padrão; o `<head>` do `/login` com `manifest` e o `apple-touch-icon` novo. ⚠️ Falta só a
+  **instalação real num Android (menu) e num iPhone (Adicionar à Tela de Início)** — do usuário, e é o
+  que fecha o ADR-030.
 
 ### Aberta por Change Request — desempenho medido no navegador (CR Tipo C · ADR-028)
 > Aprovado pelo usuário em 2026-09-14. Ele ativou o Speed Insights no painel da Vercel e instalou o

@@ -1,8 +1,9 @@
 # ADR-030 — PWA instalável sem service worker
 
-- **Status:** Aceito e **implementado em código** — aprovado pelo usuário em 2026-09-14 (opção D);
-  TASK-129 feita no mesmo dia. Falta a verificação em produção e a instalação real num Android e num
-  iPhone (critério de aceite abaixo). O risco "sem arte-fonte para o 512" não se confirmou: o
+- **Status:** Aceito, **implementado e verificado em produção** — aprovado pelo usuário em 2026-09-14
+  (opção D); TASK-129 no ar no mesmo dia (#91, `8f8f0a3`): manifest e os quatro ícones 200 nos
+  tamanhos medidos, `/sw.js` e `/workbox-*.js` → 307. Falta só a instalação real num Android e num
+  iPhone (critério de aceite abaixo), feita pelo usuário. O risco "sem arte-fonte para o 512" não se confirmou: o
   `logo.svg` traz o emblema em vetor, e os ícones saíram dele
 - **Data:** 2026-09-14
 - **Tipo de Change Request:** **C** (corrige a especificação de uma feature já entregue — REQ-018 — e
