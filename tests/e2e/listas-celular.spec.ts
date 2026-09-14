@@ -10,6 +10,9 @@ async function abrir(page: Page, rota: string) {
     await page.goto(rota);
     await page.waitForLoadState('load');
     await page.locator('.lista-linhas .linha-lista').first().waitFor();
+    // Mede com a fonte do sistema carregada: com a de reserva (mais larga, visto no CI em
+    // `next dev`), as ações de Usuários quebravam em duas linhas e a linha passava de 160 px.
+    await page.evaluate(() => document.fonts.ready);
 }
 
 test.describe('TASK-136 — listas no celular', () => {
