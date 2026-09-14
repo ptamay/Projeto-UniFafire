@@ -37,7 +37,7 @@ const PREFIXO = 'backups/';
 // `backups/AAAA/MM/AAAA-MM-DDTHHMMSSZ.sql.gz` (desde a TASK-113) ou o nome por dia de
 // antes dela, `backups/AAAA/MM/AAAA-MM-DD.sql.gz` — que era a data UTC de uma execução
 // às ~06h UTC, ou seja, o mesmo dia em Recife.
-const NOME_DE_BACKUP = /^backups\/\d{4}\/\d{2}\/(\d{4}-\d{2}-\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?\.sql\.gz$/;
+export const NOME_DE_BACKUP = /^backups\/\d{4}\/\d{2}\/(\d{4}-\d{2}-\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?\.sql\.gz$/;
 
 const doisDigitos = (n) => String(n).padStart(2, '0');
 

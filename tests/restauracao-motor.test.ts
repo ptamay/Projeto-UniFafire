@@ -95,6 +95,18 @@ async function retrato(c: Client, tabelas: string[]) {
 }
 
 const motor = () => import('../db/restaurar-backup.mjs');
+
+/** Sabota o banco de backup DENTRO de uma transação e a desfaz no fim: a mudança vale
+ *  para as leituras do motor (mesmo cliente) e não vaza para o cenário seguinte. */
+async function noBackupDesfeito<T>(sabotagem: string, f: () => Promise<T>): Promise<T> {
+    await bkp.query('BEGIN');
+    try {
+        await bkp.query(sabotagem);
+        return await f();
+    } finally {
+        await bkp.query('ROLLBACK');
+    }
+}
 let prod: Client;
 let bkp: Client;
 
@@ -188,13 +200,24 @@ describe('TASK-115 — tudo ou nada', () => {
     });
 });
 
+describe('TASK-115 — o TRUNCATE nunca leva nada junto', () => {
+    it('BDD 5: sem CASCADE — se uma FK da trilha voltar, restaurar falha em vez de apagá-la', async () => {
+        // Hoje o CASCADE não faria nada: nenhuma tabela preservada referencia o negócio
+        // (ciclo 1). Esta guarda existe para o dia em que alguém recriar uma FK dessas —
+        // com CASCADE, a trilha sumiria em silêncio junto com `users`.
+        const fonte = (await import('fs')).readFileSync(path.resolve(process.cwd(), 'db/restaurar-backup.mjs'), 'utf-8')
+            .replace(/^\s*\/\/.*$/gm, '');
+        expect(fonte).toMatch(/TRUNCATE \$\{TABELAS_DE_NEGOCIO/);
+        expect(fonte, 'TRUNCATE com CASCADE no motor da restauração').not.toMatch(/TRUNCATE[^`]*CASCADE/i);
+    });
+});
+
 describe('TASK-115 — schema diferente é recusado antes de tocar em qualquer coisa', () => {
     it('BDD 6: o backup tem uma migration a menos → recusa, nomeando-a', async () => {
         const { restaurar, RestauracaoRecusada, TABELAS_DE_NEGOCIO } = await motor();
-        await bkp.query(`DELETE FROM migracoes_aplicadas WHERE nome = '202609131200_trilha_independente_de_users'`);
         const antes = await retrato(prod, TABELAS_DE_NEGOCIO);
-        const erro = await restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' })
-            .catch((e: unknown) => e);
+        const erro = await noBackupDesfeito(`DELETE FROM migracoes_aplicadas WHERE nome = '202609131200_trilha_independente_de_users'`,
+            () => restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' }).catch((e: unknown) => e));
         expect(erro).toBeInstanceOf(RestauracaoRecusada);
         expect(String(erro)).toContain('202609131200_trilha_independente_de_users');
         expect(await retrato(prod, TABELAS_DE_NEGOCIO)).toEqual(antes);
@@ -202,16 +225,18 @@ describe('TASK-115 — schema diferente é recusado antes de tocar em qualquer c
 
     it('BDD 6: checksum diferente também é schema diferente', async () => {
         const { restaurar, RestauracaoRecusada } = await motor();
-        await bkp.query(`UPDATE migracoes_aplicadas SET checksum = 'outro' WHERE nome = '202609101700_settings_orfas_de_backup'`);
-        await expect(restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' }))
-            .rejects.toBeInstanceOf(RestauracaoRecusada);
+        const erro = await noBackupDesfeito(`UPDATE migracoes_aplicadas SET checksum = 'outro' WHERE nome = '202609101700_settings_orfas_de_backup'`,
+            () => restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' }).catch((e: unknown) => e));
+        expect(erro).toBeInstanceOf(RestauracaoRecusada);
+        expect(String(erro)).toContain('checksum diferente: 202609101700_settings_orfas_de_backup');
     });
 
     it('BDD 6: backup sem registro de migrations (anterior a 2026-09-10) → recusa', async () => {
         const { restaurar, RestauracaoRecusada } = await motor();
-        await bkp.query('DROP TABLE migracoes_aplicadas');
-        await expect(restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' }))
-            .rejects.toBeInstanceOf(RestauracaoRecusada);
+        const erro = await noBackupDesfeito('DROP TABLE migracoes_aplicadas',
+            () => restaurar(prod, bkp, { arquivo: 'backups/2026/09/2026-09-11T061700Z.sql.gz', pedidoPor: 'admin' }).catch((e: unknown) => e));
+        expect(erro).toBeInstanceOf(RestauracaoRecusada);
+        expect(String(erro)).toMatch(/não tem registro de migrations/);
     });
 });
 

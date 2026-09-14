@@ -27,6 +27,8 @@ export interface ResultadoDoEnvio {
     apagar: string[];
 }
 
+/** `backups/AAAA/MM/AAAA-MM-DDTHHMMSSZ.sql.gz`, ou o nome por dia de antes da TASK-113. */
+export const NOME_DE_BACKUP: RegExp;
 export function nomeDoArquivo(agora: Date): string;
 export function planejarPoda(opcoes: { arquivos: string[]; novo: string; agora: Date; dias: number }): PlanoDePoda;
 export function enviarBackup(opcoes: OpcoesDoEnvio): Promise<ResultadoDoEnvio>;
