@@ -81,10 +81,10 @@ beforeEach(async () => {
     });
     await execute(`DELETE FROM action_logs WHERE action LIKE 'RESTAURACAO_%' OR action = 'BACKUP_RESTAURADO'`);
     await execute(`DELETE FROM settings WHERE key = 'backup_retencao_dias'`);
-    // A "última migration" é recente nos testes: só backup feito depois dela é restaurável.
+    // A "última migration" foi há 30 h: só backup feito depois dela é restaurável. TODAS as
+    // linhas recuam — a suíte aplicou todas agora, e o que conta é o `max(aplicada_em)`.
     ultimaMigracao = new Date(Date.now() - 30 * 3600_000).toISOString();
-    await execute(`UPDATE migracoes_aplicadas SET aplicada_em = $1
-                    WHERE nome = (SELECT max(nome) FROM migracoes_aplicadas)`, [ultimaMigracao]);
+    await execute(`UPDATE migracoes_aplicadas SET aplicada_em = $1`, [ultimaMigracao]);
     vi.stubEnv('BACKUP_DISPARO_TOKEN', TOKEN);
     vi.stubEnv('BACKUP_DISPARO_REPO', REPO);
 });
@@ -128,8 +128,7 @@ describe('TASK-115 — a lista só tem o que dá para restaurar', () => {
     });
 
     it('BDD 14: fora da retenção configurada não aparece — o dump já foi apagado', async () => {
-        await execute(`UPDATE migracoes_aplicadas SET aplicada_em = now() - interval '30 days'
-                        WHERE nome = (SELECT max(nome) FROM migracoes_aplicadas)`);
+        await execute(`UPDATE migracoes_aplicadas SET aplicada_em = now() - interval '30 days'`);
         await execute(`INSERT INTO settings (key, value) VALUES ('backup_retencao_dias', '3')`);
         const recente = await backup(2);
         await backup(24 * 5);

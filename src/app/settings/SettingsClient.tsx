@@ -38,6 +38,24 @@ interface EstadoBackupManual {
     solicitacao: { em: string; por: string } | null;
 }
 
+// TASK-115 (ADR-024): restaurar escolhendo da lista. A lista vem do servidor — só o que é
+// verificado, está na retenção e tem o schema de hoje —, e o servidor confere de novo.
+interface EstadoRestauracao {
+    configurado: boolean;
+    restauraveis: { arquivo: string; em: string; tamanho: number | null }[];
+    ocultosPorSchema: number;
+    pendente: boolean;
+    ultima: { acao: string; em: string; por: string; detalhes: string | null } | null;
+}
+
+const RESULTADO_DA_RESTAURACAO: Record<string, string> = {
+    RESTAURACAO_SOLICITADA: 'pedida',
+    BACKUP_RESTAURADO: 'concluída',
+    RESTAURACAO_ENSAIADA: 'ensaiada (nada mudou)',
+    RESTAURACAO_RECUSADA: 'recusada',
+    RESTAURACAO_FALHOU: 'falhou',
+};
+
 interface Props {
     userRole: string;
     username: string;
@@ -61,11 +79,23 @@ export default function SettingsClient({ userRole, username }: Props) {
     const [salvandoAgenda, setSalvandoAgenda] = useState(false);
     const [manual, setManual] = useState<EstadoBackupManual | null>(null);
     const [pedindoBackup, setPedindoBackup] = useState(false);
+    // TASK-115 (ADR-024) — restaurar escolhendo da lista.
+    const [restauracao, setRestauracao] = useState<EstadoRestauracao | null>(null);
+    const [escolhido, setEscolhido] = useState('');
+    const [confirmandoRestauracao, setConfirmandoRestauracao] = useState(false);
+    const [pedindoRestauracao, setPedindoRestauracao] = useState(false);
 
     const fetchManual = () => {
         fetch('/api/backups/executar')
             .then(r => (r.ok ? r.json() : null))
             .then(d => { if (d && typeof d.configurado === 'boolean') setManual(d); })
+            .catch(() => {});
+    };
+
+    const fetchRestauracao = () => {
+        fetch('/api/backups/restaurar')
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => { if (d && Array.isArray(d.restauraveis)) setRestauracao(d); })
             .catch(() => {});
     };
 
@@ -98,18 +128,35 @@ export default function SettingsClient({ userRole, username }: Props) {
                 .then(d => { if (d && typeof d.hora === 'number') setAgenda({ hora: d.hora, vezes: d.vezes, dias: d.dias }); })
                 .catch(() => {});
             fetchManual();
+            fetchRestauracao();
         }
     }, [userRole]);
 
-    // TASK-114: enquanto há backup pedido e não terminado, a tela relê o estado e o
-    // último backup a cada 30 s — o "aguardando" some quando a execução aparece em
-    // `backup_runs`, que é o fato, e não quando o GitHub aceita o pedido.
-    const pendente = manual?.pendente ?? false;
+    // TASK-114/115: enquanto há backup ou restauração pedidos e não terminados, a tela
+    // relê a cada 30 s — o "aguardando" some quando o fim aparece em `backup_runs` ou na
+    // trilha, que são o fato, e não quando o GitHub aceita o pedido.
+    const pendente = (manual?.pendente ?? false) || (restauracao?.pendente ?? false);
     useEffect(() => {
         if (!pendente) return;
-        const id = setInterval(() => { fetchBackups(); fetchManual(); }, 30_000);
+        const id = setInterval(() => { fetchBackups(); fetchManual(); fetchRestauracao(); }, 30_000);
         return () => clearInterval(id);
     }, [pendente]);
+
+    const pedirRestauracao = async () => {
+        setPedindoRestauracao(true);
+        try {
+            const res = await fetch('/api/backups/restaurar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ arquivo: escolhido, confirmacao: 'RESTAURAR' }),
+            });
+            const d = await res.json();
+            if (Array.isArray(d?.restauraveis)) setRestauracao(d);
+            if (res.ok) toast.success('Restauração pedida. Primeiro sai um backup de segurança; o resultado aparece aqui em alguns minutos.');
+            else { toast.error(d.error || 'Não foi possível pedir a restauração.'); fetchRestauracao(); }
+        } catch { toast.error('Erro de conexão.'); }
+        setPedindoRestauracao(false);
+    };
 
     const pedirBackup = async () => {
         setPedindoBackup(true);
@@ -398,6 +445,58 @@ export default function SettingsClient({ userRole, username }: Props) {
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         Zona de Perigo
                     </h2>
+
+                    {/* TASK-115 (ADR-024): restaurar é destrutivo — desfaz trabalho de
+                        dias —, então mora aqui, e não no card de Backup. Só aparece com o
+                        disparo configurado (sem token, o botão seria inerte — ADR-013). */}
+                    {restauracao?.configurado && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: '1rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+                            <div style={{ maxWidth: 520, minWidth: 0, flex: '1 1 18rem' }}>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Restaurar um backup</div>
+                                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '0.25rem' }}>
+                                    Volta chaves, usuários, movimentações e histórico ao estado de um backup verificado. Antes, sai um
+                                    backup de segurança do estado atual. A trilha de auditoria e as configurações não mudam.
+                                </p>
+                                {restauracao.restauraveis.length > 0 ? (
+                                    <div className="input-group" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+                                        <label className="input-label" htmlFor="restaurar-backup">Backup</label>
+                                        <select id="restaurar-backup" className="input" value={escolhido} disabled={restauracao.pendente}
+                                            onChange={e => setEscolhido(e.target.value)}>
+                                            <option value="">Escolha um backup…</option>
+                                            {restauracao.restauraveis.map(r => (
+                                                <option key={r.arquivo} value={r.arquivo}>
+                                                    {formatTimestamp(r.em)}{r.tamanho !== null ? ` · ${formatBytes(r.tamanho)}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Nenhum backup restaurável ainda.</p>
+                                )}
+                                {restauracao.ocultosPorSchema > 0 && (
+                                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem' }}>
+                                        {restauracao.ocultosPorSchema === 1 ? '1 backup mais antigo não aparece' : `${restauracao.ocultosPorSchema} backups mais antigos não aparecem`}:
+                                        {' '}são de antes da última mudança de schema e só se restauram pelo runbook (§6.5).
+                                    </p>
+                                )}
+                                {restauracao.ultima && (
+                                    <p style={{ fontSize: '0.8125rem', color: restauracao.pendente ? 'var(--text-secondary)' : 'var(--text-muted)', lineHeight: 1.5, marginTop: '0.5rem', overflowWrap: 'anywhere' }}>
+                                        {restauracao.pendente
+                                            ? <>Restauração pedida às {formatTimestamp(restauracao.ultima.em)} por {restauracao.ultima.por} — em andamento (primeiro o backup de segurança).</>
+                                            : <>Última restauração: {RESULTADO_DA_RESTAURACAO[restauracao.ultima.acao] ?? restauracao.ultima.acao} em {formatTimestamp(restauracao.ultima.em)} por {restauracao.ultima.por}
+                                                {(restauracao.ultima.acao === 'RESTAURACAO_RECUSADA' || restauracao.ultima.acao === 'RESTAURACAO_FALHOU') && restauracao.ultima.detalhes
+                                                    ? ` — ${restauracao.ultima.detalhes}` : ''}.</>}
+                                    </p>
+                                )}
+                            </div>
+                            <button className="btn btn-danger" style={{ flexShrink: 0 }}
+                                onClick={() => setConfirmandoRestauracao(true)}
+                                disabled={!escolhido || restauracao.pendente || pedindoRestauracao}>
+                                {pedindoRestauracao ? <div className="spinner" style={{ width: 16, height: 16 }} /> : 'Restaurar…'}
+                            </button>
+                        </div>
+                    )}
+
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                         <div style={{ maxWidth: 520 }}>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Limpar Banco de Dados</div>
@@ -433,6 +532,30 @@ export default function SettingsClient({ userRole, username }: Props) {
                     onCancel={() => setShowClearModal(false)}
                     danger={true}
                 />
+
+                {/* TASK-115: o modal diz a DATA e o que muda — inclusive que as senhas
+                    voltam —, e só confirma com RESTAURAR digitado (decisão do usuário). */}
+                {(() => {
+                    const alvo = restauracao?.restauraveis.find(r => r.arquivo === escolhido);
+                    const data = alvo ? formatTimestamp(alvo.em) : '';
+                    return (
+                        <ConfirmModal
+                            isOpen={confirmandoRestauracao && !!alvo}
+                            title="Restaurar backup?"
+                            message={`Restaurar o backup de ${data}?\n\n`
+                                + `• Chaves, usuários, movimentações e histórico voltam a como estavam em ${data}. O que foi registrado depois disso some das telas.\n`
+                                + '• Senhas também voltam: quem trocou a senha depois dessa data volta à senha antiga, e quem foi cadastrado depois deixa de existir.\n'
+                                + '• Antes, sai um backup de segurança do estado atual — é por ele que se desfaz esta restauração.\n'
+                                + '• A trilha de auditoria e as configurações não mudam.'}
+                            confirmText="Restaurar"
+                            cancelText="Cancelar"
+                            exigirTexto="RESTAURAR"
+                            onConfirm={pedirRestauracao}
+                            onCancel={() => setConfirmandoRestauracao(false)}
+                            danger={true}
+                        />
+                    );
+                })()}
             </main>
         </div>
     );
