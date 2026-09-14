@@ -114,11 +114,12 @@ describe('TASK-077 — a lista de rotas públicas é explícita e mínima (BDD 3
         // Armadilha real: os arquivos de `public/` são servidos na RAIZ, não sob
         // `/public/`. O matcher que excluía "public" nunca os excluiu de fato —
         // passava despercebido enquanto o proxy deixava tudo passar. Com negação
-        // por padrão, um `sw.js` respondendo 307 quebra a instalação do PWA, e um
-        // `manifest.json` redirecionado tira o app da tela inicial.
+        // por padrão, um `manifest.json` redirecionado tira o app da tela inicial,
+        // e um ícone redirecionado some dela. (`sw.js` e `workbox-*.js` saíram da
+        // lista na TASK-129: o service worker nunca existiu — ADR-030.)
         for (const arquivo of [
-            '/manifest.json', '/sw.js', '/workbox-4754cb34.js', '/favicon.ico',
-            '/logo/unifafire_logo.png',
+            '/manifest.json', '/favicon.ico',
+            '/logo/unifafire_logo.png', '/icons/icon-192.png', '/icons/icon-512.png',
             // Fonte: a página de login precisa de tipografia antes de existir
             // sessão. Hoje o Next serve `__nextjs_font` antes do proxy, mas uma
             // fonte auto-hospedada em `public/` cairia na negação por padrão.
@@ -134,6 +135,15 @@ describe('TASK-077 — a lista de rotas públicas é explícita e mínima (BDD 3
         // exigem sessão por definição.
         const res = await proxy(req('/api/auth/me'));
         expect(res.status, '/api/auth/me passou sem sessão — ela devolve dados da sessão').toBe(401);
+    });
+
+    it('arquivo de service worker que não existe cai na negação por padrão (TASK-129)', async () => {
+        // A lista liberava `sw.js` e `workbox-*.js` para um service worker que o
+        // build nunca gerou (ADR-030). O que não é servido não precisa de porta.
+        for (const arquivo of ['/sw.js', '/workbox-4754cb34.js']) {
+            const res = await proxy(req(arquivo));
+            expect(passou(res), `${arquivo} passou sem sessão — o proxy libera um arquivo que não existe`).toBe(false);
+        }
     });
 
     it('o matcher deixa TODO o namespace interno do Next de fora', () => {
