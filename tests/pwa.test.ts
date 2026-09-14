@@ -128,7 +128,10 @@ describe('TASK-129 — nada promete um service worker que o build não produz', 
     it('o next.config não embrulha a configuração num plugin de service worker', () => {
         // Sob Turbopack o plugin do webpack é inerte: fica configurado, não gera
         // nada, e ninguém percebe. Service worker novo entra por CR próprio.
-        const config = fs.readFileSync(path.join(RAIZ, 'next.config.ts'), 'utf-8');
+        // Comentário não é configuração: o que conta é import e chamada.
+        const config = fs.readFileSync(path.join(RAIZ, 'next.config.ts'), 'utf-8')
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/^\s*\/\/.*$/gm, '');
         expect(config).not.toMatch(PACOTES_DE_SW);
     });
 

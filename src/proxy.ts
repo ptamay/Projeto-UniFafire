@@ -59,11 +59,14 @@ const ROTAS_PUBLICAS = new Set([
  * ⚠️ Os arquivos de `public/` são servidos na raiz, NÃO sob `/public/`. O
  * matcher antigo excluía "public" e portanto nunca excluiu nada — passava
  * despercebido porque o proxy deixava tudo passar. Com negação por padrão isso
- * vira defeito visível: `sw.js` com 307 quebra a instalação do PWA e
- * `manifest.json` redirecionado tira o app da tela inicial.
+ * vira defeito visível: `manifest.json` redirecionado tira o app da tela
+ * inicial, e um ícone redirecionado some dela.
+ *
+ * `sw.js` e `workbox-*.js` saíram na TASK-129 (ADR-030): o service worker nunca
+ * foi gerado, e o que não é servido não precisa de porta.
  */
 const ARQUIVOS_PUBLICOS =
-    /^\/(manifest\.json|sw\.js|workbox-[\w.-]+\.js|favicon\.ico|robots\.txt|.*\.(png|jpe?g|svg|gif|webp|ico|webmanifest|woff2?|ttf|otf))$/i;
+    /^\/(manifest\.json|favicon\.ico|robots\.txt|.*\.(png|jpe?g|svg|gif|webp|ico|webmanifest|woff2?|ttf|otf))$/i;
 
 // As fontes entram por seguro, não por necessidade observada: hoje o Next serve
 // `/__nextjs_font/...` antes do proxy, e o `/login` carrega normalmente sem

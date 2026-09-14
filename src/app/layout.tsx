@@ -12,7 +12,9 @@ export const metadata: Metadata = {
     description: "Sistema Institucional de Gestão de Chaves",
     icons: {
         icon: '/logo/unifafire_logo.png',
-        apple: '/logo/unifafire_logo.png',
+        // Tela inicial do iOS (ADR-030): quadrado e opaco — o iOS pinta de preto
+        // o que for transparente.
+        apple: '/icons/apple-touch-icon.png',
     },
     manifest: "/manifest.json",
 };
