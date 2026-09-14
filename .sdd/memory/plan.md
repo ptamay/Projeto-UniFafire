@@ -88,6 +88,20 @@
 
 ## 4. Backlog — Próximas Sprints
 
+### Aberta por Change Request — a troca de tela fica suave (CR Tipo C · ADR-029)
+> Aprovado pelo usuário em 2026-09-14. Relato com capturas, depois da TASK-125 no ar: "parece seco
+> demais, aí aparecem esses blocos cinzas carregando e depois aparece a página". O menu já não some
+> (medido: nas sete telas do ADMIN, build de produção local, resposta atrasada em 1,5 s, o menu é o
+> mesmo elemento em todos os quadros de esqueleto). O que incomoda é o próprio esqueleto da TASK-096:
+> dois cortes secos a cada troca.
+- **TASK-128 → troca de tela suave.** Saem os nove `loading.tsx` do grupo `(app)` e o
+  `EsqueletoDePagina`: a tela atual fica até a próxima estar pronta. Todo link de navegação (menu,
+  barra inferior do celular, itens da conta) leva um indicador com `useLinkStatus()`: item marcado
+  no clique e barra fina no topo se a espera passar de ~100 ms. A `.main-content` entra com fade +
+  4 px em ~200 ms; `prefers-reduced-motion` desliga. `prefetch={false}` continua. O "Cadastrar
+  chave" do Dashboard vira link. Guardas no lugar das da TASK-096 que exigiam `loading.tsx`; E2E
+  nova com resposta atrasada, desktop e celular. Custo aceito: F5 sem esqueleto.
+
 ### Correção — o "Limpar Histórico" não funcionava (relato do usuário · 2026-09-14)
 > Defeito, não mudança de escopo: o REQ-014 (limpeza consciente pelo ADMIN) estava especificado e
 > implementado, e a tela não o alcançava. Relato com captura: "Erro ao limpar histórico.".

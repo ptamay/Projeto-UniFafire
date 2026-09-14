@@ -119,6 +119,14 @@ novo. Ali a suspeita era o Realtime e a causa era a região da função.
 > `loading.tsx`, sem o tráfego. Há cenário guardando a decisão, porque sem ele alguém lê
 > o parágrafo acima, vê `prefetch={false}` e "corrige".
 
+> ### ⚠️ Emenda de 2026-09-14 (ADR-029, TASK-128) — os esqueletos saem da navegação
+>
+> O esqueleto resolveu a tela parada, mas ao preço de um corte seco a cada troca: o conteúdo
+> vira blocos cinzas de uma vez e depois vira a página de uma vez (relato do usuário, com
+> capturas). O `loading.tsx` sai; a tela atual fica até a próxima estar pronta, o item
+> clicado e uma barra no topo sinalizam a espera, e a tela nova entra com fade. O
+> `<Link prefetch={false}>` continua, pelo motivo medido acima. Ver ADR-029.
+
 **3. A tela de Configurações é reequilibrada, sem virar painel de sistema.**
 
 ⚠️ **O que NÃO entra: versão, host, uptime, contagens, região.** A TASK-079 removeu

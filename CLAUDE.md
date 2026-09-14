@@ -259,6 +259,11 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   32/2). ✅ **VERIFICADA EM PRODUÇÃO, sem sessão:** script do caminho aleatório 200, envio das
   métricas 200, nenhum 307, corpo com `href` sem a query. ADR-028 fechado. (O preview é protegido
   pelo SSO da Vercel — verificação de deploy aqui é em produção, no `/login` público.)
+- 📋 **CR da TROCA DE TELA SUAVE (Tipo C, ADR-029), aprovado pelo usuário, 2026-09-14:** depois da
+  TASK-125 o menu fica, mas o esqueleto da TASK-096 dá dois cortes secos a cada troca ("seco
+  demais"). TASK-128: saem os `loading.tsx`; a tela atual espera, item clicado marcado + barra no
+  topo (`useLinkStatus`), tela nova com fade de ~200 ms; reduced-motion sem animação. Números
+  reservados entre sessões: ADR-030/TASK-129 = PWA (sw.js 404), TASK-130 = E2E do menu nas 9 telas.
 - ⚠️ **O CHECKOUT PRINCIPAL PODE ESTAR COM OUTRA SESSÃO** (em 14/09, a TASK-124 rodava lá, com
   arquivos alterados). `git switch` ali leva a branch dela junto. Trabalho paralelo vai numa worktree.
 - ⚠️ Lições desta rodada: regex em template literal comum perde as barras (`\s` → `s`,
