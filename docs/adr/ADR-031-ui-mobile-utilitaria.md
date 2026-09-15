@@ -1,7 +1,8 @@
 # ADR-031 — A interface do celular vira utilitária: escala de tipo, verbos e superfícies planas
 
 - **Status:** Aceito — aprovado pelo usuário em 2026-09-14 (direção "utilitário claro", CR completo, tema
-  seguindo o aparelho); implementação nas TASK-132 a 136
+  seguindo o aparelho); implementação nas TASK-132 a 136. **Emendado** em 2026-09-14 (TASK-137: em uso
+  vermelho, "Passar" de volta a botão, Usuários, Confirmações, Logs e a explicação do Dashboard)
 - **Data:** 2026-09-14
 - **Tipo de Change Request:** **C** (muda telas já entregues — REQ-016, REQ-029, REQ-030 — e cria o
   REQ-033; a constitution não fala de interface). Troca o `DESIGN.md` e atualiza o `PRODUCT.md`.
@@ -151,3 +152,45 @@ aspecto de template continua. Rejeitada.
 
 Cada task pelo ciclo TDD, verificada no navegador a 360 e 375 px nos dois temas; ao fim da 136, nova
 crítica do impeccable.
+
+## Emenda de 2026-09-14 — TASK-137: as três telas que ficaram fora do quadro, e o vermelho de "em uso"
+
+Aprovada pelo usuário ao fim da TASK-136. A crítica final deu **30/40** (estética 3/4) contra a meta
+de **≥ 32** do REQ-033f. O que segurava a nota eram três telas ainda fora do quadro de chaves —
+**Usuários** com três faixas antes da lista (a busca não é o primeiro controle), **Confirmações** em
+cartões grandes, **Logs** em código de sistema (`LOGIN_SUCCESS`, "User logged in") — e, como P3, a
+caixa da dupla confirmação no Dashboard. O usuário acrescentou duas correções do que já estava no ar:
+
+> "O botão transferir virou um texto no mobile. Acredito que os dois botões antes estavam bons.
+> Em uso ficou 'cinza', não tem sentido. Indica neutralidade demais. Melhor vermelho mesmo, que
+> indica que está ocupado."
+
+1. **"Em uso" é vermelho** *(decisão do usuário — desfaz a regra "vermelho só para alerta e o que
+   apaga" da TASK-133)*. No quadro, o gancho vazio quer dizer "ocupado", e o cinza lia como
+   "desligado". O semáforo passa a ser **livre verde · esperando âmbar · ocupado vermelho**. O
+   alerta de atraso continua vermelho, mas **nunca só pela cor**: vem com a palavra e o ícone de
+   alerta, numa faixa própria. "Sair", "Cancelar" e o contador de pendências continuam fora do
+   vermelho. A marca pela forma (ponto cheio = livre, anel vazio = em uso) fica.
+2. **"Passar para outra pessoa" volta a ser botão**, ao lado de "Devolver". Na TASK-134 ele virou
+   texto de ação embaixo da linha, e o usuário o perdeu de vista. Na plaqueta com duas ações, os
+   dois botões vão para baixo do nome, lado a lado; o rótulo à vista é "Passar", com o nome
+   inteiro para o leitor de tela — como já era no desktop.
+3. **Usuários: a busca é o primeiro controle.** "Novo usuário" fica compacto na mesma linha da
+   busca no celular (no desktop, continua no cabeçalho); os filtros por papel vêm embaixo.
+4. **Confirmações em linhas.** Cada pendência é uma linha da lista (chave, tipo e sala, quem e
+   quando, o estado) com o verbo — "Confirmar" ou "Aceitar" — e "Cancelar" discreto. Uma lista só,
+   para celular e desktop.
+5. **Logs em português.** A ação aparece em palavra ("Entrou no sistema", "Chave devolvida"), com o
+   código gravado pequeno ao lado — a trilha não muda, é só a leitura. Os detalhes que o sistema
+   gravava em inglês passam a ser gravados em português, e os registros antigos são mostrados em
+   português por uma tabela de tradução. Código desconhecido aparece como foi gravado. Uma guarda
+   confere que todo código que o sistema grava tem rótulo.
+6. **A explicação da dupla confirmação vira uma linha** que abre ao toque (`<details>`), com o
+   "não mostrar de novo" dentro.
+
+**Critério de aceite:** guardas estáticas e E2E no celular (360×640) para cada item — em uso com
+matiz vermelho e contraste AA nos dois temas; plaqueta com "Devolver" e "Passar" como botões, sem o
+texto de ação embaixo; em Usuários, a busca como primeiro controle e os filtros abaixo dela;
+Confirmações sem cartão, cada pendência uma linha; nos Logs, nenhum código de sistema como texto
+principal; a explicação fechada em uma linha. E a crítica do impeccable, na mesma superfície,
+**≥ 32/40** (REQ-033f).

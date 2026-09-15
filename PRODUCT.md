@@ -78,8 +78,8 @@ ser redefinidos em favor da leitura. O emblema existe (`public/logo/`) e pode se
 - **A tela diz o que fazer, em palavra.** Toda ação tem um verbo do dia a dia ("Pegar",
   "Devolver"); nada depende de adivinhar que algo é tocável.
 - **Achar a chave vem primeiro.** A busca e a lista chegam antes de título, contador ou filtro.
-- **Cor tem significado fixo.** A mesma cor quer dizer a mesma coisa em todas as telas; o vermelho é
-  só para alerta e para o que apaga.
+- **Cor tem significado fixo.** A mesma cor quer dizer a mesma coisa em todas as telas: verde livre,
+  âmbar esperando, vermelho ocupado (e o que apaga); o alerta vem sempre com palavra e ícone.
 - **O que apaga fica longe do polegar.** Ação destrutiva nunca é o primeiro nem o maior botão.
 - **Quem lê devagar é o público, não a exceção.** Texto grande, frases curtas, sem sigla nem jargão.
 

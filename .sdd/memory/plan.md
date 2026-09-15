@@ -214,6 +214,20 @@
   na `main`). Verificado: E2E completa no build de produção **92 ok / 30 pulados / 0**, guardas 92/92,
   tsc 0, eslint 0. Próximo passo é decisão do usuário (fechar o CR com 30/40 ou uma task para as três
   telas) — ⚠️ TASK-137+ e ADR-032+ estão reservados pela outra sessão (§2.2): confirmar número antes.
+  → Decisão do usuário: **mais uma task** (TASK-137, número confirmado com as duas outras sessões).
+- **TASK-137 → emenda do ADR-031: as três telas que ficaram fora do quadro, e o vermelho de "em uso".**
+  Aprovada pelo usuário em 2026-09-14, com duas correções do que já estava no ar: "o botão transferir
+  virou um texto no mobile… os dois botões antes estavam bons" e "em uso ficou cinza… melhor vermelho,
+  que indica que está ocupado". (1) **Em uso = vermelho** (desfaz a regra "vermelho só para alerta e o
+  que apaga" da TASK-133; o atraso continua vermelho, mas sempre com palavra e ícone); (2) **"Passar"
+  volta a ser botão** ao lado de "Devolver" na plaqueta (os dois embaixo do nome); (3) **Usuários**: busca
+  primeiro, "Novo usuário" compacto na linha dela, filtros por papel embaixo; (4) **Confirmações em
+  linhas**, uma lista para celular e desktop; (5) **Logs em português** — ação em palavra, código
+  pequeno ao lado, detalhes gravados em português e os antigos traduzidos na leitura, guarda de que todo
+  código gravado tem rótulo; (6) **explicação da dupla confirmação** numa linha que abre ao toque. Ao
+  fim, a crítica de novo (meta ≥ 32/40 — REQ-033f). ⚠️ Cruza com a TASK-131 (Usuários, Confirmações e
+  Logs recebem dados do servidor): `tests/dados-iniciais-no-servidor.test.ts` e a E2E
+  `transicao-suave.spec.ts` rodam também em `next dev` (aviso da sessão da TASK-131).
 
 ### Aberta por Change Request — a troca de tela fica suave (CR Tipo C · ADR-029)
 > Aprovado pelo usuário em 2026-09-14. Relato com capturas, depois da TASK-125 no ar: "parece seco
