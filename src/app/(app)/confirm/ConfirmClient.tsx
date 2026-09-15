@@ -24,10 +24,6 @@ const IconCheck = () => (
 const IconX = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 );
-const IconClock = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-);
-
 export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: Props) {
     const router = useRouter();
     const [pendingTxs, setPendingTxs] = useState<PendingTransaction[]>(pendenciasIniciais);
@@ -97,9 +93,9 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
 
     return (
         <>
-            <main className="main-content animate-fade">
+            <main className="main-content animate-fade tela-confirmacoes">
                 {/* ── HEADER ── */}
-                <header className="page-header">
+                <header className="page-header cabecalho-enxuto">
                     <div>
                         <h1 className="page-title">
                             {isPorteiroOrAdmin ? 'Central de Confirmações' : 'Minhas Confirmações'}
@@ -112,16 +108,20 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                     </div>
                 </header>
 
-                {/* ── CONTEÚDO ── */}
+                {/* ── CONTEÚDO ──
+                    TASK-137 (emenda do ADR-031): cada pendência é uma LINHA da lista — chave e tipo,
+                    sala, quem e quando, o estado — com o verbo ("Confirmar", "Aceitar") e "Cancelar"
+                    discreto embaixo. Antes eram cartões grandes, com um ícone redondo e uma caixa de
+                    contexto dentro do cartão. Uma lista só, para celular e desktop. */}
                 {displayTxs.length === 0 ? (
                     <div className="empty-state">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 1rem', opacity: 0.3 }}>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 1rem', opacity: 0.3 }} aria-hidden="true">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
                         <p>Nenhuma confirmação pendente no momento.</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
+                    <ul className="lista-linhas" aria-label="Confirmações pendentes">
                         {displayTxs.map(tx => {
                             const isWithdraw = tx.action === 'withdraw';
                             const isTransfer = tx.action === 'transfer';
@@ -129,134 +129,83 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                             // é uma solicitação (pull, REQ-027): quem tem a chave é que precisa aceitar.
                             const isPull = isTransfer && !tx.porteiro_confirmed_at;
                             const isHolderViewer = tx.porteiro_id === userId;
-                            // Idioma único ação→cor (tokens com par dark/light):
-                            // retirada = âmbar · transferência = roxo · devolução = verde.
-                            const accentColor = isWithdraw ? 'var(--action-withdraw-fg)' : isTransfer ? 'var(--action-transfer-fg)' : 'var(--action-return-fg)';
-                            const accentBg = isWithdraw ? 'var(--action-withdraw-bg)' : isTransfer ? 'var(--action-transfer-bg)' : 'var(--action-return-bg)';
+                            const hora = new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            const pessoa = tx.user_full_name || tx.user_username;
+                            // Idioma único ação→cor, o mesmo do Histórico: retirada âmbar ·
+                            // transferência roxa · devolução verde.
+                            const tipo = isWithdraw ? 'status-withdraw' : isTransfer ? 'status-transfer' : 'status-return';
+                            const rotulo = isWithdraw ? 'Retirada' : isPull ? 'Pedido' : isTransfer ? 'Transferência' : 'Devolução';
+                            const podeConfirmarComoUsuario = tx.user_id === userId && !tx.user_confirmed_at;
+                            // Porteiro/Admin: o usuário JÁ confirmou e falta o porteiro — exceto em solicitação pull,
+                            // cujo aceite é estrito do portador (ADR-008), nunca da portaria por papel.
+                            const podeConfirmarComoPorteiro = isPorteiroOrAdmin && !isPull && !!tx.user_confirmed_at && !tx.porteiro_confirmed_at;
+                            const podeAceitar = isPull && isHolderViewer;
+                            const aguardandoOutraParte = !isPorteiroOrAdmin && tx.user_id === userId && !!tx.user_confirmed_at && !tx.porteiro_confirmed_at;
+                            const podeCancelar = isPorteiroOrAdmin || tx.user_id === userId || tx.porteiro_id === userId;
 
                             return (
-                                <div key={tx.id} style={{
-                                    background: 'var(--bg-card)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: 'var(--radius-lg)',
-                                    padding: '1.25rem',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '1rem',
-                                }}>
-                                    {/* Tipo + Chave */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
-                                            <span style={{
-                                                fontSize: 'var(--fs-2)', fontWeight: 600, color: accentColor,
-                                                background: accentBg, padding: '0.125rem 0.625rem', borderRadius: 'var(--radius-full)', display: 'inline-block', marginBottom: '0.5rem'
-                                            }}>
-                                                {isWithdraw ? 'Retirada de Chave' : isPull ? 'Solicitação de Chave' : isTransfer ? 'Transferência de Chave' : 'Devolução de Chave'}
-                                            </span>
-                                            <div style={{ fontSize: 'var(--fs-4)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>{tx.key_name}</div>
-                                            {tx.key_room && <div style={{ fontSize: 'var(--fs-2)', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{tx.key_room}</div>}
+                                <li key={tx.id} className="linha-lista linha-lista--acoes-embaixo">
+                                    <div className="linha-texto">
+                                        <div className="linha-topo">
+                                            <div className="linha-nome">{tx.key_name}</div>
+                                            <span className={`status-tag ${tipo}`}>{rotulo}</span>
                                         </div>
-                                        <div style={{
-                                            width: 40, height: 40, borderRadius: '50%',
-                                            background: accentBg, color: accentColor,
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                        }}>
-                                            {isWithdraw
-                                                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                                                : isTransfer
-                                                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3l4 4-4 4 M3 17l4 4 4-4 M21 7H3 M3 17h18"/></svg>
-                                                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20m-5-5l5 5 5-5"/></svg>}
+                                        {tx.key_room && <div className="linha-apoio">{tx.key_room}</div>}
+                                        <div className="linha-apoio">
+                                            {isPull ? (
+                                                <>
+                                                    <strong>{pessoa}</strong> solicitou esta chave às {hora}.
+                                                    {isHolderViewer
+                                                        ? <> Está com você — aceite para passá-la.</>
+                                                        : tx.porteiro_username && <> Falta <strong>@{tx.porteiro_username}</strong> aceitar.</>}
+                                                </>
+                                            ) : isTransfer ? (
+                                                <>
+                                                    Para <strong>{pessoa}</strong>
+                                                    {tx.porteiro_username && <>, iniciada por <strong>@{tx.porteiro_username}</strong></>} às {hora}.
+                                                </>
+                                            ) : (
+                                                tx.porteiro_username
+                                                    ? <><strong>{pessoa}</strong> · o porteiro <strong>@{tx.porteiro_username}</strong> iniciou às {hora}.</>
+                                                    : isPorteiroOrAdmin
+                                                        ? <><strong>{pessoa}</strong> pediu às {hora}.</>
+                                                        : <>Você pediu às {hora}.</>
+                                            )}
                                         </div>
-                                    </div>
-
-                                    {/* Contexto */}
-                                    <div style={{ background: 'var(--bg-elevated)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                                        {isPull ? (
-                                            <>
-                                                <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong> solicitou esta chave.<br/>
-                                                {isHolderViewer
-                                                    ? <>Está com você — aceite para repassá-la. Pedido às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
-                                                    : tx.porteiro_username && <>Aguardando <strong>@{tx.porteiro_username}</strong> aceitar. Pedido às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>}
-                                            </>
-                                        ) : isTransfer ? (
-                                            <>
-                                                Transferência para <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
-                                                {tx.porteiro_username && (
-                                                    <>Iniciada por <strong>@{tx.porteiro_username}</strong> às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <strong style={{ color: 'var(--text-primary)' }}>{tx.user_full_name || tx.user_username}</strong><br/>
-                                                {tx.porteiro_username
-                                                    ? <>Iniciado pelo porteiro <strong>@{tx.porteiro_username}</strong> às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>
-                                                    : <>Iniciado por {isPorteiroOrAdmin ? 'usuário' : 'você'} às {new Date(tx.initiated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</>}
-                                            </>
+                                        {/* Esperar não é alarme: âmbar (pendente), não vermelho. */}
+                                        {isPorteiroOrAdmin && (
+                                            !tx.user_confirmed_at
+                                                ? <div className="linha-estado is-pendente">Aguardando o usuário confirmar</div>
+                                                : <div className="linha-estado is-livre">Usuário confirmou</div>
+                                        )}
+                                        {aguardandoOutraParte && (
+                                            <div className="linha-estado is-pendente">Aguardando {isPull ? 'o portador' : 'porteiro'}</div>
                                         )}
                                     </div>
-
-                                    {/* Status Administrativo */}
-                                    {isPorteiroOrAdmin && (
-                                        <div style={{ fontSize: 'var(--fs-2)', fontWeight: 600, marginTop: '-0.5rem' }}>
-                                            {/* Esperar não é alarme: âmbar (pendente), não vermelho. */}
-                                            {!tx.user_confirmed_at
-                                                ? <span style={{ color: 'var(--pendente-fg)' }}>● Aguardando o usuário confirmar</span>
-                                                : <span style={{ color: 'var(--livre-fg)' }}>● Usuário confirmou</span>}
-                                        </div>
-                                    )}
-
-                                    {/* Ações */}
-                                    <div style={{ marginTop: 'auto' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                            {/* Se o usuário destino for o próprio usuário logado e ainda não confirmou como usuário */}
-                                            {tx.user_id === userId && !tx.user_confirmed_at && (
+                                    {(podeConfirmarComoUsuario || podeConfirmarComoPorteiro || podeAceitar || podeCancelar) && (
+                                        <div className="linha-acoes">
+                                            {(podeConfirmarComoUsuario || podeConfirmarComoPorteiro) && (
                                                 <button
-                                                    className="btn btn-principal"
-                                                    style={{ flex: 1, minWidth: '120px' }}
+                                                    className="btn btn-secundario btn-sm"
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
                                                     {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Confirmar</>}
                                                 </button>
                                             )}
-
-                                            {/* Porteiro/Admin: o usuário JÁ confirmou e falta o porteiro — exceto em solicitação pull,
-                                                cujo aceite é estrito do portador (ADR-008), nunca da portaria por papel. */}
-                                            {isPorteiroOrAdmin && !isPull && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
-                                                <button
-                                                    className="btn btn-principal"
-                                                    style={{ flex: 1, minWidth: '120px' }}
-                                                    onClick={() => confirmTransaction(tx.id)}
-                                                    disabled={actionLoading === tx.id}
-                                                >
-                                                    {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Confirmar</>}
-                                                </button>
-                                            )}
-
                                             {/* Portador aceita uma solicitação pull da chave que está com ele (REQ-027) */}
-                                            {isPull && isHolderViewer && (
+                                            {podeAceitar && (
                                                 <button
-                                                    className="btn btn-principal"
-                                                    style={{ flex: 1, minWidth: '120px' }}
+                                                    className="btn btn-secundario btn-sm"
                                                     onClick={() => confirmTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
                                                     {actionLoading === tx.id ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <><IconCheck /> Aceitar</>}
                                                 </button>
                                             )}
-
-                                            {/* Mensagem de espera para quem iniciou e aguarda a outra parte */}
-                                            {!isPorteiroOrAdmin && tx.user_id === userId && tx.user_confirmed_at && !tx.porteiro_confirmed_at && (
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: 'var(--pendente-bg)', color: 'var(--pendente-fg)', fontWeight: 600, borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-2)', border: '1px solid color-mix(in srgb, currentColor 30%, transparent)', flex: 1 }}>
-                                                    <IconClock /> Aguardando {isPull ? 'o portador' : 'porteiro'}
-                                                </div>
-                                            )}
-
-                                            {/* Cancelar Transação */}
-                                            {(isPorteiroOrAdmin || tx.user_id === userId || tx.porteiro_id === userId) && (
+                                            {podeCancelar && (
                                                 <button
-                                                    className="btn btn-ghost"
-                                                    style={{ flex: '0 1 auto', minWidth: '100px' }}
+                                                    className="btn btn-ghost btn-sm"
                                                     onClick={() => cancelTransaction(tx.id)}
                                                     disabled={actionLoading === tx.id}
                                                 >
@@ -264,11 +213,11 @@ export default function ConfirmClient({ userRole, userId, pendenciasIniciais }: 
                                                 </button>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
+                                    )}
+                                </li>
                             );
                         })}
-                    </div>
+                    </ul>
                 )}
             </main>
         </>

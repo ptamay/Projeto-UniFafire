@@ -162,14 +162,28 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
     return (
         <>
             <main className="main-content animate-fade">
-                <div className="page-header">
+                <div className="page-header cabecalho-enxuto">
                     <div>
                         <h1 className="page-title">Usuários do Sistema</h1>
                         <p className="page-subtitle">Gerencie acessos e perfis de todos os usuários</p>
                     </div>
-                    <button className="btn btn-principal" onClick={openNew}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Novo Usuário
+                    <button className="btn btn-principal desktop-only" onClick={openNew}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Novo usuário
+                    </button>
+                </div>
+
+                {/* TASK-137: a busca é o primeiro controle. No celular, o "+ Novo" fica na linha
+                    dela (o botão do cabeçalho é do desktop) e os filtros por papel vêm embaixo —
+                    antes eram três faixas (botão, filtros, busca) antes do primeiro usuário. */}
+                <div className="barra-usuarios">
+                    <div className="search-bar">
+                        <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="search" aria-label="Buscar usuário por nome, usuário ou matrícula" className="input" style={{ paddingLeft: '2.5rem' }} placeholder="Buscar" enterKeyHint="search" value={search} onChange={e => setSearch(e.target.value)} />
+                    </div>
+                    <button type="button" className="btn btn-principal btn-novo-compacto mobile-only" onClick={openNew} aria-label="Novo usuário">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Novo
                     </button>
                 </div>
 
@@ -193,18 +207,13 @@ export default function UsersClient({ usuariosIniciais }: { usuariosIniciais: Us
                     })}
                 </div>
 
-                {/* Search bar */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center' }}>
-                    <div className="search-bar" style={{ maxWidth: 360 }}>
-                        <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="search" aria-label="Buscar usuário por nome, usuário ou matrícula" className="input" style={{ paddingLeft: '2.5rem' }} placeholder="Buscar" enterKeyHint="search" value={search} onChange={e => setSearch(e.target.value)} />
-                    </div>
+                <div className="usuarios-resumo">
+                    <span>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
                     {filterRole !== 'all' && (
                         <button className="btn btn-ghost btn-sm" onClick={() => setFilterRole('all')}>
                             Limpar filtro
                         </button>
                     )}
-                    <span style={{ marginLeft: 'auto', fontSize: 'var(--fs-2)', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{filteredUsers.length} usuário{filteredUsers.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {/* TASK-136 (ADR-031): no celular, cada usuário é uma LINHA — nome, "@usuário ·

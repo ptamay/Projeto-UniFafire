@@ -81,9 +81,11 @@ test.describe('Ciclo de vida da chave — dupla confirmação', () => {
         await page.goto('/confirm');
         await expect(page.getByText(KEY_NAME)).toBeVisible();
         const confirmBtn = page.getByRole('button', { name: /Confirmar/ }).first();
-        // Alvo de toque ≥ 44px no botão do fluxo crítico (spec §6)
+        // Alvo de toque ≥ 44px no botão do fluxo crítico (spec §6). TASK-137: o botão tem 44 px
+        // EXATOS (antes, 48), e numa posição fracionária o boundingBox devolve 43,99998 — ruído
+        // de ponto flutuante, não um botão menor. A medida tolera 0,01 px.
         const box = await confirmBtn.boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
+        expect(box!.height).toBeGreaterThanOrEqual(44 - 0.01);
         await confirmBtn.click();
         // TASK-120 — esperar a confirmação ser ACEITA antes de navegar, como a retirada
         // acima já faz. Sem isto o `goto` seguinte abortava o POST em voo e a chave

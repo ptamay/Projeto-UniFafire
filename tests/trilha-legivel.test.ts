@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { rotuloDaAcao, detalheLegivel, ROTULO_DA_ACAO } from '@/lib/trilha-legivel';
+import { rotuloDaAcao, detalheLegivel, alvoLegivel, ROTULO_DA_ACAO } from '@/lib/trilha-legivel';
 
 // TASK-137 (emenda do ADR-031 · REQ-033) — os Logs em português.
 //
@@ -155,5 +155,16 @@ describe('TASK-137 — o detalhe da trilha em português', () => {
     it('detalhe em português passa como está', () => {
         expect(detalheLegivel('Devolução iniciada pelo porteiro')).toBe('Devolução iniciada pelo porteiro');
         expect(detalheLegivel(undefined)).toBe('');
+    });
+
+    // Achado no verde: o alvo também chegava em inglês ("admin · System"). "System" e "Self"
+    // não dizem nada que a ação já não diga; os demais viram palavra; chave e pessoa passam.
+    it('o alvo gravado em inglês é lido em português, e "System"/"Self" somem da linha', () => {
+        expect(alvoLegivel('System')).toBe('');
+        expect(alvoLegivel('Self')).toBe('');
+        expect(alvoLegivel('History Table')).toBe('Histórico');
+        expect(alvoLegivel('Database')).toBe('Banco de dados');
+        expect(alvoLegivel('settings')).toBe('Configurações');
+        expect(alvoLegivel('Chave E2E')).toBe('Chave E2E');
     });
 });

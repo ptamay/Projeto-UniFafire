@@ -60,8 +60,10 @@ test.describe('TASK-137 — emenda do celular', () => {
             expect(m.passar, `"${m.nome}": falta o botão "Passar" ao lado de "Devolver"`).not.toBeNull();
             expect(m.textoDoPassar).toBe('Passar');
             expect(Math.abs(m.passar!.top - m.devolver!.top), `"${m.nome}": "Passar" não está na linha de "Devolver"`).toBeLessThanOrEqual(2);
-            expect(m.passar!.height, 'botão abaixo do alvo de toque').toBeGreaterThanOrEqual(44);
-            expect(m.devolver!.height, 'botão abaixo do alvo de toque').toBeGreaterThanOrEqual(44);
+            // 44 px exatos numa posição fracionária medem 43,99998: a tolerância é do ponto
+            // flutuante (0,01 px), não do alvo de toque.
+            expect(m.passar!.height, 'botão abaixo do alvo de toque').toBeGreaterThanOrEqual(44 - 0.01);
+            expect(m.devolver!.height, 'botão abaixo do alvo de toque').toBeGreaterThanOrEqual(44 - 0.01);
             expect(m.larguraDoTexto, `"${m.nome}": o nome ficou espremido pelos botões`).toBeGreaterThanOrEqual(m.larguraDaLinha * 0.8);
         }
         await comDevolver.first().getByRole('button', { name: 'Passar para outra pessoa' }).click();

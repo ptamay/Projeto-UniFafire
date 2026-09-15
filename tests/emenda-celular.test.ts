@@ -72,7 +72,9 @@ describe('TASK-137 — Usuários: a busca é o primeiro controle', () => {
 
     it('"Novo usuário" do cabeçalho é do desktop; no celular, um "+ Novo" compacto na linha da busca', () => {
         const fonte = USUARIOS();
-        const cabecalho = fonte.slice(fonte.indexOf('className="page-header"'), fonte.indexOf('type="search"'));
+        const inicio = fonte.search(/className="page-header\b/);
+        expect(inicio, 'sem cabeçalho da página').toBeGreaterThan(0);
+        const cabecalho = fonte.slice(inicio, fonte.indexOf('type="search"'));
         const botaoDoCabecalho = cabecalho.match(/<button[^>]*onClick=\{openNew\}[^>]*>/);
         expect(botaoDoCabecalho?.[0] ?? '', 'o botão do cabeçalho aparece no celular').toMatch(/desktop-only/);
         const linhaDaBusca = fonte.slice(fonte.indexOf('type="search"'), fonte.indexOf('className="filtros-papel"'));

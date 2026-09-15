@@ -4,6 +4,7 @@ import { queryOne, execute } from '@/lib/pg';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { rotuloDoPapel } from '@/lib/papeis';
 import { gerarCodigoDeAcesso, expiracaoDoCodigo, VALIDADE_DO_CODIGO_MINUTOS } from '@/lib/reset-code';
 import { verifySession } from '@/lib/session';
 import { UserSchema } from '@/lib/schemas';
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
                     [codigoHash, codigoExpira, role, full_name || null, matricula || null, phone || null, existing.id],
                 );
 
-                await logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'User reactivated with new data');
+                await logAction(currentUser.id, currentUser.username, 'REACTIVATE_USER', finalUsername, 'Usuário reativado com dados novos');
 
                 return NextResponse.json({
                     id: existing.id, username: finalUsername, role,
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
             [finalUsername, codigoHash, codigoExpira, role, full_name || null, matricula || null, phone || null],
         );
 
-        await logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `New user created with role: ${role}`);
+        await logAction(currentUser.id, currentUser.username, 'CREATE_USER', finalUsername, `Perfil: ${rotuloDoPapel(role)}`);
 
         // O código sai daqui uma vez e nunca mais. Não é senha — é bilhete de
         // entrada, de uso único e prazo curto (§2.1 intacta).
@@ -189,7 +190,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        await logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Deleted user ${targetUser.username} (${targetUser.role})`);
+        await logAction(session.id, session.username, 'DELETE_USER', targetUser.username, `Usuário ${targetUser.username} (${rotuloDoPapel(targetUser.role)}) removido`);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -223,7 +224,7 @@ export async function PUT(request: Request) {
             [full_name || null, matricula || null, phone || null, role || targetUser.role, id],
         );
 
-        await logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, `Updated user info`);
+        await logAction(session.id, session.username, 'UPDATE_USER', targetUser.username, 'Dados do usuário atualizados');
 
         return NextResponse.json({ success: true });
     } catch (error) {
