@@ -1,6 +1,6 @@
 # ADR-031 — A interface do celular vira utilitária: escala de tipo, verbos e superfícies planas
 
-- **Status:** Aceito — aprovado pelo usuário em 2026-09-14 (direção "utilitário claro", CR completo, tema
+- **Status:** Fechado em 2026-09-14 — crítica final 32/40 (REQ-033f atingido na TASK-137). Aceito — aprovado pelo usuário em 2026-09-14 (direção "utilitário claro", CR completo, tema
   seguindo o aparelho); implementação nas TASK-132 a 136. **Emendado** em 2026-09-14 (TASK-137: em uso
   vermelho, "Passar" de volta a botão, Usuários, Confirmações, Logs e a explicação do Dashboard)
 - **Data:** 2026-09-14

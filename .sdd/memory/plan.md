@@ -228,6 +228,26 @@
   fim, a crítica de novo (meta ≥ 32/40 — REQ-033f). ⚠️ Cruza com a TASK-131 (Usuários, Confirmações e
   Logs recebem dados do servidor): `tests/dados-iniciais-no-servidor.test.ts` e a E2E
   `transicao-suave.spec.ts` rodam também em `next dev` (aviso da sessão da TASK-131).
+  ✅ **FEITA em 2026-09-14** (branch `feat/task-137-emenda-celular`). Tokens `--em-uso-*` vermelhos nos dois
+  temas (AA conferido pela guarda; o cenário da TASK-133 "em uso não é vermelho" foi INVERTIDO), "Com
+  você" quando a chave é de quem vê; plaqueta com "Devolver" e "Passar" lado a lado embaixo do nome
+  (`.plaqueta--duas-acoes`; `.plaqueta-extra` saiu); Usuários com `.barra-usuarios` (busca + "+ Novo"
+  compacto de 44 px) antes dos filtros; Confirmações numa lista de linhas para todos os tamanhos, verbo
+  secundário com 44 px também no desktop (spec §6), e o painel de pendências do Dashboard no mesmo
+  idioma; `src/lib/trilha-legivel.ts` (`rotuloDaAcao` — 31 códigos, guarda que confere todo código
+  gravado —, `detalheLegivel` para os detalhes antigos em inglês, `alvoLegivel` para "System"/"Self"),
+  detalhes novos gravados em português; explicação da dupla confirmação num `<details>`. ⚠️ **Achado de
+  lado, corrigido:** toda devolução gravava na trilha "iniciada pelo porteiro", também quando quem pedia
+  era o portador (e a resposta dizia "aguardando confirmação do usuário"). ⚠️ **Achado de medida:** um
+  botão de 44 px EXATOS numa posição fracionária mede 43,99998 no `boundingBox` — o `key-flows` reprovou
+  em `next dev` quando o "Confirmar" deixou de ter 48 px; as medidas de alvo de toque toleram 0,01 px.
+  Guardas `tests/emenda-celular.test.ts` (11) + `tests/trilha-legivel.test.ts` (23) + E2E
+  `tests/e2e/emenda-celular.spec.ts` (7, só celular; os 7 reprovavam na `main`). Verificado: vitest 934 ok
+  (mesmas 4 + `pg-load` do `better-sqlite3`), tsc 0, eslint 0, E2E no build de produção **99 ok / 37
+  pulados / 0** e em `next dev` 34/34 nos specs afetados (inclusive `transicao-suave`). **Crítica: 32/40**
+  (era 30), estética 3 — `.impeccable/critique/2026-09-15T01-09-27Z__src-app-app.md`. **REQ-033f
+  atingido, no limite; o ADR-031 fecha.** Sobra (P2/P3, sem task): registro dos Logs alto no celular,
+  "Confirmar" principal no painel e secundário na tela, o painel de pendências ainda em cartão.
 
 ### Aberta por Change Request — a troca de tela fica suave (CR Tipo C · ADR-029)
 > Aprovado pelo usuário em 2026-09-14. Relato com capturas, depois da TASK-125 no ar: "parece seco

@@ -315,8 +315,17 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
   passo (`src/lib/mensagens.ts`); `DESIGN.md` regravado (8 seções canônicas) e `.impeccable/design.json` refeito.
   **Crítica final 30/40 (era 23), estética 3 (era 1) — REQ-033f (≥ 32) NÃO atingido, faltam 2**: Usuários
   (três faixas antes da lista), Confirmações em cartões, Logs em código de sistema. E2E completa 92/30/0.
-- Próxima Ação: PR e merge da TASK-136 → DECISÃO DO USUÁRIO: fechar o ADR-031 com 30/40 ou abrir task para
-  as três telas (⚠️ TASK-137+/ADR-032+ reservados pela outra sessão — confirmar número). Do usuário: conferir em produção a parte logada da TASK-125 e,
+  ✅ #101 merged (TASK-136 no ar, `a1d4e76`). Decisão do usuário: mais uma task, com duas correções — "o
+  botão transferir virou um texto" e "em uso cinza… melhor vermelho, que indica que está ocupado".
+  ✅ **TASK-137 FEITA** (emenda do ADR-031, número confirmado com as outras duas sessões; branch
+  `feat/task-137-emenda-celular`, PR a abrir): **em uso VERMELHO** (desfaz a regra da TASK-133; atraso
+  segue vermelho com ícone e título), "Devolver" + "Passar" como botões na plaqueta, Usuários com a busca
+  primeiro, Confirmações em linhas, Logs em português (`src/lib/trilha-legivel.ts`, guarda de rótulo para
+  todo código gravado), explicação da dupla confirmação num `<details>`. **Crítica 32/40 — REQ-033f
+  atingido, ADR-031 FECHADO.** De lado: a devolução gravava "iniciada pelo porteiro" também quando era o
+  portador — corrigido. ⚠️ Botão de 44 px exatos mede 43,99998 no `boundingBox` em posição fracionária:
+  medida de alvo de toque tolera 0,01 px. E2E produção 99/37/0; `next dev` 34/34 nos specs afetados.
+- Próxima Ação: PR e merge da TASK-137. Do usuário: conferir em produção a parte logada da TASK-125 e,
   se quiser, a limpeza do histórico (TASK-127) → token de
   disparo (runbook §6.3) → backup manual → ENSAIO da restauração. Fila: `auto_logout_time = "30"`
   (usuário salva pela tela), §2.2 (dados de saída desde 08/09 — ler pelo editor), §0 da constitution
@@ -576,7 +585,7 @@ ou precisar reler o `master-spec-core.md` e os módulos inteiros.
 - ⚠️ LIÇÃO DA SPRINT 24: **validação só na fronteira de entrada assume que a
   fronteira sempre existiu.** Um `"30"` vindo de seed de teste manteve um controle
   da §2 inerte em produção, sem sintoma, porque o POST validava e a leitura não.
-- Branch atual: feat/task-136-listas-celular (TASK-136, PR a abrir). PRs #15–#100 merged (o #43 do
+- Branch atual: feat/task-137-emenda-celular (TASK-137, PR a abrir). PRs #15–#101 merged (o #43 do
   Dependabot entrou, pela outra sessão).
 - ✅ **TASK-098 FEITA em 2026-09-10 — o ADR-018 fecha em código.** Tutorial por
   papel, dispensável, com o "já viu" em coluna de `users`. Só a §2.2 fica em
