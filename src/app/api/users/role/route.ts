@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { queryOne, execute } from '@/lib/pg';
 import { cookies } from 'next/headers';
 import { logAction } from '@/lib/logger';
+import { rotuloDoPapel } from '@/lib/papeis';
 import { verifySession } from '@/lib/session';
 
 interface RoleRow {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
         await execute('UPDATE users SET role = $1 WHERE id = $2', [newRole, targetUserId]);
 
         // Action Log
-        await logAction(session.id, session.username, 'CHANGE_ROLE', targetUser.username, `Changed role from ${targetUser.role} to ${newRole}`);
+        await logAction(session.id, session.username, 'CHANGE_ROLE', targetUser.username, `Perfil: ${rotuloDoPapel(targetUser.role)} → ${rotuloDoPapel(newRole)}`);
 
         return NextResponse.json({ success: true, message: `Usuário ${newRole === 'ADMIN' ? 'promovido' : 'rebaixado'} com sucesso.` });
 

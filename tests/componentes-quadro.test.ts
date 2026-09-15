@@ -262,17 +262,23 @@ describe('TASK-133 — cor com significado fixo', () => {
         expect(restos, `tokens antigos ainda em uso:\n${restos.join('\n')}`).toEqual([]);
     });
 
-    it.each(['escuro', 'claro'] as const)('tema %s: "em uso" não é vermelho — vermelho é só alerta e o que apaga', tema => {
+    // TASK-137 (emenda do ADR-031): este cenário dizia o contrário — "em uso não é vermelho,
+    // vermelho é só alerta e o que apaga". O usuário, vendo o cinza no ar: "indica
+    // neutralidade demais. Melhor vermelho mesmo, que indica que está ocupado." O semáforo
+    // passou a ser livre verde · esperando âmbar · ocupado vermelho.
+    it.each(['escuro', 'claro'] as const)('tema %s: "em uso" é vermelho — a chave está ocupada', tema => {
         const t = paleta(tema);
-        const { h, s } = matiz(cor(t['--em-uso-fg'], t));
-        const vermelho = s > 0.3 && (h < 20 || h > 330);
-        expect(vermelho, `--em-uso-fg em ${tema} é vermelho (matiz ${h.toFixed(0)}°)`).toBe(false);
+        for (const token of ['--em-uso-fg', '--em-uso-bg']) {
+            const { h, s } = matiz(cor(t[token], t));
+            const vermelho = s > 0.3 && (h < 20 || h > 330);
+            expect(vermelho, `${token} em ${tema} não é vermelho (matiz ${h.toFixed(0)}°, saturação ${s.toFixed(2)})`).toBe(true);
+        }
     });
 
     it.each(['escuro', 'claro'] as const)('tema %s: a cor de ação é distinta das cores de estado', tema => {
         const t = paleta(tema);
         const acao = matiz(cor(t['--acao'], t)).h;
-        for (const e of ['livre', 'pendente', 'alerta']) {
+        for (const e of ['livre', 'em-uso', 'pendente', 'alerta']) {
             const h = matiz(cor(t[`--${e}-fg`], t)).h;
             expect(distanciaDeMatiz(acao, h), `ação e ${e} com matiz parecido em ${tema}`).toBeGreaterThanOrEqual(60);
         }

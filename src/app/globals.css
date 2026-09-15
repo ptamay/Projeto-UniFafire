@@ -68,8 +68,8 @@
 
   --livre-fg:      #34D399;
   --livre-bg:      rgba(52, 211, 153, 0.12);
-  --em-uso-fg:     #CBD5E1;
-  --em-uso-bg:     rgba(148, 163, 184, 0.16);
+  --em-uso-fg:     #FCA5A5; /* ocupado = vermelho (TASK-137): o cinza lia como "desligado" */
+  --em-uso-bg:     rgba(220, 38, 38, 0.16);
   --pendente:      #F59E0B; /* sólido: contador */
   --pendente-texto:#1A1200;
   --pendente-fg:   #FBBF24;
@@ -171,8 +171,8 @@
 
   --livre-fg:      #047857;
   --livre-bg:      rgba(16, 185, 129, 0.12);
-  --em-uso-fg:     #334155;
-  --em-uso-bg:     rgba(100, 116, 139, 0.14);
+  --em-uso-fg:     #B91C1C;
+  --em-uso-bg:     rgba(220, 38, 38, 0.10);
   --pendente:      #B45309;
   --pendente-texto:#FFFFFF;
   --pendente-fg:   #92400E;
@@ -630,10 +630,14 @@ small { font-size: var(--fs-2); }
   flex-shrink: 0;
 }
 @media (max-width: 768px) {
-  /* No mobile o item empilha: tag+info em cima, ações em faixa própria de 44px */
-  .pending-inline-item { flex-wrap: wrap; }
-  .pending-inline-actions { width: 100%; }
-  .pending-inline-actions .btn { flex: 1; }
+  /* No celular, a pendência é uma linha como as da lista (TASK-137): nome e estado, a
+     etiqueta à direita do nome, e as ações embaixo, do tamanho do texto e à direita —
+     antes eram dois botões de largura cheia. */
+  .pending-inline-item { flex-wrap: wrap; align-items: flex-start; }
+  .pending-inline-info { order: 1; }
+  .pending-inline-item > .status-tag { order: 2; flex-shrink: 0; }
+  .pending-inline-actions { order: 3; width: 100%; justify-content: flex-end; }
+  .pending-inline-actions .btn { min-width: 5.5rem; }
 }
 
 /* ── Stat chips (header do Dashboard) ─────────────────────── */
@@ -1573,7 +1577,7 @@ textarea:focus-visible,
   .plaqueta {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "texto acoes" "extra extra";
+    grid-template-areas: "texto acoes";
     column-gap: 0.75rem;
     align-items: center;
     padding: 0.75rem 1rem;
@@ -1611,22 +1615,21 @@ textarea:focus-visible,
     background: currentColor;
   }
   .plaqueta--livre .plaqueta-estado { color: var(--livre-fg); }
-  .plaqueta--em-uso .plaqueta-estado { color: var(--text-secondary); font-weight: 400; }
+  /* Em uso é vermelho (TASK-137): "Com Fulano" diz que a chave está ocupada. */
+  .plaqueta--em-uso .plaqueta-estado { color: var(--em-uso-fg); font-weight: 400; }
   .plaqueta--em-uso .plaqueta-estado::before { background: transparent; box-shadow: inset 0 0 0 2px var(--em-uso-fg); }
-  .plaqueta--em-uso .plaqueta-estado strong { color: var(--text-primary); font-weight: 600; }
+  .plaqueta--em-uso .plaqueta-estado strong { font-weight: 600; }
   .plaqueta--pendente .plaqueta-estado { color: var(--pendente-fg); }
   .plaqueta-acoes { grid-area: acoes; display: flex; gap: 0.5rem; }
   .plaqueta-acoes .btn { min-width: 5.5rem; }
-  /* A ação de menos uso da linha ("Passar para outra pessoa"): texto de ação, sem caixa. */
-  .plaqueta-extra { grid-area: extra; }
-  .plaqueta-extra .btn {
-    border-color: transparent;
-    background: transparent;
-    /* Recuo lateral para o toque e o foco; a margem negativa alinha o texto ao nome. */
-    padding-inline: 0.5rem;
-    margin-left: -0.5rem;
-    color: var(--acao);
+  /* Quem está com a chave vê "Devolver" e "Passar" (TASK-137: de volta a botão). À direita,
+     os dois espremeriam o nome a 360 px; descem para baixo dele, ainda à direita. */
+  .plaqueta--duas-acoes {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "texto" "acoes";
+    row-gap: 0.5rem;
   }
+  .plaqueta--duas-acoes .plaqueta-acoes { justify-content: flex-end; }
 
   /* ── Mobile Sidebar Drawer & Topbar ── */
   .sidebar {
@@ -1973,9 +1976,16 @@ textarea:focus-visible,
   background: currentColor;
 }
 .linha-estado.is-livre { color: var(--livre-fg); }
-.linha-estado.is-em-uso { color: var(--text-secondary); font-weight: 400; }
+.linha-estado.is-em-uso { color: var(--em-uso-fg); font-weight: 400; }
 .linha-estado.is-em-uso::before { background: transparent; box-shadow: inset 0 0 0 2px var(--em-uso-fg); }
-.linha-estado strong { color: var(--text-primary); font-weight: 600; }
+.linha-estado.is-pendente { color: var(--pendente-fg); }
+.linha-estado strong { font-weight: 600; }
+/* Nome e etiqueta na mesma linha (Confirmações: "Chave 12 · Retirada"). */
+.linha-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.linha-topo .status-tag { flex-shrink: 0; }
+/* Confirmações são o fluxo crítico (dupla confirmação, REQ-003/004): o verbo da linha tem o
+   alvo de toque de 44 px também no desktop (spec §6) — o btn-sm de 40 não basta aqui. */
+.tela-confirmacoes .linha-acoes .btn { min-height: var(--touch-target); }
 .linha-acoes { display: flex; flex-direction: column; gap: 0.25rem; }
 .linha-lista--acoes-embaixo .linha-acoes { flex-direction: row; flex-wrap: wrap; gap: 0.375rem; }
 /* Ações de linha mais justas: cabem numa faixa só também com a fonte do celular maior. */
@@ -2018,3 +2028,64 @@ textarea:focus-visible,
 }
 /* Registros (Histórico, Logs): uma terceira linha, de metadado — quando, quem confirmou. */
 .linha-meta { font-size: var(--fs-2); color: var(--text-muted); line-height: 1.4; overflow-wrap: anywhere; }
+/* O código gravado na trilha (LOGIN_SUCCESS), ao lado da ação em palavra (TASK-137): é o
+   registro, não o rótulo — o menor tamanho da escala. */
+.codigo-trilha { font-size: var(--fs-1); font-weight: 600; color: var(--text-muted); overflow-wrap: anywhere; }
+
+/* Usuários (TASK-137): a busca é o primeiro controle; no celular, o "+ Novo" fica na linha
+   dela e os filtros por papel vêm embaixo. */
+.barra-usuarios { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+.barra-usuarios .search-bar { flex: 1; max-width: 360px; }
+/* Da altura da busca ao lado (44 px), não a do principal de 48: os dois formam uma linha. */
+.barra-usuarios .btn-novo-compacto { flex-shrink: 0; min-height: var(--touch-target); padding-inline: 0.875rem; }
+.usuarios-resumo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: var(--fs-2);
+  color: var(--text-muted);
+}
+.usuarios-resumo .btn { margin-left: auto; }
+
+/* A explicação da dupla confirmação (TASK-137): uma linha fechada que abre ao toque. */
+.explicacao-dupla {
+  margin-bottom: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.explicacao-dupla summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: var(--fs-2);
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+.explicacao-dupla summary::-webkit-details-marker { display: none; }
+.explicacao-dupla summary svg { flex-shrink: 0; }
+.explicacao-dupla summary::after {
+  content: '';
+  margin-left: auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-2px, -2px);
+}
+.explicacao-dupla[open] summary::after { transform: rotate(-135deg) translate(-2px, -2px); }
+.explicacao-dupla summary:focus-visible { outline: 2px solid var(--acao); outline-offset: 2px; }
+.explicacao-dupla-corpo { padding: 0 0.875rem 0.75rem; }
+.explicacao-dupla-corpo p {
+  margin: 0 0 0.5rem;
+  font-size: var(--fs-2);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.explicacao-dupla-corpo strong { color: var(--text-primary); }

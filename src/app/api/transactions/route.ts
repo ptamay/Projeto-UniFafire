@@ -195,13 +195,16 @@ export async function POST(request: Request) {
 
             const transactionId = txResult!.id;
 
-            await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name, 'Devolução iniciada pelo porteiro');
+            await logAction(session.id, session.username, 'TRANSACTION_INITIATED', key.name,
+                isPorteiroOrAdmin ? 'Devolução iniciada pela portaria' : 'Devolução pedida por quem está com a chave');
 
             return NextResponse.json({ 
                 success: true, 
                 transactionId,
                 status: 'pending',
-                message: 'Devolução iniciada. Aguardando confirmação do usuário.',
+                message: isPorteiroOrAdmin
+                    ? 'Devolução iniciada. Aguardando confirmação do usuário.'
+                    : 'Devolução pedida. Aguardando a portaria confirmar.',
                 requiresUserConfirmation: true,
             });
         } else if (action === 'transfer') {

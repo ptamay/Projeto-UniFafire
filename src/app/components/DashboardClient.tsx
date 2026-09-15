@@ -760,28 +760,25 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                     <PendingInline userRole={userRole} userId={userId} />
                 </div>
 
-                {/* Explicação da dupla confirmação (dispensável, contextual) */}
+                {/* Explicação da dupla confirmação (dispensável, contextual). TASK-137: uma linha
+                    fechada que abre ao toque — a caixa aberta repetia, a cada visita, o que quem
+                    usa o sistema já sabe. O "não mostrar de novo" fica dentro. */}
                 <div className="dashboard-explicacao">
                 {showIntro && (
-                    <div className="animate-fade" style={{ marginBottom: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 'var(--fs-2)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>Como funciona a dupla confirmação</div>
-                            <p style={{ fontSize: 'var(--fs-2)', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                                Toda retirada ou devolução precisa da confirmação das duas partes — quem solicita e a outra pessoa confirmam na aba <strong style={{ color: 'var(--text-primary)' }}>Confirmações</strong>. Enquanto a solicitação estiver <strong style={{ color: 'var(--text-primary)' }}>Aguardando</strong>, você pode cancelá-la.
+                    <details className="explicacao-dupla">
+                        <summary>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            Como funciona a dupla confirmação
+                        </summary>
+                        <div className="explicacao-dupla-corpo">
+                            <p>
+                                Toda retirada ou devolução precisa da confirmação das duas partes — quem pede e a outra pessoa confirmam na aba <strong>Confirmações</strong>. Enquanto estiver <strong>Aguardando</strong>, dá para cancelar.
                             </p>
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={dismissIntro}>
+                                Entendi, não mostrar de novo
+                            </button>
                         </div>
-                        <button
-                            onClick={dismissIntro}
-                            data-tooltip="Não mostrar de novo"
-                            data-tooltip-pos="bottom"
-                            aria-label="Dispensar explicação"
-                            className="icon-btn"
-                            style={{ flexShrink: 0, marginTop: '-4px', marginRight: '-4px' }}
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                    </div>
+                    </details>
                 )}
                 </div>
 
@@ -1158,7 +1155,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                     const podeDevolver = !pi && key.status === 'in_use' && (isPorteiroOrAdmin || key.user_id === userId);
                                     const podePedir = !pi && key.status === 'in_use' && !isPorteiroOrAdmin && key.user_id !== userId;
                                     return (
-                                        <li key={key.id} className={`plaqueta plaqueta--${estado}`}>
+                                        <li key={key.id} className={`plaqueta plaqueta--${estado}${podeDevolver ? ' plaqueta--duas-acoes' : ''}`}>
                                             <div className="plaqueta-texto">
                                                 <div className="plaqueta-nome">{key.name}</div>
                                                 {key.room && <div className="plaqueta-sala">{key.room}</div>}
@@ -1166,6 +1163,7 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     <span>
                                                         {pi ? estadoPendente(pi)
                                                             : key.status === 'available' ? 'Livre'
+                                                            : key.user_id === userId ? <>Com <strong>você</strong></>
                                                             : <>Com <strong>{key.employee_name || 'alguém'}</strong></>}
                                                     </span>
                                                 </div>
@@ -1189,6 +1187,18 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                         Devolver
                                                     </button>
                                                 )}
+                                                {/* TASK-137: de volta a botão, ao lado de "Devolver" — como texto
+                                                    embaixo da linha, o usuário o perdeu de vista. */}
+                                                {podeDevolver && (
+                                                    <button
+                                                        className="btn btn-secundario btn-sm"
+                                                        disabled={actionLoading === key.id}
+                                                        onClick={() => setConfirmModal({ open: true, keyId: key.id, keyName: key.name, type: 'transfer' })}
+                                                        aria-label="Passar para outra pessoa"
+                                                    >
+                                                        Passar
+                                                    </button>
+                                                )}
                                                 {podePedir && (
                                                     <button
                                                         className="btn btn-secundario btn-sm"
@@ -1208,17 +1218,6 @@ export default function DashboardClient({ initialKeys, initialUsers, userRole, u
                                                     </button>
                                                 )}
                                             </div>
-                                            {podeDevolver && (
-                                                <div className="plaqueta-extra">
-                                                    <button
-                                                        className="btn btn-ghost btn-sm"
-                                                        disabled={actionLoading === key.id}
-                                                        onClick={() => setConfirmModal({ open: true, keyId: key.id, keyName: key.name, type: 'transfer' })}
-                                                    >
-                                                        Passar para outra pessoa
-                                                    </button>
-                                                </div>
-                                            )}
                                         </li>
                                     );
                                 })}

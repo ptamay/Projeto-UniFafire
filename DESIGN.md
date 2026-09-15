@@ -9,8 +9,8 @@ colors:
   acao-hover-claro: "#162A75"
   livre: "#34D399"
   livre-claro: "#047857"
-  em-uso: "#CBD5E1"
-  em-uso-claro: "#334155"
+  em-uso: "#FCA5A5"
+  em-uso-claro: "#B91C1C"
   pendente: "#F59E0B"
   pendente-texto-escuro: "#1A1200"
   pendente-fg: "#FBBF24"
@@ -128,7 +128,8 @@ components:
 # Design System: UniFAFIRE — Gestão de Chaves
 
 > Regravado em 2026-09-14 ao fim da TASK-136, a partir do sistema construído e medido nas
-> TASK-132 a 136 (ADR-031). Os tokens da frente são normativos: são os do `globals.css`, e as
+> TASK-132 a 136 (ADR-031), e emendado na TASK-137 (em uso vermelho, "Passar" como botão,
+> Usuários, Confirmações e Logs no quadro). Os tokens da frente são normativos: são os do `globals.css`, e as
 > guardas `tests/escala-tipografica.test.ts` e `tests/componentes-quadro.test.ts` conferem que o
 > código não sai deles. Nada aqui é contrato por cumprir.
 
@@ -152,12 +153,12 @@ escolha.
 - Toda ação tem o verbo escrito ("Pegar", "Entregar", "Devolver", "Pedir", "Passar para outra
   pessoa"); a linha em si não age ao toque.
 - A busca é o primeiro controle de toda tela de lista; filtros moram em contadores ou numa folha.
-- Cor por significado, a mesma em todas as telas; vermelho só para alerta e para o que apaga.
+- Cor por significado, a mesma em todas as telas: verde livre, âmbar esperando, vermelho ocupado.
 - Superfícies planas, uma elevação só, cinco tamanhos de texto, três pesos.
 
 ## Colors
 
-Verde, âmbar e vermelho são o semáforo — livre, esperando, alerta — lido sem legenda por quem tem
+Verde, âmbar e vermelho são o semáforo — livre, esperando, ocupado — lido sem legenda por quem tem
 pouca instrução. O azul UniFAFIRE é a ação. Cada par tem valor para o escuro (a chapa escura) e para
 o claro (sufixo `-claro`), com contraste AA conferido por teste.
 
@@ -171,10 +172,14 @@ o claro (sufixo `-claro`), com contraste AA conferido por teste.
   marca de ponto cheio.
 - **Âmbar pendente** (pendente, pendente-fg / pendente-claro, pendente-fg-claro): esperando alguém
   confirmar; também o contador de pendências e o backup atrasado.
+- **Vermelho em uso** (em-uso / em-uso-claro): a chave saiu do gancho — "Com Fulano", a etiqueta
+  "Em uso", o anel vazio. Decisão do usuário na TASK-137: o cinza lia como "desligado"; ocupado é
+  vermelho.
 
 ### Tertiary
 - **Vermelho alerta** (alerta, alerta-fg / alerta-claro): atraso, erro e o que apaga — o botão de
-  perigo nos modais e na Zona de Perigo, o "Remover" como texto.
+  perigo nos modais e na Zona de Perigo, o "Remover" como texto. Como "em uso" também é vermelho,
+  o alerta nunca vem só pela cor: tem a palavra ("Atrasada") e o ícone de alerta, numa faixa própria.
 - **Idioma dos registros** (registro-retirada, registro-devolucao, registro-transferencia): no
   Histórico e nas Confirmações — retirada âmbar, devolução verde, transferência roxa —, casado com o
   estado que a ação produz.
@@ -184,15 +189,16 @@ o claro (sufixo `-claro`), com contraste AA conferido por teste.
   listas, cartões de configuração, barras. **Elevado** (bg-elevated): linha em hover, cabeçalho de
   tabela, avatar.
 - **Tinta** (text-primary, text-secondary, text-muted e as versões claras): no claro, o azul
-  UniFAFIRE é a tinta do texto. **Em uso** (em-uso / em-uso-claro) é cinza de propósito.
+  UniFAFIRE é a tinta do texto.
 - **Borda de campo** (borda-campo / borda-campo-claro): contraste de controle (≥ 3:1), mais forte
   que a borda de enfeite.
 
-**The Semáforo Rule.** Livre é verde, pendente é âmbar, alerta é vermelho — em todas as telas, e
-nenhuma dessas três cores aparece com outro sentido.
+**The Semáforo Rule.** Livre é verde, pendente é âmbar, em uso é vermelho — em todas as telas, e
+nenhuma dessas três cores aparece com outro sentido. A forma repete o estado: ponto cheio, anel vazio.
 
-**The Red Means Delete Rule.** Vermelho só para atraso, erro e o que apaga. "Sair", "Cancelar" e
-contador de pendências não são vermelhos.
+**The Red Means Stop Rule.** Vermelho é "parado aqui": a chave está ocupada, está atrasada, ou o
+botão apaga. Atraso e erro vêm sempre com palavra e ícone. "Sair", "Cancelar" e o contador de
+pendências não são vermelhos.
 
 **The One Action Color Rule.** O azul de ação é o que se toca e fica a ≥ 60° de matiz de qualquer
 cor de estado; o verde nunca é botão.
@@ -225,7 +231,9 @@ exceção.
   o primeiro controle e o primeiro item aparece sem rolar, em todas as telas de lista.
 - **Dashboard no celular:** busca e filtros-contadores presos logo abaixo da barra do topo ao rolar;
   depois alerta, pendências, atalhos do balcão, a lista, e por último a explicação da dupla
-  confirmação.
+  confirmação, fechada numa linha que abre ao toque.
+- **Usuários:** a busca e o "+ Novo" compacto na mesma linha; os filtros por papel embaixo.
+- **Confirmações:** uma lista de linhas, a mesma no celular e no desktop.
 - **Histórico e Logs:** busca à vista, "Filtros (n)" abre uma folha de baixo para cima, ações num
   menu "⋯".
 - **Desktop (> 768 px):** menu lateral fixo; as mesmas telas com tabela e filtros na página. O
@@ -254,10 +262,10 @@ desfoque) também não. A guarda aceita só a elevação única, anel de foco e 
 ## Components
 
 ### Buttons
-- **Principal** (48 px, azul de ação, texto 1rem): um por tela — "+ Nova chave", "Novo usuário",
-  "Ver resultados", o confirmar dos modais.
+- **Principal** (48 px, azul de ação, texto 1rem): um por tela — "+ Nova chave", "Novo usuário"
+  (no celular, "+ Novo" compacto ao lado da busca), "Ver resultados", o confirmar dos modais.
 - **Secundário** (40 px, 44 no celular; contorno com texto azul): o verbo de cada linha — "Pegar",
-  "Entregar", "Devolver", "Pedir".
+  "Entregar", "Devolver", "Passar", "Pedir", "Confirmar", "Aceitar".
 - **Discreto** (contorno cinza): "Editar", "Cancelar", "Filtros", "Limpar filtros".
 - **Perigo** (vermelho cheio): só no modal que confirma apagar e na Zona de Perigo.
 - **Remover** (texto vermelho, sem caixa): o apagar como ação secundária numa linha.
@@ -267,13 +275,14 @@ desfoque) também não. A guarda aceita só a elevação única, anel de foco e 
 ### Chips
 - **Filtro-contador** ("Livres 9", "Aluno 3"): botão com a contagem dentro; o ativo é o azul de ação,
   com `aria-pressed`. Rola na horizontal no celular quando não cabe.
-- **Etiqueta de estado** (pílula, apoio semibold): "Livre", "Em uso", "Aguardando", e no Histórico
-  "Retirada", "Devolução", "Transferência".
+- **Etiqueta de estado** (pílula, apoio semibold): "Livre", "Em uso" (vermelho), "Aguardando", e no
+  Histórico "Retirada", "Devolução", "Transferência".
 - **Etiqueta de papel**: neutra — o papel é identidade, não estado.
 
 ### Cards / Containers
 - **Lista de linhas** (superfície com borda, divisória entre itens): Dashboard, Chaves, Usuários,
-  Histórico e Logs no celular. Nunca cartão dentro de cartão; no celular o cartão que embrulhava a
+  Histórico e Logs no celular, e Confirmações em todo tamanho. Nos Logs, a ação em palavra ("Entrou
+  no sistema") e o código gravado pequeno ao lado. Nunca cartão dentro de cartão; no celular o cartão que embrulhava a
   página fica plano.
 - **Cartão de configuração**: seções de Configurações, com a Zona de Perigo em moldura vermelha
   própria.
@@ -291,13 +300,15 @@ desfoque) também não. A guarda aceita só a elevação única, anel de foco e 
 ### Plaqueta
 A assinatura do sistema: uma linha com o nome da chave (texto semibold), a sala inteira (apoio,
 quebra em vez de reticências), o estado em palavra com a marca ("● Livre", "○ Com Fulano",
-"Aguardando: …") e o verbo à direita, ao alcance do polegar. "Passar para outra pessoa" vem como
-texto de ação embaixo, quando cabe.
+"Aguardando: …") e o verbo à direita, ao alcance do polegar. Quem está com a chave vê dois botões,
+"Devolver" e "Passar" (para o leitor de tela, "Passar para outra pessoa"), lado a lado embaixo do
+nome — à direita, dois não cabem em 360 px sem espremer o nome.
 
 ## Do's and Don'ts
 
 ### Do:
 - Diga a ação em palavra: "Pegar", "Entregar", "Devolver", "Pedir", "Passar para outra pessoa".
+- Mostre código de sistema só como detalhe: a palavra vem primeiro ("Entrou no sistema · LOGIN_SUCCESS").
 - Ponha a busca e a lista antes de qualquer título, contador ou filtro no celular.
 - Use só os cinco tamanhos e os três pesos, e só os tokens de cor.
 - Mantenha alvos de toque ≥ 44 px e contraste AA nos dois temas.
@@ -308,6 +319,7 @@ texto de ação embaixo, quando cabe.
 - Gradiente, brilho, "subir no hover", sombra de repouso em cartão.
 - Rótulo em maiúsculas espaçadas, ou texto escrito em maiúsculas.
 - Cartão dentro de cartão, ou tabela de "rótulo: valor" no celular.
-- Vermelho fora de alerta e de ação que apaga; ação destrutiva como primeiro ou maior botão.
+- Vermelho fora de "em uso", alerta e ação que apaga; alerta só pela cor; ação destrutiva como
+  primeiro ou maior botão.
 - Emoji no lugar de ícone.
 - Linha que age ao toque sem dizer o que faz.

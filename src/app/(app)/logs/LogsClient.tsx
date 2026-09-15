@@ -6,6 +6,7 @@ import { formatTimestamp } from '@/lib/time-filters';
 import type { PaginaDeLogs } from '@/lib/logs-query';
 import FolhaDeFiltros from '@/app/components/FolhaDeFiltros';
 import MenuDeAcoes from '@/app/components/MenuDeAcoes';
+import { rotuloDaAcao, detalheLegivel, alvoLegivel } from '@/lib/trilha-legivel';
 
 type LogCategory = 'all' | 'system' | 'security' | 'login';
 
@@ -188,21 +189,29 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                     </FolhaDeFiltros>
 
                     {/* TASK-136 (ADR-031): no celular, cada registro é uma LINHA — a ação, quem,
-                        sobre o quê e quando —, e não o cartão de seis "rótulo: valor". */}
+                        sobre o quê e quando —, e não o cartão de seis "rótulo: valor".
+                        TASK-137: a ação em palavra ("Entrou no sistema"); o código gravado
+                        (LOGIN_SUCCESS) fica pequeno, junto da hora — é o registro, não o rótulo.
+                        O IP fica na tabela do desktop e na planilha: aqui, quebrava a linha. */}
                     <div className="mobile-only">
                         <ul className="lista-linhas" aria-label="Registros">
                             {loading ? (
                                 <li className="linha-vazia">Carregando…</li>
-                            ) : logs.length > 0 ? logs.map(log => (
+                            ) : logs.length > 0 ? logs.map(log => {
+                                const alvo = alvoLegivel(log.target);
+                                return (
                                 <li key={log.id} className="linha-lista">
                                     <div className="linha-texto">
-                                        <div className="linha-nome"><span className="codigo-trilha">{log.action}</span></div>
-                                        <div className="linha-apoio">{log.username}{log.target ? ` · ${log.target}` : ''}</div>
-                                        <div className="linha-meta">{formatTimestamp(log.timestamp)}{log.ip_address ? ` · ${log.ip_address}` : ''}</div>
-                                        {log.details && <div className="linha-meta">{log.details}</div>}
+                                        <div className="linha-nome">{rotuloDaAcao(log.action)}</div>
+                                        <div className="linha-apoio">{log.username}{alvo ? ` · ${alvo}` : ''}</div>
+                                        {log.details && <div className="linha-apoio">{detalheLegivel(log.details)}</div>}
+                                        <div className="linha-meta">
+                                            {formatTimestamp(log.timestamp)} · <span className="codigo-trilha">{log.action}</span>
+                                        </div>
                                     </div>
                                 </li>
-                            )) : (
+                                );
+                            }) : (
                                 <li className="linha-vazia">Nenhum registro encontrado.</li>
                             )}
                         </ul>
@@ -231,23 +240,16 @@ export default function LogsClient({ logsIniciais }: { logsIniciais: PaginaDeLog
                                             <td data-label="Data/Hora" style={{ color: 'var(--text-primary)' }}>{formatTimestamp(log.timestamp)}</td>
                                             <td data-label="Usuário"><strong>{log.username}</strong></td>
                                             <td data-label="Ação">
-                                                {/* O código da ação é o registro da trilha (LOGOUT, LOGIN_SUCCESS),
-                                                    não um rótulo — fica como foi gravado (TASK-133). */}
-                                                <span className="codigo-trilha" style={{
-                                                    fontSize: 'var(--fs-2)',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 'var(--radius-sm)',
-                                                    background: 'var(--bg-elevated)',
-                                                    color: isSecurityEvent ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                                    fontWeight: isSecurityEvent ? 600 : 400,
-                                                    border: '1px solid var(--border)'
-                                                }}>
-                                                    {log.action}
-                                                </span>
+                                                {/* TASK-137: a ação em palavra; embaixo, pequeno, o código gravado na
+                                                    trilha (LOGOUT, LOGIN_SUCCESS) — é o registro, e fica como foi gravado. */}
+                                                <div style={{ color: 'var(--text-primary)', fontWeight: isSecurityEvent ? 600 : 400 }}>
+                                                    {rotuloDaAcao(log.action)}
+                                                </div>
+                                                <span className="codigo-trilha">{log.action}</span>
                                             </td>
-                                            <td data-label="Alvo">{log.target || '-'}</td>
+                                            <td data-label="Alvo">{alvoLegivel(log.target) || '-'}</td>
                                             <td data-label="IP" style={{ fontFamily: 'monospace', fontSize: 'var(--fs-2)', color: 'var(--text-muted)' }}>{log.ip_address || '-'}</td>
-                                            <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-3)' }}>{log.details || '-'}</td>
+                                            <td data-label="Detalhes" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-2)' }}>{detalheLegivel(log.details) || '-'}</td>
                                         </tr>
                                     )})
                                 ) : (
